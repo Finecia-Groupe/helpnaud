@@ -1,0 +1,11 @@
+# HelpNaud.ai — déploiement Netlify (site statique, aucune étape de build pour l'instant)
+[build]
+  publish = "."
+
+# En-têtes de sécurité de base
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
