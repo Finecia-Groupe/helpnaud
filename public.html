@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>FINECIA GROUPE — Partner Market</title>
+<style>
+  :root{ --bg:#F6F4EF; --surface:#fff; --ink:#16304A; --muted:#5B6B7B; --line:#D9D4C7; --accent:#2D9C93; --gold:#C89B3C; --bad:#B3261E; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#0F1B28; --surface:#16273A; --ink:#EAF0F6; --muted:#9FB0C2; --line:#2B3E54; --accent:#46C2B8; --gold:#E0B04F; --bad:#F2685C; } }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main{ max-width:760px; margin:0 auto; padding:20px 16px 48px; }
+  header{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  header .dot{ width:12px; height:12px; border-radius:50%; background:var(--gold); }
+  header strong{ font-size:17px; letter-spacing:.2px; }
+  h1{ font-size:24px; margin:0 0 6px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .hint{ color:var(--muted); font-size:13px; margin:4px 0 0; }
+  label{ display:block; font-size:13px; color:var(--muted); margin:10px 0 3px; }
+  input,textarea,select{ width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface); color:var(--ink); font:inherit; }
+  button{ border:1px solid var(--ink); background:var(--ink); color:var(--surface); border-radius:10px; padding:10px 16px; font:inherit; cursor:pointer; margin-top:14px; }
+  button.light{ background:var(--surface); color:var(--ink); border-color:var(--line); margin-top:0; padding:6px 12px; font-size:13px; }
+  button:disabled{ opacity:.55; cursor:default; }
+  .msg{ margin-top:12px; font-size:14px; }
+  .ok{ color:var(--accent); font-weight:600; } .err{ color:var(--bad); font-weight:600; }
+  .row{ display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+  .hp{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+  .photos img{ max-width:100%; border-radius:10px; margin-top:8px; display:block; }
+</style>
+</head>
+<body>
+<main>
+  <header><span class="dot"></span><strong>FINECIA GROUPE</strong><span class="hint" style="margin:0;">Partner Market</span></header>
+  <div id="app"><div class="card"><p class="hint">Chargement…</p></div></div>
+</main>
+<script>
+(function(){
+  'use strict';
+  var FN = '/.netlify/functions/public-intake';
+  var Q = new URLSearchParams(location.search);
+  var app = document.getElementById('app');
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  function call(body){
+    return fetch(FN, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) }).then(function(r){
+      return r.text().then(function(t){ var j = null; try{ j = JSON.parse(t); }catch(e){} if(!r.ok) throw new Error((j && j.error) || 'Service momentanément indisponible.'); return j || {}; });
+    });
+  }
+  function money(n, cur){ var s = Number(n || 0).toLocaleString('fr-FR'); return s + ' ' + (cur === 'CAD' ? '$ CAD' : (cur === 'USD' ? '$ US' : (cur || ''))); }
+  var HONEY = '<div class="hp"><label>Site web<input type="text" id="website" tabindex="-1" autocomplete="off"></label></div>';
+  function hv(){ var e = document.getElementById('website'); return e ? e.value : ''; }
+
+  /* ---------- Inscription par invitation ---------- */
+  function viewInvitation(token){
+    call({ action:'invite-info', token: token }).then(function(r){
+      if(!r.ok){ app.innerHTML = '<div class="card"><h1>Lien d’invitation invalide</h1><p class="hint">Ce lien n’est plus valide. Demandez un nouveau lien à FINECIA GROUPE.</p></div>'; return; }
+      app.innerHTML = '<div class="card"><h1>Rejoindre Partner Market</h1><p class="hint">Invitation de FINECIA GROUPE — profil : <strong>' + esc(r.type) + '</strong>. Votre demande sera examinée par notre équipe avant activation.</p>' +
+        '<label for="f-name">Nom de l’organisation (ou votre nom)</label><input id="f-name" maxlength="120">' +
+        '<label for="f-contact">Personne-contact</label><input id="f-contact" maxlength="100">' +
+        '<label for="f-email">Courriel</label><input id="f-email" type="email" maxlength="140">' +
+        '<label for="f-phone">Téléphone</label><input id="f-phone" maxlength="40">' +
+        '<label for="f-msg">Message (facultatif)</label><textarea id="f-msg" rows="3" maxlength="600"></textarea>' + HONEY +
+        '<button id="f-send">Envoyer ma demande d’inscription</button><div id="f-out" class="msg"></div></div>';
+      document.getElementById('f-send').addEventListener('click', function(){
+        var b = this, out = document.getElementById('f-out'); b.disabled = true; out.className = 'msg'; out.textContent = '';
+        call({ action:'invite-signup', token: token, name: val('f-name'), contact: val('f-contact'), email: val('f-email'), phone: val('f-phone'), message: val('f-msg'), website: hv() }).then(function(){
+          app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre demande est bien reçue.</p><p class="hint">FINECIA GROUPE vous contactera après examen de votre dossier.</p></div>';
+        }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+      });
+    }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
+  }
+  function val(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+
+  /* ---------- Prendre mon rendez-vous ---------- */
+  function viewRdv(){
+    call({ action:'slots' }).then(function(r){
+      var slots = r.slots || [], chosen = null;
+      if(!slots.length){ app.innerHTML = '<div class="card"><h1>Prendre mon rendez-vous</h1><p class="hint">Aucun créneau n’est disponible pour le moment. Revenez bientôt.</p></div>'; return; }
+      app.innerHTML = '<div class="card"><h1>Prendre mon rendez-vous</h1><p class="hint">Choisissez un créneau disponible.</p><div id="slots"></div></div>' +
+        '<div class="card" id="bookbox" style="display:none;"><div id="picked" class="hint"></div>' +
+        '<label for="b-name">Nom et prénom</label><input id="b-name" maxlength="120">' +
+        '<label for="b-contact">Courriel ou téléphone</label><input id="b-contact" maxlength="140">' +
+        '<label for="b-motif">Motif du rendez-vous</label><input id="b-motif" maxlength="200">' + HONEY +
+        '<button id="b-send">Confirmer le rendez-vous</button><div id="b-out" class="msg"></div></div>';
+      document.getElementById('slots').innerHTML = slots.map(function(s){
+        return '<div class="row" style="padding:7px 0; border-top:1px solid var(--line);"><span>' + esc(s.date) + ' · ' + esc(s.start) + '–' + esc(s.end) + (s.note ? ' · ' + esc(s.note) : '') + '</span><button class="light" data-slot="' + esc(s.id) + '" data-label="' + esc(s.date + ' · ' + s.start + '–' + s.end) + '">Choisir</button></div>';
+      }).join('');
+      app.addEventListener('click', function(e){
+        var b = e.target.closest ? e.target.closest('[data-slot]') : null;
+        if(!b) return;
+        chosen = b.getAttribute('data-slot');
+        document.getElementById('picked').textContent = 'Créneau choisi : ' + b.getAttribute('data-label');
+        document.getElementById('bookbox').style.display = 'block';
+      });
+      document.getElementById('b-send').addEventListener('click', function(){
+        var btn = this, out = document.getElementById('b-out'); out.className = 'msg'; out.textContent = '';
+        if(!chosen){ out.className = 'msg err'; out.textContent = 'Choisissez un créneau.'; return; }
+        btn.disabled = true;
+        call({ action:'book', slotId: chosen, name: val('b-name'), contact: val('b-contact'), motif: val('b-motif'), website: hv() }).then(function(){
+          app.innerHTML = '<div class="card"><h1>Rendez-vous confirmé</h1><p class="ok">Merci ! Votre créneau est réservé.</p><p class="hint">FINECIA GROUPE vous contactera pour confirmer les détails.</p></div>';
+        }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; btn.disabled = false; });
+      });
+    }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
+  }
+
+  /* ---------- Catalogue de véhicules ---------- */
+  function viewCatalogue(token){
+    call({ action:'catalogue', token: token }).then(function(r){
+      if(!r.ok){ app.innerHTML = '<div class="card"><h1>Accès non valide</h1><p class="hint">Ce lien n’est plus valide. Demandez un nouveau lien à FINECIA GROUPE.</p></div>'; return; }
+      var list = r.vehicles || [];
+      var html = '<div class="card"><h1>Catalogue de véhicules</h1><p class="hint">Véhicules disponibles chez nos concessionnaires partenaires.</p></div>';
+      if(!list.length) html += '<div class="card"><p class="hint">Aucun véhicule disponible pour le moment.</p></div>';
+      html += list.map(function(v){
+        return '<div class="card" data-v="' + esc(v.id) + '"><div class="row"><div><strong>' + esc(v.make) + ' ' + esc(v.model) + (v.year ? ' (' + esc(v.year) + ')' : '') + '</strong>' +
+          '<div class="hint">' + esc(v.dealer) + ' · Prix : ' + esc(money(v.price, v.currency)) + ' · ' + Number(v.mileage || 0).toLocaleString('fr-FR') + ' km</div>' +
+          (v.description ? '<div class="hint">' + esc(v.description) + '</div>' : '') + '</div>' +
+          '<div>' + (v.photoCount ? '<button class="light" data-photos="' + esc(v.id) + '">📷 VOIR (' + v.photoCount + ')</button> ' : '') +
+          '<button class="light" data-interest="' + esc(v.id) + '" style="border-color:var(--ink);">Je suis intéressé</button></div></div>' +
+          '<div class="photos" data-photobox="' + esc(v.id) + '"></div><div data-form="' + esc(v.id) + '"></div></div>';
+      }).join('');
+      app.innerHTML = html;
+    }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
+    app.addEventListener('click', function(e){
+      var ph = e.target.closest ? e.target.closest('[data-photos]') : null;
+      if(ph){
+        var id = ph.getAttribute('data-photos'), box = app.querySelector('[data-photobox="' + id + '"]');
+        if(box.innerHTML){ box.innerHTML = ''; return; }
+        box.innerHTML = '<p class="hint">Chargement…</p>';
+        call({ action:'photos', token: token, vehicleId: id }).then(function(r){
+          box.innerHTML = (r.photos || []).map(function(p){ return '<img alt="Photo du véhicule" src="' + esc(p.data) + '">'; }).join('') || '<p class="hint">Aucune photo.</p>';
+        }).catch(function(){ box.innerHTML = '<p class="err">Photos indisponibles.</p>'; });
+        return;
+      }
+      var it = e.target.closest ? e.target.closest('[data-interest]') : null;
+      if(it){
+        var vid = it.getAttribute('data-interest'), f = app.querySelector('[data-form="' + vid + '"]');
+        if(f.innerHTML){ f.innerHTML = ''; return; }
+        f.innerHTML = '<label>Nom et prénom</label><input data-n maxlength="100"><label>Courriel ou téléphone</label><input data-c maxlength="140">' + HONEY.replace('id="website"', 'class="website-x"') +
+          '<button data-send="' + esc(vid) + '">Envoyer ma demande</button><div class="msg" data-out></div>';
+        return;
+      }
+      var sd = e.target.closest ? e.target.closest('[data-send]') : null;
+      if(sd){
+        var v2 = sd.getAttribute('data-send'), form = app.querySelector('[data-form="' + v2 + '"]'), out = form.querySelector('[data-out]');
+        sd.disabled = true; out.className = 'msg'; out.textContent = '';
+        call({ action:'interest', token: token, vehicleId: v2, name: form.querySelector('[data-n]').value.trim(), contact: form.querySelector('[data-c]').value.trim(), website: (form.querySelector('.website-x') || { value:'' }).value || '' }).then(function(){
+          form.innerHTML = '<p class="ok">Merci ! Un conseiller FINECIA GROUPE vous contactera très bientôt.</p>';
+        }).catch(function(err){ out.className = 'msg err'; out.textContent = err.message; sd.disabled = false; });
+      }
+    });
+  }
+
+  if(Q.get('invitation')) viewInvitation(Q.get('invitation'));
+  else if(Q.get('catalogue')) viewCatalogue(Q.get('catalogue'));
+  else if(Q.get('rdv')) viewRdv();
+  else app.innerHTML = '<div class="card"><h1>FINECIA GROUPE</h1><p class="hint">Cette page s’ouvre depuis un lien envoyé par FINECIA GROUPE (invitation, rendez-vous ou catalogue).</p></div>';
+})();
+</script>
+</body>
+</html>

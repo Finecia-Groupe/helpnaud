@@ -4891,6 +4891,7 @@
         </div>
         <p class="hint ai-credits-mini-label" id="ai-credits-label" style="margin:0 0 12px; font-size:12.5px;"></p>
         <p class="hint" id="ai-credits-limit-notice" hidden style="margin:0 0 12px; color:var(--warn); font-weight:600;"></p>
+        <button class="btn primary" type="button" id="ai-credits-get-more-btn">Obtenir plus d'utilisation</button>
         <button class="btn" type="button" id="ai-credits-see-plans-btn">Voir les forfaits dans Abonnements</button>
       </div>
 
@@ -5382,7 +5383,7 @@
      activé pour le propriétaire (ce compte local = le propriétaire de FINECIA GROUPE). Chargé en
      tout début de script pour que la navigation (menu latéral, menu mobile, accès rapide, visite
      guidée) et le guard de showView() puissent s'appuyer dessus dès l'initialisation. */
-  var fghlabState = { enabled: true, team: [], adminProfile: { name: 'Propriétaire', number: '' }, projects: [], announcements: [], coprojects: [], partners: [], fgbankProjects: [], monetizationConfig: { commissionRate: 2, introFee: 25000 }, touttestSessions: [], touttestCandidates: [], touttestResults: [], peseEmployees: [], peseEvaluations: [], vehicleListings: [], vehicleLeads: [], genericTools: {}, financialStatements: {}, calcSheets: [], toolSnapshots: {}, hstatisDatasets: [], fgbankCurrency: null, coprojectCurrency: null, partnermarketCurrency: null, clientRegistry: {} };
+  var fghlabState = { enabled: true, team: [], adminProfile: { name: 'Propriétaire', number: '' }, projects: [], announcements: [], coprojects: [], partners: [], fgbankProjects: [], monetizationConfig: { commissionRate: 2, introFee: 25000 }, touttestSessions: [], touttestCandidates: [], touttestResults: [], peseEmployees: [], peseEvaluations: [], vehicleListings: [], vehicleLeads: [], genericTools: {}, financialStatements: {}, calcSheets: [], toolSnapshots: {}, hstatisDatasets: [], fgbankCurrency: null, coprojectCurrency: null, partnermarketCurrency: null, clientRegistry: {}, alerts: [], invites: [], academieFormations: [], academieRegistrations: [], academieSeeded: false, academieCatalogVersion: 0, rdvSlots: [] };
   function loadFghlabState(){
     try{
       var raw = localStorage.getItem('helpnaud_fghlab');
@@ -5402,6 +5403,13 @@
         fghlabState.peseEvaluations = Array.isArray(parsed.peseEvaluations) ? parsed.peseEvaluations : [];
         fghlabState.vehicleListings = Array.isArray(parsed.vehicleListings) ? parsed.vehicleListings : [];
         fghlabState.vehicleLeads = Array.isArray(parsed.vehicleLeads) ? parsed.vehicleLeads : [];
+        fghlabState.alerts = Array.isArray(parsed.alerts) ? parsed.alerts : [];
+        fghlabState.invites = Array.isArray(parsed.invites) ? parsed.invites : [];
+        fghlabState.academieFormations = Array.isArray(parsed.academieFormations) ? parsed.academieFormations : [];
+        fghlabState.academieRegistrations = Array.isArray(parsed.academieRegistrations) ? parsed.academieRegistrations : [];
+        fghlabState.academieSeeded = !!parsed.academieSeeded;
+        fghlabState.academieCatalogVersion = Number(parsed.academieCatalogVersion) || 0;
+        fghlabState.rdvSlots = Array.isArray(parsed.rdvSlots) ? parsed.rdvSlots : [];
         fghlabState.genericTools = (parsed.genericTools && typeof parsed.genericTools === 'object' && !Array.isArray(parsed.genericTools)) ? parsed.genericTools : {};
         fghlabState.financialStatements = (parsed.financialStatements && typeof parsed.financialStatements === 'object' && !Array.isArray(parsed.financialStatements)) ? parsed.financialStatements : {};
         fghlabState.calcSheets = Array.isArray(parsed.calcSheets) ? parsed.calcSheets : [];
@@ -5428,6 +5436,7 @@
     }catch(e){}
     migrateFghlabNumbering();
   }
+  var fghlabSync = { timer: null, pushT: null, busy: false, again: false, applying: false, base: null, lastPull: 0, ready: false, writable: [], status: 'off', statusText: '', uiPending: false };
   function persistFghlabState(){
     try{
       var snap = fghlabState;
@@ -5435,6 +5444,7 @@
       if(fghlabCloudFlag()) snap = Object.assign({}, fghlabState, { team: [] });
       localStorage.setItem('helpnaud_fghlab', JSON.stringify(snap));
     }catch(e){}
+    try{ if(typeof fghlabSchedulePush === 'function') fghlabSchedulePush(); }catch(e){}
   }
   function fghlabCloudFlag(){
     try{ return localStorage.getItem('helpnaud_team_cloud') === '1'; }catch(e){ return false; }
@@ -7373,12 +7383,109 @@
     var select = document.getElementById('ai-credits-tier-select');
     if(select && select.value !== tier.id) select.value = tier.id;
   }
+  /* ----- « Besoin de plus d'utilisation ? » : invitation à acheter des crédits IA -----
+     Affichée quand la limite du palier est atteinte (fenêtre + message dans la conversation), et
+     disponible à tout moment via « Obtenir plus d'utilisation » (Réglages > Crédits IA).
+     Le paiement en ligne (Stripe) n'est pas encore branché : « Acheter des crédits » enregistre pour
+     l'instant une DEMANDE (aucun débit, aucun crédit ajouté) et le rechargement automatique est un
+     réglage mémorisé qui s'appliquera à l'activation des paiements. Tarif indicatif ci-dessous. */
+  var AI_CREDITS_PER_CAD = 20;
+  var AI_CREDIT_PACKS_CAD = [5, 10, 25, 50];
+  function aiCreditsResetLabel(){
+    var d = new Date();
+    var n = new Date(d.getFullYear(), d.getMonth() + 1, 1, 0, 0, 0);
+    return n.toLocaleDateString('fr-CA', { day: 'numeric', month: 'long' });
+  }
+  function aiCreditsAutoReloadGet(){
+    try{ return JSON.parse(localStorage.getItem('helpnaud_credits_autoreload') || 'null'); }catch(e){ return null; }
+  }
+  function aiCreditsRequestsPush(entry){
+    try{
+      var arr = JSON.parse(localStorage.getItem('helpnaud_credit_requests') || '[]');
+      if(!Array.isArray(arr)) arr = [];
+      arr.push(entry);
+      localStorage.setItem('helpnaud_credit_requests', JSON.stringify(arr.slice(-50)));
+    }catch(e){}
+  }
+  function closeAiCreditsModal(){
+    var old = document.getElementById('ai-credits-modal');
+    if(old && old.parentNode) old.parentNode.removeChild(old);
+  }
+  function openAiCreditsModal(step){
+    closeAiCreditsModal();
+    var ov = document.createElement('div');
+    ov.id = 'ai-credits-modal';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9998; display:flex; align-items:center; justify-content:center; padding:16px;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:var(--surface); color:var(--ink); border-radius:16px; max-width:560px; width:100%; max-height:92vh; overflow:auto; padding:22px 22px 18px; box-shadow:0 20px 60px rgba(0,0,0,.35);';
+    ov.appendChild(box);
+    var btnCss = 'border:1px solid var(--line); border-radius:10px; padding:9px 14px; background:var(--surface); color:var(--ink); font-size:13.5px; cursor:pointer;';
+    var dark = 'background:var(--ink); color:var(--surface); border-color:var(--ink);';
+    function packOptions(){
+      return AI_CREDIT_PACKS_CAD.map(function(c){ return '<option value="'+c+'">CA$'+c+' — '+(c * AI_CREDITS_PER_CAD)+' crédits IA</option>'; }).join('');
+    }
+    function drawMain(){
+      box.innerHTML =
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;"><h2 style="margin:0; font-size:22px;">Besoin de plus d’utilisation ?</h2><button type="button" data-aic-close aria-label="Fermer" style="'+btnCss+' padding:2px 10px;">✕</button></div>' +
+        '<p style="margin:12px 0 14px; font-size:14px; line-height:1.55; color:var(--muted);">Vous avez atteint votre limite mensuelle et vous avez épuisé vos crédits d’utilisation. Votre limite se réinitialise le '+escapeHtml(aiCreditsResetLabel())+' à 00:00. Pour continuer à travailler d’ici là :</p>' +
+        '<div style="display:flex; gap:12px; flex-wrap:wrap;">' +
+          '<div style="flex:1; min-width:220px; border:1px solid var(--line); border-radius:12px; padding:14px;"><div style="font-weight:700; font-size:15px;">Acheter des crédits d’utilisation</div><p style="margin:6px 0 10px; font-size:13px; color:var(--muted); line-height:1.5;">Les crédits d’utilisation sont débités au fur et à mesure. Idéal pour les journées occasionnellement chargées.</p>' +
+            '<select id="aic-pack" style="width:100%; '+btnCss+'">'+packOptions()+'</select></div>' +
+          '<div style="flex:1; min-width:220px; border:1px solid var(--line); border-radius:12px; padding:14px; background:var(--surface-2);"><div style="font-weight:700; font-size:15px;">Mettre à niveau votre forfait</div><p style="margin:6px 0 10px; font-size:13px; color:var(--muted); line-height:1.5;">Obtenez des limites plus élevées chaque mois. Idéal pour une utilisation intensive régulière.</p>' +
+            '<button type="button" data-aic-upgrade style="'+btnCss+'">Voir les forfaits</button></div>' +
+        '</div>' +
+        '<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px;">' +
+          '<button type="button" data-aic-buy style="'+btnCss+dark+'">Acheter des crédits d’utilisation</button>' +
+          '<button type="button" data-aic-auto style="'+btnCss+'">Activer le rechargement automatique</button>' +
+        '</div>' +
+        '<p id="aic-msg" style="margin:12px 0 0; font-size:12.5px; line-height:1.5; color:var(--muted);">Le paiement en ligne n’est pas encore actif : votre demande est enregistrée, sans aucun débit, et FINECIA GROUPE vous confirme le tarif et l’activation. Tarif indicatif : CA$1 = '+AI_CREDITS_PER_CAD+' crédits IA.</p>';
+    }
+    function drawAuto(){
+      var cur = aiCreditsAutoReloadGet() || { threshold: 5, reloadTo: 15 };
+      box.innerHTML =
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;"><h2 style="margin:0; font-size:22px;">Activer le rechargement automatique ?</h2><button type="button" data-aic-close aria-label="Fermer" style="'+btnCss+' padding:2px 10px;">✕</button></div>' +
+        '<p style="margin:10px 0 12px; font-size:14px; color:var(--muted);">Achetez automatiquement des crédits d’utilisation supplémentaires lorsque vos réserves sont faibles.</p>' +
+        '<label style="display:block; font-size:13.5px; margin-bottom:4px;">Lorsque les crédits d’utilisation tombent à :</label>' +
+        '<input type="number" id="aic-threshold" min="1" step="1" value="'+cur.threshold+'" style="width:100%; '+btnCss+'">' +
+        '<label style="display:block; font-size:13.5px; margin:12px 0 4px;">Recharger jusqu’à :</label>' +
+        '<input type="number" id="aic-reloadto" min="1" step="1" value="'+cur.reloadTo+'" style="width:100%; '+btnCss+'">' +
+        '<p style="margin:12px 0; font-size:12.5px; line-height:1.5; color:var(--muted);">Montants en CA$. En activant, vous autorisez FINECIA GROUPE à débiter la carte enregistrée de ce montant lorsque votre solde atteint le seuil indiqué ; vous pouvez désactiver le rechargement à tout moment. Le paiement en ligne n’étant pas encore actif, aucun débit n’a lieu pour l’instant : ce réglage est mémorisé et s’appliquera à l’activation des paiements.</p>' +
+        '<div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;"><button type="button" data-aic-later style="'+btnCss+'">Plus tard</button><button type="button" data-aic-activate style="'+btnCss+dark+'">Activer</button></div>' +
+        '<p id="aic-msg" style="margin:10px 0 0; font-size:12.5px; color:var(--muted);"></p>';
+    }
+    ov.addEventListener('click', function(e){
+      var t = e.target;
+      if(t === ov || (t.closest && t.closest('[data-aic-close]')) || (t.closest && t.closest('[data-aic-later]'))){ closeAiCreditsModal(); return; }
+      var msg = document.getElementById('aic-msg');
+      if(t.closest && t.closest('[data-aic-upgrade]')){ closeAiCreditsModal(); if(btnAbonnements) btnAbonnements.click(); return; }
+      if(t.closest && t.closest('[data-aic-auto]')){ drawAuto(); return; }
+      if(t.closest && t.closest('[data-aic-buy]')){
+        var sel = document.getElementById('aic-pack');
+        var cad = Number(sel ? sel.value : 0) || AI_CREDIT_PACKS_CAD[0];
+        aiCreditsRequestsPush({ kind: 'purchase', amountCad: cad, credits: cad * AI_CREDITS_PER_CAD, on: new Date().toISOString() });
+        if(msg){ msg.style.color = 'var(--accent)'; msg.textContent = 'Demande enregistrée : CA$' + cad + ' (' + (cad * AI_CREDITS_PER_CAD) + ' crédits IA). Aucun débit n’a été effectué ; le paiement en ligne sera activé prochainement.'; }
+        return;
+      }
+      if(t.closest && t.closest('[data-aic-activate]')){
+        var th = Number(document.getElementById('aic-threshold').value), rt = Number(document.getElementById('aic-reloadto').value);
+        if(!(th > 0) || !(rt > th)){ if(msg){ msg.style.color = 'var(--bad)'; msg.textContent = 'Le montant de rechargement doit être supérieur au seuil.'; } return; }
+        try{ localStorage.setItem('helpnaud_credits_autoreload', JSON.stringify({ threshold: th, reloadTo: rt, on: new Date().toISOString() })); }catch(err){}
+        aiCreditsRequestsPush({ kind: 'autoreload', threshold: th, reloadTo: rt, on: new Date().toISOString() });
+        if(msg){ msg.style.color = 'var(--accent)'; msg.textContent = 'Rechargement automatique mémorisé (seuil CA$' + th + ', recharge jusqu’à CA$' + rt + '). Il s’appliquera à l’activation des paiements.'; }
+      }
+    });
+    document.body.appendChild(ov);
+    if(step === 'auto') drawAuto(); else drawMain();
+  }
   function showAiCreditsLimitNotice(addNoticeFn){
     var tier = getAiCreditsTier();
-    var notice = "Vous avez atteint votre limite de crédits IA pour ce palier (" + tier.nom + ") — envisagez de passer à un palier supérieur dans Abonnements. Ceci reste indicatif pendant la phase pilote : vos conversations continuent de fonctionner normalement.";
+    var notice = "Vous avez épuisé vos crédits d'utilisation (palier " + tier.nom + "). Obtenez plus de crédits pour continuer maintenant, ou attendez jusqu'au " + aiCreditsResetLabel() + " à 00:00 lorsque votre limite se réinitialise. Vos conversations continuent de fonctionner pendant la phase pilote.";
     var banner = document.getElementById('ai-credits-limit-notice');
     if(banner){ banner.hidden = false; banner.textContent = notice; }
     if(typeof addNoticeFn === 'function') addNoticeFn(notice);
+    openAiCreditsModal();
   }
   // Incrémente le compteur de crédits IA ; `addNoticeFn(text)` (optionnel) ajoute un message dans
   // le fil de discussion courant si le palier vient tout juste d'être dépassé par cet envoi.
@@ -7412,6 +7519,15 @@
   if(aiCreditsSeePlansBtn && btnAbonnements){
     aiCreditsSeePlansBtn.addEventListener('click', function(){ btnAbonnements.click(); });
   }
+  var aiCreditsGetMoreBtn = document.getElementById('ai-credits-get-more-btn');
+  if(aiCreditsGetMoreBtn) aiCreditsGetMoreBtn.addEventListener('click', function(){ openAiCreditsModal(); });
+  // Dans les écrans IA : un clic sur l'indicateur de crédits ouvre l'invitation quand la limite est atteinte.
+  document.addEventListener('click', function(e){
+    var el = e.target.closest ? e.target.closest('.ai-credits-mini-label') : null;
+    if(!el) return;
+    var tier = getAiCreditsTier();
+    if(tier.credits != null && aiCreditsUsed >= tier.credits) openAiCreditsModal();
+  });
   renderAiCreditsIndicator();
 
   /* ================= Hmodel : palier de réponse IA (à côté de Mode vocal) =================
@@ -14340,7 +14456,7 @@
      correctement, visuellement cohérents (même grille/cartes que Outils HelpNaud), et que le
      gating d'accès soit correct. Grille et panneaux générés dynamiquement à partir de
      FGHLAB_TOOLS/FGHLAB_INFO pour éviter toute duplication d'ids entre 34 entrées. */
-  var FGHLAB_TOOLS = ['etudes','bizplan','conseiller','compta','montage','pme','briefing','redaction','rh','formation','etat','expert','dossiers','rdv','mission','admin','fiscalite','importexport','mobilisation','perforg','perffin','analysepol','banquesmicrofinance','dossierscredit','dossiersfinancement','etatsentreprise','etatsconsolides','etatssociete','etatsorgint','etatsongassoc','comptaconsolidee','comptaconsolideepublic','etatscommercants','coproject','partnermarket','fgbankpartnership','touttest','pese','documentation','feuillecalcul','hstatis'];
+  var FGHLAB_TOOLS = ['etudes','bizplan','conseiller','compta','montage','pme','briefing','redaction','rh','formation','etat','expert','dossiers','rdv','mission','admin','fiscalite','importexport','mobilisation','perforg','perffin','analysepol','banquesmicrofinance','dossierscredit','dossiersfinancement','etatsentreprise','etatsconsolides','etatssociete','etatsorgint','etatsongassoc','comptaconsolidee','comptaconsolideepublic','etatscommercants','coproject','partnermarket','fgbankpartnership','touttest','pese','academie','documentation','feuillecalcul','hstatis'];
   var FGHLAB_INFO = {
     etudes:{ icon:'🔍', title:'Études', desc:"Enquêtes, statistiques et recherches sur mesure pour vos dossiers et mandats." },
     bizplan:{ icon:'📈', title:'Business plan', desc:"Structurez un plan d'affaires complet, section par section." },
@@ -14376,6 +14492,7 @@
     comptaconsolideepublic:{ icon:'🏛️', title:'Outil de comptabilité consolidée des municipalités, des ministères et des administrations', desc:"Comptabilité consolidée pour municipalités, ministères et administrations." },
     etatscommercants:{ icon:'🏪', title:'Outils des états financiers des commerçants et des industrielles', desc:"États financiers adaptés aux commerçants et aux entreprises industrielles." },
     coproject:{ icon:'🧩', title:'COPROJECT', desc:"Gestion et évaluation des projets clients de FINECIA GROUPE." },
+    academie:{ icon:'🎓', title:'FINECIA ACADÉMIE', desc:"Catalogue des formations, liste de prix et formulaire d'inscription." },
     partnermarket:{ icon:'🤝', title:'Partner Market', desc:"Registre des partenaires externes (banques, microfinances, concessionnaires, vendeurs) pouvant recevoir des clients référés." },
     fgbankpartnership:{ icon:'🔗', title:'FG & Bank Partnership', desc:"Mise en relation des projets clients structurés avec les offres de financement des partenaires bancaires et de microfinance actifs." },
     touttest:{ icon:'🧪', title:'TOUTTEST', desc:"Tests de recrutement (pilote) pour évaluer des candidats à l'embauche, pour le compte des entreprises/organisations clientes de FINECIA GROUPE." },
@@ -14421,7 +14538,7 @@
       tools:['etat'] },
     { key:'rh', label:'Ressources humaines & formation',
       icon:'<circle cx="7" cy="7" r="3" fill="none" stroke="#16304A" stroke-width="2"/><path d="M2 18c0-3 2.2-5 5-5s5 2 5 5" fill="none" stroke="#16304A" stroke-width="2"/><circle cx="15" cy="6" r="2.4" fill="none" stroke="#2D9C93" stroke-width="2"/><path d="M11.5 18c.3-2.6 2-4.4 4.2-4.4s3.6 1.6 3.9 4" fill="none" stroke="#2D9C93" stroke-width="2"/>',
-      tools:['rh','formation','touttest','pese'] },
+      tools:['rh','formation','academie','touttest','pese'] },
     { key:'operations', label:'Relation client, gouvernance & opérations',
       icon:'<rect x="4" y="3" width="12" height="15" rx="2" fill="none" stroke="#16304A" stroke-width="2"/><rect x="7" y="1.5" width="6" height="3" rx="1" fill="none" stroke="#C89B3C" stroke-width="2"/><path d="M7 11l2 2 4-4" fill="none" stroke="#2D9C93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
       tools:['briefing','dossiers','rdv','mission','admin','documentation'] },
@@ -17315,6 +17432,8 @@
       var info = FGHLAB_INFO[key];
       if(key === 'coproject') return fghlabCoprojectPanelHtml(info);
       if(key === 'partnermarket') return fghlabPartnerPanelHtml(info);
+      if(key === 'academie') return fghlabAcademiePanelHtml(info);
+      if(key === 'rdv' && FGHLAB_TRACKER_CONFIG[key]) return fghlabRdvWrapPanel(fghlabTrackerPanelHtml(key, info));
       if(key === 'fgbankpartnership') return fghlabBankPanelHtml(info);
       if(key === 'touttest') return fghlabTouttestPanelHtml(info);
       if(key === 'pese') return fghlabPesePanelHtml(info);
@@ -17333,6 +17452,7 @@
     bindFghlabGridCards();
     if(visibleSet.coproject) bindFghlabCoprojectPanel();
     if(visibleSet.partnermarket) bindFghlabPartnerPanel();
+    if(visibleSet.academie) bindFghlabAcademiePanel();
     if(visibleSet.fgbankpartnership) bindFghlabBankPanel();
     if(visibleSet.touttest) bindFghlabTouttestPanel();
     if(visibleSet.pese) bindFghlabPesePanel();
@@ -17340,6 +17460,7 @@
     if(visibleSet.feuillecalcul) bindFghlabFeuilleCalculPanel();
     if(visibleSet.hstatis) bindFghlabHstatisPanel();
     Object.keys(FGHLAB_TRACKER_CONFIG).forEach(function(k){ if(visibleSet[k]) bindFghlabTrackerPanel(k); });
+    if(visibleSet.rdv) bindFghlabRdvExtras();
     Object.keys(FGHLAB_STATEMENT_CONFIG).forEach(function(k){ if(visibleSet[k]) bindFghlabStatementPanel(k); });
   }
   function bindFghlabGridCards(){
@@ -18402,7 +18523,7 @@
      porte un frais d'inscription (listingFee, modifiable) qui alimente le tableau de bord
      « Revenus & commissions » de l'outil FG & Bank Partnership (simulation locale, voir
      computeFghlabRevenue). */
-  var PARTNER_TYPES = ['Banque', 'Microfinance', 'Concessionnaire', 'Vendeur', 'Autre'];
+  var PARTNER_TYPES = ['Banque', 'Microfinance', 'Concessionnaire', 'Vendeur', 'Client', 'Autre'];
   var PARTNER_STATUS_OPTIONS = ['En attente', 'Actif', 'Suspendu'];
   var PARTNER_TIERS = ['Standard', 'Premium'];
   var PARTNER_TIER_DEFAULT_FEES = { Standard: 15000, Premium: 40000 };
@@ -18434,11 +18555,13 @@
     var enrollOptions = DEALER_ENROLLMENT_METHODS.map(function(m){ return '<option value="'+escapeHtml(m)+'">'+escapeHtml(m)+'</option>'; }).join('');
     return '<div class="card hn-panel" id="fghlab-panel-partnermarket" hidden>' +
       '<h2 style="margin:0 0 4px;">'+escapeHtml(info.title)+'</h2>' +
-      '<p class="hint" style="margin:0 0 12px;">'+escapeHtml(info.desc)+'</p>' +
+      '<p class="hint" style="margin:0 0 6px;">'+escapeHtml(info.desc)+'</p>' +
+      '<p class="hint" data-fgh-sync-status style="margin:0 0 10px; font-size:12px;">'+escapeHtml(fghlabSync.statusText || fghlabSyncIdleText())+'</p>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">' +
         '<label for="partnermarket-currency" class="hint" style="margin:0;">Devise de cet outil</label>' +
         '<select id="partnermarket-currency"></select>' +
       '</div>' +
+      partnerInviteCardHtml() +
       '<div id="partnermarket-form-wrap" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">' +
         '<input type="text" id="partnermarket-name-input" maxlength="120" placeholder="Nom du partenaire" style="flex:1; min-width:160px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
         '<select id="partnermarket-type-input" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' + typeOptions + '</select>' +
@@ -18468,17 +18591,209 @@
       '</div>' +
     '</div>';
   }
+  /* ================= FGH-Lab — Lot 1 : acteur courant, marques/modèles, prix avec devise, photos ================= */
+  /* Acteur courant (propriétaire ou membre connecté) — sert à tracer qui dépose, prend en charge ou
+     termine un dossier, et qui crée/termine une session TOUTTEST. Données locales à cet appareil. */
+  function fghlabActor(){
+    var m = getActiveFghlabMember();
+    if(m) return { id: m.id, name: m.name || '', number: m.memberNumber || '' };
+    return { id: 'owner', name: (fghlabState.adminProfile && fghlabState.adminProfile.name) || 'Propriétaire', number: (fghlabState.adminProfile && fghlabState.adminProfile.number) || '' };
+  }
+  function fghlabActorLabel(a){
+    if(!a) return '—';
+    return (a.name || '—') + (a.number ? ' (N° ' + a.number + ')' : '');
+  }
+  var VEHICLE_BRANDS = {
+    'Toyota': ['Corolla','Camry','RAV4','Highlander','Tacoma','Tundra','Prius','Yaris','Hilux','Land Cruiser'],
+    'Honda': ['Civic','Accord','CR-V','Pilot','Fit','HR-V','Odyssey'],
+    'Ford': ['F-150','Escape','Explorer','Edge','Focus','Fusion','Mustang','Ranger','Transit'],
+    'Chevrolet': ['Silverado','Equinox','Malibu','Cruze','Traverse','Tahoe','Spark','Colorado'],
+    'Nissan': ['Sentra','Altima','Rogue','Pathfinder','Versa','Frontier','Kicks','Qashqai'],
+    'Hyundai': ['Elantra','Sonata','Tucson','Santa Fe','Kona','Accent','Palisade'],
+    'Kia': ['Forte','Rio','Sportage','Sorento','Seltos','Soul','Telluride'],
+    'Mazda': ['Mazda3','Mazda6','CX-3','CX-5','CX-30','CX-9'],
+    'Subaru': ['Impreza','Outback','Forester','Crosstrek','Legacy','Ascent'],
+    'Volkswagen': ['Golf','Jetta','Passat','Tiguan','Atlas','Polo'],
+    'BMW': ['Série 3','Série 5','X1','X3','X5'],
+    'Mercedes-Benz': ['Classe C','Classe E','GLA','GLC','GLE'],
+    'Audi': ['A3','A4','A6','Q3','Q5','Q7'],
+    'Lexus': ['IS','ES','NX','RX','GX'],
+    'Jeep': ['Wrangler','Cherokee','Grand Cherokee','Compass','Renegade'],
+    'Ram': ['1500','2500','ProMaster'],
+    'GMC': ['Sierra','Terrain','Acadia','Yukon'],
+    'Dodge': ['Charger','Challenger','Durango','Grand Caravan'],
+    'Tesla': ['Model 3','Model S','Model X','Model Y'],
+    'Volvo': ['XC40','XC60','XC90','S60'],
+    'Peugeot': ['208','308','2008','3008','508'],
+    'Renault': ['Clio','Megane','Duster','Captur','Kangoo'],
+    'Citroën': ['C3','C4','C5 Aircross','Berlingo'],
+    'Suzuki': ['Swift','Vitara','Jimny','Ertiga'],
+    'Mitsubishi': ['Outlander','Lancer','Pajero','L200'],
+    'Land Rover': ['Defender','Discovery','Range Rover','Evoque'],
+    'Porsche': ['Cayenne','Macan','911','Panamera']
+  };
+  var VEHICLE_OTHER = '__autre__';
+  function vehicleCurrencyShort(code){
+    if(code === 'CAD') return '$ CAD';
+    if(code === 'USD') return '$ US';
+    return code || '';
+  }
+  /* « 75 000 $ CAD » / « 75 000 $ US » / « 40 000 EUR » — montant puis suffixe de devise. */
+  function vehiclePriceLabel(price, code){
+    return fmtFghlabAmount(price) + ' ' + vehicleCurrencyShort(code || partnermarketCurrency);
+  }
+  function vehicleBrandOptionsHtml(){
+    return '<option value="">Marque…</option>' +
+      Object.keys(VEHICLE_BRANDS).sort().map(function(b){ return '<option value="'+escapeHtml(b)+'">'+escapeHtml(b)+'</option>'; }).join('') +
+      '<option value="'+VEHICLE_OTHER+'">Autre (à préciser)</option>';
+  }
+  function vehicleModelOptionsHtml(brand){
+    var models = VEHICLE_BRANDS[brand] || [];
+    return '<option value="">Modèle…</option>' +
+      models.map(function(m){ return '<option value="'+escapeHtml(m)+'">'+escapeHtml(m)+'</option>'; }).join('') +
+      '<option value="'+VEHICLE_OTHER+'">Autre (à préciser)</option>';
+  }
+  /* Photos des véhicules : stockées dans IndexedDB (pas dans le JSON localStorage, trop petit),
+     compressées en JPEG. Elles restent sur cet appareil tant que le partage serveur (lot 2) n'est pas branché. */
+  var fghPhotoDbPromise = null;
+  var fghPendingPhotos = {};
+  function fghPhotoDb(){
+    if(!fghPhotoDbPromise){
+      fghPhotoDbPromise = new Promise(function(resolve, reject){
+        try{
+          var rq = indexedDB.open('helpnaud_photos', 1);
+          rq.onupgradeneeded = function(){
+            var db = rq.result;
+            if(!db.objectStoreNames.contains('photos')){
+              var s = db.createObjectStore('photos', { keyPath: 'id' });
+              s.createIndex('vehicleId', 'vehicleId');
+            }
+          };
+          rq.onsuccess = function(){ resolve(rq.result); };
+          rq.onerror = function(){ reject(rq.error); };
+        }catch(e){ reject(e); }
+      });
+    }
+    return fghPhotoDbPromise;
+  }
+  function fghPhotoPut(vehicleId, dataUrl){
+    return fghPhotoDb().then(function(db){
+      return new Promise(function(resolve, reject){
+        var tx = db.transaction('photos', 'readwrite');
+        var rec = { id: 'ph-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), vehicleId: vehicleId, data: dataUrl, addedOn: new Date().toISOString() };
+        tx.objectStore('photos').put(rec);
+        tx.oncomplete = function(){ resolve(rec.id); };
+        tx.onerror = function(){ reject(tx.error); };
+      });
+    });
+  }
+  function fghPhotoPutBoth(vehicleId, dataUrl){
+    return fghPhotoPut(vehicleId, dataUrl).then(function(id){ return fghPhotoServerPut(id, vehicleId, dataUrl).then(function(){ return id; }); });
+  }
+  function fghPhotoDeleteBoth(id){
+    var srv = (fghlabSyncActive() && fghlabCloudRole === 'owner') ? fghlabSb.rpc('fgh_photo_delete', { p_id: id }).then(function(){}, function(){}) : Promise.resolve();
+    return fghPhotoDelete(id).catch(function(){}).then(function(){ return srv; });
+  }
+  function fghPhotoList(vehicleId){
+    return fghPhotoDb().then(function(db){
+      return new Promise(function(resolve, reject){
+        var rq = db.transaction('photos', 'readonly').objectStore('photos').index('vehicleId').getAll(vehicleId);
+        rq.onsuccess = function(){ resolve(rq.result || []); };
+        rq.onerror = function(){ reject(rq.error); };
+      });
+    });
+  }
+  function fghPhotoDelete(id){
+    return fghPhotoDb().then(function(db){
+      return new Promise(function(resolve, reject){
+        var tx = db.transaction('photos', 'readwrite');
+        tx.objectStore('photos').delete(id);
+        tx.oncomplete = function(){ resolve(); };
+        tx.onerror = function(){ reject(tx.error); };
+      });
+    });
+  }
+  function fghPhotoCompress(file){
+    return new Promise(function(resolve, reject){
+      var fr = new FileReader();
+      fr.onerror = function(){ reject(fr.error); };
+      fr.onload = function(){
+        var img = new Image();
+        img.onerror = function(){ reject(new Error('image illisible')); };
+        img.onload = function(){
+          var max = 1280, w = img.width, h = img.height;
+          if(w > max || h > max){ var r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
+          var cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(cv.toDataURL('image/jpeg', 0.72));
+        };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  function fghPhotoCompressAll(fileList){
+    var files = Array.prototype.slice.call(fileList || []).filter(function(f){ return /^image\//.test(f.type); });
+    return Promise.all(files.map(function(f){ return fghPhotoCompress(f).catch(function(){ return null; }); })).then(function(a){ return a.filter(Boolean); });
+  }
+  function fghPhotoViewer(vehicleId, title, canDelete){
+    var old = document.getElementById('fgh-photo-viewer');
+    if(old && old.parentNode) old.parentNode.removeChild(old);
+    var ov = document.createElement('div');
+    ov.id = 'fgh-photo-viewer';
+    ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,.78); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px;';
+    ov.innerHTML = '<div style="background:var(--surface); color:var(--ink); border-radius:12px; max-width:760px; width:100%; max-height:92vh; overflow:auto; padding:14px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;"><strong>'+escapeHtml(title || 'Photos')+'</strong><button type="button" class="btn" data-photo-close style="padding:3px 10px;">Fermer ✕</button></div>' +
+      '<div id="fgh-photo-viewer-body" class="hint">Chargement…</div></div>';
+    document.body.appendChild(ov);
+    function close(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.addEventListener('click', function(e){
+      if(e.target === ov || (e.target.closest && e.target.closest('[data-photo-close]'))){ close(); return; }
+      var del = e.target.closest ? e.target.closest('[data-photo-del]') : null;
+      if(del && canDelete){
+        fghPhotoDeleteBoth(del.getAttribute('data-photo-del')).then(function(){ return fghPhotoListAll(vehicleId); }).then(function(list){
+          var v = fghlabFindVehicle(vehicleId);
+          if(v){ v.photoCount = list.length; persistFghlabState(); renderFghlabPartnerList(); }
+          draw(list);
+        });
+      }
+    });
+    function draw(list){
+      var body = document.getElementById('fgh-photo-viewer-body');
+      if(!body) return;
+      if(!list.length){ body.textContent = 'Aucune photo pour ce véhicule.'; return; }
+      body.className = '';
+      body.innerHTML = list.map(function(p){
+        return '<div style="margin-bottom:10px;"><img src="'+p.data+'" alt="Photo du véhicule" style="max-width:100%; border-radius:9px; display:block;">' +
+          (canDelete ? '<button type="button" class="btn danger" data-photo-del="'+escapeHtml(p.id)+'" style="padding:2px 9px; font-size:11.5px; margin-top:4px;">Supprimer cette photo</button>' : '') + '</div>';
+      }).join('');
+    }
+    fghPhotoListAll(vehicleId).then(draw).catch(function(){
+      var body = document.getElementById('fgh-photo-viewer-body');
+      if(body) body.textContent = 'Les photos ne sont pas lisibles sur cet appareil (stockage navigateur indisponible).';
+    });
+  }
   var VEHICLE_STATUS_OPTIONS = ['Disponible', 'Réservé', 'Vendu'];
   function makeFghlabVehicleId(){ return 'fghveh-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function addVehicleFormHtml(partnerId){
     var pid = escapeHtml(partnerId);
+    var fld = 'border:1px solid var(--line); border-radius:7px; padding:5px 7px; background:var(--surface); color:var(--ink); font-size:12px;';
+    var curOpts = CURRENCIES.map(function(c){ return '<option value="'+escapeHtml(c.code)+'"'+(c.code === partnermarketCurrency ? ' selected' : '')+'>'+escapeHtml(c.label)+'</option>'; }).join('');
+    var pend = (fghPendingPhotos[partnerId] || []).length;
     return '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">' +
-      '<input type="text" maxlength="60" data-vehicle-make="'+pid+'" placeholder="Marque" style="width:110px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
-      '<input type="text" maxlength="60" data-vehicle-model="'+pid+'" placeholder="Modèle" style="width:110px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
-      '<input type="number" min="1900" step="1" data-vehicle-year="'+pid+'" placeholder="Année" style="width:90px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
-      '<input type="number" min="0" step="1" data-vehicle-price="'+pid+'" placeholder="Prix" style="width:110px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
-      '<input type="number" min="0" step="1" data-vehicle-mileage="'+pid+'" placeholder="Kilométrage" style="width:110px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
-      '<input type="text" maxlength="200" data-vehicle-description="'+pid+'" placeholder="Description" style="flex:1; min-width:140px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
+      '<select data-vehicle-make-sel="'+pid+'" style="'+fld+'">'+vehicleBrandOptionsHtml()+'</select>' +
+      '<input type="text" maxlength="60" data-vehicle-make="'+pid+'" placeholder="Marque (à préciser)" style="display:none; width:130px; '+fld+'">' +
+      '<select data-vehicle-model-sel="'+pid+'" style="'+fld+'" disabled>'+vehicleModelOptionsHtml('')+'</select>' +
+      '<input type="text" maxlength="60" data-vehicle-model="'+pid+'" placeholder="Modèle (à préciser)" style="display:none; width:130px; '+fld+'">' +
+      '<input type="number" min="1900" step="1" data-vehicle-year="'+pid+'" placeholder="Année" style="width:90px; '+fld+'">' +
+      '<input type="number" min="0" step="1" data-vehicle-price="'+pid+'" placeholder="Prix" style="width:110px; '+fld+'">' +
+      '<select data-vehicle-currency="'+pid+'" style="'+fld+'">'+curOpts+'</select>' +
+      '<input type="number" min="0" step="1" data-vehicle-mileage="'+pid+'" placeholder="Kilométrage" style="width:110px; '+fld+'">' +
+      '<input type="text" maxlength="200" data-vehicle-description="'+pid+'" placeholder="Description" style="flex:1; min-width:140px; '+fld+'">' +
+      '<label class="btn" style="padding:5px 10px; font-size:12px; cursor:pointer; margin:0;">📷 Prendre une photo<input type="file" accept="image/*" capture="environment" data-vehicle-pending-photo="'+pid+'" style="display:none;"></label>' +
+      '<label class="btn" style="padding:5px 10px; font-size:12px; cursor:pointer; margin:0;">🖼️ Ajouter une image<input type="file" accept="image/*" multiple data-vehicle-pending-photo="'+pid+'" style="display:none;"></label>' +
+      '<span class="hint" data-vehicle-pending-count="'+pid+'" style="margin:0;">'+(pend ? pend+' photo'+(pend > 1 ? 's' : '')+' prête'+(pend > 1 ? 's' : '') : '')+'</span>' +
       '<button type="button" class="btn" data-vehicle-add-partner="'+pid+'" style="white-space:nowrap; padding:5px 10px; font-size:12px;">Ajouter au catalogue</button>' +
     '</div>';
   }
@@ -18491,14 +18806,29 @@
     ) : ('<span class="hint" style="margin:0;">'+escapeHtml(v.status)+'</span>');
     return '<div style="border:1px solid var(--line); border-radius:9px; padding:7px 9px; margin-top:6px; background:var(--surface); display:flex; align-items:flex-start; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
       '<div style="font-size:12px;">' +
-        '<strong>'+escapeHtml(v.make)+' '+escapeHtml(v.model)+' ('+escapeHtml(String(v.year||''))+')</strong> — '+partnermarketMoney(v.price)+' · '+fmtFghlabAmount(v.mileage)+' km' +
+        '<strong>'+escapeHtml(v.make)+' '+escapeHtml(v.model)+' ('+escapeHtml(String(v.year||''))+')</strong> — Prix : '+escapeHtml(vehiclePriceLabel(v.price, v.currency))+' · '+fmtFghlabAmount(v.mileage)+' km' +
         (v.description ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(v.description)+'</div>' : '') +
       '</div>' +
-      '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' + controls + '</div>' +
+      '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' + vehiclePhotoButtonsHtml(v, isOwnerSession) + controls + '</div>' +
     '</div>';
   }
+  function vehiclePhotoButtonsHtml(v, isOwnerSession){
+    var n = Number(v.photoCount) || 0;
+    var view = n ? '<button type="button" class="btn" data-vehicle-view="'+escapeHtml(v.id)+'" style="padding:2px 9px; font-size:11.5px;">📷 VOIR ('+n+')</button>' : '<span class="hint" style="margin:0; font-size:11px;">Aucune photo</span>';
+    var add = isOwnerSession ? (
+      '<label class="btn" style="padding:2px 8px; font-size:11.5px; cursor:pointer; margin:0;" title="Prendre une photo">📷+<input type="file" accept="image/*" capture="environment" data-vehicle-photo-add="'+escapeHtml(v.id)+'" style="display:none;"></label>' +
+      '<label class="btn" style="padding:2px 8px; font-size:11.5px; cursor:pointer; margin:0;" title="Ajouter des images">🖼️+<input type="file" accept="image/*" multiple data-vehicle-photo-add="'+escapeHtml(v.id)+'" style="display:none;"></label>'
+    ) : '';
+    return view + add;
+  }
+  var fghlabOpenInventories = {};
   function renderFghlabPartnerList(){
     var listEl = document.getElementById('partnermarket-list');
+    if(listEl){
+      Array.prototype.forEach.call(listEl.querySelectorAll('details[data-inv-partner]'), function(d){
+        fghlabOpenInventories[d.getAttribute('data-inv-partner')] = d.open;
+      });
+    }
     var formWrap = document.getElementById('partnermarket-form-wrap');
     var hint = document.getElementById('partnermarket-hint');
     if(!listEl) return;
@@ -18540,7 +18870,7 @@
       }
       var dealerVehicles = fghlabState.vehicleListings.filter(function(v){ return v.partnerId === p.id; });
       var inventoryHtml = isDealer ? (
-        '<details style="margin-top:8px;">' +
+        '<details data-inv-partner="'+escapeHtml(p.id)+'"'+(fghlabOpenInventories[p.id] ? ' open' : '')+' style="margin-top:8px;">' +
           '<summary style="cursor:pointer; font-size:12.5px; font-weight:600;">Inventaire véhicules ('+dealerVehicles.length+')</summary>' +
           '<div style="margin-top:8px;">' +
             (p.status !== 'Actif' ? '<p class="hint" style="margin:0 0 8px; color:var(--warn);">⚠ Ce concessionnaire doit être au statut « Actif » (voir le menu déroulant de statut ci-dessus) pour que ses véhicules « Disponible » apparaissent dans le catalogue public et que les clients puissent manifester un intérêt.</p>' : '') +
@@ -18579,6 +18909,77 @@
     if(commissionWrap) commissionWrap.style.display = show ? 'flex' : 'none';
     if(referralWrap) referralWrap.style.display = show ? 'flex' : 'none';
   }
+  function bindFghlabVehicleUi(){
+    var listEl = document.getElementById('partnermarket-list');
+    var catEl = document.getElementById('vehicle-catalog-list');
+    function openViewer(btn){
+      var vid = btn.getAttribute('data-vehicle-view');
+      var v = fghlabFindVehicle(vid);
+      fghPhotoViewer(vid, v ? (v.make + ' ' + v.model + ' (' + v.year + ')') : 'Photos', !getActiveFghlabMember());
+    }
+    [listEl, catEl].forEach(function(el){
+      if(!el || el.getAttribute('data-viewbound')) return;
+      el.setAttribute('data-viewbound', '1');
+      el.addEventListener('click', function(e){
+        var b = e.target.closest ? e.target.closest('[data-vehicle-view]') : null;
+        if(b) openViewer(b);
+      });
+    });
+    if(listEl && !listEl.getAttribute('data-vuibound')){
+      listEl.setAttribute('data-vuibound', '1');
+      listEl.addEventListener('change', function(e){
+        if(getActiveFghlabMember()) return;
+        var t = e.target;
+        var mk = t.closest ? t.closest('[data-vehicle-make-sel]') : null;
+        if(mk){
+          var pid = mk.getAttribute('data-vehicle-make-sel');
+          var mkText = listEl.querySelector('[data-vehicle-make="'+pid+'"]');
+          var mdSel = listEl.querySelector('[data-vehicle-model-sel="'+pid+'"]');
+          var mdText = listEl.querySelector('[data-vehicle-model="'+pid+'"]');
+          if(mkText) mkText.style.display = (mk.value === VEHICLE_OTHER) ? '' : 'none';
+          if(mdSel){
+            mdSel.innerHTML = vehicleModelOptionsHtml(mk.value);
+            mdSel.disabled = !mk.value;
+            if(mk.value === VEHICLE_OTHER){ mdSel.value = VEHICLE_OTHER; }
+          }
+          if(mdText) mdText.style.display = (mk.value === VEHICLE_OTHER) ? '' : 'none';
+          return;
+        }
+        var md = t.closest ? t.closest('[data-vehicle-model-sel]') : null;
+        if(md){
+          var pid2 = md.getAttribute('data-vehicle-model-sel');
+          var mdText2 = listEl.querySelector('[data-vehicle-model="'+pid2+'"]');
+          if(mdText2) mdText2.style.display = (md.value === VEHICLE_OTHER) ? '' : 'none';
+          return;
+        }
+        var pend = t.closest ? t.closest('[data-vehicle-pending-photo]') : null;
+        if(pend){
+          var pid3 = pend.getAttribute('data-vehicle-pending-photo');
+          fghPhotoCompressAll(pend.files).then(function(list){
+            if(!fghPendingPhotos[pid3]) fghPendingPhotos[pid3] = [];
+            fghPendingPhotos[pid3] = fghPendingPhotos[pid3].concat(list);
+            var n = fghPendingPhotos[pid3].length;
+            var c = listEl.querySelector('[data-vehicle-pending-count="'+pid3+'"]');
+            if(c) c.textContent = n + ' photo' + (n > 1 ? 's' : '') + ' prête' + (n > 1 ? 's' : '');
+          });
+          pend.value = '';
+          return;
+        }
+        var add = t.closest ? t.closest('[data-vehicle-photo-add]') : null;
+        if(add){
+          var vid = add.getAttribute('data-vehicle-photo-add');
+          var files = add.files;
+          fghPhotoCompressAll(files).then(function(list){
+            return Promise.all(list.map(function(d){ return fghPhotoPutBoth(vid, d); })).then(function(){ return fghPhotoListAll(vid); });
+          }).then(function(all){
+            var v = fghlabFindVehicle(vid);
+            if(v){ v.photoCount = all.length; persistFghlabState(); renderFghlabPartnerList(); }
+          }).catch(function(){ window.alert('Impossible d\u2019enregistrer la photo sur cet appareil (stockage navigateur indisponible).'); });
+          add.value = '';
+        }
+      });
+    }
+  }
   function bindFghlabPartnerPanel(){
     var partnermarketCurrencySelect = document.getElementById('partnermarket-currency');
     if(partnermarketCurrencySelect && !partnermarketCurrencySelect.getAttribute('data-bound')){
@@ -18595,6 +18996,8 @@
     }
     renderFghlabPartnerList();
     bindFghlabVehicleLeadEvents();
+    bindFghlabPartnerInvite();
+    bindFghlabVehicleUi();
     var tierInput = document.getElementById('partnermarket-tier-input');
     var feeInput = document.getElementById('partnermarket-fee-input');
     if(tierInput && feeInput){
@@ -18750,14 +19153,21 @@
           var priceInput = listEl.querySelector('[data-vehicle-price="'+apid+'"]');
           var mileageInput = listEl.querySelector('[data-vehicle-mileage="'+apid+'"]');
           var descInput = listEl.querySelector('[data-vehicle-description="'+apid+'"]');
-          var make = makeInput ? makeInput.value.trim() : '';
-          var model = modelInput ? modelInput.value.trim() : '';
+          var makeSelEl = listEl.querySelector('[data-vehicle-make-sel="'+apid+'"]');
+          var modelSelEl = listEl.querySelector('[data-vehicle-model-sel="'+apid+'"]');
+          var curSelEl = listEl.querySelector('[data-vehicle-currency="'+apid+'"]');
+          var make = (makeSelEl && makeSelEl.value && makeSelEl.value !== VEHICLE_OTHER) ? makeSelEl.value : (makeInput ? makeInput.value.trim() : '');
+          var model = (modelSelEl && modelSelEl.value && modelSelEl.value !== VEHICLE_OTHER) ? modelSelEl.value : (modelInput ? modelInput.value.trim() : '');
           if(!make || !model) return;
+          var newVehId = makeFghlabVehicleId();
+          var pendingPics = fghPendingPhotos[apid] || [];
           fghlabState.vehicleListings.push({
-            id: makeFghlabVehicleId(),
+            id: newVehId,
             partnerId: apid,
             make: make,
             model: model,
+            currency: (curSelEl && curSelEl.value) || partnermarketCurrency,
+            photoCount: pendingPics.length,
             year: yearInput ? (Number(yearInput.value) || '') : '',
             price: priceInput ? (Number(priceInput.value) || 0) : 0,
             mileage: mileageInput ? (Number(mileageInput.value) || 0) : 0,
@@ -18765,6 +19175,13 @@
             status: 'Disponible',
             listedOn: new Date().toISOString()
           });
+          if(pendingPics.length){
+            Promise.all(pendingPics.map(function(d){ return fghPhotoPutBoth(newVehId, d); })).catch(function(){
+              var vv = fghlabFindVehicle(newVehId);
+              if(vv){ vv.photoCount = 0; persistFghlabState(); renderFghlabPartnerList(); }
+            });
+          }
+          delete fghPendingPhotos[apid];
           persistFghlabState();
           renderFghlabPartnerList();
           return;
@@ -18901,16 +19318,19 @@
     }
     listEl.innerHTML = available.slice().reverse().map(function(v){
       var dealer = activeDealerIds[v.partnerId];
+      var viewBtn = (Number(v.photoCount) || 0)
+        ? '<button type="button" class="btn" data-vehicle-view="'+escapeHtml(v.id)+'" style="padding:4px 10px; font-size:12px;">📷 VOIR ('+(Number(v.photoCount) || 0)+')</button>'
+        : '<span class="hint" style="margin:0; font-size:11.5px;">Aucune photo</span>';
       var leadBtn = isOwnerSession
         ? '<button type="button" class="btn primary" data-vehicle-lead-create="'+escapeHtml(v.id)+'" style="padding:4px 10px; font-size:12px;">Un client est intéressé</button>'
         : '';
       return '<div style="border:1px solid var(--line); border-radius:11px; background:var(--surface); padding:10px 12px; margin-bottom:10px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;">' +
         '<div>' +
           '<div style="font-weight:700; font-size:13.5px;">'+escapeHtml(v.make)+' '+escapeHtml(v.model)+' ('+escapeHtml(String(v.year||''))+')</div>' +
-          '<div class="hint" style="margin:2px 0 0;">Concessionnaire : '+escapeHtml(dealer.name)+' · Prix : '+partnermarketMoney(v.price)+' · '+fmtFghlabAmount(v.mileage)+' km</div>' +
+          '<div class="hint" style="margin:2px 0 0;">Concessionnaire : '+escapeHtml(dealer.name)+' · Prix : '+escapeHtml(vehiclePriceLabel(v.price, v.currency))+' · '+fmtFghlabAmount(v.mileage)+' km</div>' +
           (v.description ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(v.description)+'</div>' : '') +
         '</div>' +
-        leadBtn +
+        '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">' + viewBtn + leadBtn + '</div>' +
       '</div>';
     }).join('');
   }
@@ -18959,7 +19379,7 @@
         : '';
       actions += cancelBtn;
     }
-    return '<div style="border:1px solid var(--line); border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:10px;">' +
+    return '<div data-lead-card="'+escapeHtml(lead.id)+'" style="border:1px solid var(--line); border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:10px;">' +
       '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
         '<div>' +
           '<div style="font-weight:700; font-size:13.5px;">'+escapeHtml(vehicleLabel)+'</div>' +
@@ -19023,9 +19443,11 @@
           notes: '',
           createdOn: new Date().toISOString()
         });
+        fghlabPushVehicleAlert(fghlabState.vehicleLeads[fghlabState.vehicleLeads.length - 1], vehicle, partner);
         persistFghlabState();
         renderFghlabVehicleLeadList();
         renderFghlabRevenueDashboard();
+        renderFghlabBankAlerts();
       });
     }
     var leadsEl = document.getElementById('vehicle-leads-list');
@@ -19334,6 +19756,11 @@
       status: 'en_attente',
       sourceCoprojectId: sourceCoprojectId || null,
       sourceVehicleLeadId: sourceVehicleLeadId || null,
+      depositedBy: fghlabActor(),
+      handler: null,
+      handledOn: null,
+      finishedBy: null,
+      finishedOn: null,
       notes: notes || '',
       structuringFee: 0,
       offers: [],
@@ -19365,11 +19792,13 @@
   function fghlabBankPanelHtml(info){
     return '<div class="card hn-panel" id="fghlab-panel-fgbankpartnership" hidden>' +
       '<h2 style="margin:0 0 4px;">'+escapeHtml(info.title)+'</h2>' +
-      '<p class="hint" style="margin:0 0 12px;">'+escapeHtml(info.desc)+'</p>' +
+      '<p class="hint" style="margin:0 0 6px;">'+escapeHtml(info.desc)+'</p>' +
+      '<p class="hint" data-fgh-sync-status style="margin:0 0 10px; font-size:12px;">'+escapeHtml(fghlabSync.statusText || fghlabSyncIdleText())+'</p>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">' +
         '<label for="fgbank-currency" class="hint" style="margin:0;">Devise de cet outil</label>' +
         '<select id="fgbank-currency"></select>' +
       '</div>' +
+      '<div id="fgbank-alerts"></div>' +
       '<div id="fgbank-form-wrap" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">' +
         '<input type="text" id="fgbank-title-input" maxlength="140" placeholder="Titre du projet" style="flex:1; min-width:180px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
         '<input type="text" id="fgbank-client-input" maxlength="100" placeholder="Nom du client" style="flex:1; min-width:160px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
@@ -19392,10 +19821,23 @@
       '</div>' +
     '</div>';
   }
+  function fghlabBankHandlerHtml(proj){
+    var lines = [];
+    if(proj.depositedBy) lines.push('Déposé par : <strong>'+escapeHtml(fghlabActorLabel(proj.depositedBy))+'</strong>');
+    lines.push('Pris en charge par : ' + (proj.handler ? '<strong>'+escapeHtml(fghlabActorLabel(proj.handler))+'</strong>'+(proj.handledOn ? ' le '+escapeHtml(fmtFghlabShortDate(proj.handledOn)) : '') : '<em>personne pour l\u2019instant</em>'));
+    if(proj.finishedBy) lines.push('<span style="color:#2D9C93;">Dossier terminé par : <strong>'+escapeHtml(fghlabActorLabel(proj.finishedBy))+'</strong>'+(proj.finishedOn ? ' le '+escapeHtml(fmtFghlabShortDate(proj.finishedOn)) : '')+'</span>');
+    var btns = '';
+    if(!proj.finishedBy){
+      btns = (!proj.handler ? '<button type="button" class="btn" data-fgbank-take="'+escapeHtml(proj.id)+'" style="padding:3px 9px; font-size:11.5px;">Prendre en charge</button>' : '') +
+        '<button type="button" class="btn primary" data-fgbank-finish="'+escapeHtml(proj.id)+'" style="padding:3px 9px; font-size:11.5px;">Terminer le dossier</button>';
+    }
+    return '<div style="margin-top:8px; font-size:12px; line-height:1.7;">' + lines.join('<br>') + (btns ? '<div style="display:flex; gap:6px; margin-top:4px;">'+btns+'</div>' : '') + '</div>';
+  }
   function renderFghlabBankProjectList(){
     var listEl = document.getElementById('fgbank-list');
     var formWrap = document.getElementById('fgbank-form-wrap');
     if(!listEl) return;
+    renderFghlabBankAlerts();
     var isOwnerSession = !getActiveFghlabMember();
     if(formWrap) formWrap.style.display = isOwnerSession ? 'flex' : 'none';
     if(!fghlabState.fgbankProjects.length){
@@ -19459,6 +19901,7 @@
           '<span class="ctb-stub-badge" style="background:'+statusColor+'; color:#fff;">'+escapeHtml(statusLabel)+'</span>' +
         '</div>' +
         (proj.notes ? '<div class="hint" style="margin-top:6px; font-size:11.5px;">'+escapeHtml(proj.notes)+'</div>' : '') +
+        fghlabBankHandlerHtml(proj) +
         '<div class="hint" style="margin-top:8px; font-size:11.5px;">Visible par les partenaires Banque/Microfinance actifs : '+visiblePartnersHtml+'</div>' +
         ownerExtras +
         acceptedInfo +
@@ -19531,8 +19974,27 @@
         renderFghlabRevenueDashboard();
       });
     }
+    var alertsEl = document.getElementById('fgbank-alerts');
+    if(alertsEl) alertsEl.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('[data-alert-open]') : null;
+      if(b) fghlabOpenAlert(b.getAttribute('data-alert-open'));
+    });
     var listEl = document.getElementById('fgbank-list');
     if(listEl){
+      listEl.addEventListener('click', function(e){
+        var take = e.target.closest ? e.target.closest('[data-fgbank-take]') : null;
+        var fin = e.target.closest ? e.target.closest('[data-fgbank-finish]') : null;
+        if(!take && !fin) return;
+        var id = (take || fin).getAttribute(take ? 'data-fgbank-take' : 'data-fgbank-finish');
+        var proj = null;
+        fghlabState.fgbankProjects.forEach(function(p){ if(p.id === id) proj = p; });
+        if(!proj || proj.finishedBy) return;
+        var actor = fghlabActor();
+        if(!proj.handler){ proj.handler = actor; proj.handledOn = new Date().toISOString(); }
+        if(fin){ proj.finishedBy = actor; proj.finishedOn = new Date().toISOString(); }
+        persistFghlabState();
+        renderFghlabBankProjectList();
+      });
       listEl.addEventListener('change', function(e){
         if(getActiveFghlabMember()) return; // réservé au propriétaire
         var feeInputEl = e.target.closest ? e.target.closest('[data-fgbank-structuring-fee]') : null;
@@ -19614,6 +20076,806 @@
         }
       });
     }
+  }
+
+  /* ================= FGH-Colab — Phase 3 : synchronisation serveur des données partagées =================
+     Partner Market, FG & Bank Partnership, alertes, TOUTTEST, FINECIA ACADÉMIE, rendez-vous : quand une
+     session serveur est ouverte (propriétaire ou membre), ces collections sont synchronisées via les
+     fonctions SQL fgh_sync_pull / fgh_sync_push (droits vérifiés par la base, voir supabase-phase3.sql).
+     Règles : (1) une fiche inchangée localement prend la version du serveur ; (2) une fiche modifiée
+     localement est envoyée (la dernière modification gagne) ; (3) une fiche vue localement pour la
+     première fois et absente du serveur est envoyée (reprise des données déjà saisies sur cet appareil) ;
+     (4) une collection en lecture seule pour la session est remplacée par la version du serveur.
+     Sans session serveur, tout reste local comme avant. */
+  var FGHLAB_SYNC_COLLECTIONS = ['partners', 'vehicleListings', 'vehicleLeads', 'invites', 'fgbankProjects', 'alerts', 'touttestSessions', 'academieFormations', 'academieRegistrations', 'rdvSlots'];
+  var fghlabSyncRedraw = { academie: null, rdv: null };
+  function fghlabSyncActive(){ return !!(fghlabSb && fghlabCloudRole); }
+  function fghlabCanon(v){
+    if(v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
+    if(Array.isArray(v)) return '[' + v.map(fghlabCanon).join(',') + ']';
+    return '{' + Object.keys(v).sort().filter(function(k){ return v[k] !== undefined; }).map(function(k){ return JSON.stringify(k) + ':' + fghlabCanon(v[k]); }).join(',') + '}';
+  }
+  function fghlabHash(v){
+    var s = fghlabCanon(v), h = 5381;
+    for(var i = 0; i < s.length; i++){ h = ((h << 5) + h + s.charCodeAt(i)) | 0; }
+    return (h >>> 0).toString(36) + ':' + s.length;
+  }
+  function fghlabSyncLoadBase(){
+    if(fghlabSync.base) return fghlabSync.base;
+    var b = {};
+    try{ b = JSON.parse(localStorage.getItem('helpnaud_fghlab_syncbase') || '{}') || {}; }catch(e){ b = {}; }
+    FGHLAB_SYNC_COLLECTIONS.forEach(function(c){ if(!b[c] || typeof b[c] !== 'object') b[c] = {}; });
+    fghlabSync.base = b;
+    return b;
+  }
+  function fghlabSyncSaveBase(){
+    try{ localStorage.setItem('helpnaud_fghlab_syncbase', JSON.stringify(fghlabSync.base || {})); }catch(e){}
+  }
+  function fghlabSyncSetStatus(kind, text){
+    fghlabSync.status = kind; fghlabSync.statusText = text;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-fgh-sync-status]'), function(el){
+      el.textContent = text;
+      el.style.color = kind === 'error' ? 'var(--bad)' : (kind === 'ok' ? 'var(--accent)' : 'var(--muted)');
+    });
+  }
+  function fghlabSyncIdleText(){
+    return fghlabSyncActive() ? '☁️ Synchronisation avec le serveur en cours…' : 'Données enregistrées sur cet appareil seulement. Connectez-vous (propriétaire ou membre) pour les partager entre appareils.';
+  }
+  function fghlabSchedulePush(){ fghlabSyncSchedule(); }
+  function fghlabSyncSchedule(){
+    if(!fghlabSync || fghlabSync.applying || !fghlabSyncActive()) return;
+    clearTimeout(fghlabSync.pushT);
+    fghlabSync.pushT = setTimeout(fghlabSyncRun, 700);
+  }
+  function fghlabSyncFocusInPanels(){
+    var a = document.activeElement;
+    if(!a || !a.closest) return false;
+    if(!/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return false;
+    return !!a.closest('#view-fghlab');
+  }
+  function fghlabSyncRefreshUI(){
+    if(fghlabSyncFocusInPanels()){ fghlabSync.uiPending = true; return; }
+    fghlabSync.uiPending = false;
+    try{ renderFghlabPartnerList(); }catch(e){}
+    try{ renderFghlabBankProjectList(); renderFghlabRevenueDashboard(); }catch(e){}
+    try{ renderFghlabBankAlerts(); }catch(e){}
+    try{ if(typeof renderFghlabTouttestList === 'function') renderFghlabTouttestList(); }catch(e){}
+    try{ renderPartnerInviteOut(); }catch(e){}
+    try{ if(fghlabSyncRedraw.academie) fghlabSyncRedraw.academie(); }catch(e){}
+    try{ if(fghlabSyncRedraw.rdv) fghlabSyncRedraw.rdv(); }catch(e){}
+    try{ if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin(); }catch(e){}
+  }
+  function fghlabSyncApplyPull(data){
+    var base = fghlabSyncLoadBase(), changed = false;
+    var readable = (data && data.readable) || [], writable = (data && data.writable) || [];
+    var byColl = {};
+    ((data && data.rows) || []).forEach(function(r){ if(!byColl[r.c]) byColl[r.c] = []; byColl[r.c].push(r); });
+    fghlabSync.writable = writable;
+    readable.forEach(function(c){
+      if(FGHLAB_SYNC_COLLECTIONS.indexOf(c) === -1) return;
+      var remote = byColl[c] || [], remoteIds = {};
+      var local = Array.isArray(fghlabState[c]) ? fghlabState[c] : (fghlabState[c] = []);
+      var isWritable = writable.indexOf(c) !== -1;
+      remote.forEach(function(r){ remoteIds[r.id] = true; });
+      if(!isWritable){
+        // lecture seule : la version du serveur fait foi
+        var same = local.length === remote.length && remote.every(function(r){
+          var l = null; local.forEach(function(x){ if(x && x.id === r.id) l = x; });
+          return l && fghlabHash(l) === fghlabHash(r.d);
+        });
+        if(!same){ fghlabState[c] = remote.map(function(r){ return r.d; }); changed = true; }
+        base[c] = {}; remote.forEach(function(r){ base[c][r.id] = fghlabHash(r.d); });
+        return;
+      }
+      var idx = {};
+      local.forEach(function(x, i){ if(x && x.id) idx[x.id] = i; });
+      remote.forEach(function(r){
+        var rh = fghlabHash(r.d), i = idx[r.id], b = base[c][r.id];
+        if(i === undefined){
+          if(b === undefined){ local.push(r.d); base[c][r.id] = rh; changed = true; }   // nouveau sur le serveur
+          // sinon supprimé localement : la suppression sera envoyée
+          return;
+        }
+        var lh = fghlabHash(local[i]);
+        if(b === undefined){ if(lh !== rh){ local[i] = r.d; changed = true; } base[c][r.id] = rh; return; }   // jamais synchronisée ici : le serveur fait foi
+        if(lh === b){ if(rh !== b){ local[i] = r.d; changed = true; } base[c][r.id] = rh; }               // inchangée localement
+        // modifiée localement : sera envoyée
+      });
+      Object.keys(base[c]).forEach(function(id){
+        if(remoteIds[id]) return;
+        var li = local.findIndex(function(x){ return x && x.id === id; });
+        if(li !== -1 && fghlabHash(local[li]) === base[c][id]){ local.splice(li, 1); changed = true; }   // supprimée sur le serveur
+        delete base[c][id];   // modifiée localement : elle reste et sera renvoyée
+      });
+    });
+    return changed;
+  }
+  function fghlabSyncPushAll(){
+    var base = fghlabSyncLoadBase();
+    var chain = Promise.resolve();
+    (fghlabSync.writable || []).forEach(function(c){
+      chain = chain.then(function(){
+        var local = Array.isArray(fghlabState[c]) ? fghlabState[c] : [];
+        var ups = [], dels = [], seen = {};
+        local.forEach(function(x){
+          if(!x || !x.id) return;
+          seen[x.id] = true;
+          var h = fghlabHash(x);
+          if(base[c][x.id] !== h) ups.push({ id: x.id, d: x, h: h });
+        });
+        Object.keys(base[c]).forEach(function(id){ if(!seen[id]) dels.push(id); });
+        if(!ups.length && !dels.length) return null;
+        var batches = [];
+        for(var i = 0; i < ups.length; i += 100) batches.push(ups.slice(i, i + 100));
+        if(!batches.length) batches.push([]);
+        var step = Promise.resolve();
+        batches.forEach(function(batch, bi){
+          step = step.then(function(){
+            return fghlabSb.rpc('fgh_sync_push', { p_collection: c, p_upserts: batch.map(function(u){ return { id: u.id, d: u.d }; }), p_deletes: bi === 0 ? dels : [] }).then(function(r){
+              if(r.error) throw r.error;
+              batch.forEach(function(u){ base[c][u.id] = u.h; });
+              if(bi === 0) dels.forEach(function(id){ delete base[c][id]; });
+            });
+          });
+        });
+        return step;
+      });
+    });
+    return chain;
+  }
+  function fghlabSyncRun(){
+    if(!fghlabSyncActive()) return Promise.resolve();
+    if(fghlabSync.busy){ fghlabSync.again = true; return Promise.resolve(); }
+    fghlabSync.busy = true;
+    var sb = fghlabSb;
+    return sb.rpc('fgh_sync_pull').then(function(res){
+      if(res.error){
+        if(res.error.code === 'PGRST202' || res.error.status === 404) throw new Error('Le serveur n’a pas encore la mise à jour « phase 3 » (script SQL à exécuter).');
+        throw res.error;
+      }
+      fghlabSync.applying = true;
+      var changed = false;
+      try{ changed = fghlabSyncApplyPull(res.data); }finally{ fghlabSync.applying = false; }
+      if(changed){
+        try{ migrateFghlabNumbering(); }catch(e){}
+        persistFghlabState();
+      }
+      return fghlabSyncPushAll().then(function(){
+        fghlabSyncSaveBase();
+        fghlabSync.ready = true; fghlabSync.lastPull = Date.now();
+        var d = new Date();
+        fghlabSyncSetStatus('ok', '☁️ Synchronisé avec le serveur à ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
+        if(changed || fghlabSync.uiPending) fghlabSyncRefreshUI();
+      });
+    }).catch(function(e){
+      var m = (e && e.message) ? e.message : 'erreur inconnue';
+      fghlabSync.lastPull = Date.now();
+      fghlabSyncSetStatus('error', '⚠️ Synchronisation impossible : ' + m);
+    }).then(function(){
+      fghlabSync.busy = false;
+      if(fghlabSync.again){ fghlabSync.again = false; fghlabSyncSchedule(); }
+    });
+  }
+  function fghlabSyncTick(){
+    if(document.hidden) return;
+    if(!fghlabSyncActive()){
+      if(fghlabSync.ready){ fghlabSync.ready = false; fghlabSyncSetStatus('off', fghlabSyncIdleText()); }
+      return;
+    }
+    if(fghlabSync.uiPending && !fghlabSyncFocusInPanels()) fghlabSyncRefreshUI();
+    if(!fghlabSync.ready || Date.now() - fghlabSync.lastPull > 20000) fghlabSyncRun();
+  }
+  setInterval(fghlabSyncTick, 4000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) fghlabSyncTick(); });
+
+  /* Photos : copie sur le serveur (propriétaire) et lecture fusionnée local + serveur. */
+  function fghPhotoServerPut(id, vehicleId, data){
+    if(!fghlabSyncActive() || fghlabCloudRole !== 'owner') return Promise.resolve(false);
+    return fghlabSb.rpc('fgh_photo_put', { p_id: id, p_vehicle_id: vehicleId, p_data: data }).then(function(r){ return !r.error; }, function(){ return false; });
+  }
+  function fghPhotoListAll(vehicleId){
+    return fghPhotoList(vehicleId).catch(function(){ return []; }).then(function(local){
+      if(!fghlabSyncActive()) return local;
+      return fghlabSb.rpc('fgh_photo_list', { p_vehicle_id: vehicleId }).then(function(r){
+        var all = local.slice(), have = {};
+        local.forEach(function(p){ have[p.id] = true; });
+        if(!r.error && Array.isArray(r.data)) r.data.forEach(function(p){ if(!have[p.id]) all.push({ id: p.id, data: p.data, vehicleId: vehicleId }); });
+        // les photos locales absentes du serveur sont reprises (propriétaire)
+        if(!r.error && fghlabCloudRole === 'owner'){
+          var onServer = {};
+          (r.data || []).forEach(function(p){ onServer[p.id] = true; });
+          local.forEach(function(p){ if(!onServer[p.id]) fghPhotoServerPut(p.id, vehicleId, p.data); });
+        }
+        return all;
+      }, function(){ return local; });
+    });
+  }
+
+  /* ================= FGH-Lab — Partner Market : lien d'invitation + documentation automatique ================= */
+  var PARTNER_INVITE_TYPES = ['Banque', 'Microfinance', 'Concessionnaire', 'Vendeur', 'Client', 'Autre'];
+  function partnerDocHtml(type){
+    var cfg = fghlabState.monetizationConfig || {};
+    var money = partnermarketMoney;
+    var std = money(PARTNER_TIER_DEFAULT_FEES.Standard), prem = money(PARTNER_TIER_DEFAULT_FEES.Premium);
+    function sec(title, items){
+      return '<div style="margin-bottom:10px;"><strong style="font-size:13px;">'+escapeHtml(title)+'</strong><ul style="margin:4px 0 0 18px; padding:0; font-size:12.5px; line-height:1.6;">' +
+        items.map(function(i){ return '<li>'+escapeHtml(i)+'</li>'; }).join('') + '</ul></div>';
+    }
+    var who, cond, adv, rel, fast, effort;
+    if(type === 'Banque' || type === 'Microfinance'){
+      who = 'banque ou institution de microfinance';
+      cond = ['Inscription sur Partner Market, validée par FINECIA GROUPE (statut « Actif » requis pour voir les dossiers).',
+        'Frais d’inscription selon le palier : Standard '+std+' · Premium '+prem+' (paramétrables).',
+        'Frais de mise en relation : '+money(cfg.introFee)+' par offre de financement soumise.',
+        'Commission de '+(cfg.commissionRate != null ? cfg.commissionRate : 2)+' % sur le montant d’un financement accepté.'];
+      adv = ['Accès à des dossiers de financement déjà structurés par FINECIA GROUPE (projet, client, pièces, numéros de dossier).',
+        'Moins de temps passé à qualifier : le dossier arrive complet et identifié.',
+        'Visibilité sur les financements de véhicules et de projets de PME référés.'];
+      rel = ['Le dossier est déposé dans FG & Bank Partnership ; tous les partenaires Banque/Microfinance actifs le voient.',
+        'Vous soumettez votre offre (taux, montant, conditions) directement sur le dossier.',
+        'Le client (ou FINECIA GROUPE pour lui) choisit l’offre ; la mise en relation est tracée dossier par dossier.'];
+      fast = ['Offre standardisée : taux, montant et conditions en une seule fiche.',
+        'Suivi de l’état du dossier (en attente, offres reçues, accepté) sans relance par courriel.'];
+      effort = ['Le client est référé avec son dossier : pas de prospection ni de saisie de votre côté.',
+        'Un membre de l’équipe FINECIA prend en charge le dossier et reste identifié.'];
+    }else if(type === 'Concessionnaire'){
+      who = 'concessionnaire';
+      cond = ['Inscription sur Partner Market, validée par FINECIA GROUPE (statut « Actif » requis pour publier l’inventaire).',
+        'Frais d’inscription selon le palier : Standard '+std+' · Premium '+prem+' (paramétrables).',
+        'Commission concessionnaire : '+DEALER_DEFAULT_COMMISSION_RATE+' % sur une vente conclue grâce à FINECIA GROUPE (paramétrable par partenaire).',
+        'Frais de mise en relation : '+money(DEALER_DEFAULT_REFERRAL_FEE)+' par client référé (paramétrable par partenaire).'];
+      adv = ['Votre inventaire (marque, modèle, année, prix, kilométrage, photos) est visible des clients, entreprises et banques inscrits.',
+        'Les clients intéressés arrivent avec une offre de financement déjà préparée.',
+        'Moins de temps perdu avec les curieux : l’intérêt est qualifié avant d’arriver chez vous.'];
+      rel = ['Un client intéressé par un véhicule est enregistré, puis suivi : négociation, prix convenu, offre de financement.',
+        'Le dossier de financement est déposé dans FG & Bank Partnership pour les banques et microfinances actives.',
+        'Vous êtes informé de l’avancement jusqu’à la livraison.'];
+      fast = ['Prix, photos et statut (Disponible / Réservé / Vendu) tenus à jour dans un seul catalogue.',
+        'Le calcul du paiement estimé (acompte, taux, durée) accélère la décision du client.'];
+      effort = ['FINECIA GROUPE amène et accompagne le client : vous vous concentrez sur la remise du véhicule.',
+        'Le financement est géré en parallèle, sans démarches supplémentaires de votre part.'];
+    }else if(type === 'Client'){
+      who = 'client';
+      cond = ['Inscription gratuite pour consulter le catalogue de véhicules des concessionnaires partenaires actifs.',
+        'Les frais éventuels (structuration de dossier) sont annoncés avant tout engagement.'];
+      adv = ['Catalogue consultable avec photos, prix et devise clairement indiqués.',
+        'Une offre de financement peut être préparée pour le véhicule choisi.'];
+      rel = ['Vous indiquez votre intérêt pour un véhicule ; un conseiller FINECIA vous contacte.',
+        'Le conseiller négocie, calcule le paiement estimé et dépose votre dossier auprès des banques partenaires.'];
+      fast = ['Un seul interlocuteur du premier contact jusqu’à l’offre de financement.'];
+      effort = ['Vous n’avez pas à démarcher les concessionnaires ni les banques : FINECIA GROUPE s’en charge.'];
+    }else{
+      who = 'entreprise ou vendeur';
+      cond = ['Inscription sur Partner Market, validée par FINECIA GROUPE.',
+        'Frais d’inscription selon le palier : Standard '+std+' · Premium '+prem+' (paramétrables).',
+        'Les conditions commerciales précises sont confirmées par écrit avant activation.'];
+      adv = ['Visibilité auprès des clients, banques et entreprises du réseau FINECIA GROUPE.',
+        'Dossier client structuré et numéroté (Client N°, Projet N°, numéro d’affaire).'];
+      rel = ['FINECIA GROUPE présente votre offre aux clients concernés et transmet les demandes qualifiées.',
+        'Chaque mise en relation est tracée dans un dossier.'];
+      fast = ['Processus unique de la demande à la décision, avec suivi d’état.'];
+      effort = ['Les clients sont amenés et qualifiés par FINECIA GROUPE : vous répondez à des demandes déjà préparées.'];
+    }
+    return '<p style="font-size:12.5px; margin:0 0 8px;">Documentation destinée à un(e) <strong>'+escapeHtml(who)+'</strong> — générée automatiquement à partir des paramètres actuels de Partner Market.</p>' +
+      sec('Conditions', cond) + sec('Avantages', adv) + sec('Mise en relation', rel) +
+      sec('Ventes intelligentes et rapides', fast) + sec('Des clients sans effort', effort) +
+      '<p class="hint" style="margin:6px 0 0;">Document informatif : les montants sont ceux paramétrés dans l’outil ; les conditions définitives sont confirmées par FINECIA GROUPE avant activation.</p>';
+  }
+  function partnerDocText(type){
+    var tmp = document.createElement('div');
+    tmp.innerHTML = partnerDocHtml(type).replace(/<\/li>/g, '</li>\n').replace(/<\/strong>/g, '</strong>\n').replace(/<\/p>/g, '</p>\n');
+    return (tmp.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  function partnerInviteCardHtml(){
+    var typeOpts = PARTNER_INVITE_TYPES.map(function(t){ return '<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>'; }).join('');
+    return '<div class="card" id="partner-invite-card" style="margin-bottom:14px; background:var(--surface-2);">' +
+      '<h3 style="margin:0 0 6px; font-size:14.5px;">Lien d’invitation Partner Market</h3>' +
+      '<p class="hint" style="margin:0 0 8px;">Choisissez le type de partenaire, générez son lien d’invitation et sa documentation (conditions, avantages, mise en relation, ventes rapides, clients sans effort).</p>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
+        '<select id="partner-invite-type" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">'+typeOpts+'</select>' +
+        '<button type="button" class="btn primary" id="partner-invite-gen">Générer le lien d’invitation</button>' +
+        '<button type="button" class="btn" id="partner-invite-copydoc">Copier la documentation</button>' +
+        '<span class="copy-status" id="partner-invite-status"></span>' +
+      '</div>' +
+      '<div id="partner-invite-out" style="margin-top:8px;"></div>' +
+      '<details open style="margin-top:8px;"><summary style="cursor:pointer; font-size:12.5px; font-weight:600;">Documentation du partenaire (automatique)</summary><div id="partner-invite-doc" style="margin-top:8px;"></div></details>' +
+    '</div>';
+  }
+  function fghlabPublicUrl(kind, token){
+    var base = location.origin + location.pathname.replace(/[^\/]*$/, '') + 'public.html';
+    if(kind === 'rdv') return base + '?rdv=1';
+    return base + '?' + kind + '=' + encodeURIComponent(token);
+  }
+  function renderPartnerInviteOut(){
+    var out = document.getElementById('partner-invite-out');
+    if(!out) return;
+    var isOwner = !getActiveFghlabMember();
+    var gen = document.getElementById('partner-invite-gen');
+    if(gen) gen.style.display = isOwner ? '' : 'none';
+    var list = (fghlabState.invites || []).slice().reverse().slice(0, 5);
+    if(!list.length){ out.innerHTML = ''; return; }
+    out.innerHTML = list.map(function(i){
+      return '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:6px;">' +
+        '<span class="hint" style="margin:0; min-width:130px;">'+escapeHtml(i.type)+' · '+escapeHtml(fmtFghlabShortDate(i.createdOn))+(i.usedCount ? ' · '+i.usedCount+' inscription'+(i.usedCount > 1 ? 's' : '') : '')+'</span>' +
+        '<input type="text" readonly value="'+escapeHtml(fghlabPublicUrl('invitation', i.token))+'" style="flex:1; min-width:220px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
+        '<button type="button" class="btn" data-invite-copy="'+escapeHtml(i.id)+'" data-kind="invitation" style="padding:3px 9px; font-size:12px;">Copier le lien</button>' +
+        '<button type="button" class="btn" data-invite-copy="'+escapeHtml(i.id)+'" data-kind="catalogue" style="padding:3px 9px; font-size:12px;" title="Page publique du catalogue de véhicules">Lien du catalogue</button>' +
+      '</div>';
+    }).join('') +
+    '<p class="hint" style="margin:6px 0 0;">'+(fghlabSyncActive()
+      ? 'Le lien ouvre une page publique d\u2019inscription : la demande arrive ici avec le statut « En attente » pour que vous l\u2019examiniez. Le lien du catalogue permet de consulter les véhicules disponibles et de signaler un intérêt.'
+      : '⚠ Connectez-vous (Réglages) pour que ces liens fonctionnent : ils ne sont valides qu\u2019une fois enregistrés sur le serveur.')+'</p>';
+  }
+  function bindFghlabPartnerInvite(){
+    var typeSel = document.getElementById('partner-invite-type');
+    var docEl = document.getElementById('partner-invite-doc');
+    var statusEl = document.getElementById('partner-invite-status');
+    if(!typeSel || !docEl) return;
+    function drawDoc(){ docEl.innerHTML = partnerDocHtml(typeSel.value); }
+    function flash(t){ if(statusEl){ statusEl.textContent = t; setTimeout(function(){ statusEl.textContent = ''; }, 2200); } }
+    function copy(text, ok){
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){ flash(ok); }).catch(function(){ flash('Copie impossible'); });
+      }else flash('Copie impossible');
+    }
+    typeSel.addEventListener('change', drawDoc);
+    drawDoc();
+    renderPartnerInviteOut();
+    var gen = document.getElementById('partner-invite-gen');
+    if(gen) gen.addEventListener('click', function(){
+      if(getActiveFghlabMember()) return;
+      if(!Array.isArray(fghlabState.invites)) fghlabState.invites = [];
+      var token = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+      fghlabState.invites.push({ id: 'fghinv-' + token, token: token, type: typeSel.value, usedCount: 0, createdOn: new Date().toISOString(), createdBy: fghlabActor() });
+      persistFghlabState();
+      renderPartnerInviteOut();
+      flash('Lien généré ✓');
+    });
+    var cd = document.getElementById('partner-invite-copydoc');
+    if(cd) cd.addEventListener('click', function(){ copy(partnerDocText(typeSel.value), 'Documentation copiée ✓'); });
+    var out = document.getElementById('partner-invite-out');
+    if(out) out.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('[data-invite-copy]') : null;
+      if(!b) return;
+      var id = b.getAttribute('data-invite-copy'), kind = b.getAttribute('data-kind') || 'invitation';
+      (fghlabState.invites || []).forEach(function(i){ if(i.id === id) copy(fghlabPublicUrl(kind, i.token), 'Lien copié ✓'); });
+    });
+  }
+
+  /* ================= FGH-Lab — FG & Bank Partnership : alertes « client intéressé » ================= */
+  function fghlabPushVehicleAlert(lead, vehicle, partner){
+    if(!Array.isArray(fghlabState.alerts)) fghlabState.alerts = [];
+    fghlabState.alerts.push({
+      id: 'fghal-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      kind: 'vehicle_interest',
+      leadId: lead.id,
+      text: 'Un client est intéressé : ' + lead.clientName + ' — ' + (vehicle ? (vehicle.make + ' ' + vehicle.model + (vehicle.year ? ' (' + vehicle.year + ')' : '')) : 'véhicule') + (partner ? ' · ' + partner.name : ''),
+      createdOn: new Date().toISOString(),
+      createdBy: fghlabActor(),
+      read: false
+    });
+  }
+  function renderFghlabBankAlerts(){
+    var el = document.getElementById('fgbank-alerts');
+    if(!el) return;
+    var alerts = (fghlabState.alerts || []).slice().reverse();
+    var unread = alerts.filter(function(a){ return !a.read; }).length;
+    if(!alerts.length){ el.innerHTML = ''; return; }
+    el.innerHTML = '<div style="border:1px solid #C89B3C; border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:12px;">' +
+      '<div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">🔔 Alertes Partner Market' + (unread ? ' <span class="ctb-stub-badge" style="background:#C89B3C; color:#fff;">'+unread+' nouvelle'+(unread > 1 ? 's' : '')+'</span>' : '') + '</div>' +
+      alerts.slice(0, 8).map(function(a){
+        return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:5px 0; border-top:1px solid var(--line); font-size:12.5px;'+(a.read ? ' opacity:.65;' : '')+'">' +
+          '<span>'+escapeHtml(a.text)+'<span class="hint" style="margin:0;"> · '+escapeHtml(fmtFghlabDate(a.createdOn))+' · par '+escapeHtml(fghlabActorLabel(a.createdBy))+'</span></span>' +
+          '<button type="button" class="btn primary" data-alert-open="'+escapeHtml(a.id)+'" style="padding:3px 10px; font-size:12px;">Ouvrir le dossier</button>' +
+        '</div>';
+      }).join('') + '</div>';
+  }
+  function fghlabOpenAlert(alertId){
+    var a = null;
+    (fghlabState.alerts || []).forEach(function(x){ if(x.id === alertId) a = x; });
+    if(!a) return;
+    a.read = true;
+    persistFghlabState();
+    renderFghlabBankAlerts();
+    if(getFghlabVisibleTools().indexOf('partnermarket') === -1){
+      window.alert('Ce dossier se trouve dans Partner Market, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.');
+      return;
+    }
+    selectFghlabTool('partnermarket', { noClose: true });
+    renderFghlabVehicleLeadList();
+    setTimeout(function(){
+      var card = document.querySelector('[data-lead-card="' + a.leadId + '"]');
+      if(card){
+        if(card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.outline = '3px solid #C89B3C';
+        setTimeout(function(){ card.style.outline = ''; }, 3500);
+      }
+    }, 200);
+  }
+
+  /* ================= FGH-Lab — Historique TOUTTEST d'un membre (fiche équipe) ================= */
+  function fghlabTouttestHistoryFor(member){
+    return (fghlabState.touttestSessions || []).filter(function(s){
+      return (s.createdBy && s.createdBy.id === member.id) || (s.completedBy && s.completedBy.id === member.id);
+    }).sort(function(a, b){
+      return new Date(b.completedOn || b.createdOn).getTime() - new Date(a.completedOn || a.createdOn).getTime();
+    });
+  }
+  function fghlabTouttestHistorySummaryHtml(member){
+    var list = fghlabTouttestHistoryFor(member);
+    if(!list.length) return '<p class="hint" style="margin:0;">Aucun test TOUTTEST créé ou terminé par ce membre sur cet appareil.</p>';
+    return list.map(function(s){
+      var role = [];
+      if(s.createdBy && s.createdBy.id === member.id) role.push('créé le ' + fmtFghlabDate(s.createdOn));
+      if(s.completedBy && s.completedBy.id === member.id) role.push('terminé le ' + fmtFghlabDate(s.completedOn));
+      return '<div style="padding:4px 0; border-bottom:1px solid var(--line); font-size:12px;">' +
+        '🧪 <strong>'+escapeHtml(s.candidateName || '—')+'</strong> — '+escapeHtml(fghlabTouttestModuleLabelForSession(s))+' · '+escapeHtml(s.jobLevel || '')+
+        '<br><span class="hint" style="margin:0;">'+escapeHtml(role.join(' · '))+(s.status === 'termine' && s.score != null ? ' · score '+escapeHtml(String(s.score))+' %' : (s.status === 'termine' ? '' : ' · en attente'))+'</span></div>';
+    }).join('');
+  }
+
+  /* ================= FGH-Lab — FINECIA ACADÉMIE : catalogue, prix, formulaire d'inscription ================= */
+  var ACADEMIE_DELIVERY = [
+    { name:'Présentiel haut de gamme', desc:'Immersion, travail de direction et transformation rapide.', audience:'Dirigeants, institutions et grandes entreprises' },
+    { name:'En ligne', desc:'Programmes accessibles et déployables sur plusieurs marchés.', audience:'Entrepreneurs, jeunes dirigeants et publics internationaux' },
+    { name:'Hybride', desc:'Modules en ligne, sessions privées et atelier présentiel final.', audience:'Cadres, programmes stratégiques et transformation' },
+    { name:'Intra-entreprise', desc:'Formation, conseil et livrables adaptés aux enjeux réels du client.', audience:'Banques, ministères, industries et grandes entreprises' },
+    { name:'Inter-entreprises', desc:'Apprentissage mutualisé, échanges, networking et ateliers techniques.', audience:'PME, entrepreneurs, universitaires et jeunes professionnels' }
+  ];
+  var ACADEMIE_FORMATS = ACADEMIE_DELIVERY.map(function(d){ return d.name; }).concat(['Masterclass 90 minutes', 'Workshop ½ ou 1 journée', 'Bootcamp 2 à 5 jours', 'Programme sur mesure']);
+  var ACADEMIE_DURATIONS = ['90 minutes', '½ journée', '1 journée', '2 à 5 jours', '8 semaines', 'Coaching mensuel', 'Mission d\u2019accompagnement', 'Sur mesure'];
+  var ACADEMIE_REG_STATUS = ['Nouvelle', 'Contactée', 'Confirmée', 'Annulée'];
+  var ACADEMIE_OTHER = '__autre__';
+  var ACADEMIE_CATALOG_VERSION = 2;
+  /* Catalogue FINECIA Academy, repris tel que fourni par le propriétaire. Les prix ne sont pas dans le
+     document : ils sont à « définir » (modifiables par le propriétaire dans la liste de prix). */
+  var ACADEMIE_SEED = [
+    { cat:'Domaines de formation', level:'01', title:'Finance pour décideurs', description:'Lire les chiffres, tester les hypothèses et défendre une décision.' },
+    { cat:'Domaines de formation', level:'02', title:'Business plan & financement', description:'Construire un dossier cohérent et parler le langage des financeurs.' },
+    { cat:'Domaines de formation', level:'03', title:'Investir et s\u2019implanter en Afrique', description:'Évaluer un marché, ses risques, ses acteurs et ses conditions d\u2019entrée.' },
+    { cat:'Domaines de formation', level:'04', title:'Intelligence économique', description:'Organiser la veille, détecter les signaux et protéger l\u2019information stratégique.' },
+    { cat:'Domaines de formation', level:'05', title:'Pilotage par la performance', description:'Définir les bons indicateurs et installer un rythme de décision.' },
+    { cat:'Domaines de formation', level:'06', title:'Leadership & gouvernance', description:'Clarifier les rôles, arbitrer et conduire le changement.' },
+    { cat:'Workshops signature', title:'Financer la croissance', duration:'Workshop ½ ou 1 journée' },
+    { cat:'Workshops signature', title:'Afrique–Amérique du Nord : réussir un partenariat', duration:'Workshop ½ ou 1 journée' },
+    { cat:'Workshops signature', title:'Afrique–Europe : préparer son expansion', duration:'Workshop ½ ou 1 journée' },
+    { cat:'Workshops signature', title:'90 jours pour reprendre le contrôle de sa performance', duration:'Workshop ½ ou 1 journée' },
+    { cat:'Programmes exécutifs signature', level:'01 · Entrée', title:'VENTURIA — Business & Growth Accelerator', description:'Créer, structurer et accélérer un business rentable.', audience:'En ligne, bootcamp ou inter-entreprises' },
+    { cat:'Programmes exécutifs signature', level:'02 · Core', title:'STRATEXIA — Strategic Excellence Program', description:'Maîtriser l\u2019art de la stratégie et piloter la croissance en huit semaines.', audience:'Programme exécutif hybride', duration:'8 semaines' },
+    { cat:'Programmes exécutifs signature', level:'03 · Premium', title:'DECISIONIS — Executive Decision Lab', description:'Prendre des décisions stratégiques à fort impact dans un cadre confidentiel.', audience:'Workshop réservé aux dirigeants' },
+    { cat:'Programmes exécutifs signature', level:'04 · Avancé', title:'TRANSFORMA — Strategic Transformation Program', description:'Conduire des transformations complexes, mesurables et durables.', audience:'Mission d\u2019accompagnement', duration:'Mission d\u2019accompagnement' },
+    { cat:'Programmes exécutifs signature', level:'05 · Institutionnel', title:'FISCALIA — Tax & Customs Performance Program', description:'Renforcer la performance fiscale, douanière et économique des organisations.', audience:'Programme institutionnel sur mesure', duration:'Sur mesure' },
+    { cat:'Programmes exécutifs signature', level:'06 · Élite', title:'EXECUTIVE ELITE — Strategic Leadership Coaching', description:'Un accompagnement individuel et confidentiel pour dirigeants et décideurs.', audience:'Coaching mensuel', duration:'Coaching mensuel' },
+    { cat:'Parcours Finance & Projets', level:'07 · Professionnel', title:'Services financiers & gestion bancaire', description:'Gestion d\u2019institutions financières, analyse, conformité, transformation digitale et gestion de portefeuille.', audience:'Professionnels de la finance, banques et cadres' },
+    { cat:'Parcours Finance & Projets', level:'08 · Classe d\u2019affaire', title:'Montage de projet & approche bancaire', description:'Structuration du projet, ingénierie financière, dossier de crédit, négociation et gestion du financement obtenu.', audience:'Entrepreneurs, PME et porteurs de projets' },
+    { cat:'Parcours Finance & Projets', level:'09 · Climat des affaires', title:'Grands projets & approche bailleurs', description:'Investissement productif, financement long terme, évaluation, négociation, infrastructures et suivi des emprunts.', audience:'Institutions, États et grandes entreprises' }
+  ];
+  function academieEnsureSeed(){
+    if(!Array.isArray(fghlabState.academieFormations)) fghlabState.academieFormations = [];
+    if((fghlabState.academieCatalogVersion || 0) < ACADEMIE_CATALOG_VERSION){
+      // remplace les anciennes formations « exemple » par le vrai catalogue ; garde celles ajoutées par le propriétaire
+      var kept = fghlabState.academieFormations.filter(function(f){ return !f.example; });
+      var seeded = ACADEMIE_SEED.map(function(t, si){
+        return { id: 'fghfo-seed-' + (si + 1), cat: t.cat, level: t.level || '', title: t.title, description: t.description || '', audience: t.audience || '', price: 0, currency: 'CAD', formats: [], duration: t.duration || '' };
+      });
+      fghlabState.academieFormations = seeded.concat(kept);
+      fghlabState.academieCatalogVersion = ACADEMIE_CATALOG_VERSION;
+      fghlabState.academieSeeded = true;
+      persistFghlabState();
+    }
+  }
+  function academieSelStyle(){ return 'border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;'; }
+  function academiePriceText(f){
+    return f.price ? (fmtFghlabAmount(f.price) + ' ' + vehicleCurrencyShort(f.currency)) : 'Prix à définir';
+  }
+  function fghlabAcademiePanelHtml(info){
+    var st = academieSelStyle();
+    var curOpts = CURRENCIES.map(function(c){ return '<option value="'+escapeHtml(c.code)+'">'+escapeHtml(c.label)+'</option>'; }).join('');
+    var fmtOpts = ACADEMIE_FORMATS.map(function(f){ return '<option value="'+escapeHtml(f)+'">'+escapeHtml(f)+'</option>'; }).join('') + '<option value="'+ACADEMIE_OTHER+'">Autre (à préciser)</option>';
+    var deliveryHtml = ACADEMIE_DELIVERY.map(function(d){ return '<div style="font-size:12.5px; margin-top:4px;"><strong>'+escapeHtml(d.name)+'</strong> — '+escapeHtml(d.desc)+'<div class="hint" style="margin:0;">'+escapeHtml(d.audience)+'</div></div>'; }).join('');
+    var durOpts = ACADEMIE_DURATIONS.map(function(d){ return '<option value="'+escapeHtml(d)+'">'+escapeHtml(d)+'</option>'; }).join('') + '<option value="'+ACADEMIE_OTHER+'">Autre (à préciser)</option>';
+    return '<div class="card hn-panel" id="fghlab-panel-academie" hidden>' +
+      '<h2 style="margin:0 0 4px;">'+escapeHtml(info.title)+'</h2>' +
+      '<p class="hint" style="margin:0 0 12px;">'+escapeHtml(info.desc)+'</p>' +
+      '<div class="card" style="background:var(--surface-2); margin-bottom:14px;">' +
+        '<h3 style="margin:0 0 6px; font-size:14.5px;">Formulaire d’inscription</h3>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+          '<input type="text" id="acad-name" maxlength="120" placeholder="Nom et prénom" style="flex:1; min-width:180px; '+st+'">' +
+          '<input type="email" id="acad-email" maxlength="140" placeholder="Courriel" style="flex:1; min-width:180px; '+st+'">' +
+          '<input type="text" id="acad-phone" maxlength="40" placeholder="Téléphone" style="flex:1; min-width:140px; '+st+'">' +
+          '<select id="acad-formation" style="'+st+'"></select>' +
+          '<input type="text" id="acad-formation-other" maxlength="120" placeholder="Formation souhaitée (à préciser)" style="display:none; min-width:200px; '+st+'">' +
+          '<select id="acad-format" style="'+st+'">'+fmtOpts+'</select>' +
+          '<input type="text" id="acad-format-other" maxlength="80" placeholder="Format (à préciser)" style="display:none; min-width:160px; '+st+'">' +
+          '<select id="acad-duration" style="'+st+'">'+durOpts+'</select>' +
+          '<input type="text" id="acad-duration-other" maxlength="60" placeholder="Durée (à préciser)" style="display:none; min-width:150px; '+st+'">' +
+          '<textarea id="acad-message" rows="2" maxlength="600" placeholder="Message (facultatif)" style="flex:1 1 100%; '+st+'"></textarea>' +
+          '<div id="acad-price-hint" class="hint" style="flex:1 1 100%; margin:0;"></div>' +
+          '<button type="button" class="btn primary" id="acad-submit">Envoyer l’inscription</button>' +
+          '<span class="copy-status" id="acad-status"></span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card" style="background:var(--surface-2); margin-bottom:14px;">' +
+        '<h3 style="margin:0 0 6px; font-size:14.5px;">Catalogue et liste de prix</h3>' +
+        '<p class="hint" style="margin:0 0 8px;">Catalogue FINECIA Academy — « Former les décideurs qui feront avancer les organisations ». Le propriétaire fixe le prix de chaque formation (« Prix à définir » tant qu\u2019il n\u2019est pas saisi).</p>' +
+        '<div id="acad-form-wrap" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">' +
+          '<select id="acad-new-cat" style="'+st+'"><option>Domaines de formation</option><option>Workshops signature</option><option>Programmes exécutifs signature</option><option>Parcours Finance &amp; Projets</option></select>' +
+          '<input type="text" id="acad-new-title" maxlength="140" placeholder="Titre de la formation" style="flex:1; min-width:200px; '+st+'">' +
+          '<input type="number" id="acad-new-price" min="0" step="1" placeholder="Prix" style="width:110px; '+st+'">' +
+          '<select id="acad-new-currency" style="'+st+'">'+curOpts+'</select>' +
+          '<select id="acad-new-duration" style="'+st+'">'+ACADEMIE_DURATIONS.map(function(d){ return '<option>'+escapeHtml(d)+'</option>'; }).join('')+'</select>' +
+          '<input type="text" id="acad-new-desc" maxlength="300" placeholder="Description (facultatif)" style="flex:1 1 100%; '+st+'">' +
+          '<button type="button" class="btn primary" id="acad-new-add">Ajouter au catalogue</button>' +
+        '</div>' +
+        '<div id="acad-catalog"></div>' +
+      '</div>' +
+      '<div class="card" style="background:var(--surface-2); margin-bottom:14px;">' +
+        '<h3 style="margin:0 0 6px; font-size:14.5px;">Formats de livraison</h3>' +
+        '<p class="hint" style="margin:0 0 4px;">Le bon niveau d\u2019intensité pour chaque objectif. Séances : Masterclass 90 minutes, Workshop ½ ou 1 journée, Bootcamp 2 à 5 jours, Programme sur mesure — en présentiel, virtuel ou hybride.</p>' +
+        deliveryHtml +
+      '</div>' +
+      '<div class="card" style="background:var(--surface-2);">' +
+        '<h3 style="margin:0 0 6px; font-size:14.5px;">Inscriptions reçues</h3>' +
+        '<div id="acad-regs"></div>' +
+      '</div>' +
+    '</div>';
+  }
+  function bindFghlabAcademiePanel(){
+    academieEnsureSeed();
+    var isOwner = function(){ return !getActiveFghlabMember(); };
+    var $ = function(id){ return document.getElementById(id); };
+    function drawFormationSelect(){
+      var sel = $('acad-formation');
+      if(!sel) return;
+      var cur = sel.value;
+      sel.innerHTML = '<option value="">Formation…</option>' +
+        fghlabState.academieFormations.map(function(f){ return '<option value="'+escapeHtml(f.id)+'">'+escapeHtml(f.title)+'</option>'; }).join('') +
+        '<option value="'+ACADEMIE_OTHER+'">Autre (à préciser)</option>';
+      sel.value = cur || '';
+    }
+    function drawPriceHint(){
+      var h = $('acad-price-hint'), sel = $('acad-formation');
+      if(!h || !sel) return;
+      var f = null;
+      fghlabState.academieFormations.forEach(function(x){ if(x.id === sel.value) f = x; });
+      h.textContent = f ? ('Prix proposé : ' + academiePriceText(f) + ' · durée habituelle : ' + (f.duration || '—')) : '';
+    }
+    function drawCatalog(){
+      var el = $('acad-catalog'), wrap = $('acad-form-wrap');
+      if(wrap) wrap.style.display = isOwner() ? 'flex' : 'none';
+      if(!el) return;
+      if(!fghlabState.academieFormations.length){ el.innerHTML = '<p class="hint" style="margin:0;">Aucune formation au catalogue.</p>'; return; }
+      var cats = [];
+      fghlabState.academieFormations.forEach(function(f){ var c = f.cat || 'Autres formations'; if(cats.indexOf(c) === -1) cats.push(c); });
+      el.innerHTML = cats.map(function(c){
+        return '<div style="font-weight:700; font-size:13px; margin:12px 0 2px;">'+escapeHtml(c)+'</div>' +
+        fghlabState.academieFormations.filter(function(f){ return (f.cat || 'Autres formations') === c; }).map(function(f){
+          var priceCtl = isOwner()
+            ? '<input type="number" min="0" step="1" data-acad-price="'+escapeHtml(f.id)+'" value="'+(Number(f.price) || 0)+'" style="width:100px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;"> ' +
+              '<span class="hint" style="margin:0;">'+escapeHtml(vehicleCurrencyShort(f.currency))+'</span> ' +
+              '<button type="button" class="btn danger" data-acad-del="'+escapeHtml(f.id)+'" style="padding:2px 8px; font-size:11.5px;">Retirer</button>'
+            : '<strong>'+escapeHtml(academiePriceText(f))+'</strong>';
+          var meta = [f.level, f.duration, f.audience].filter(Boolean).join(' · ');
+          return '<div style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; margin-top:6px; background:var(--surface); display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center;">' +
+            '<div style="font-size:12.5px; flex:1; min-width:200px;"><strong>'+escapeHtml(f.title)+'</strong>' +
+            (f.description ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(f.description)+'</div>' : '') +
+            (meta ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(meta)+'</div>' : '') + '</div>' +
+            '<div style="display:flex; gap:6px; align-items:center;">'+priceCtl+'</div></div>';
+        }).join('');
+      }).join('');
+    }
+    function drawRegs(){
+      var el = $('acad-regs');
+      if(!el) return;
+      var regs = (fghlabState.academieRegistrations || []).slice().reverse();
+      if(!regs.length){ el.innerHTML = '<p class="hint" style="margin:0;">Aucune inscription pour l’instant.</p>'; return; }
+      el.innerHTML = regs.map(function(r){
+        var opts = ACADEMIE_REG_STATUS.map(function(s){ return '<option'+(s === r.status ? ' selected' : '')+'>'+s+'</option>'; }).join('');
+        return '<div style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; margin-top:6px; background:var(--surface); font-size:12.5px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
+          '<div><strong>'+escapeHtml(r.name)+'</strong> — '+escapeHtml(r.formationTitle)+'<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.format)+' · '+escapeHtml(r.duration)+' · '+escapeHtml(r.email || '—')+' · '+escapeHtml(r.phone || '—')+' · '+escapeHtml(fmtFghlabShortDate(r.createdOn))+(r.priceText ? ' · '+escapeHtml(r.priceText) : '')+'</div>'+(r.message ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.message)+'</div>' : '')+'</div>' +
+          '<select data-acad-regstatus="'+escapeHtml(r.id)+'" style="border:1px solid var(--line); border-radius:7px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">'+opts+'</select></div>';
+      }).join('');
+    }
+    function toggleOther(selId, inputId){
+      var s = $(selId), i = $(inputId);
+      if(s && i) i.style.display = (s.value === ACADEMIE_OTHER) ? '' : 'none';
+    }
+    drawFormationSelect(); drawPriceHint(); drawCatalog(); drawRegs();
+    fghlabSyncRedraw.academie = function(){ drawFormationSelect(); drawPriceHint(); drawCatalog(); drawRegs(); };
+    var fSel = $('acad-formation');
+    if(fSel) fSel.addEventListener('change', function(){ toggleOther('acad-formation', 'acad-formation-other'); drawPriceHint(); });
+    var fmSel = $('acad-format'); if(fmSel) fmSel.addEventListener('change', function(){ toggleOther('acad-format', 'acad-format-other'); });
+    var duSel = $('acad-duration'); if(duSel) duSel.addEventListener('change', function(){ toggleOther('acad-duration', 'acad-duration-other'); });
+    var sub = $('acad-submit');
+    if(sub) sub.addEventListener('click', function(){
+      var name = ($('acad-name').value || '').trim();
+      var email = ($('acad-email').value || '').trim();
+      var st = $('acad-status');
+      function say(t){ if(st){ st.textContent = t; setTimeout(function(){ st.textContent = ''; }, 3000); } }
+      if(!name){ say('Indiquez votre nom.'); return; }
+      if(!email && !($('acad-phone').value || '').trim()){ say('Indiquez un courriel ou un téléphone.'); return; }
+      var fv = $('acad-formation').value, f = null, title = '';
+      if(!fv){ say('Choisissez une formation.'); return; }
+      if(fv === ACADEMIE_OTHER){
+        title = ($('acad-formation-other').value || '').trim();
+        if(!title){ say('Précisez la formation souhaitée.'); return; }
+      }else{
+        fghlabState.academieFormations.forEach(function(x){ if(x.id === fv) f = x; });
+        title = f ? f.title : '';
+      }
+      var fmt = $('acad-format').value === ACADEMIE_OTHER ? (($('acad-format-other').value || '').trim() || 'Autre') : $('acad-format').value;
+      var dur = $('acad-duration').value === ACADEMIE_OTHER ? (($('acad-duration-other').value || '').trim() || 'Autre') : $('acad-duration').value;
+      if(!Array.isArray(fghlabState.academieRegistrations)) fghlabState.academieRegistrations = [];
+      fghlabState.academieRegistrations.push({
+        id: 'fghrg-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: name, email: email, phone: ($('acad-phone').value || '').trim(),
+        formationId: f ? f.id : null, formationTitle: title, format: fmt, duration: dur,
+        priceText: f ? academiePriceText(f) : '', message: ($('acad-message').value || '').trim(),
+        status: 'Nouvelle', createdOn: new Date().toISOString()
+      });
+      persistFghlabState();
+      ['acad-name','acad-email','acad-phone','acad-message','acad-formation-other','acad-format-other','acad-duration-other'].forEach(function(id){ if($(id)) $(id).value = ''; });
+      $('acad-formation').value = ''; toggleOther('acad-formation', 'acad-formation-other'); drawPriceHint();
+      drawRegs();
+      say('Inscription enregistrée ✓');
+    });
+    var addBtn = $('acad-new-add');
+    if(addBtn) addBtn.addEventListener('click', function(){
+      if(!isOwner()) return;
+      var title = ($('acad-new-title').value || '').trim();
+      if(!title) return;
+      fghlabState.academieFormations.push({
+        id: 'fghfo-' + Math.random().toString(36).slice(2, 9), title: title, cat: ($('acad-new-cat').value || 'Domaines de formation').replace('&amp;', '&'), level: '', audience: '',
+        description: ($('acad-new-desc').value || '').trim(), price: Number($('acad-new-price').value) || 0,
+        currency: $('acad-new-currency').value || 'CAD', formats: [], duration: $('acad-new-duration').value
+      });
+      persistFghlabState();
+      $('acad-new-title').value = ''; $('acad-new-price').value = ''; $('acad-new-desc').value = '';
+      drawFormationSelect(); drawCatalog();
+    });
+    var cat = $('acad-catalog');
+    if(cat){
+      cat.addEventListener('change', function(e){
+        if(!isOwner()) return;
+        var p = e.target.closest ? e.target.closest('[data-acad-price]') : null;
+        if(!p) return;
+        var id = p.getAttribute('data-acad-price');
+        fghlabState.academieFormations.forEach(function(f){ if(f.id === id){ f.price = Number(p.value) || 0; f.example = false; } });
+        persistFghlabState(); drawCatalog(); drawPriceHint();
+      });
+      cat.addEventListener('click', function(e){
+        if(!isOwner()) return;
+        var d = e.target.closest ? e.target.closest('[data-acad-del]') : null;
+        if(!d) return;
+        var id = d.getAttribute('data-acad-del');
+        fghlabState.academieFormations = fghlabState.academieFormations.filter(function(f){ return f.id !== id; });
+        persistFghlabState(); drawFormationSelect(); drawCatalog(); drawPriceHint();
+      });
+    }
+    var regs = $('acad-regs');
+    if(regs) regs.addEventListener('change', function(e){
+      var s = e.target.closest ? e.target.closest('[data-acad-regstatus]') : null;
+      if(!s) return;
+      var id = s.getAttribute('data-acad-regstatus');
+      (fghlabState.academieRegistrations || []).forEach(function(r){ if(r.id === id) r.status = s.value; });
+      persistFghlabState();
+    });
+  }
+
+  /* ================= FGH-Lab — Rendez-vous : disponibilités + onglet « Prendre mon rendez-vous » ================= */
+  function fghlabRdvWrapPanel(trackerHtml){
+    var st = academieSelStyle();
+    var head = '<div class="card hn-panel" id="fghlab-panel-rdv" hidden>';
+    if(trackerHtml.indexOf(head) !== 0 || trackerHtml.slice(-6) !== '</div>') return trackerHtml;
+    var inner = trackerHtml.slice(head.length, -6);
+    var tabs = '<div style="display:flex; gap:6px; margin:0 0 12px;">' +
+      '<button type="button" class="btn primary" id="rdv-tabbtn-gestion" style="padding:5px 12px; font-size:12.5px;">Gestion des rendez-vous</button>' +
+      '<button type="button" class="btn" id="rdv-tabbtn-prendre" style="padding:5px 12px; font-size:12.5px;">Prendre mon rendez-vous</button></div>';
+    var prendre = '<div id="rdv-tab-prendre" hidden>' +
+      '<h3 style="margin:0 0 6px; font-size:14.5px;">Prendre mon rendez-vous</h3>' +
+      '<p class="hint" style="margin:0 0 8px;">Choisissez un créneau libre, indiquez vos coordonnées et le motif.</p>' +
+      '<div id="rdv-free-list"></div>' +
+      '<div id="rdv-book-form" hidden style="display:none; gap:8px; flex-wrap:wrap; margin-top:10px; border-top:1px solid var(--line); padding-top:10px;">' +
+        '<div id="rdv-book-slot" class="hint" style="flex:1 1 100%; margin:0;"></div>' +
+        '<input type="text" id="rdv-book-name" maxlength="120" placeholder="Nom et prénom" style="flex:1; min-width:180px; '+st+'">' +
+        '<input type="text" id="rdv-book-contact" maxlength="140" placeholder="Courriel ou téléphone" style="flex:1; min-width:180px; '+st+'">' +
+        '<input type="text" id="rdv-book-motif" maxlength="200" placeholder="Motif du rendez-vous" style="flex:1 1 100%; '+st+'">' +
+        '<button type="button" class="btn primary" id="rdv-book-confirm">Confirmer le rendez-vous</button>' +
+        '<span class="copy-status" id="rdv-book-status"></span>' +
+      '</div>' +
+      '<div id="rdv-avail-admin" style="margin-top:16px; border-top:1px solid var(--line); padding-top:10px;">' +
+        '<h3 style="margin:0 0 6px; font-size:14.5px;">Mes disponibilités</h3>' +
+        '<div id="rdv-avail-form" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">' +
+          '<input type="date" id="rdv-slot-date" style="'+st+'">' +
+          '<input type="time" id="rdv-slot-start" style="'+st+'">' +
+          '<input type="time" id="rdv-slot-end" style="'+st+'">' +
+          '<input type="text" id="rdv-slot-note" maxlength="120" placeholder="Précision (facultatif)" style="flex:1; min-width:160px; '+st+'">' +
+          '<button type="button" class="btn" id="rdv-slot-add">Publier ce créneau</button></div>' +
+        '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:8px;"><button type="button" class="btn" id="rdv-copy-public" style="padding:4px 10px; font-size:12px;">Copier le lien public de prise de rendez-vous</button><span class="copy-status" id="rdv-copy-status"></span></div>' +
+        '<p class="hint" data-fgh-sync-status style="margin:0 0 8px; font-size:12px;"></p>' +
+        '<div id="rdv-slot-list"></div>' +
+      '</div></div>';
+    return head + tabs + '<div id="rdv-tab-gestion">' + inner + '</div>' + prendre + '</div>';
+  }
+  function bindFghlabRdvExtras(){
+    var $ = function(id){ return document.getElementById(id); };
+    if(!$('rdv-tabbtn-gestion')) return;
+    var chosen = null;
+    function slots(){ if(!Array.isArray(fghlabState.rdvSlots)) fghlabState.rdvSlots = []; return fghlabState.rdvSlots; }
+    function slotLabel(s){ return s.date + ' · ' + s.start + '–' + s.end + (s.note ? ' · ' + s.note : ''); }
+    function sorted(){ return slots().slice().sort(function(a, b){ return (a.date + a.start).localeCompare(b.date + b.start); }); }
+    function draw(){
+      var free = sorted().filter(function(s){ return !s.booking; });
+      var fl = $('rdv-free-list');
+      fl.innerHTML = free.length ? free.map(function(s){
+        return '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center; border:1px solid var(--line); border-radius:9px; padding:6px 10px; margin-top:5px; background:var(--surface); font-size:12.5px;">' +
+          '<span>'+escapeHtml(slotLabel(s))+'</span><button type="button" class="btn" data-rdv-pick="'+escapeHtml(s.id)+'" style="padding:3px 10px; font-size:12px;">Choisir</button></div>';
+      }).join('') : '<p class="hint" style="margin:0;">Aucun créneau libre pour l’instant.</p>';
+      var canManage = true; // propriétaire ou membre autorisé à cet outil
+      var sl = $('rdv-slot-list');
+      sl.innerHTML = sorted().length ? sorted().map(function(s){
+        return '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center; border:1px solid var(--line); border-radius:9px; padding:6px 10px; margin-top:5px; background:var(--surface); font-size:12.5px;">' +
+          '<span>'+escapeHtml(slotLabel(s))+(s.booking ? ' — <strong>réservé par '+escapeHtml(s.booking.name)+'</strong> ('+escapeHtml(s.booking.contact)+')'+(s.booking.motif ? ' · '+escapeHtml(s.booking.motif) : '') : ' — libre')+'</span>' +
+          (canManage ? '<button type="button" class="btn danger" data-rdv-del="'+escapeHtml(s.id)+'" style="padding:2px 8px; font-size:11.5px;">Retirer</button>' : '') + '</div>';
+      }).join('') : '<p class="hint" style="margin:0;">Aucune disponibilité publiée.</p>';
+    }
+    function showTab(which){
+      $('rdv-tab-gestion').hidden = (which !== 'gestion');
+      $('rdv-tab-prendre').hidden = (which !== 'prendre');
+      $('rdv-tabbtn-gestion').className = 'btn' + (which === 'gestion' ? ' primary' : '');
+      $('rdv-tabbtn-prendre').className = 'btn' + (which === 'prendre' ? ' primary' : '');
+      if(which === 'prendre') draw();
+    }
+    fghlabSyncRedraw.rdv = draw;
+    fghlabSyncSetStatus(fghlabSync.status, fghlabSync.statusText || fghlabSyncIdleText());
+    $('rdv-copy-public').addEventListener('click', function(){
+      var st = $('rdv-copy-status'), url = fghlabPublicUrl('rdv', '');
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function(){ st.textContent = 'Lien copié ✓'; }, function(){ st.textContent = 'Copie impossible'; });
+      setTimeout(function(){ st.textContent = ''; }, 2200);
+    });
+    $('rdv-tabbtn-gestion').addEventListener('click', function(){ showTab('gestion'); });
+    $('rdv-tabbtn-prendre').addEventListener('click', function(){ showTab('prendre'); });
+    $('rdv-slot-add').addEventListener('click', function(){
+      var d = $('rdv-slot-date').value, a = $('rdv-slot-start').value, b = $('rdv-slot-end').value;
+      if(!d || !a || !b || b <= a) return;
+      slots().push({ id: 'fghsl-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date: d, start: a, end: b, note: ($('rdv-slot-note').value || '').trim(), booking: null, createdBy: fghlabActor(), createdOn: new Date().toISOString() });
+      persistFghlabState();
+      $('rdv-slot-note').value = '';
+      draw();
+    });
+    $('rdv-tab-prendre').addEventListener('click', function(e){
+      var pick = e.target.closest ? e.target.closest('[data-rdv-pick]') : null;
+      var del = e.target.closest ? e.target.closest('[data-rdv-del]') : null;
+      if(pick){
+        chosen = pick.getAttribute('data-rdv-pick');
+        var s = null; slots().forEach(function(x){ if(x.id === chosen) s = x; });
+        if(!s) return;
+        $('rdv-book-slot').textContent = 'Créneau choisi : ' + slotLabel(s);
+        $('rdv-book-form').hidden = false; $('rdv-book-form').style.display = 'flex';
+      }
+      if(del){
+        var id = del.getAttribute('data-rdv-del');
+        fghlabState.rdvSlots = slots().filter(function(x){ return x.id !== id; });
+        persistFghlabState(); draw();
+      }
+    });
+    $('rdv-book-confirm').addEventListener('click', function(){
+      var st = $('rdv-book-status');
+      function say(t){ st.textContent = t; setTimeout(function(){ st.textContent = ''; }, 3000); }
+      var name = ($('rdv-book-name').value || '').trim(), contact = ($('rdv-book-contact').value || '').trim();
+      if(!chosen){ say('Choisissez un créneau.'); return; }
+      if(!name || !contact){ say('Indiquez votre nom et un contact.'); return; }
+      var s = null; slots().forEach(function(x){ if(x.id === chosen) s = x; });
+      if(!s || s.booking){ say('Ce créneau n’est plus libre.'); draw(); return; }
+      s.booking = { name: name, contact: contact, motif: ($('rdv-book-motif').value || '').trim(), on: new Date().toISOString() };
+      persistFghlabState();
+      chosen = null;
+      $('rdv-book-form').hidden = true; $('rdv-book-form').style.display = 'none';
+      ['rdv-book-name','rdv-book-contact','rdv-book-motif'].forEach(function(i){ $(i).value = ''; });
+      draw();
+      say('Rendez-vous confirmé ✓');
+    });
+    draw();
   }
 
   /* ================= FGH-Lab — TOUTTEST (tests de recrutement pour FINECIA GROUPE) =================
@@ -20051,6 +21313,7 @@
           answers: {},
           score: null,
           completedOn: null,
+          createdBy: fghlabActor(),
           createdOn: new Date().toISOString()
         };
         if(moduleVal === 'autretest'){
@@ -20148,6 +21411,7 @@
             var scoreNum = scoreEl ? Number(scoreEl.value) : NaN;
             session.score = isNaN(scoreNum) ? null : Math.max(0, Math.min(100, scoreNum));
             session.status = 'termine';
+            session.completedBy = fghlabActor();
             session.completedOn = new Date().toISOString();
             persistFghlabState();
             fghlabTouttestOpenSessionId = null;
@@ -20161,6 +21425,7 @@
           });
           session.score = questions.length ? Math.round((correctCount / questions.length) * 100) : 0;
           session.status = 'termine';
+          session.completedBy = fghlabActor();
           session.completedOn = new Date().toISOString();
           persistFghlabState();
           fghlabTouttestOpenSessionId = null;
@@ -23484,6 +24749,7 @@
         (selectFghlabTool, showView, bouton de déconnexion). Visible côté propriétaire dans
         Réglages > Gestion du compte administrateur, fiche de chaque membre. */
   var FGHLAB_DOC_CONTENT = {
+    academie: "FINECIA ACADÉMIE regroupe le catalogue des formations de FINECIA GROUPE avec leur prix, et un formulaire d'inscription (formation, format, durée, avec « Autre (à préciser) »). Le propriétaire tient le catalogue et les prix ; les inscriptions reçues sont suivies par statut (Nouvelle, Contactée, Confirmée, Annulée). Données enregistrées sur cet appareil pour l'instant.",
     etudes: "Études sert à cadrer une enquête ou une recherche sur mesure pour un dossier ou un mandat : définir la question, la méthode et les sources, puis en tirer des constats exploitables par l'équipe. C'est pour l'instant un stub « Bientôt disponible » — la carte existe et est nommée correctement, mais aucune logique de collecte ou d'analyse n'y est encore branchée.",
     bizplan: "Business plan accompagne la structuration d'un plan d'affaires section par section (marché, opérations, finances, etc.), pour garder une trame cohérente d'un mandat à l'autre. C'est un stub « Bientôt disponible » : la structure de la carte est prête, mais l'assistance section par section n'est pas encore implémentée.",
     conseiller: "Conseiller en finance et économie répond à des questions ponctuelles de finance ou d'économie avec des repères adaptés au contexte d'un mandat FINECIA GROUPE — un point d'entrée pour des éclairages rapides plutôt qu'une analyse complète. Stub « Bientôt disponible » pour l'instant.",
@@ -28558,6 +29824,10 @@
           '<details style="margin-top:6px;">' +
             '<summary style="cursor:pointer; font-size:12px; color:var(--muted);">Historique des documentations ('+(Array.isArray(member.docsHistory) ? member.docsHistory.length : 0)+')</summary>' +
             '<div style="margin-top:6px; max-height:180px; overflow-y:auto;">'+fghlabDocHistorySummaryHtml(member)+'</div>' +
+          '</details>' +
+          '<details style="margin-top:6px;">' +
+            '<summary style="cursor:pointer; font-size:12px; color:var(--muted);">Historique TOUTTEST ('+fghlabTouttestHistoryFor(member).length+')</summary>' +
+            '<div style="margin-top:6px; max-height:180px; overflow-y:auto;">'+fghlabTouttestHistorySummaryHtml(member)+'</div>' +
           '</details>' +
         '</div>';
       }).join('');
