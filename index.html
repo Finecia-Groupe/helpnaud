@@ -5907,6 +5907,7 @@
   var FGHLAB_TEAM_COLS = 'id,auth_user_id,name,email,must_change_password,role,status,authorized_tools,admin_designated_on,admin_removed_on,admin_must_change_password,docs_verified_date,job_title,admin_role,can_view_access_list,activated_by_name,activated_by_number,activated_on,created_at';
   var FGHLAB_SESSION_MAX_MS = 12 * 3600 * 1000;
   var FGHLAB_LOGIN_GENERIC = 'Identifiants incorrects. Vérifiez le courriel, le N° de membre et le mot de passe, ou recommencez avec « Retour ».';
+  var fghlabCloudOwnerGrants = [];     // octrois faits par le propriétaire (journal du serveur) : {memberId, memberName, grantedOn}
   var fghlabCloudRole = null;          // 'owner' | 'admin' | 'member' : rôle CONFIRMÉ par la base pour la session ouverte
   var fghlabCloudMemberSid = null;     // id de la session membre dans le journal serveur
   var fghlabCloudAdminSid = null;      // id de la session ADMINISTRATEUR dans le journal serveur
@@ -5973,8 +5974,9 @@
 
   /* ---- chargement de l'équipe (cache d'affichage) ---- */
   function fghlabCloudMapTeam(rows, sessions, grants, numbers){
-    var byId = {}, list = [], now = Date.now();
+    var byId = {}, list = [], now = Date.now(), ownerId = null;
     (rows || []).forEach(function(row){
+      if(row && row.role === 'owner' && !ownerId) ownerId = row.id;
       if(!row || row.role === 'owner' || row.status !== 'active') return;
       var m = {
         id: row.id, name: row.name || '', email: String(row.email || ''),
@@ -6002,8 +6004,13 @@
       if(!logout && !isNaN(t0) && now - t0 > FGHLAB_SESSION_MAX_MS) logout = new Date(t0 + FGHLAB_SESSION_MAX_MS).toISOString();
       (s.kind === 'admin' ? m.adminConnections : m.connections).push({ login: s.login_at, logout: logout });
     });
+    fghlabCloudOwnerGrants = [];
     (grants || []).forEach(function(g){
       var a = byId[g.granted_by], t = byId[g.member_id];
+      if(!a && ownerId && g.granted_by === ownerId){
+        fghlabCloudOwnerGrants.push({ memberId: g.member_id, memberName: t ? t.name : '', grantedOn: g.granted_on });
+        return;
+      }
       if(!a) return;
       a.grantedAccess.push({ memberId: g.member_id, memberName: t ? t.name : '', grantedOn: g.granted_on });
     });
@@ -6086,6 +6093,7 @@
     if(fghlabCloudBusy) return;
     var hadMember = !!(fghlabActiveMemberId && fghlabCloudMemberSid);
     fghlabCloudRole = null;
+    fghlabCloudOwnerGrants = [];
     if(hadMember){
       if(typeof fghlabDocCloseCurrentVisit === 'function'){ try{ fghlabDocCloseCurrentVisit(); }catch(e){} }
       fghlabCloudClearMemberState();
@@ -6435,7 +6443,8 @@
       var emailChanged = existing.email.trim().toLowerCase() !== f.email.trim().toLowerCase();
       if(isOwner){
         if(emailChanged){ fghlabCloudTeamErr('Le courriel d’un membre ne peut pas être modifié ici : retirez le membre puis recréez-le avec le bon courriel.'); return; }
-        var upd = { name: f.name, job_title: f.job || null, authorized_tools: f.tools };
+        var upd = { name: f.name, job_title: f.job || null };
+        var toolsChanged = JSON.stringify((existing.authorizedTools || []).slice().sort()) !== JSON.stringify((f.tools || []).slice().sort());
         if(existing.isAdmin){
           var roleInp = document.getElementById('fghlab-team-adminrole-input');
           var listChk = document.getElementById('fghlab-accesslist-check');
@@ -6445,6 +6454,9 @@
         p = sb.from('team_members').update(upd).eq('id', editingId).select('id').then(function(r){
           if(r.error) throw r.error;
           if(!r.data || !r.data.length) throw fghlabCloudFail('Modification refusée par le serveur.');
+          // Les outils passent par le serveur, qui journalise l'octroi au nom du propriétaire.
+          if(!toolsChanged) return null;
+          return sb.rpc('owner_set_member_tools', { p_member_id: editingId, p_tools: f.tools }).then(function(r2){ if(r2.error) throw r2.error; });
         });
       }else{
         if(emailChanged || existing.name !== f.name || (existing.jobTitle || '') !== (f.job || '')){
@@ -28396,6 +28408,13 @@
         rows.push({ adminName: admin.name, adminRole: admin.adminRole || '', memberId: g.memberId, memberName: g.memberName, grantedOn: g.grantedOn });
       });
     });
+    // Octrois faits par le propriétaire lui-même (mode serveur) : affichés avec les autres, par transparence.
+    if(fghlabCloudFlag()){
+      var ownerLabel = (fghlabState.adminProfile && fghlabState.adminProfile.name) ? fghlabState.adminProfile.name : 'Propriétaire';
+      fghlabCloudOwnerGrants.forEach(function(g){
+        rows.push({ adminName: ownerLabel, adminRole: 'Propriétaire', memberId: g.memberId, memberName: g.memberName, grantedOn: g.grantedOn });
+      });
+    }
     rows.sort(function(a, b){ return new Date(b.grantedOn).getTime() - new Date(a.grantedOn).getTime(); });
     if(emptyEl) emptyEl.hidden = rows.length > 0;
     bodyEl.innerHTML = rows.map(function(r){
