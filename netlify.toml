@@ -1,7 +1,8 @@
 # HelpNaud.ai — déploiement Netlify (site statique, aucune étape de build pour l'instant)
 [build]
   publish = "."
-
+[functions]
+  directory = "netlify/functions"  
 # En-têtes de sécurité de base
 [[headers]]
   for = "/*"
