@@ -4348,6 +4348,8 @@
           </div>
         </div>
 
+        <p class="hint" id="fghlab-cloud-notice" style="display:none; margin:0 0 8px; font-size:12.5px;"></p>
+
         <div id="fghlab-provisional-notice" style="display:none; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:var(--accent-soft); border:1px solid var(--accent); border-radius:9px; padding:8px 12px; margin-bottom:4px; font-size:12.5px;">
           <span>Mot de passe provisoire utilisé — veuillez définir votre propre mot de passe dans votre profil.</span>
           <button type="button" class="btn" id="fghlab-provisional-notice-btn" style="padding:4px 10px; font-size:12px;">Aller à mon profil</button>
@@ -4363,7 +4365,7 @@
           <span style="font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:6px;">Changer mon mot de passe</span>
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
             <input type="password" id="fghlab-profile-pw-current" placeholder="Mot de passe actuel" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:180px;">
-            <input type="password" id="fghlab-profile-pw-new" placeholder="Nouveau mot de passe (min. 6 caractères)" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="password" id="fghlab-profile-pw-new" placeholder="Nouveau mot de passe (min. 8 caractères)" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
             <input type="password" id="fghlab-profile-pw-confirm" placeholder="Confirmer le nouveau mot de passe" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
           </div>
           <p class="hint" id="fghlab-profile-pw-error" style="margin:0 0 6px; color:var(--danger, #c0392b); display:none;"></p>
@@ -5074,6 +5076,18 @@
           </label>
         </div>
 
+        <!-- Équipe FGH-Colab sur le serveur (phase 2) : état de synchronisation et reprise des membres
+             enregistrés localement — voir fghlabCloudRenderTeamPanel() / fghlabCloudMigrate() en JS. -->
+        <div id="fghlab-ownercloud-team" style="display:none; border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:var(--surface-2); margin:10px 0 4px;">
+          <span style="font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:5px;">Équipe FGH-Colab</span>
+          <p class="hint" id="fghlab-team-sync-text" style="margin:0 0 8px;"></p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn primary" id="fghlab-migrate-btn" style="display:none; padding:6px 12px; font-size:12.5px;">Reprendre l'équipe sur le serveur</button>
+            <button type="button" class="btn" id="fghlab-migrate-useserver-btn" style="display:none; padding:6px 12px; font-size:12.5px;">Utiliser l'équipe du serveur (effacer la copie locale)</button>
+          </div>
+          <div id="fghlab-migrate-result" style="display:none; margin-top:10px; border:1px solid var(--accent); border-radius:9px; padding:10px 12px; background:var(--accent-soft);"></div>
+        </div>
+
         <form id="fghlab-ownercloud-newpw-form" style="display:none; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px;">
           <p class="hint" id="fghlab-ownercloud-newpw-intro" style="width:100%; margin:0 0 2px;"></p>
           <input type="password" id="fghlab-ownercloud-newpw" autocomplete="new-password" placeholder="Nouveau mot de passe (min. 10 caractères)" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:270px;">
@@ -5084,7 +5098,7 @@
 
         <p class="hint" id="fghlab-ownercloud-error" style="margin:8px 0 0; color:var(--danger, #c0392b); display:none;"></p>
         <p class="hint" id="fghlab-ownercloud-ok" style="margin:8px 0 0; color:var(--success, #2D9C93); display:none;"></p>
-        <p class="hint" style="margin:10px 0 0;">Cette connexion prouve votre identité auprès du serveur sécurisé. Tant que les données de FGH-Colab restent enregistrées dans ce navigateur, le verrou masque l'espace propriétaire mais ne remplace pas la protection de votre appareil (code de verrouillage de l'écran, session Windows/téléphone). La protection complète viendra quand ces données seront stockées sur le serveur.</p>
+        <p class="hint" style="margin:10px 0 0;">Cette connexion prouve votre identité auprès du serveur sécurisé. L'équipe, les accès et les connexions des membres sont protégés par le serveur ; les autres données FGH-Colab (projets, partenaires, etc.) restent pour l'instant enregistrées dans ce navigateur : le verrou masque l'espace propriétaire mais ne remplace pas la protection de votre appareil (code de verrouillage de l'écran, session Windows/téléphone).</p>
       </div>
 
       <!-- ADMINISTRATEUR (round D14) — couche intermédiaire entre le propriétaire et un membre
@@ -5100,7 +5114,7 @@
       <details class="card collapsible" id="fghlab-admin-card" style="margin-bottom:16px;">
         <summary><h2 style="margin:0; font-size:15px;">ADMINISTRATEUR</h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
         <div class="collapsible-body">
-        <p class="hint" style="margin:0 0 10px;">ADMINISTRATEUR — espace réservé aux administrateurs désignés par le propriétaire. Seul le propriétaire peut nommer ou retirer un administrateur. Un futur code à deux facteurs viendra s'ajouter à la connexion membre (courriel + mot de passe + N° à 8 chiffres) une fois HelpNaud.ai hébergé sur un véritable serveur.</p>
+        <p class="hint" style="margin:0 0 10px;">ADMINISTRATEUR — espace réservé aux administrateurs désignés par le propriétaire. Seul le propriétaire peut nommer ou retirer un administrateur. La connexion membre (courriel + N° à 8 chiffres + mot de passe) et la connexion ADMINISTRATEUR (courriel + N° de membre + code admin + mot de passe ADMINISTRATEUR) sont vérifiées par le serveur une fois l'équipe reprise sur le serveur (Réglages → Connexion sécurisée du propriétaire).</p>
 
         <!-- Vue membre non-administrateur : aucune liste ni aucun contrôle ADMINISTRATEUR exposé. -->
         <p class="hint" id="fghlab-admin-notapplicable" style="display:none; margin:0 0 10px;">Non applicable à votre profil.</p>
@@ -5288,7 +5302,7 @@
           <div id="fghlab-team-list"></div>
           <p class="hint" id="fghlab-team-empty" style="margin:4px 0 0;">Aucun membre d'équipe ajouté pour l'instant — seul le propriétaire voit FGH-Colab.</p>
 
-          <p class="hint" style="margin-top:14px;">HelpNaud.ai est actuellement une application pilote, sans serveur : cette autorisation, les numéros de membre, les droits par outil, le journal de connexions et les mots de passe des membres (ainsi que les codes et mots de passe ADMINISTRATEUR ci-dessus) sont gérés localement sur cet appareil (localStorage), sans hachage ni chiffrement de niveau serveur — ce n'est pas un véritable système d'authentification ni un contrôle d'accès sécurisé côté serveur. Une personne avec accès au code source de la page pourrait contourner ce mécanisme. Une gestion multi-utilisateurs réelle, avec de vrais comptes et un véritable code à deux facteurs, arrivera avec une future version hébergée.</p>
+          <p class="hint" id="fghlab-team-disclaimer" style="margin-top:14px;">HelpNaud.ai est actuellement une application pilote, sans serveur : cette autorisation, les numéros de membre, les droits par outil, le journal de connexions et les mots de passe des membres (ainsi que les codes et mots de passe ADMINISTRATEUR ci-dessus) sont gérés localement sur cet appareil (localStorage), sans hachage ni chiffrement de niveau serveur — ce n'est pas un véritable système d'authentification ni un contrôle d'accès sécurisé côté serveur. Une personne avec accès au code source de la page pourrait contourner ce mécanisme. Une gestion multi-utilisateurs réelle, avec de vrais comptes et un véritable code à deux facteurs, arrivera avec une future version hébergée.</p>
         </div>
         </div>
         </div>
@@ -5415,7 +5429,15 @@
     migrateFghlabNumbering();
   }
   function persistFghlabState(){
-    try{ localStorage.setItem('helpnaud_fghlab', JSON.stringify(fghlabState)); }catch(e){}
+    try{
+      var snap = fghlabState;
+      // Phase 2 : une fois l'équipe sur le serveur, rien de l'équipe (ni mots de passe) ne reste dans ce navigateur.
+      if(fghlabCloudFlag()) snap = Object.assign({}, fghlabState, { team: [] });
+      localStorage.setItem('helpnaud_fghlab', JSON.stringify(snap));
+    }catch(e){}
+  }
+  function fghlabCloudFlag(){
+    try{ return localStorage.getItem('helpnaud_team_cloud') === '1'; }catch(e){ return false; }
   }
   function isFghlabAuthorized(){ return !!fghlabState.enabled; }
   loadFghlabState();
@@ -5598,7 +5620,12 @@
   var fghlabOwnerGateOn = false;
   var fghlabOwnerChangePwOpen = false;
   var fghlabOwnerBusy = false;
-  try{ fghlabOwnerGateOn = localStorage.getItem('helpnaud_owner_gate') === '1'; }catch(e){}
+  try{
+    var fghlabGateStored = localStorage.getItem('helpnaud_owner_gate');
+    // Mode serveur (équipe sur le serveur, ou appareil sans équipe locale) : verrouillé par défaut tant que
+    // personne n'est connecté ; le propriétaire peut le désactiver explicitement.
+    fghlabOwnerGateOn = (fghlabGateStored === null) ? (fghlabCloudFlag() || !fghlabState.team.length) : (fghlabGateStored === '1');
+  }catch(e){}
   try{ fghlabOwnerRecovery = /(^|[#&?])type=recovery(&|$)/.test(String(location.hash || '')); }catch(e){}
   var fghlabSbSessionStore = {
     getItem: function(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } },
@@ -5674,6 +5701,7 @@
     if(loginForm) loginForm.style.display = showLogin ? 'flex' : 'none';
     if(signedIn) signedIn.style.display = showSigned ? 'block' : 'none';
     if(pwForm) pwForm.style.display = showPw ? 'flex' : 'none';
+    if(typeof fghlabCloudRenderTeamPanel === 'function') fghlabCloudRenderTeamPanel();
   }
   function fghlabOwnerVerify(session){
     var sb = fghlabSb;
@@ -5685,12 +5713,25 @@
         return true;
       }
       fghlabOwnerCloud = null;
+      // Phase 2 : une session MEMBRE ouverte dans cet onglet (marqueur de session) est restaurée, pas refusée.
+      if((res.data === 'member' || res.data === 'admin') && typeof fghlabCloudRestoreMember === 'function'){
+        return fghlabCloudRestoreMember(res.data).then(function(restored){
+          if(restored) return false;
+          fghlabOwnerMsg('error', "Ce compte n'est pas autorisé comme propriétaire de HelpNaud.");
+          return sb.auth.signOut().then(function(){ return false; }, function(){ return false; });
+        });
+      }
       fghlabOwnerMsg('error', "Ce compte n'est pas autorisé comme propriétaire de HelpNaud.");
       return sb.auth.signOut().then(function(){ return false; }, function(){ return false; });
     }).catch(function(e){
       fghlabOwnerCloud = null;
       fghlabOwnerMsg('error', fghlabOwnerErrText(e));
       return false;
+    }).then(function(ok){
+      if(ok && fghlabOwnerCloud && typeof fghlabCloudOnOwnerReady === 'function'){
+        return fghlabCloudOnOwnerReady().then(function(){ return ok; }, function(){ return ok; });
+      }
+      return ok;
     }).then(function(ok){ fghlabOwnerRefresh(); return ok; });
   }
   function fghlabOwnerSignIn(email, password){
@@ -5763,6 +5804,14 @@
     }).catch(function(e){ fghlabOwnerMsg('error', fghlabOwnerErrText(e)); });
   }
   (function wireFghlabOwnerCloud(){
+    var migBtn = fghlabOwnerEl('fghlab-migrate-btn');
+    if(migBtn) migBtn.addEventListener('click', function(){
+      if(window.confirm('Reprendre les membres de cet appareil sur le serveur ? Leurs copies locales (avec mots de passe en clair) seront effacées une fois la reprise réussie.')) fghlabCloudMigrate();
+    });
+    var useBtn = fghlabOwnerEl('fghlab-migrate-useserver-btn');
+    if(useBtn) useBtn.addEventListener('click', function(){
+      if(window.confirm('Effacer la copie locale des membres de cet appareil et utiliser l\u2019équipe du serveur ?')) fghlabCloudUseServerTeam();
+    });
     var loginForm = fghlabOwnerEl('fghlab-ownercloud-login-form');
     if(loginForm) loginForm.addEventListener('submit', function(ev){
       ev.preventDefault();
@@ -5824,6 +5873,7 @@
           fghlabOwnerCloud = null;
           fghlabOwnerRecovery = false;
           fghlabOwnerChangePwOpen = false;
+          if(typeof fghlabCloudHandleSignedOut === 'function') fghlabCloudHandleSignedOut();
           fghlabOwnerRefresh();
         }else if(event === 'PASSWORD_RECOVERY'){
           fghlabOwnerRecovery = true;
@@ -5838,6 +5888,648 @@
       fghlabOwnerRefresh();
     }).catch(function(){ fghlabOwnerRefresh(); });
   })();
+
+  /* ================= Équipe FGH-Colab sur le serveur (phase 2) =================
+     L'équipe, les accès, les connexions membre (3 facteurs) et ADMINISTRATEUR (4 facteurs) sont
+     désormais vérifiés par le serveur (Supabase) :
+       - courriel + mot de passe  -> Supabase Auth (bcrypt côté serveur, jamais stocké ici) ;
+       - N° de membre             -> fonction SQL member_login_check() ;
+       - code admin + mot de passe ADMINISTRATEUR -> fonction SQL admin_login_check() (5 échecs = verrou 15 min) ;
+       - création / réinitialisation / retrait d'un compte -> fonction Netlify « team-admin » (clé secrète
+         côté serveur uniquement) ; octroi d'accès -> grant_member_access() (session ADMINISTRATEUR + code).
+     Mode « serveur » = équipe reprise sur le serveur (drapeau helpnaud_team_cloud) OU appareil sans équipe
+     locale. Tant que l'équipe locale d'origine n'est pas reprise, l'ancien mode local reste en place (aucune
+     donnée écrasée). En mode serveur, fghlabState.team n'est qu'un CACHE d'affichage rempli après connexion,
+     jamais écrit dans le navigateur (voir persistFghlabState) et jamais porteur de mot de passe. */
+  var FGHLAB_TEAM_FN = '/.netlify/functions/team-admin';
+  var FGHLAB_CLOUD_MARK = 'helpnaud_fghlab_cloud';          // sessionStorage : { memberId, sid, asid } (onglet courant)
+  var FGHLAB_MIGRATE_MAP = 'helpnaud_team_migrate_map';     // localStorage : reprise partielle { idLocal: idServeur }
+  var FGHLAB_TEAM_COLS = 'id,auth_user_id,name,email,must_change_password,role,status,authorized_tools,admin_designated_on,admin_removed_on,admin_must_change_password,docs_verified_date,job_title,admin_role,can_view_access_list,activated_by_name,activated_by_number,activated_on,created_at';
+  var FGHLAB_SESSION_MAX_MS = 12 * 3600 * 1000;
+  var FGHLAB_LOGIN_GENERIC = 'Identifiants incorrects. Vérifiez le courriel, le N° de membre et le mot de passe, ou recommencez avec « Retour ».';
+  var fghlabCloudRole = null;          // 'owner' | 'admin' | 'member' : rôle CONFIRMÉ par la base pour la session ouverte
+  var fghlabCloudMemberSid = null;     // id de la session membre dans le journal serveur
+  var fghlabCloudAdminSid = null;      // id de la session ADMINISTRATEUR dans le journal serveur
+  var fghlabCloudAdminCode = null;     // code admin confirmé pour l'opération en cours (mémoire seulement)
+  var fghlabCloudBusy = false;         // vrai pendant une connexion membre (évite un nettoyage prématuré)
+  var fghlabCloudTimer = null;
+  var fghlabCloudMigrating = false;
+  var fghlabCloudServerCount = null;   // nb de membres déjà sur le serveur (vu par le propriétaire)
+  var fghlabCloudLoginEmail = '';
+  var fghlabCloudLoginNumber = '';
+  var fghlabCloudMigrateReport = null;
+
+  function fghlabCloudMode(){ return fghlabCloudFlag() || !fghlabState.team.length; }
+  function fghlabCloudSetFlag(){
+    try{ localStorage.setItem('helpnaud_team_cloud', '1'); }catch(e){}
+    try{
+      if(localStorage.getItem('helpnaud_owner_gate') === null){
+        localStorage.setItem('helpnaud_owner_gate', '1');
+        fghlabOwnerGateOn = true;
+      }
+    }catch(e){}
+  }
+  function fghlabCloudNoop(){}
+  function fghlabCloudNotice(text, kind){
+    var el = document.getElementById('fghlab-cloud-notice');
+    if(!el) return;
+    el.textContent = text || '';
+    el.style.display = text ? 'block' : 'none';
+    el.style.color = (kind === 'error') ? 'var(--danger, #c0392b)' : 'var(--ink)';
+  }
+  function fghlabCloudFail(msg){ var e = new Error(msg); e.userMessage = msg; return e; }
+  function fghlabCloudErrText(e){
+    if(e && e.userMessage) return e.userMessage;
+    var msg = String((e && (e.message || e.error_description)) || '');
+    var code = String((e && e.code) || '');
+    var low = msg.toLowerCase();
+    if(code === 'PGRST202' || (e && e.status === 404 && /function/i.test(msg))) return "Le serveur n'est pas encore prêt : le script SQL « phase 2 » n'a pas été exécuté dans Supabase.";
+    if(code === '42501') return msg || 'Action non autorisée.';
+    if(low.indexOf('failed to fetch') >= 0 || low.indexOf('networkerror') >= 0 || low.indexOf('network') >= 0 || low.indexOf('load failed') >= 0) return 'Connexion au serveur impossible. Vérifiez votre connexion Internet.';
+    if(e && e.status === 429) return 'Trop de tentatives. Réessayez dans quelques minutes.';
+    return msg ? ('Erreur : ' + msg) : 'Erreur inconnue.';
+  }
+
+  /* ---- marqueur de session membre (onglet courant seulement) ---- */
+  function fghlabCloudReadMark(){
+    try{ var r = sessionStorage.getItem(FGHLAB_CLOUD_MARK); return r ? JSON.parse(r) : null; }catch(e){ return null; }
+  }
+  function fghlabCloudWriteMark(){
+    try{
+      if(fghlabCloudMemberSid && fghlabActiveMemberId){
+        sessionStorage.setItem(FGHLAB_CLOUD_MARK, JSON.stringify({ memberId: fghlabActiveMemberId, sid: fghlabCloudMemberSid, asid: fghlabCloudAdminSid || null }));
+      }else{
+        sessionStorage.removeItem(FGHLAB_CLOUD_MARK);
+      }
+    }catch(e){}
+  }
+  function fghlabCloudClearMemberState(){
+    fghlabCloudMemberSid = null;
+    fghlabCloudAdminSid = null;
+    fghlabCloudAdminCode = null;
+    fghlabAdminSessionActive = false;
+    try{ sessionStorage.removeItem(FGHLAB_CLOUD_MARK); }catch(e){}
+  }
+
+  /* ---- chargement de l'équipe (cache d'affichage) ---- */
+  function fghlabCloudMapTeam(rows, sessions, grants, numbers){
+    var byId = {}, list = [], now = Date.now();
+    (rows || []).forEach(function(row){
+      if(!row || row.role === 'owner' || row.status !== 'active') return;
+      var m = {
+        id: row.id, name: row.name || '', email: String(row.email || ''),
+        memberNumber: (numbers && numbers[row.id]) || '',
+        authorizedTools: Array.isArray(row.authorized_tools) ? row.authorized_tools.filter(function(t){ return typeof t === 'string'; }) : [],
+        connections: [], password: '', passwordIsProvisional: !!row.must_change_password,
+        docsVerifiedDate: row.docs_verified_date || '', docsHistory: [],
+        isAdmin: row.role === 'admin',
+        adminDesignatedOn: row.admin_designated_on || null, adminRemovedOn: row.admin_removed_on || null,
+        adminCode: null, adminPassword: null, adminPasswordIsProvisional: false,
+        adminConnections: [], grantedAccess: [],
+        jobTitle: row.job_title || '', adminRole: row.admin_role || '', canViewAccessList: !!row.can_view_access_list
+      };
+      if(row.activated_by_name){
+        m.activatedBy = { name: row.activated_by_name, number: row.activated_by_number || '' };
+        m.activatedOn = row.activated_on || '';
+      }
+      byId[row.id] = m; list.push(m);
+    });
+    (sessions || []).forEach(function(s){
+      var m = byId[s.member_id]; if(!m || !s.login_at) return;
+      var logout = s.logout_at || null;
+      var t0 = new Date(s.login_at).getTime();
+      // Session jamais fermée (onglet fermé sans déconnexion) : considérée terminée après 12 h.
+      if(!logout && !isNaN(t0) && now - t0 > FGHLAB_SESSION_MAX_MS) logout = new Date(t0 + FGHLAB_SESSION_MAX_MS).toISOString();
+      (s.kind === 'admin' ? m.adminConnections : m.connections).push({ login: s.login_at, logout: logout });
+    });
+    (grants || []).forEach(function(g){
+      var a = byId[g.granted_by], t = byId[g.member_id];
+      if(!a) return;
+      a.grantedAccess.push({ memberId: g.member_id, memberName: t ? t.name : '', grantedOn: g.granted_on });
+    });
+    return list;
+  }
+  function fghlabCloudLoadTeam(){
+    var sb = fghlabSb;
+    if(!sb) return Promise.reject(fghlabCloudFail('Service de connexion sécurisée indisponible.'));
+    var isOwner = fghlabCloudRole === 'owner';
+    return Promise.all([
+      sb.from('team_members').select(FGHLAB_TEAM_COLS).order('name', { ascending: true }),
+      sb.from('team_member_sessions').select('member_id,kind,login_at,logout_at').order('login_at', { ascending: false }).limit(3000),
+      sb.from('team_access_grants').select('granted_by,member_id,granted_on').order('granted_on', { ascending: false }).limit(3000),
+      isOwner ? sb.rpc('owner_team_numbers') : sb.rpc('my_member_info')
+    ]).then(function(r){
+      if(r[0].error) throw r[0].error;
+      var numbers = {};
+      if(isOwner){ ((r[3] && r[3].data) || []).forEach(function(x){ numbers[x.id] = x.member_number; }); }
+      else if(r[3] && r[3].data && r[3].data.id){ numbers[r[3].data.id] = r[3].data.member_number; }
+      var sessions = ((r[1] && !r[1].error && r[1].data) || []).slice().reverse();
+      var grants = ((r[2] && !r[2].error && r[2].data) || []).slice().reverse();
+      fghlabState.team = fghlabCloudMapTeam(r[0].data, sessions, grants, numbers);
+      fghlabCloudSetFlag();
+      return fghlabState.team;
+    });
+  }
+  function fghlabCloudRefreshUI(full){
+    try{ if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin(); }catch(e){}
+    try{
+      if(full && typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI();
+      else if(typeof renderFghlabDashboard === 'function') renderFghlabDashboard();
+    }catch(e){}
+    fghlabOwnerRefresh();
+  }
+  function fghlabCloudRefresh(full){
+    if(!fghlabCloudRole || !fghlabSb || fghlabCloudBusy || fghlabCloudMigrating) return Promise.resolve();
+    var before = null, cur = getActiveFghlabMember();
+    if(cur) before = JSON.stringify([cur.authorizedTools, cur.isAdmin]);
+    return fghlabCloudLoadTeam().then(function(){
+      if(fghlabActiveMemberId){
+        var now = getActiveFghlabMember();
+        if(!now) return fghlabCloudForceLogout("Votre accès à FGH-Colab a été retiré par le propriétaire.");
+        if(!now.isAdmin && fghlabAdminSessionActive){ fghlabAdminSessionActive = false; fghlabCloudAdminSid = null; fghlabCloudWriteMark(); full = true; }
+        if(JSON.stringify([now.authorizedTools, now.isAdmin]) !== before) full = true;
+      }
+      fghlabCloudRefreshUI(!!full);
+    }).catch(fghlabCloudNoop);
+  }
+  function fghlabCloudStartTimer(){
+    if(fghlabCloudTimer) return;
+    fghlabCloudTimer = setInterval(function(){ if(!document.hidden) fghlabCloudRefresh(false); }, 60000);
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) fghlabCloudRefresh(false); });
+  }
+
+  /* ---- fonction serveur Netlify ---- */
+  function fghlabCloudFn(action, payload){
+    var sb = fghlabSb;
+    if(!sb) return Promise.reject(fghlabCloudFail('Service de connexion sécurisée indisponible.'));
+    return sb.auth.getSession().then(function(res){
+      var s = res && res.data && res.data.session;
+      if(!s) throw fghlabCloudFail('Session expirée. Reconnectez-vous.');
+      var body = { action: action };
+      Object.keys(payload || {}).forEach(function(k){ if(payload[k] !== undefined) body[k] = payload[k]; });
+      return fetch(FGHLAB_TEAM_FN, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token }, body: JSON.stringify(body) });
+    }).then(function(res){
+      return res.text().then(function(t){
+        var j = null; try{ j = JSON.parse(t); }catch(e){}
+        if(!res.ok){
+          var msg = (j && j.error) || (res.status === 404 ? "Le serveur d'équipe n'est pas installé (fonction Netlify absente) : suivez l'étape « Fonction serveur » du guide." : 'Erreur serveur (' + res.status + ').');
+          if(j && j.code === 'not_configured') msg = "Le serveur d'équipe n'est pas configuré : ajoutez la clé secrète Supabase dans les variables d'environnement Netlify (SUPABASE_SECRET_KEY).";
+          throw fghlabCloudFail(msg);
+        }
+        return j || {};
+      });
+    });
+  }
+
+  /* ---- déconnexions / nettoyage ---- */
+  function fghlabCloudHandleSignedOut(){
+    if(fghlabCloudBusy) return;
+    var hadMember = !!(fghlabActiveMemberId && fghlabCloudMemberSid);
+    fghlabCloudRole = null;
+    if(hadMember){
+      if(typeof fghlabDocCloseCurrentVisit === 'function'){ try{ fghlabDocCloseCurrentVisit(); }catch(e){} }
+      fghlabCloudClearMemberState();
+      setFghlabActiveMember(null);
+    }
+    if(fghlabCloudFlag()) fghlabState.team = [];
+    try{ if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI(); }catch(e){}
+    try{ if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin(); }catch(e){}
+  }
+  function fghlabCloudForceLogout(msg){
+    var sb = fghlabSb;
+    if(typeof fghlabDocCloseCurrentVisit === 'function'){ try{ fghlabDocCloseCurrentVisit(); }catch(e){} }
+    fghlabCloudClearMemberState();
+    fghlabCloudRole = null;
+    setFghlabActiveMember(null);
+    if(fghlabCloudFlag()) fghlabState.team = [];
+    return (sb ? sb.auth.signOut() : Promise.resolve()).then(fghlabCloudNoop, fghlabCloudNoop).then(function(){
+      try{ if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI(); }catch(e){}
+      try{ if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin(); }catch(e){}
+      if(msg) fghlabCloudNotice(msg, 'error');
+    });
+  }
+  function fghlabCloudMemberLogout(){
+    var sb = fghlabSb, sid = fghlabCloudMemberSid;
+    var done = function(){
+      fghlabCloudClearMemberState();
+      fghlabCloudRole = null;
+      if(fghlabCloudFlag()) fghlabState.team = [];
+      return (sb ? sb.auth.signOut() : Promise.resolve()).then(fghlabCloudNoop, fghlabCloudNoop);
+    };
+    // Le journal serveur est fermé AVANT la déconnexion (il faut encore le jeton de session).
+    var p = (sb && sid) ? Promise.resolve(sb.rpc('member_logout', { p_session_id: sid })).then(fghlabCloudNoop, fghlabCloudNoop) : Promise.resolve();
+    return p.then(done);
+  }
+  function fghlabCloudAdminLogoutSession(){
+    var sb = fghlabSb, sid = fghlabCloudAdminSid;
+    fghlabCloudAdminSid = null;
+    fghlabCloudAdminCode = null;
+    fghlabCloudWriteMark();
+    if(sb && sid) return Promise.resolve(sb.rpc('admin_logout', { p_session_id: sid })).then(fghlabCloudNoop, fghlabCloudNoop);
+    return Promise.resolve();
+  }
+
+  /* ---- connexion MEMBRE : courriel + N° (saisis aux étapes 1-2) + mot de passe (étape 3) ---- */
+  function fghlabCloudMemberLogin(email, number, password){
+    var sb = fghlabOwnerSbInit();
+    if(!sb) return Promise.reject(fghlabCloudFail('Service de connexion sécurisée indisponible (hors ligne ou bloqué par le navigateur).'));
+    fghlabCloudBusy = true;
+    var signedIn = false;
+    return sb.auth.signOut().then(fghlabCloudNoop, fghlabCloudNoop).then(function(){
+      fghlabOwnerCloud = null; fghlabOwnerRecovery = false; fghlabOwnerChangePwOpen = false;
+      fghlabCloudRole = null;
+      fghlabCloudClearMemberState();
+      return sb.auth.signInWithPassword({ email: email, password: password });
+    }).then(function(res){
+      if(res.error){
+        var st = res.error.status, code = String(res.error.code || '').toLowerCase(), m = String(res.error.message || '').toLowerCase();
+        if(st === 429 || code.indexOf('rate_limit') >= 0) throw fghlabCloudFail('Trop de tentatives. Réessayez dans quelques minutes.');
+        if(m.indexOf('failed to fetch') >= 0 || m.indexOf('network') >= 0 || m.indexOf('load failed') >= 0) throw fghlabCloudFail('Connexion au serveur impossible. Vérifiez votre connexion Internet.');
+        throw fghlabCloudFail(FGHLAB_LOGIN_GENERIC);
+      }
+      signedIn = true;
+      return sb.rpc('member_login_check', { p_member_number: number });
+    }).then(function(res){
+      if(res.error){
+        if(res.error.code === 'PGRST202' || res.error.status === 404) throw fghlabCloudFail(fghlabCloudErrText(res.error));
+        throw res.error;
+      }
+      if(!res.data || res.data.ok !== true) throw fghlabCloudFail(FGHLAB_LOGIN_GENERIC);
+      var info = res.data;
+      fghlabCloudRole = info.role;
+      fghlabCloudMemberSid = info.session_id;
+      return fghlabCloudLoadTeam().then(function(){
+        var mine = null;
+        fghlabState.team.forEach(function(m){ if(m.id === info.id) mine = m; });
+        if(!mine) throw fghlabCloudFail('Votre fiche est introuvable. Contactez le propriétaire.');
+        if(!mine.memberNumber) mine.memberNumber = number;
+        return info;
+      });
+    }).then(function(info){
+      fghlabCloudBusy = false;
+      return info;
+    }, function(e){
+      var cleanup = function(){
+        fghlabCloudBusy = false;
+        fghlabCloudRole = null;
+        fghlabCloudClearMemberState();
+        if(fghlabCloudFlag()) fghlabState.team = [];
+        throw (e && e.userMessage) ? e : fghlabCloudFail(fghlabCloudErrText(e));
+      };
+      return (signedIn ? sb.auth.signOut() : Promise.resolve()).then(cleanup, cleanup);
+    });
+  }
+  /* Session déjà ouverte dans cet onglet (rechargement de la page) : on la restaure SI le marqueur de
+     session correspond bien à la fiche confirmée par la base ; sinon la session est refusée. */
+  function fghlabCloudRestoreMember(role){
+    var sb = fghlabSb, mark = fghlabCloudReadMark();
+    if(!sb || !mark || !mark.memberId || !mark.sid) return Promise.resolve(false);
+    return sb.rpc('current_team_member_id').then(function(r){
+      if(r.error || r.data !== mark.memberId) return false;
+      fghlabCloudRole = role;
+      fghlabCloudMemberSid = mark.sid;
+      return fghlabCloudLoadTeam().then(function(){
+        var mine = null;
+        fghlabState.team.forEach(function(m){ if(m.id === mark.memberId) mine = m; });
+        if(!mine){ fghlabCloudClearMemberState(); fghlabCloudRole = null; return false; }
+        setFghlabActiveMember(mark.memberId);
+        var after = function(){
+          fghlabCloudWriteMark();
+          fghlabCloudStartTimer();
+          try{ if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI(); }catch(e){}
+          try{ if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin(); }catch(e){}
+          return true;
+        };
+        if(mark.asid && role === 'admin'){
+          return sb.rpc('has_open_admin_session').then(function(o){
+            if(o && o.data === true){ fghlabCloudAdminSid = mark.asid; fghlabAdminSessionActive = true; }
+            return after();
+          }, after);
+        }
+        return after();
+      });
+    }).catch(function(){ fghlabCloudClearMemberState(); fghlabCloudRole = null; return false; });
+  }
+
+  /* ---- connexion ADMINISTRATEUR (4 facteurs) ---- */
+  function fghlabCloudAdminLogin(email, number, code, pw){
+    var sb = fghlabSb;
+    if(!sb || fghlabCloudRole !== 'admin') return Promise.resolve({ ok: false, reason: 'invalid' });
+    return sb.rpc('admin_login_check', { p_email: email, p_member_number: number, p_admin_code: code, p_admin_password: pw }).then(function(res){
+      if(res.error) throw fghlabCloudFail(fghlabCloudErrText(res.error));
+      var d = res.data || {};
+      if(d.ok === true){ fghlabCloudAdminSid = d.session_id; fghlabCloudWriteMark(); return { ok: true }; }
+      return { ok: false, reason: d.reason || 'invalid' };
+    });
+  }
+
+  /* ---- mot de passe du membre connecté ---- */
+  function fghlabCloudChangeOwnPassword(member, current, next){
+    var sb = fghlabSb;
+    if(!sb) return Promise.reject(fghlabCloudFail('Service de connexion sécurisée indisponible.'));
+    var probe = null;
+    try{
+      probe = window.supabase.createClient(FGHLAB_SB_URL, FGHLAB_SB_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'helpnaud_sb_probe' } });
+    }catch(e){ probe = null; }
+    if(!probe) return Promise.reject(fghlabCloudFail('Service de connexion sécurisée indisponible.'));
+    return probe.auth.signInWithPassword({ email: member.email, password: current }).then(function(r){
+      if(r.error) throw fghlabCloudFail('Mot de passe actuel incorrect.');
+      return sb.auth.updateUser({ password: next });
+    }).then(function(r){
+      if(r.error){
+        var c = String(r.error.code || '').toLowerCase();
+        if(c === 'same_password') throw fghlabCloudFail('Le nouveau mot de passe doit être différent de l’ancien.');
+        if(c === 'weak_password') throw fghlabCloudFail('Mot de passe trop faible : utilisez au moins 8 caractères, avec lettres et chiffres.');
+        throw r.error;
+      }
+      return sb.from('team_members').update({ must_change_password: false }).eq('id', member.id);
+    }).then(function(r){
+      if(r && r.error) throw r.error;
+      member.passwordIsProvisional = false;
+    });
+  }
+
+  /* ---- reprise : le propriétaire vient de se connecter ---- */
+  function fghlabCloudOnOwnerReady(){
+    var sb = fghlabSb;
+    fghlabCloudRole = 'owner';
+    fghlabCloudStartTimer();
+    var legacy = !fghlabCloudFlag() && fghlabState.team.length > 0;
+    if(legacy){
+      // Équipe locale d'origine intacte : on propose la reprise, sans rien écraser.
+      return sb.from('team_members').select('id', { count: 'exact', head: true }).neq('role', 'owner').then(function(r){
+        fghlabCloudServerCount = (r && typeof r.count === 'number') ? r.count : 0;
+        fghlabCloudRenderTeamPanel();
+      }, function(){ fghlabCloudServerCount = null; fghlabCloudRenderTeamPanel(); });
+    }
+    return fghlabCloudLoadTeam().then(function(){
+      fghlabCloudRefreshUI(true);
+    }, function(e){
+      fghlabOwnerMsg('error', 'Équipe non chargée : ' + fghlabCloudErrText(e));
+    });
+  }
+
+  /* ---- panneau « Équipe sur le serveur » (carte propriétaire, Réglages) ---- */
+  function fghlabCloudRenderTeamPanel(){
+    var box = document.getElementById('fghlab-ownercloud-team');
+    if(!box) return;
+    var txt = document.getElementById('fghlab-team-sync-text');
+    var migBtn = document.getElementById('fghlab-migrate-btn');
+    var useBtn = document.getElementById('fghlab-migrate-useserver-btn');
+    var res = document.getElementById('fghlab-migrate-result');
+    var owner = !!(fghlabOwnerCloud && fghlabCloudRole === 'owner');
+    box.style.display = owner ? 'block' : 'none';
+    if(!owner) return;
+    var legacy = !fghlabCloudFlag() && fghlabState.team.length > 0;
+    var showMig = false, showUse = false, text = '';
+    if(legacy){
+      var n = fghlabState.team.length;
+      if(fghlabCloudServerCount && fghlabCloudServerCount > 0){
+        text = 'Le serveur contient déjà ' + fghlabCloudServerCount + ' membre(s), et cet appareil conserve une ancienne copie locale de ' + n + ' membre(s). Pour continuer avec l’équipe du serveur, effacez la copie locale de cet appareil.';
+        showUse = true;
+      }else{
+        text = 'Cet appareil contient ' + n + ' membre(s) d’équipe enregistré(s) localement (avec leurs mots de passe en clair). Reprenez-les sur le serveur : leurs mots de passe seront alors protégés par le serveur, les copies locales seront effacées, et chaque membre devra choisir un nouveau mot de passe à sa prochaine connexion.';
+        showMig = true;
+      }
+    }else{
+      var c = fghlabState.team.length;
+      text = 'Équipe enregistrée sur le serveur sécurisé : ' + c + ' membre(s). Les mots de passe sont protégés par le serveur et ne sont plus conservés dans ce navigateur.';
+    }
+    if(txt) txt.textContent = text;
+    if(migBtn){ migBtn.style.display = showMig ? '' : 'none'; migBtn.disabled = fghlabCloudMigrating; }
+    if(useBtn){ useBtn.style.display = showUse ? '' : 'none'; }
+    if(res){
+      var rep = fghlabCloudMigrateReport;
+      res.style.display = rep ? 'block' : 'none';
+      res.textContent = '';
+      if(rep){
+        var h = document.createElement('p'); h.style.cssText = 'margin:0 0 6px; font-weight:600; font-size:13px;'; h.textContent = rep.title; res.appendChild(h);
+        rep.lines.forEach(function(l){
+          var d = document.createElement('div'); d.style.cssText = 'font-size:12.5px; padding:3px 0; border-bottom:1px solid var(--line);';
+          d.textContent = l; res.appendChild(d);
+        });
+        if(rep.note){ var nn = document.createElement('p'); nn.className = 'hint'; nn.style.margin = '8px 0 0'; nn.textContent = rep.note; res.appendChild(nn); }
+      }
+    }
+  }
+  function fghlabMigrateRead(){ try{ return JSON.parse(localStorage.getItem(FGHLAB_MIGRATE_MAP) || '{}') || {}; }catch(e){ return {}; } }
+  function fghlabMigrateWrite(map){ try{ localStorage.setItem(FGHLAB_MIGRATE_MAP, JSON.stringify(map)); }catch(e){} }
+  function fghlabMigratePayload(m){
+    return {
+      local_id: m.id, name: m.name, email: m.email, password: m.password || '',
+      member_number: m.memberNumber || '', is_admin: !!m.isAdmin,
+      admin_code: m.adminCode || '', admin_password: m.adminPassword || '', admin_role: m.adminRole || '',
+      can_view_access_list: !!m.canViewAccessList,
+      authorized_tools: Array.isArray(m.authorizedTools) ? m.authorizedTools : [],
+      job_title: m.jobTitle || '', docs_verified_date: m.docsVerifiedDate || '',
+      admin_designated_on: m.adminDesignatedOn || '', admin_removed_on: m.adminRemovedOn || '',
+      activated_by_name: (m.activatedBy && m.activatedBy.name) || '', activated_by_number: (m.activatedBy && m.activatedBy.number) || '',
+      activated_on: m.activatedOn || '',
+      connections: (m.connections || []).map(function(c){ return { login: c.login, logout: c.logout || null }; }),
+      admin_connections: (m.adminConnections || []).map(function(c){ return { login: c.login, logout: c.logout || null }; })
+    };
+  }
+  function fghlabCloudMigrate(){
+    if(fghlabCloudRole !== 'owner' || !fghlabOwnerCloud || fghlabCloudMigrating) return Promise.resolve();
+    var local = fghlabState.team.slice();
+    if(!local.length) return Promise.resolve();
+    fghlabCloudMigrating = true;
+    fghlabCloudMigrateReport = { title: 'Reprise en cours…', lines: [], note: '' };
+    fghlabCloudRenderTeamPanel();
+    var map = fghlabMigrateRead();
+    var todo = local.filter(function(m){ return m && m.email && !map[m.id]; });
+    var noEmail = local.filter(function(m){ return !m.email; });
+    var errors = [], regenerated = [], chunks = [];
+    for(var i = 0; i < todo.length; i += 5) chunks.push(todo.slice(i, i + 5));
+    var chain = Promise.resolve();
+    chunks.forEach(function(chunk){
+      chain = chain.then(function(){
+        return fghlabCloudFn('import-members', { members: chunk.map(fghlabMigratePayload) }).then(function(out){
+          (out.results || []).forEach(function(r){
+            var lm = null; local.forEach(function(m){ if(m.id === r.local_id) lm = m; });
+            var label = lm ? (lm.name + ' (' + lm.email + ')') : r.local_id;
+            if(r.ok){
+              map[r.local_id] = r.member_id; fghlabMigrateWrite(map);
+              if(r.password_regenerated) regenerated.push({ label: label, pw: r.new_password });
+            }else{
+              errors.push(label + ' : ' + (r.error || 'échec'));
+            }
+          });
+        });
+      });
+    });
+    return chain.then(function(){
+      if(errors.length || noEmail.length){
+        var lines = errors.slice();
+        noEmail.forEach(function(m){ lines.push((m.name || 'Membre sans nom') + ' : pas de courriel, impossible de créer un compte de connexion.'); });
+        fghlabCloudMigrateReport = { title: 'Reprise incomplète — rien n’a été effacé sur cet appareil', lines: lines,
+          note: 'Corrigez ces membres (courriel manquant, doublon…) puis relancez la reprise : les membres déjà repris ne seront pas recréés.' };
+        return null;
+      }
+      // Octrois d'accès accordés par les administrateurs (journal « Liste accès »).
+      var grants = [];
+      local.forEach(function(a){
+        (Array.isArray(a.grantedAccess) ? a.grantedAccess : []).forEach(function(g){
+          if(map[a.id] && map[g.memberId]) grants.push({ granted_by: map[a.id], member_id: map[g.memberId], granted_on: g.grantedOn });
+        });
+      });
+      return (grants.length ? fghlabCloudFn('import-grants', { grants: grants }) : Promise.resolve({})).then(function(){
+        // Tout est sur le serveur : la copie locale (mots de passe en clair) est effacée de cet appareil.
+        fghlabState.team = [];
+        fghlabCloudSetFlag();
+        persistFghlabState();
+        try{ localStorage.removeItem(FGHLAB_MIGRATE_MAP); }catch(e){}
+        return fghlabCloudLoadTeam();
+      }).then(function(){
+        var lines = [];
+        lines.push(todo.length + ' membre(s) repris sur le serveur. Mots de passe actuels conservés ; chaque membre devra en choisir un nouveau à sa prochaine connexion.');
+        regenerated.forEach(function(r){ lines.push('NOUVEAU mot de passe provisoire pour ' + r.label + ' : ' + r.pw + ' (l’ancien était trop court ou refusé).'); });
+        fghlabCloudMigrateReport = { title: 'Reprise terminée ✓', lines: lines,
+          note: 'La copie locale des membres et de leurs mots de passe a été effacée de cet appareil. Notez les éventuels nouveaux mots de passe ci-dessus : ils ne seront plus affichés.' };
+        fghlabCloudRefreshUI(true);
+      });
+    }).catch(function(e){
+      fghlabCloudMigrateReport = { title: 'Reprise interrompue — rien n’a été effacé sur cet appareil', lines: [fghlabCloudErrText(e)],
+        note: 'Vous pouvez relancer la reprise : les membres déjà repris ne seront pas recréés.' };
+    }).then(function(){
+      fghlabCloudMigrating = false;
+      fghlabCloudRenderTeamPanel();
+    });
+  }
+  function fghlabCloudUseServerTeam(){
+    if(fghlabCloudRole !== 'owner' || !fghlabOwnerCloud) return Promise.resolve();
+    fghlabState.team = [];
+    fghlabCloudSetFlag();
+    persistFghlabState();
+    try{ localStorage.removeItem(FGHLAB_MIGRATE_MAP); }catch(e){}
+    return fghlabCloudLoadTeam().then(function(){
+      fghlabCloudMigrateReport = { title: 'Équipe du serveur utilisée ✓', lines: ['La copie locale de cet appareil a été effacée.'], note: '' };
+      fghlabCloudRefreshUI(true);
+    }, function(e){
+      fghlabCloudMigrateReport = { title: 'Équipe non chargée', lines: [fghlabCloudErrText(e)], note: '' };
+    }).then(fghlabCloudRenderTeamPanel);
+  }
+
+  /* ---- gestion de l'équipe (propriétaire / administrateur) ---- */
+  function fghlabCloudTeamErr(text){
+    var el = document.getElementById('fghlab-team-error');
+    if(el){ el.textContent = text; el.style.display = text ? 'block' : 'none'; }
+  }
+  function fghlabCloudCanManage(){
+    return fghlabCloudRole === 'owner' || (fghlabCloudRole === 'admin' && fghlabAdminSessionActive);
+  }
+  function fghlabCloudSubmitTeamForm(f){
+    var sb = fghlabSb;
+    var addBtn = document.getElementById('fghlab-team-add-btn');
+    if(!sb || !fghlabCloudCanManage()){
+      fghlabCloudTeamErr('Connectez-vous d’abord : propriétaire (Réglages → Connexion sécurisée du propriétaire) ou administrateur (carte ADMINISTRATEUR).');
+      return;
+    }
+    var isOwner = fghlabCloudRole === 'owner';
+    var editingId = fghlabEditingMemberId;
+    var existing = null;
+    if(editingId) fghlabState.team.forEach(function(m){ if(m.id === editingId) existing = m; });
+    var p;
+    if(editingId){
+      if(!existing){ fghlabCloudTeamErr('Membre introuvable.'); return; }
+      var emailChanged = existing.email.trim().toLowerCase() !== f.email.trim().toLowerCase();
+      if(isOwner){
+        if(emailChanged){ fghlabCloudTeamErr('Le courriel d’un membre ne peut pas être modifié ici : retirez le membre puis recréez-le avec le bon courriel.'); return; }
+        var upd = { name: f.name, job_title: f.job || null, authorized_tools: f.tools };
+        if(existing.isAdmin){
+          var roleInp = document.getElementById('fghlab-team-adminrole-input');
+          var listChk = document.getElementById('fghlab-accesslist-check');
+          upd.admin_role = roleInp ? (roleInp.value.trim() || null) : (existing.adminRole || null);
+          upd.can_view_access_list = !!(listChk && listChk.checked);
+        }
+        p = sb.from('team_members').update(upd).eq('id', editingId).select('id').then(function(r){
+          if(r.error) throw r.error;
+          if(!r.data || !r.data.length) throw fghlabCloudFail('Modification refusée par le serveur.');
+        });
+      }else{
+        if(emailChanged || existing.name !== f.name || (existing.jobTitle || '') !== (f.job || '')){
+          fghlabCloudTeamErr('Seul le propriétaire peut modifier le nom, le courriel ou le poste. Un administrateur modifie uniquement les outils autorisés.');
+          return;
+        }
+        if(!fghlabCloudAdminCode){ fghlabCloudTeamErr('Confirmez d’abord votre code administrateur.'); return; }
+        p = sb.rpc('grant_member_access', { p_member_id: editingId, p_tools: f.tools, p_admin_code: fghlabCloudAdminCode }).then(function(r){
+          if(r.error) throw r.error;
+        });
+      }
+    }else{
+      if(!isOwner && !fghlabCloudAdminCode){ fghlabCloudTeamErr('Confirmez d’abord votre code administrateur.'); return; }
+      p = fghlabCloudFn('create-member', {
+        name: f.name, email: f.email, job_title: f.job, tools: f.tools,
+        activated_by_name: fghlabState.adminProfile.name, activated_by_number: fghlabState.adminProfile.number,
+        admin_code: isOwner ? undefined : fghlabCloudAdminCode
+      }).then(function(out){ f._created = out; });
+    }
+    fghlabCloudTeamErr('');
+    if(addBtn) addBtn.disabled = true;
+    p.then(function(){ return fghlabCloudLoadTeam(); }).then(function(){
+      resetFghlabTeamForm();
+      renderFghlabAdmin();
+      if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI();
+      if(f._created){
+        showFghlabProvisionalPasswordBox('Mot de passe provisoire pour ' + f.name + ' — N° de membre ' + f._created.member_number + ' — à transmettre au membre :', f._created.provisional_password);
+      }
+    }).catch(function(e){
+      fghlabCloudTeamErr(fghlabCloudErrText(e));
+    }).then(function(){ if(addBtn) addBtn.disabled = false; });
+  }
+  function fghlabCloudTeamAction(kind, id){
+    var sb = fghlabSb;
+    if(fghlabCloudRole !== 'owner'){ fghlabCloudTeamErr('Réservé au propriétaire : connectez-vous avec le compte propriétaire (Réglages).'); return; }
+    var member = null;
+    fghlabState.team.forEach(function(m){ if(m.id === id) member = m; });
+    if(!member) return;
+    fghlabCloudTeamErr('');
+    var done = function(){ return fghlabCloudLoadTeam().then(function(){ renderFghlabAdmin(); if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI(); }); };
+    var fail = function(e){ fghlabCloudTeamErr(fghlabCloudErrText(e)); };
+    if(kind === 'remove'){
+      if(!window.confirm('Retirer ' + member.name + ' ? Son compte de connexion sera supprimé définitivement (cette action est irréversible).')) return;
+      fghlabCloudFn('remove-member', { member_id: id }).then(function(){
+        if(fghlabEditingMemberId === id) resetFghlabTeamForm();
+        if(typeof fghlabClosenominatePanel === 'function' && fghlabNominatingMemberId === id) fghlabClosenominatePanel();
+        return done();
+      }).catch(fail);
+    }else if(kind === 'resetpw'){
+      fghlabCloudFn('reset-member-password', { member_id: id }).then(function(out){
+        return done().then(function(){
+          showFghlabProvisionalPasswordBox('Nouveau mot de passe provisoire pour ' + member.name + ' :', out.provisional_password);
+        });
+      }).catch(fail);
+    }else if(kind === 'remove-admin'){
+      Promise.resolve(sb.rpc('owner_remove_admin', { p_member_id: id })).then(function(r){
+        if(r.error) throw r.error;
+        if(fghlabEditingMemberId === id) resetFghlabTeamForm();
+        if(typeof fghlabClosenominatePanel === 'function' && fghlabNominatingMemberId === id) fghlabClosenominatePanel();
+        return done();
+      }).catch(fail);
+    }
+  }
+  function fghlabCloudDesignateAdmin(member, role, canView){
+    var sb = fghlabSb;
+    var errEl = document.getElementById('fghlab-nominate-error');
+    var fail = function(e){ if(errEl){ errEl.textContent = fghlabCloudErrText(e); errEl.style.display = 'block'; } };
+    if(fghlabCloudRole !== 'owner'){ fail(fghlabCloudFail('Réservé au propriétaire : connectez-vous avec le compte propriétaire (Réglages).')); return; }
+    Promise.resolve(sb.rpc('owner_designate_admin', { p_member_id: member.id, p_admin_role: role, p_can_view: canView })).then(function(r){
+      if(r.error) throw r.error;
+      var creds = r.data || {};
+      return fghlabCloudLoadTeam().then(function(){
+        fghlabClosenominatePanel();
+        renderFghlabAdmin();
+        showFghlabAdminCredentialsBox('Identifiants ADMINISTRATEUR pour ' + member.name + ' — à transmettre une seule fois :', creds.admin_code, creds.admin_password);
+      });
+    }).catch(fail);
+  }
+  function fghlabCloudConfirmAdminCode(typed){
+    var sb = fghlabSb;
+    if(!sb) return Promise.resolve(false);
+    return Promise.resolve(sb.rpc('verify_admin_code', { p_code: typed })).then(function(r){
+      return !!(r && !r.error && r.data === true);
+    }, function(){ return false; });
+  }
 
   /* ================= Thème (clair/sombre/dégradé/système) =================
      « Dégradé » est un 4e mode de thème (pas limité au Tableau de bord) : les surfaces
@@ -23241,7 +23933,7 @@
     var infoEl = document.getElementById('fghlab-member-profile-info');
     var member = getActiveFghlabMember();
     if(!infoEl || !member) return;
-    infoEl.innerHTML = '<strong>' + escapeHtml(member.name) + '</strong><br>' + escapeHtml(member.email) + ' · N° de membre ' + escapeHtml(member.memberNumber);
+    infoEl.innerHTML = '<strong>' + escapeHtml(member.name) + '</strong><br>' + escapeHtml(member.email) + (member.memberNumber ? (' · N° de membre ' + escapeHtml(member.memberNumber)) : '');
   }
   function hideFghlabProvisionalNotice(){
     var el = document.getElementById('fghlab-provisional-notice');
@@ -23288,6 +23980,22 @@
       var cur = fghlabProfilePwCurrent ? fghlabProfilePwCurrent.value : '';
       var next = fghlabProfilePwNew ? fghlabProfilePwNew.value : '';
       var confirmVal = fghlabProfilePwConfirm ? fghlabProfilePwConfirm.value : '';
+      if(fghlabCloudMemberSid){
+        var pwErr = function(t){ if(fghlabProfilePwError){ fghlabProfilePwError.textContent = t; fghlabProfilePwError.style.display = 'block'; } };
+        if(!cur){ pwErr('Saisissez votre mot de passe actuel.'); return; }
+        if(!next || next.length < 8){ pwErr('Le nouveau mot de passe doit contenir au moins 8 caractères.'); return; }
+        if(next !== confirmVal){ pwErr('La confirmation ne correspond pas au nouveau mot de passe.'); return; }
+        fghlabProfilePwSaveBtn.disabled = true;
+        fghlabCloudChangeOwnPassword(member, cur, next).then(function(){
+          if(fghlabProfilePwCurrent) fghlabProfilePwCurrent.value = '';
+          if(fghlabProfilePwNew) fghlabProfilePwNew.value = '';
+          if(fghlabProfilePwConfirm) fghlabProfilePwConfirm.value = '';
+          if(fghlabProfilePwSuccess){ fghlabProfilePwSuccess.textContent = 'Mot de passe mis à jour ✓'; fghlabProfilePwSuccess.style.display = 'block'; }
+          hideFghlabProvisionalNotice();
+          if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin();
+        }, function(err){ pwErr(fghlabCloudErrText(err)); }).then(function(){ fghlabProfilePwSaveBtn.disabled = false; });
+        return;
+      }
       if(cur !== member.password){
         if(fghlabProfilePwError){ fghlabProfilePwError.textContent = 'Mot de passe actuel incorrect.'; fghlabProfilePwError.style.display = 'block'; }
         return;
@@ -23337,6 +24045,8 @@
   var fghlabLoginStep1MemberId = null;
   function fghlabResetLoginFlow(){
     fghlabLoginStep1MemberId = null;
+    fghlabCloudLoginEmail = '';
+    fghlabCloudLoginNumber = '';
     if(fghlabLoginStep1Form) fghlabLoginStep1Form.style.display = 'none';
     if(fghlabLoginStep2Form) fghlabLoginStep2Form.style.display = 'none';
     if(fghlabLoginStep3Form) fghlabLoginStep3Form.style.display = 'none';
@@ -23393,6 +24103,22 @@
     fghlabLoginStep1Form.addEventListener('submit', function(e){
       e.preventDefault();
       var email = (fghlabLoginEmailInput ? fghlabLoginEmailInput.value : '').trim().toLowerCase();
+      if(fghlabCloudMode()){
+        // Mode serveur : on ne révèle jamais si un courriel existe ; tout est vérifié à la dernière étape.
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+          if(fghlabLoginStep1Error){ fghlabLoginStep1Error.textContent = 'Saisissez une adresse courriel valide.'; fghlabLoginStep1Error.style.display = 'block'; }
+          return;
+        }
+        fghlabCloudLoginEmail = email;
+        if(fghlabLoginStep1Error) fghlabLoginStep1Error.style.display = 'none';
+        fghlabLoginStep1Form.style.display = 'none';
+        if(fghlabLoginStep2Intro) fghlabLoginStep2Intro.textContent = 'Entrez maintenant votre N° de membre à 8 chiffres.';
+        if(fghlabLoginStep2Form){
+          fghlabLoginStep2Form.style.display = 'flex';
+          if(fghlabLoginNumberInput){ fghlabLoginNumberInput.value = ''; setTimeout(function(){ fghlabLoginNumberInput.focus(); }, 30); }
+        }
+        return;
+      }
       var member = null;
       if(email){
         fghlabState.team.forEach(function(m){ if(m.email && m.email.trim().toLowerCase() === email) member = m; });
@@ -23418,6 +24144,21 @@
     fghlabLoginStep2Form.addEventListener('submit', function(e){
       e.preventDefault();
       var num = (fghlabLoginNumberInput ? fghlabLoginNumberInput.value : '').trim();
+      if(fghlabCloudMode()){
+        if(!/^[0-9]{8}$/.test(num)){
+          if(fghlabLoginStep2Error){ fghlabLoginStep2Error.textContent = 'Le N° de membre comporte exactement 8 chiffres.'; fghlabLoginStep2Error.style.display = 'block'; }
+          return;
+        }
+        fghlabCloudLoginNumber = num;
+        if(fghlabLoginStep2Error) fghlabLoginStep2Error.style.display = 'none';
+        fghlabLoginStep2Form.style.display = 'none';
+        if(fghlabLoginStep3Intro) fghlabLoginStep3Intro.textContent = 'Entrez maintenant votre mot de passe (provisoire ou personnalisé).';
+        if(fghlabLoginStep3Form){
+          fghlabLoginStep3Form.style.display = 'flex';
+          if(fghlabLoginPasswordInput){ fghlabLoginPasswordInput.value = ''; setTimeout(function(){ fghlabLoginPasswordInput.focus(); }, 30); }
+        }
+        return;
+      }
       var member = null;
       fghlabState.team.forEach(function(m){ if(m.id === fghlabLoginStep1MemberId) member = m; });
       if(!member || member.memberNumber !== num){
@@ -23440,6 +24181,27 @@
     fghlabLoginStep3Form.addEventListener('submit', function(e){
       e.preventDefault();
       var pw = fghlabLoginPasswordInput ? fghlabLoginPasswordInput.value : '';
+      if(fghlabCloudMode()){
+        if(fghlabCloudBusy) return;
+        var submitBtn = fghlabLoginStep3Form.querySelector('button[type="submit"]');
+        if(submitBtn) submitBtn.disabled = true;
+        if(fghlabLoginStep3Error) fghlabLoginStep3Error.style.display = 'none';
+        fghlabCloudNotice('', '');
+        fghlabCloudMemberLogin(fghlabCloudLoginEmail, fghlabCloudLoginNumber, pw).then(function(info){
+          var wasProvisional = !!info.must_change_password;
+          setFghlabActiveMember(info.id);
+          fghlabCloudWriteMark();
+          fghlabCloudStartTimer();
+          fghlabResetLoginFlow();
+          refreshFghlabAccessUI();
+          if(wasProvisional) showFghlabProvisionalNotice();
+          if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin();
+        }, function(err){
+          if(fghlabLoginStep3Error){ fghlabLoginStep3Error.textContent = fghlabCloudErrText(err); fghlabLoginStep3Error.style.display = 'block'; }
+          if(fghlabLoginPasswordInput) fghlabLoginPasswordInput.value = '';
+        }).then(function(){ if(submitBtn) submitBtn.disabled = false; });
+        return;
+      }
       var member = null;
       fghlabState.team.forEach(function(m){ if(m.id === fghlabLoginStep1MemberId) member = m; });
       if(!member || member.password !== pw){
@@ -23463,6 +24225,20 @@
     fghlabLogoutBtn.addEventListener('click', function(){
       if(typeof fghlabDocCloseCurrentVisit === 'function') fghlabDocCloseCurrentVisit();
       var member = getActiveFghlabMember();
+      if(fghlabCloudMemberSid){
+        // Mode serveur : le journal est fermé côté serveur, puis la session est terminée et le cache vidé.
+        var outP = fghlabCloudMemberLogout();
+        setFghlabActiveMember(null);
+        hideFghlabProvisionalNotice();
+        if(fghlabProfilePanel) fghlabProfilePanel.style.display = 'none';
+        if(fghlabProfilePwError) fghlabProfilePwError.style.display = 'none';
+        if(fghlabProfilePwSuccess) fghlabProfilePwSuccess.style.display = 'none';
+        outP.then(function(){
+          refreshFghlabAccessUI();
+          if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin();
+        });
+        return;
+      }
       if(member){
         for(var i = member.connections.length - 1; i >= 0; i--){
           if(!member.connections[i].logout){ member.connections[i].logout = new Date().toISOString(); break; }
@@ -23535,6 +24311,28 @@
       var num = (fghlabAdminLoginNumberInput ? fghlabAdminLoginNumberInput.value : '').trim();
       var code = (fghlabAdminLoginCodeInput ? fghlabAdminLoginCodeInput.value : '').trim();
       var pw = fghlabAdminLoginPasswordInput ? fghlabAdminLoginPasswordInput.value : '';
+      if(fghlabCloudMemberSid){
+        var admBtn = fghlabAdminLoginForm.querySelector('button[type="submit"]');
+        if(admBtn) admBtn.disabled = true;
+        fghlabCloudAdminLogin(email, num, code, pw).then(function(r){
+          if(r.ok){
+            fghlabAdminSessionActive = true;
+            fghlabResetAdminLoginForm();
+            if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin();
+            return;
+          }
+          if(fghlabAdminLoginErrorEl){
+            fghlabAdminLoginErrorEl.textContent = (r.reason === 'locked')
+              ? 'Trop d\u2019échecs : la connexion ADMINISTRATEUR est verrouillée pendant 15 minutes.'
+              : 'Les 4 facteurs ne correspondent pas à votre fiche d\'administrateur désigné (courriel, N° de membre, code admin, mot de passe ADMINISTRATEUR). Vérifiez chaque champ.';
+            fghlabAdminLoginErrorEl.style.display = 'block';
+          }
+          if(fghlabAdminLoginPasswordInput) fghlabAdminLoginPasswordInput.value = '';
+        }, function(err){
+          if(fghlabAdminLoginErrorEl){ fghlabAdminLoginErrorEl.textContent = fghlabCloudErrText(err); fghlabAdminLoginErrorEl.style.display = 'block'; }
+        }).then(function(){ if(admBtn) admBtn.disabled = false; });
+        return;
+      }
       var ok = email && (member.email || '').trim().toLowerCase() === email &&
         num === member.memberNumber &&
         member.adminCode && code === member.adminCode &&
@@ -23556,6 +24354,12 @@
   if(fghlabAdminSessionLogoutBtn){
     fghlabAdminSessionLogoutBtn.addEventListener('click', function(){
       var member = getActiveFghlabMember();
+      if(fghlabCloudMemberSid){
+        fghlabCloudAdminLogoutSession();
+        fghlabAdminSessionActive = false;
+        if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin();
+        return;
+      }
       if(member && Array.isArray(member.adminConnections)){
         for(var i = member.adminConnections.length - 1; i >= 0; i--){
           if(!member.adminConnections[i].logout){ member.adminConnections[i].logout = new Date().toISOString(); break; }
@@ -27470,6 +28274,7 @@
     if(confirmCodeInput) confirmCodeInput.value = '';
     if(confirmErr) confirmErr.style.display = 'none';
     fghlabAdminConfirmedFor = null;
+    fghlabCloudAdminCode = null;
     if(nameInput) nameInput.value = '';
     if(emailInput) emailInput.value = '';
     if(addBtn) addBtn.textContent = 'Ajouter le membre';
@@ -27708,22 +28513,23 @@
           : '<span style="display:inline-block; margin-top:4px; padding:1px 8px; border-radius:20px; background:var(--surface-2); border:1px solid var(--line); color:var(--muted); font-size:11px;">Mot de passe personnalisé</span>';
         // Round D14 — bouton Nommer/Retirer administrateur, réservé au propriétaire (jamais à un
         // administrateur connecté à ADMINISTRATEUR : seul le propriétaire nomme/retire).
-        var adminToggleBtn = isOwnerSession
+        var ownerOps = isOwnerSession && (!fghlabCloudMode() || fghlabCloudRole === 'owner');
+        var adminToggleBtn = ownerOps
           ? ('<button type="button" class="btn" data-fghlab-team-'+(member.isAdmin ? 'remove-admin' : 'nominate-admin')+'="'+member.id+'" style="padding:3px 9px; font-size:12px;">'+(member.isAdmin ? 'Retirer comme administrateur' : 'Nommer administrateur')+'</button>')
           : '';
         return '<div style="border:1px solid var(--line); border-radius:9px; background:var(--surface); margin-bottom:8px; padding:8px 10px; font-size:13px;">' +
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
             '<div>' +
-              '<strong>'+escapeHtml(member.name)+'</strong> — N° '+escapeHtml(member.memberNumber)+'<br>' +
+              '<strong>'+escapeHtml(member.name)+'</strong>' + (member.memberNumber ? (' — N° '+escapeHtml(member.memberNumber)) : '') + '<br>' +
               '<span class="hint" style="margin:0;">'+escapeHtml(member.email)+' · '+member.authorizedTools.length+' outil'+(member.authorizedTools.length > 1 ? 's' : '')+' autorisé'+(member.authorizedTools.length > 1 ? 's' : '')+'</span><br>' +
               pwBadge +
               stampHtml +
             '</div>' +
             '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
               '<button type="button" class="btn" data-fghlab-team-edit="'+member.id+'" style="padding:3px 9px; font-size:12px;">Modifier les accès</button>' +
-              '<button type="button" class="btn" data-fghlab-team-resetpw="'+member.id+'" style="padding:3px 9px; font-size:12px;">Réinitialiser le mot de passe</button>' +
+              (ownerOps || !fghlabCloudMode() ? '<button type="button" class="btn" data-fghlab-team-resetpw="'+member.id+'" style="padding:3px 9px; font-size:12px;">Réinitialiser le mot de passe</button>' : '') +
               adminToggleBtn +
-              '<button type="button" class="btn" data-fghlab-team-remove="'+member.id+'" style="padding:3px 9px; font-size:12px;">Retirer</button>' +
+              (ownerOps || !fghlabCloudMode() ? '<button type="button" class="btn" data-fghlab-team-remove="'+member.id+'" style="padding:3px 9px; font-size:12px;">Retirer</button>' : '') +
             '</div>' +
           '</div>' +
           '<details style="margin-top:6px;">' +
@@ -27737,7 +28543,23 @@
         '</div>';
       }).join('');
     }
-    if(emptyEl) emptyEl.hidden = fghlabState.team.length > 0;
+    if(emptyEl){
+      emptyEl.hidden = fghlabState.team.length > 0;
+      if(fghlabCloudMode()){
+        emptyEl.textContent = fghlabCloudRole === 'owner'
+          ? 'Aucun membre d\u2019équipe pour l\u2019instant — ajoutez le premier avec le formulaire ci-dessus.'
+          : (fghlabCloudRole === 'admin'
+              ? 'Aucun membre d\u2019équipe pour l\u2019instant.'
+              : 'Connectez-vous (carte « Connexion sécurisée du propriétaire » dans Réglages) pour voir et gérer l\u2019équipe enregistrée sur le serveur.');
+      }
+    }
+    var disclaimerEl = document.getElementById('fghlab-team-disclaimer');
+    if(disclaimerEl){
+      if(!disclaimerEl.getAttribute('data-legacy')) disclaimerEl.setAttribute('data-legacy', disclaimerEl.textContent);
+      disclaimerEl.textContent = fghlabCloudMode()
+        ? 'L\u2019équipe, les numéros de membre, les droits par outil, le journal de connexions et les identifiants ADMINISTRATEUR sont enregistrés sur le serveur sécurisé : les mots de passe y sont protégés (jamais lisibles) et les connexions membre (3 facteurs) et ADMINISTRATEUR (4 facteurs) sont vérifiées par le serveur. Les autres données FGH-Colab (projets, partenaires, etc.) restent pour l\u2019instant enregistrées dans ce navigateur.'
+        : disclaimerEl.getAttribute('data-legacy');
+    }
   }
   var fghlabOwnerToggle = document.getElementById('fghlab-owner-toggle');
   if(fghlabOwnerToggle){
@@ -27789,6 +28611,11 @@
       var tools = getCheckedFghlabTools();
       var jobTitleInput = document.getElementById('fghlab-team-jobtitle-input');
       var jobTitleVal = jobTitleInput ? jobTitleInput.value.trim() : '';
+      if(fghlabCloudMode()){
+        // Mode serveur : création / modification vérifiées par le serveur (voir fghlabCloudSubmitTeamForm).
+        fghlabCloudSubmitTeamForm({ name: name, email: email, tools: tools, job: jobTitleVal });
+        return;
+      }
       var newMember = null;
       if(fghlabEditingMemberId){
         var existing = null;
@@ -27868,6 +28695,23 @@
     var errEl = document.getElementById('fghlab-admin-confirm-error');
     if(!am || !fghlabAdminConfirmInput) return;
     var typed = fghlabAdminConfirmInput.value.trim();
+    if(fghlabCloudMemberSid){
+      fghlabCloudConfirmAdminCode(typed).then(function(ok){
+        fghlabAdminConfirmInput.value = '';
+        if(ok){
+          fghlabAdminConfirmedFor = am.id;
+          fghlabCloudAdminCode = typed;
+          if(errEl) errEl.style.display = 'none';
+          syncFghlabFormExtras();
+        }else{
+          fghlabAdminConfirmedFor = null;
+          fghlabCloudAdminCode = null;
+          if(errEl){ errEl.textContent = 'Code administrateur incorrect. Aucun accès n\'a été accordé ni modifié.'; errEl.style.display = 'block'; }
+          applyFghlabToolsGate();
+        }
+      });
+      return;
+    }
     if(am.adminCode && typed === am.adminCode){
       fghlabAdminConfirmedFor = am.id;
       fghlabAdminConfirmInput.value = '';
@@ -27910,6 +28754,11 @@
       else if(!(yesEl && yesEl.checked) && !(noEl && noEl.checked)) problem = 'Choisissez explicitement si ' + nm.name + ' reçoit l\'accès à « Liste accès FGH-Colab - Autorisation ».';
       if(problem){
         if(errEl){ errEl.textContent = problem; errEl.style.display = 'block'; }
+        return;
+      }
+      if(fghlabCloudMode()){
+        if(errEl) errEl.style.display = 'none';
+        fghlabCloudDesignateAdmin(nm, role, !!(yesEl && yesEl.checked));
         return;
       }
       nm.isAdmin = true;
@@ -27959,6 +28808,18 @@
           if(npErr) npErr.style.display = 'none';
           if(npPanel){ npPanel.style.display = 'block'; if(npPanel.scrollIntoView) npPanel.scrollIntoView({ behavior:'smooth', block:'center' }); }
         }
+        return;
+      }
+      if(removeAdminBtn && fghlabCloudMode()){
+        fghlabCloudTeamAction('remove-admin', removeAdminBtn.getAttribute('data-fghlab-team-remove-admin'));
+        return;
+      }
+      if(removeBtn && fghlabCloudMode()){
+        fghlabCloudTeamAction('remove', removeBtn.getAttribute('data-fghlab-team-remove'));
+        return;
+      }
+      if(resetPwBtn && fghlabCloudMode()){
+        fghlabCloudTeamAction('resetpw', resetPwBtn.getAttribute('data-fghlab-team-resetpw'));
         return;
       }
       if(removeAdminBtn){
