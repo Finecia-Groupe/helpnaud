@@ -136,7 +136,7 @@ async function createMember(ctx, p){
       p_job_title: str(p.job_title, 120), p_tools: cleanTools(p.tools),
       p_activated_by_name: str(p.activated_by_name, 120) || null,
       p_activated_by_number: str(p.activated_by_number, 20) || null,
-      p_granted_by: asAdmin ? ctx.memberId : null
+      p_granted_by: (asAdmin || cleanTools(p.tools).length) ? ctx.memberId : null
     });
     return { id: row.id, member_number: row.member_number, provisional_password: password };
   } catch (e) {
