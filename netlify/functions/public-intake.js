@@ -78,9 +78,10 @@ exports.handler = async function(event){
       if (name.length < 2) return out(400, { error: 'Indiquez votre nom.' });
       if (!isEmail(email)) return out(400, { error: 'Courriel invalide.' });
       if (p.consent !== true) return out(400, { error: 'Veuillez accepter l\u2019utilisation de vos informations pour envoyer la demande.' });
+      if (str(p.country, 80).length < 2) return out(400, { error: 'Indiquez votre pays de résidence.' });
       const fid = str(p.formationId, 80), other = str(p.formationOther, 120);
       if (fid ? !okId(fid) : other.length < 2) return out(400, { error: 'Choisissez une formation (ou précisez-la).' });
-      const r = await svcRpc('svc_academie_register', { p: { name, email, phone: str(p.phone, 40), formationId: fid || null, formationOther: other, format: str(p.format, 80), duration: str(p.duration, 60), message: str(p.message, 600), consent: 'true' } });
+      const r = await svcRpc('svc_academie_register', { p: { name, email, phone: str(p.phone, 40), formationId: fid || null, formationOther: other, format: str(p.format, 80), duration: str(p.duration, 60), message: str(p.message, 600), consent: 'true', country: str(p.country, 80), province: str(p.province, 80), city: str(p.city, 80), region: str(p.region, 80), organisation: str(p.organisation, 120) } });
       if (!r || r.ok !== true) return out(400, { error: r && r.error === 'busy' ? 'Trop d\u2019inscriptions en attente, réessayez plus tard.' : 'Vérifiez les informations saisies.' });
       return out(200, { ok: true });
     }
