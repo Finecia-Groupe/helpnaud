@@ -52,7 +52,7 @@ exports.handler = async function(event){
   const h = event.headers || {};
   const ip = String(h['x-nf-client-connection-ip'] || h['x-forwarded-for'] || 'unknown').split(',')[0].trim();
   const action = str(p.action, 40);
-  const writes = ['invite-signup', 'book', 'interest'];
+  const writes = ['invite-signup', 'book', 'interest', 'academie-register'];
   if (limited(ip + (writes.includes(action) ? ':w' : ':r'), writes.includes(action) ? 8 : 60, 10 * 60 * 1000)) {
     return out(429, { error: 'Trop de demandes. Réessayez dans quelques minutes.' });
   }
@@ -70,6 +70,18 @@ exports.handler = async function(event){
       if (!isEmail(email)) return out(400, { error: 'Courriel invalide.' });
       const r = await svcRpc('svc_invite_signup', { p_token: token, p: { name, email, contact: str(p.contact, 100), phone: str(p.phone, 40), message: str(p.message, 600) } });
       if (!r || r.ok !== true) return out(400, { error: r && r.error === 'invalid' ? 'Ce lien d’invitation n’est plus valide.' : (r && r.error === 'busy' ? 'Trop d’inscriptions en attente, réessayez plus tard.' : 'Vérifiez les informations saisies.') });
+      return out(200, { ok: true });
+    }
+    if (action === 'academie-catalogue') return out(200, { ok: true, formations: await svcRpc('svc_academie_catalogue', {}) });
+    if (action === 'academie-register') {
+      const name = str(p.name, 120), email = str(p.email, 140).toLowerCase();
+      if (name.length < 2) return out(400, { error: 'Indiquez votre nom.' });
+      if (!isEmail(email)) return out(400, { error: 'Courriel invalide.' });
+      if (p.consent !== true) return out(400, { error: 'Veuillez accepter l\u2019utilisation de vos informations pour envoyer la demande.' });
+      const fid = str(p.formationId, 80), other = str(p.formationOther, 120);
+      if (fid ? !okId(fid) : other.length < 2) return out(400, { error: 'Choisissez une formation (ou précisez-la).' });
+      const r = await svcRpc('svc_academie_register', { p: { name, email, phone: str(p.phone, 40), formationId: fid || null, formationOther: other, format: str(p.format, 80), duration: str(p.duration, 60), message: str(p.message, 600), consent: 'true' } });
+      if (!r || r.ok !== true) return out(400, { error: r && r.error === 'busy' ? 'Trop d\u2019inscriptions en attente, réessayez plus tard.' : 'Vérifiez les informations saisies.' });
       return out(200, { ok: true });
     }
     if (action === 'slots') return out(200, { ok: true, slots: await svcRpc('svc_public_slots', {}) });
