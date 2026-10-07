@@ -152,6 +152,8 @@
 
 
   /* ---------- FINECIA ACADÉMIE : catalogue + inscription ---------- */
+  var GEO_COUNTRIES = [["Canada", "Amérique du Nord"], ["États-Unis", "Amérique du Nord"], ["Mexique", "Amérique du Nord"], ["France", "Europe"], ["Belgique", "Europe"], ["Suisse", "Europe"], ["Luxembourg", "Europe"], ["Allemagne", "Europe"], ["Italie", "Europe"], ["Espagne", "Europe"], ["Portugal", "Europe"], ["Royaume-Uni", "Europe"], ["Pays-Bas", "Europe"], ["Bénin", "Afrique de l'Ouest"], ["Burkina Faso", "Afrique de l'Ouest"], ["Côte d'Ivoire", "Afrique de l'Ouest"], ["Ghana", "Afrique de l'Ouest"], ["Guinée", "Afrique de l'Ouest"], ["Mali", "Afrique de l'Ouest"], ["Mauritanie", "Afrique de l'Ouest"], ["Niger", "Afrique de l'Ouest"], ["Nigeria", "Afrique de l'Ouest"], ["Sénégal", "Afrique de l'Ouest"], ["Togo", "Afrique de l'Ouest"], ["Sierra Leone", "Afrique de l'Ouest"], ["Liberia", "Afrique de l'Ouest"], ["Cap-Vert", "Afrique de l'Ouest"], ["Gambie", "Afrique de l'Ouest"], ["Guinée-Bissau", "Afrique de l'Ouest"], ["Cameroun", "Afrique centrale"], ["Congo (Brazzaville)", "Afrique centrale"], ["RD Congo", "Afrique centrale"], ["Gabon", "Afrique centrale"], ["Guinée équatoriale", "Afrique centrale"], ["Tchad", "Afrique centrale"], ["Centrafrique", "Afrique centrale"], ["Burundi", "Afrique centrale"], ["Rwanda", "Afrique de l'Est"], ["Kenya", "Afrique de l'Est"], ["Éthiopie", "Afrique de l'Est"], ["Tanzanie", "Afrique de l'Est"], ["Ouganda", "Afrique de l'Est"], ["Djibouti", "Afrique de l'Est"], ["Madagascar", "Afrique de l'Est"], ["Maurice", "Afrique de l'Est"], ["Comores", "Afrique de l'Est"], ["Algérie", "Afrique du Nord"], ["Maroc", "Afrique du Nord"], ["Tunisie", "Afrique du Nord"], ["Égypte", "Afrique du Nord"], ["Libye", "Afrique du Nord"], ["Afrique du Sud", "Afrique australe"], ["Angola", "Afrique australe"], ["Mozambique", "Afrique australe"], ["Zambie", "Afrique australe"], ["Zimbabwe", "Afrique australe"], ["Namibie", "Afrique australe"], ["Botswana", "Afrique australe"], ["Haïti", "Amérique latine & Caraïbes"], ["Brésil", "Amérique latine & Caraïbes"], ["Colombie", "Amérique latine & Caraïbes"], ["Argentine", "Amérique latine & Caraïbes"], ["Chili", "Amérique latine & Caraïbes"], ["Pérou", "Amérique latine & Caraïbes"], ["Martinique", "Amérique latine & Caraïbes"], ["Guadeloupe", "Amérique latine & Caraïbes"], ["Chine", "Asie"], ["Inde", "Asie"], ["Japon", "Asie"], ["Vietnam", "Asie"], ["Liban", "Moyen-Orient"], ["Arabie saoudite", "Moyen-Orient"], ["Émirats arabes unis", "Moyen-Orient"], ["Qatar", "Moyen-Orient"], ["Turquie", "Moyen-Orient"], ["Australie", "Océanie"], ["Nouvelle-Zélande", "Océanie"]];
+  var GEO_REGIONS = ["Amérique du Nord", "Amérique latine & Caraïbes", "Europe", "Afrique de l'Ouest", "Afrique centrale", "Afrique de l'Est", "Afrique du Nord", "Afrique australe", "Moyen-Orient", "Asie", "Océanie", "Autre"];
   var A_FORMATS = ['Présentiel haut de gamme', 'En ligne', 'Hybride', 'Intra-entreprise', 'Inter-entreprises', 'Masterclass 90 minutes', 'Workshop ½ ou 1 journée', 'Bootcamp 2 à 5 jours', 'Programme sur mesure'];
   var A_DURATIONS = ['90 minutes', '½ journée', '1 journée', '2 à 5 jours', '8 semaines', 'Coaching mensuel', 'Mission d’accompagnement', 'Sur mesure'];
   function opts(list){ return list.map(function(x){ return '<option>' + esc(x) + '</option>'; }).join('') + '<option value="__autre__">Autre (à préciser)</option>'; }
@@ -173,6 +175,11 @@
         '<label for="a-name">Nom et prénom</label><input id="a-name" maxlength="120">' +
         '<label for="a-email">Courriel</label><input id="a-email" type="email" maxlength="140">' +
         '<label for="a-phone">Téléphone</label><input id="a-phone" maxlength="40">' +
+        '<label for="a-country">Pays de résidence</label><input id="a-country" list="a-country-list" maxlength="80" autocomplete="country-name"><datalist id="a-country-list">' + GEO_COUNTRIES.map(function(c){ return '<option value="' + esc(c[0]) + '">'; }).join('') + '</datalist>' +
+        '<label for="a-province">Province / État / Région de résidence</label><input id="a-province" maxlength="80">' +
+        '<label for="a-city">Ville</label><input id="a-city" maxlength="80" autocomplete="address-level2">' +
+        '<label for="a-region">Région / Continent</label><select id="a-region"><option value="">Choisir…</option>' + GEO_REGIONS.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select>' +
+        '<label for="a-org">Organisation / entreprise (facultatif)</label><input id="a-org" maxlength="120">' +
         '<label for="a-formation">Formation</label><select id="a-formation"><option value="">Choisir…</option>' + list.map(function(f){ return '<option value="' + esc(f.id) + '">' + esc(f.title) + '</option>'; }).join('') + '<option value="__autre__">Autre (à préciser)</option></select>' +
         '<input id="a-formation-o" maxlength="120" placeholder="Formation souhaitée (à préciser)" style="display:none; margin-top:6px;">' +
         '<label for="a-format">Format</label><select id="a-format">' + opts(A_FORMATS) + '</select><input id="a-format-o" maxlength="80" placeholder="Format (à préciser)" style="display:none; margin-top:6px;">' +
@@ -182,6 +189,10 @@
         '<button id="a-send">Envoyer mon inscription</button><div id="a-out" class="msg"></div></div>';
       app.innerHTML = html;
       function toggle(sel, inp){ var s = document.getElementById(sel); s.addEventListener('change', function(){ document.getElementById(inp).style.display = s.value === '__autre__' ? '' : 'none'; }); }
+      document.getElementById('a-country').addEventListener('change', function(){
+        var v = this.value.trim().toLowerCase(), r = document.getElementById('a-region');
+        GEO_COUNTRIES.forEach(function(c){ if(c[0].toLowerCase() === v) r.value = c[1]; });
+      });
       toggle('a-formation', 'a-formation-o'); toggle('a-format', 'a-format-o'); toggle('a-duration', 'a-duration-o');
       app.addEventListener('click', function(e){
         var b = e.target.closest ? e.target.closest('[data-pick]') : null;
@@ -194,8 +205,9 @@
         var fv = document.getElementById('a-formation').value;
         if(!fv){ out.className = 'msg err'; out.textContent = 'Choisissez une formation.'; return; }
         function pick(sel, inp){ var v = document.getElementById(sel).value; return v === '__autre__' ? val(inp) : v; }
+        if(val('a-country').length < 2){ out.className = 'msg err'; out.textContent = 'Indiquez votre pays de résidence.'; return; }
         btn.disabled = true;
-        call({ action:'academie-register', name: val('a-name'), email: val('a-email'), phone: val('a-phone'),
+        call({ action:'academie-register', country: val('a-country'), province: val('a-province'), city: val('a-city'), region: val('a-region'), organisation: val('a-org'), name: val('a-name'), email: val('a-email'), phone: val('a-phone'),
           formationId: fv === '__autre__' ? '' : fv, formationOther: fv === '__autre__' ? val('a-formation-o') : '',
           format: pick('a-format', 'a-format-o'), duration: pick('a-duration', 'a-duration-o'), message: val('a-msg'),
           consent: document.getElementById('a-consent').checked, website: hv() }).then(function(){

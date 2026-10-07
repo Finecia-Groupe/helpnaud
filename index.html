@@ -14466,9 +14466,10 @@
      correctement, visuellement cohérents (même grille/cartes que Outils HelpNaud), et que le
      gating d'accès soit correct. Grille et panneaux générés dynamiquement à partir de
      FGHLAB_TOOLS/FGHLAB_INFO pour éviter toute duplication d'ids entre 34 entrées. */
-  var FGHLAB_TOOLS = ['etudes','bizplan','conseiller','compta','montage','pme','briefing','redaction','rh','formation','etat','expert','dossiers','rdv','mission','admin','fiscalite','importexport','mobilisation','perforg','perffin','analysepol','banquesmicrofinance','dossierscredit','dossiersfinancement','etatsentreprise','etatsconsolides','etatssociete','etatsorgint','etatsongassoc','comptaconsolidee','comptaconsolideepublic','etatscommercants','coproject','partnermarket','fgbankpartnership','touttest','pese','academie','documentation','feuillecalcul','hstatis'];
+  var FGHLAB_TOOLS = ['etudes','bizplan','conseiller','compta','montage','pme','briefing','redaction','rh','formation','etat','expert','dossiers','rdv','mission','admin','fiscalite','importexport','mobilisation','perforg','perffin','analysepol','banquesmicrofinance','dossierscredit','dossiersfinancement','etatsentreprise','etatsconsolides','etatssociete','etatsorgint','etatsongassoc','comptaconsolidee','comptaconsolideepublic','etatscommercants','coproject','partnermarket','fgbankpartnership','touttest','pese','academie','documentation','feuillecalcul','hstatis','calculateurs'];
   var FGHLAB_INFO = {
     etudes:{ icon:'🔍', title:'Études', desc:"Enquêtes, statistiques et recherches sur mesure pour vos dossiers et mandats." },
+    calculateurs:{ icon:'🧮', title:'Calculateurs', desc:"Prêt et amortissement, intérêts composés, VAN/TRI, seuil de rentabilité, marges, taxes, endettement et devises." },
     bizplan:{ icon:'📈', title:'Business plan', desc:"Structurez un plan d'affaires complet, section par section." },
     conseiller:{ icon:'💡', title:'Conseiller en finance et économie', desc:"Questions de finance et d'économie, avec des repères adaptés au contexte du mandat." },
     compta:{ icon:'🧮', title:'Comptabilité, contrôle et audit', desc:"Vérifications comptables et contrôles internes, niveau cabinet." },
@@ -14536,7 +14537,7 @@
       tools:['etudes','conseiller','expert','analysepol','hstatis'] },
     { key:'finance', label:'Finance, comptabilité & fiscalité',
       icon:'<ellipse cx="10" cy="15" rx="7" ry="3" fill="none" stroke="#C89B3C" stroke-width="2"/><ellipse cx="10" cy="10.5" rx="7" ry="3" fill="none" stroke="#16304A" stroke-width="2"/><ellipse cx="10" cy="6" rx="7" ry="3" fill="none" stroke="#2D9C93" stroke-width="2"/>',
-      tools:['feuillecalcul','compta','fiscalite','perffin','banquesmicrofinance','dossierscredit','dossiersfinancement','partnermarket','fgbankpartnership'] },
+      tools:['calculateurs','feuillecalcul','compta','fiscalite','perffin','banquesmicrofinance','dossierscredit','dossiersfinancement','partnermarket','fgbankpartnership'] },
     { key:'projets', label:'Projets & entreprises',
       icon:'<rect x="2" y="7" width="16" height="10" rx="2" fill="none" stroke="#16304A" stroke-width="2"/><path d="M7 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" fill="none" stroke="#C89B3C" stroke-width="2"/><line x1="2" y1="12" x2="18" y2="12" stroke="#2D9C93" stroke-width="2"/>',
       tools:['bizplan','montage','pme','redaction','perforg','mobilisation','coproject'] },
@@ -15817,6 +15818,232 @@
     { id:'restructuration', label:"Restructuration financière", template:"- Diagnostiquer les causes de la difficulté financière\n- Évaluer les options de restructuration (dette, opérations, capital)\n- Prévoir un plan de redressement avec jalons" },
     { id:'evaluationentreprise', label:"Évaluation d'entreprise", template:"- Choisir la méthode d'évaluation appropriée (actualisation des flux, comparables, actif net)\n- Rassembler les données financières historiques nécessaires\n- Documenter les hypothèses retenues dans l'évaluation" }
   ];
+  /* ===== Business plan & Rédaction de plan d'affaires : modèles, projets fictifs, outils d'assemblage ===== */
+  function fghlabPlanOutline(extraTitle, extra){
+    var base = [
+      ['1. Résumé exécutif', 'Une page : qui vous êtes, le besoin adressé, la solution, le marché visé, les chiffres clés (ventes An 1–3, marge, besoin de financement) et la demande.'],
+      ['2. Présentation de l’entreprise', 'Forme juridique, date de création, propriétaires, mission, vision, valeurs, localisation, historique et état d’avancement.'],
+      ['3. Produits et services', 'Offre détaillée, avantage concurrentiel, prix, coûts de revient, cycle de vente, propriété intellectuelle, fournisseurs clés.'],
+      ['4. Étude de marché', 'Taille et tendances du marché, segments de clientèle, concurrents directs et indirects (forces/faiblesses), positionnement, part de marché visée.'],
+      ['5. Stratégie commerciale et marketing', 'Canaux de vente, promotion, partenariats, politique de prix, objectifs de ventes mensuels, coût d’acquisition d’un client.'],
+      ['6. Opérations', 'Processus, local et équipements, capacité de production, approvisionnement, qualité, permis et conformité, calendrier de mise en œuvre.'],
+      ['7. Équipe et gouvernance', 'Dirigeants et expériences, organigramme, besoins de recrutement, conseillers, rémunération, gouvernance.'],
+      ['8. Plan financier', 'Hypothèses (ventes, coûts, marges), états de résultats et flux de trésorerie sur 36 mois, bilan d’ouverture, seuil de rentabilité, ratios (marge, couverture de la dette).'],
+      ['9. Financement et utilisation des fonds', 'Montant demandé, apport des promoteurs, sources (banque, microfinance, subvention, investisseur), utilisation détaillée, garanties, remboursement.'],
+      ['10. Risques et mesures d’atténuation', 'Risques de marché, opérationnels, financiers, réglementaires, de change; probabilité, impact et mesure pour chacun.'],
+      ['11. Échéancier et indicateurs', 'Jalons sur 12–36 mois, indicateurs de suivi (ventes, marge, trésorerie, satisfaction) et responsables.']
+    ];
+    var out = base.map(function(b){ return b[0] + '\n   ' + b[1]; }).join('\n\n');
+    return (extra && extra.length ? ('POINTS SPÉCIFIQUES — ' + extraTitle + ' :\n' + extra.map(function(x){ return '• ' + x; }).join('\n') + '\n\n') : '') + 'STRUCTURE DU PLAN :\n\n' + out;
+  }
+  var FGHLAB_BIZPLAN_MODELS = [
+    { id:'commerce', label:'Plan — Commerce de détail / boutique', template: fghlabPlanOutline('commerce de détail', ['Emplacement, achalandage et loyer (ratio loyer/ventes visé : moins de 10 %).', 'Rotation des stocks, marge brute par catégorie, politique de retours.', 'Saisonnalité des ventes et besoin en fonds de roulement.', 'Mix magasin / vente en ligne.']) },
+    { id:'restaurant', label:'Plan — Restaurant / café / traiteur', template: fghlabPlanOutline('restauration', ['Concept, menu type et coût matière visé (28–35 % des ventes).', 'Capacité (couverts), taux de rotation des tables, ticket moyen.', 'Permis (restauration, alcool, salubrité), normes d’hygiène.', 'Masse salariale (30–35 % des ventes) et gestion des horaires.']) },
+    { id:'services', label:'Plan — Entreprise de services / cabinet-conseil', template: fghlabPlanOutline('services professionnels', ['Offres, tarification (taux horaire ou forfait) et taux d’utilisation visé.', 'Pipeline commercial : sources de mandats, cycle de vente, taux de conversion.', 'Dépendance à quelques clients, contrats-cadres, récurrence.', 'Assurance responsabilité professionnelle.']) },
+    { id:'agro', label:'Plan — Agriculture / transformation agroalimentaire', template: fghlabPlanOutline('agroalimentaire', ['Surfaces, rendements, cycle cultural et calendrier des récoltes.', 'Chaîne d’approvisionnement, stockage, conditions de conservation, pertes.', 'Normes sanitaires, certifications, accès aux marchés (local, export).', 'Aléas climatiques, assurance récolte, prix des intrants.']) },
+    { id:'ecommerce', label:'Plan — Boutique en ligne (e-commerce)', template: fghlabPlanOutline('commerce en ligne', ['Plateforme, paiement en ligne, logistique et retours.', 'Coût d’acquisition client (CAC), panier moyen, valeur vie client (LTV), taux de conversion.', 'Budget publicitaire et canaux (réseaux sociaux, moteurs de recherche, courriel).', 'Protection des données et conformité.']) },
+    { id:'tech', label:'Plan — Startup technologique / application', template: fghlabPlanOutline('technologie', ['Problème, solution, MVP et feuille de route produit.', 'Modèle de revenus (abonnement, commission, licence) et métriques SaaS (MRR, churn).', 'Équipe technique, propriété intellectuelle, sécurité.', 'Levée de fonds par tours, dilution, jalons de validation.']) },
+    { id:'transport', label:'Plan — Transport et logistique', template: fghlabPlanOutline('transport', ['Flotte, coût au kilomètre, taux de remplissage, entretien.', 'Contrats clients, assurances, permis et réglementation.', 'Carburant, péages, chauffeurs, coût total de possession.', 'Plan de renouvellement des véhicules.']) },
+    { id:'obnl', label:'Plan — OBNL / coopérative / entreprise sociale', template: fghlabPlanOutline('organisme à mission', ['Mission, bénéficiaires et indicateurs d’impact social.', 'Gouvernance (conseil, assemblée, membres) et redevabilité.', 'Diversification des revenus : subventions, dons, revenus autonomes.', 'Pérennité après la fin des subventions.']) },
+    { id:'auto', label:'Plan — Concessionnaire / vente de véhicules', template: fghlabPlanOutline('vente de véhicules', ['Sources d’approvisionnement, inspection, remise en état et garanties.', 'Marge par véhicule, rotation de l’inventaire, coût de financement du stock.', 'Partenariats de financement (banques / microfinances) et taux d’acceptation.', 'Commissions de référencement et frais de mise en relation.']) },
+    { id:'immo', label:'Plan — Immobilier / construction', template: fghlabPlanOutline('immobilier', ['Terrain, permis, coût de construction au m² et calendrier de chantier.', 'Prix de vente ou loyers, taux d’occupation, délai d’écoulement.', 'Financement par phases, taux de précommercialisation exigé.', 'Risques de dépassement de coûts et de retard.']) }
+  ];
+  function fghlabRedactionOutline(audience, tone, parts, checks){
+    return 'DESTINATAIRE : ' + audience + '\nTON : ' + tone + '\n\nPLAN DU DOCUMENT :\n' + parts.map(function(p, i){ return (i + 1) + '. ' + p[0] + ' — ' + p[1]; }).join('\n') + '\n\nVÉRIFICATIONS AVANT LIVRAISON :\n' + checks.map(function(c){ return '☐ ' + c; }).join('\n');
+  }
+  var FGHLAB_REDACTION_MODELS = [
+    { id:'pret', label:'Plan pour demande de prêt bancaire', template: fghlabRedactionOutline('Banque ou microfinance (analyste crédit)', 'Factuel, prudent, chiffré ; démontrer la capacité de remboursement.', [
+      ['Page couverture et table des matières','nom, date, contact, montant demandé'], ['Résumé de la demande','montant, durée, objet, garanties offertes'], ['Présentation du promoteur et de l’entreprise','expérience, historique de crédit'], ['Projet à financer','objet, devis, fournisseurs'], ['Marché et clientèle','preuves de demande (lettres d’intention, contrats)'], ['Prévisions financières 3 ans','ventes, résultats, flux de trésorerie, bilan'], ['Capacité de remboursement','ratio de couverture du service de la dette ≥ 1,25, tableau d’amortissement'], ['Garanties et assurances','sûretés, caution, assurance'], ['Risques et plan B','scénario pessimiste chiffré'], ['Annexes','états financiers, pièces d’identité, permis, devis']
+    ], ['Les chiffres du texte correspondent aux tableaux', 'Le ratio de couverture de la dette est calculé et expliqué', 'Les garanties sont chiffrées', 'Toutes les pièces demandées par la banque sont jointes', 'Relecture orthographique complète']) },
+    { id:'invest', label:'Plan pour investisseurs (capital)', template: fghlabRedactionOutline('Investisseur providentiel, fonds de capital de risque ou de développement', 'Dynamique, orienté croissance et sortie ; montrer l’ampleur du marché et l’équipe.', [
+      ['Résumé (pitch)','problème, solution, traction, demande'], ['Problème et opportunité','taille du marché (TAM/SAM/SOM)'], ['Solution et avantage concurrentiel','différenciation, barrières à l’entrée'], ['Modèle d’affaires','revenus, marges, unité économique'], ['Traction','clients, revenus, partenariats'], ['Équipe','profils et complémentarité'], ['Projections et hypothèses','5 ans, scénarios'], ['Levée de fonds','montant, valorisation, utilisation, dilution'], ['Stratégie de sortie','rachat, introduction en bourse, dividendes']
+    ], ['Valorisation justifiée', 'Hypothèses de croissance sourcées', 'Équipe et conseillers présentés', 'Risques majeurs abordés franchement', 'Version courte (10 diapositives) prête']) },
+    { id:'bailleur', label:'Plan pour bailleur de fonds / subvention', template: fghlabRedactionOutline('Bailleur international, agence de développement ou programme public', 'Institutionnel, centré sur l’impact, la redevabilité et la durabilité.', [
+      ['Contexte et justification','problème, bénéficiaires, alignement avec les priorités du bailleur'], ['Objectifs et résultats attendus','cadre logique (activités, extrants, effets, impact)'], ['Activités et calendrier','diagramme de Gantt'], ['Budget détaillé','par poste, cofinancement, coûts éligibles'], ['Gestion et gouvernance du projet','rôles, contrôle interne, passation de marchés'], ['Suivi-évaluation','indicateurs, sources de vérification, base de référence'], ['Risques et hypothèses','mesures d’atténuation'], ['Durabilité','après la fin du financement'], ['Genre, environnement, inclusion','prise en compte transversale']
+    ], ['Cadre logique complet', 'Budget cohérent avec les activités', 'Respect du gabarit exigé par le bailleur', 'Lettres de cofinancement jointes']) },
+    { id:'resume', label:'Résumé exécutif (1–2 pages)', template: fghlabRedactionOutline('Lecteur pressé (décideur, partenaire, premier contact)', 'Court, percutant, sans jargon.', [
+      ['L’opportunité en 3 phrases','qui, quoi, pour qui'], ['Pourquoi nous','avantages et preuves'], ['Chiffres clés','ventes, marge, besoin de financement'], ['La demande','montant et prochaine étape']
+    ], ['Une seule idée par paragraphe', 'Chiffres arrondis et cohérents', 'Contact visible']) },
+    { id:'operationnel', label:'Plan opérationnel interne (12 mois)', template: fghlabRedactionOutline('Direction et équipes internes', 'Pratique, orienté exécution.', [
+      ['Objectifs de l’année','3 à 5 objectifs mesurables'], ['Priorités trimestrielles','actions, responsables, échéances'], ['Budget et ressources','par département'], ['Indicateurs de performance','tableau de bord mensuel'], ['Risques et plans de contingence','déclencheurs et réponses']
+    ], ['Chaque action a un responsable et une date', 'Budget approuvé', 'Revue mensuelle planifiée']) },
+    { id:'reprise', label:'Plan de reprise / acquisition d’entreprise', template: fghlabRedactionOutline('Banque, vendeur et partenaires financiers', 'Rigoureux, appuyé sur les états financiers de la cible.', [
+      ['Présentation de la cible','activités, historique, clients clés'], ['Raisons de l’acquisition et synergies','chiffrées'], ['Diagnostic financier','3 derniers exercices, normalisation du résultat'], ['Prix et structure de la transaction','apport, prêt vendeur, earn-out'], ['Plan d’intégration 100 jours','équipe, clients, systèmes'], ['Prévisions et capacité de remboursement','scénarios'], ['Risques','dépendance aux clients et au dirigeant sortant']
+    ], ['Diligence raisonnable résumée', 'Prix justifié par une méthode d’évaluation', 'Plan de transition du dirigeant sortant']) }
+  ];
+  /* Projets fictifs : données de départ pour s'exercer (jamais de vraies personnes ni de vraies entreprises). */
+  var FGHLAB_PLAN_EXAMPLES = [
+    { id:'cafe', name:'Café Baobab', tagline:'café de spécialité et torréfaction locale à Montréal', cur:'$ CAD', ask:180000, ownerMoney:45000, y1:420000, y2:560000, y3:700000, margin:'62 %', breakeven:'18 mois', staff:'6 employés au lancement', market:'Montréal compte plus de 1 500 cafés ; le segment « spécialité » croît d’environ 8 % par an. Clientèle visée : étudiants, télétravailleurs et bureaux du quartier (rayon de 800 m).', ops:'Local de 90 m², torréfacteur de 5 kg, 30 places assises. Approvisionnement direct auprès de deux coopératives d’Éthiopie et du Rwanda.', risks:'Hausse du prix du café vert (mitigation : contrats à terme de 6 mois) ; loyer élevé (mitigation : bail de 5 ans indexé) ; saisonnalité estivale.' },
+    { id:'agro', name:'AgroSahel Transformation', tagline:'séchage et conditionnement de mangues à Thiès (Sénégal)', cur:'F CFA', ask:48000000, ownerMoney:12000000, y1:65000000, y2:98000000, y3:130000000, margin:'41 %', breakeven:'22 mois', staff:'12 employés dont 8 saisonniers', market:'Forte demande européenne et nord-américaine pour les fruits séchés biologiques ; pertes post-récolte locales estimées à 30 %. Premiers acheteurs : deux grossistes en Europe (lettres d’intention fictives).', ops:'Unité de 400 m² avec séchoir solaire hybride, chambre froide, chaîne de conditionnement et audit de certification bio prévu à l’année 1.', risks:'Aléas climatiques (mitigation : contrats avec 40 producteurs répartis sur 3 zones) ; fluctuation du taux de change ; retards de certification.' },
+    { id:'auto', name:'AutoPlus Abidjan', tagline:'vente de véhicules d’occasion inspectés avec financement partenaire', cur:'F CFA', ask:150000000, ownerMoney:40000000, y1:480000000, y2:620000000, y3:780000000, margin:'12 % de marge brute par véhicule', breakeven:'14 mois', staff:'9 employés', market:'Parc automobile en forte croissance ; 70 % des acheteurs financent leur achat. Cible : ménages à revenus intermédiaires et petites entreprises.', ops:'Parc de 60 véhicules, atelier d’inspection en 40 points, garantie de 6 mois, dossiers de financement déposés auprès de banques et microfinances partenaires.', risks:'Immobilisation du stock (mitigation : rotation visée de 45 jours) ; qualité des véhicules importés ; défaut de paiement des clients.' }
+  ];
+  function fghlabExampleFmt(ex, n){ return (Number(n) || 0).toLocaleString('fr-FR') + ' ' + ex.cur; }
+  function fghlabExampleSections(ex){
+    var tag = '[EXEMPLE FICTIF] ';
+    return [
+      { t:'Résumé exécutif', s:'complete', n: ex.name + ' est un projet fictif : ' + ex.tagline + '.\nChiffre d’affaires visé : ' + fghlabExampleFmt(ex, ex.y1) + ' (An 1), ' + fghlabExampleFmt(ex, ex.y2) + ' (An 2), ' + fghlabExampleFmt(ex, ex.y3) + ' (An 3). Marge : ' + ex.margin + '. Seuil de rentabilité : ' + ex.breakeven + '.\nDemande : ' + fghlabExampleFmt(ex, ex.ask) + ' de financement, avec un apport des promoteurs de ' + fghlabExampleFmt(ex, ex.ownerMoney) + '.' },
+      { t:'Étude de marché', s:'complete', n: ex.market },
+      { t:'Opérations', s:'redaction', n: ex.ops + '\nÉquipe : ' + ex.staff + '.' },
+      { t:'Stratégie commerciale', s:'redaction', n:'Canaux : vente directe, partenariats locaux, présence en ligne. Objectif An 1 : ' + fghlabExampleFmt(ex, Math.round(ex.y1 / 12)) + ' de ventes mensuelles moyennes. À compléter : budget marketing et coût d’acquisition d’un client.' },
+      { t:'Plan financier', s:'arediger', n:'À COMPLÉTER PAR L’UTILISATEUR (exercice) : bâtir les hypothèses de ventes, les coûts fixes et variables, l’état des résultats et le flux de trésorerie sur 36 mois. Repères : ventes An 1 = ' + fghlabExampleFmt(ex, ex.y1) + ' ; financement demandé = ' + fghlabExampleFmt(ex, ex.ask) + '. Utiliser l’outil Calculateurs (prêt, seuil de rentabilité, VAN/TRI).' },
+      { t:'Risques et mesures d’atténuation', s:'redaction', n: ex.risks }
+    ].map(function(x){ return { titre: tag + ex.name + ' — ' + x.t, statut: x.s, notes: x.n }; });
+  }
+  function fghlabExampleRedactionItems(ex){
+    var tag = '[EXEMPLE FICTIF] ';
+    var sec = fghlabExampleSections(ex);
+    var body = sec.map(function(s){ return s.titre.replace(tag, '') + '\n' + s.notes; }).join('\n\n');
+    return [
+      { titre: tag + ex.name + ' — Plan pour demande de prêt bancaire', statut:'revision', notes: 'PLAN DE DEMANDE DE PRÊT (exemple fictif)\nMontant demandé : ' + fghlabExampleFmt(ex, ex.ask) + ' — durée proposée : 60 mois — apport : ' + fghlabExampleFmt(ex, ex.ownerMoney) + '.\n\n' + body + '\n\nÀ AMÉLIORER (exercice) : ajouter le tableau d’amortissement, le ratio de couverture de la dette et les garanties.' },
+      { titre: tag + ex.name + ' — Résumé exécutif (1 page)', statut:'livre', notes: sec[0].notes + '\n\nPourquoi nous : une offre claire, un marché en croissance et une équipe prête à exécuter.\nProchaine étape : rencontre de 30 minutes pour présenter le plan détaillé.' },
+      { titre: tag + ex.name + ' — Version investisseurs (brouillon)', statut:'ebauche', notes: 'Problème : ' + ex.market + '\nSolution : ' + ex.tagline + '.\nTraction : à documenter (exercice).\nLevée : ' + fghlabExampleFmt(ex, ex.ask) + '. Utilisation des fonds : équipement, stock initial, marketing, fonds de roulement.' }
+    ];
+  }
+  function fghlabModelListFor(key){
+    if(key === 'etudes') return FGHLAB_ETUDES_MISSION_TYPES;
+    if(key === 'conseiller') return FGHLAB_CONSEILLER_MODULES;
+    if(key === 'bizplan') return FGHLAB_BIZPLAN_MODELS;
+    if(key === 'redaction') return FGHLAB_REDACTION_MODELS;
+    return null;
+  }
+  function fghlabPlanToolsHtml(key){
+    var st = 'border:1px solid var(--line); border-radius:9px; padding:7px 9px; background:var(--surface); color:var(--ink); font-size:12.5px;';
+    return '<div class="card" style="background:var(--surface-2); margin:0 0 12px;">' +
+      '<h3 style="margin:0 0 6px; font-size:14px;">🧰 Outils du ' + (key === 'bizplan' ? 'business plan' : 'plan rédigé') + '</h3>' +
+      '<div style="margin-bottom:8px;"><div style="display:flex; justify-content:space-between; font-size:12px;"><span id="fghlab-planprog-label-'+key+'">Avancement</span><strong id="fghlab-planprog-pct-'+key+'">0 %</strong></div>' +
+        '<div style="height:8px; background:var(--line); border-radius:6px; overflow:hidden;"><div id="fghlab-planprog-bar-'+key+'" style="height:100%; width:0; background:#2D9C93;"></div></div></div>' +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">' +
+        '<select id="fghlab-planex-select-'+key+'" style="'+st+'">' + FGHLAB_PLAN_EXAMPLES.map(function(e){ return '<option value="'+e.id+'">'+escapeHtml(e.name + ' — ' + e.tagline)+'</option>'; }).join('') + '</select>' +
+        '<button type="button" class="btn" id="fghlab-planex-load-'+key+'" style="padding:5px 10px; font-size:12px;">📚 Charger ce projet fictif pour s’exercer</button>' +
+        '<button type="button" class="btn danger" id="fghlab-planex-clear-'+key+'" style="padding:5px 10px; font-size:12px;">Retirer les exemples fictifs</button>' +
+        '<span class="copy-status" id="fghlab-planex-status-'+key+'"></span></div>' +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">' +
+        '<button type="button" class="btn" id="fghlab-planasm-btn-'+key+'" style="padding:5px 10px; font-size:12px;">📄 Assembler le document complet</button>' +
+        '<span class="hint" id="fghlab-plancount-'+key+'" style="margin:0; font-size:11.5px;"></span></div>' +
+      '<div id="fghlab-planasm-box-'+key+'" hidden style="margin-top:8px;"><textarea id="fghlab-planasm-text-'+key+'" readonly rows="14" style="width:100%; border:1px solid var(--line); border-radius:8px; padding:8px; background:var(--surface); color:var(--ink); font-size:12px; font-family:inherit;"></textarea>' +
+        '<div style="display:flex; gap:8px; align-items:center; margin-top:6px;"><button type="button" class="btn" id="fghlab-planasm-copy-'+key+'">📋 Copier</button><span class="copy-status" id="fghlab-planasm-status-'+key+'"></span></div></div>' +
+    '</div>';
+  }
+  function fghlabPlanProgressRefresh(key){
+    var bar = document.getElementById('fghlab-planprog-bar-'+key);
+    if(!bar) return;
+    var items = fghlabTrackerItems(key), cfg = FGHLAB_TRACKER_CONFIG[key];
+    var last = cfg.statuses[cfg.statuses.length - 1].key, mid = cfg.statuses.length > 2 ? cfg.statuses[1].key : null;
+    var pts = 0;
+    items.forEach(function(it){ if(it.statut === last) pts += 1; else if(mid && it.statut === mid) pts += 0.5; });
+    var pct = items.length ? Math.round(pts / items.length * 100) : 0;
+    bar.style.width = pct + '%';
+    var p = document.getElementById('fghlab-planprog-pct-'+key); if(p) p.textContent = pct + ' %';
+    var l = document.getElementById('fghlab-planprog-label-'+key);
+    if(l) l.textContent = 'Avancement (' + items.length + ' ' + (key === 'bizplan' ? 'section(s)' : 'document(s)') + ' — « ' + cfg.statuses[cfg.statuses.length - 1].label + ' » = 100 %, étape intermédiaire = 50 %)';
+  }
+  function bindFghlabPlanTools(key, notesInput){
+    var $ = function(id){ return document.getElementById(id + '-' + key); };
+    var cfg = FGHLAB_TRACKER_CONFIG[key];
+    fghlabPlanProgressRefresh(key);
+    if($('fghlab-planex-load')) $('fghlab-planex-load').addEventListener('click', function(){
+      var sel = $('fghlab-planex-select').value, ex = null;
+      FGHLAB_PLAN_EXAMPLES.forEach(function(e){ if(e.id === sel) ex = e; });
+      if(!ex) return;
+      var items = fghlabTrackerItems(key);
+      var rows = key === 'bizplan' ? fghlabExampleSections(ex) : fghlabExampleRedactionItems(ex);
+      var added = 0;
+      rows.forEach(function(r){
+        if(items.some(function(it){ return it.titre === r.titre; })) return;
+        items.push({ id: makeFghlabTrackerId(), titre: r.titre, statut: r.statut, echeance: null, responsable: 'Exercice', notes: r.notes, exemple: true, createdOn: new Date().toISOString() });
+        added++;
+      });
+      persistFghlabState(); renderFghlabTrackerList(key); fghlabPlanProgressRefresh(key);
+      var s = $('fghlab-planex-status'); if(s){ s.textContent = added ? (added + ' élément(s) fictif(s) ajouté(s) ✓') : 'Déjà chargé'; setTimeout(function(){ s.textContent = ''; }, 2500); }
+    });
+    if($('fghlab-planex-clear')) $('fghlab-planex-clear').addEventListener('click', function(){
+      var items = fghlabTrackerItems(key), n = items.length;
+      fghlabState.genericTools[key] = items.filter(function(it){ return !it.exemple; });
+      persistFghlabState(); renderFghlabTrackerList(key); fghlabPlanProgressRefresh(key);
+      var s = $('fghlab-planex-status'); if(s){ s.textContent = (n - fghlabState.genericTools[key].length) + ' exemple(s) retiré(s)'; setTimeout(function(){ s.textContent = ''; }, 2500); }
+    });
+    if($('fghlab-planasm-btn')) $('fghlab-planasm-btn').addEventListener('click', function(){
+      var items = fghlabTrackerItems(key);
+      var txt = items.length ? items.map(function(it){ return '=== ' + it.titre + ' [' + fghlabTrackerStatusInfo(cfg, it.statut).label + '] ===\n' + (it.notes || '(vide)'); }).join('\n\n') : 'Aucun élément pour l’instant.';
+      $('fghlab-planasm-text').value = txt; $('fghlab-planasm-box').hidden = false;
+      var words = txt.split(/\s+/).filter(Boolean).length;
+      $('fghlab-plancount').textContent = words + ' mots · environ ' + Math.max(1, Math.round(words / 400)) + ' page(s)';
+    });
+    if($('fghlab-planasm-copy')) $('fghlab-planasm-copy').addEventListener('click', function(){ copyTextToClipboard($('fghlab-planasm-text').value, $('fghlab-planasm-status'), $('fghlab-planasm-text')); });
+  }
+  /* ===== Outil « Calculateurs » : prêt, épargne, VAN/TRI, seuil de rentabilité, marge, taxes, endettement, devises ===== */
+  function fcNum(n, d){ return (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+  var FGHLAB_CALCULATEURS = [
+    { id:'pret', title:'Prêt et tableau d’amortissement', hint:'Paiement périodique d’un prêt à taux fixe, coût total et intérêts.', fields:[
+      {id:'montant', label:'Montant emprunté', defaultValue:5000000, step:'1'}, {id:'taux', label:'Taux annuel', suffix:'%', defaultValue:8.5, step:'0.01'},
+      {id:'mois', label:'Durée', suffix:'mois', defaultValue:60, step:'1'}, {id:'periodes', label:'Paiements par an', defaultValue:12, step:'1'}],
+      compute:function(v){
+        var n = Math.max(1, Math.round(v.mois / 12 * v.periodes)), i = v.taux / 100 / v.periodes;
+        var pay = i === 0 ? v.montant / n : v.montant * i / (1 - Math.pow(1 + i, -n));
+        var total = pay * n, bal = v.montant, rows = [];
+        for(var k = 1; k <= Math.min(3, n); k++){ var it = bal * i, pr = pay - it; bal -= pr; rows.push({label:'Paiement n° ' + k + ' (intérêts / capital)', value: fcNum(it) + ' / ' + fcNum(pr), format:'text'}); }
+        return [{label:'Nombre de paiements', value:n, format:'text'}, {label:'Paiement périodique', value:fcNum(pay, 2), format:'text'}, {label:'Coût total (capital + intérêts)', value:fcNum(total), format:'text'}, {label:'Total des intérêts', value:fcNum(total - v.montant), format:'text'}, {label:'Intérêts / capital', value:v.montant ? ((total - v.montant) / v.montant * 100).toFixed(1) + ' %' : '—', format:'text'}].concat(rows);
+      } },
+    { id:'epargne', title:'Intérêts composés et épargne', hint:'Valeur future d’un capital et de versements réguliers.', fields:[
+      {id:'capital', label:'Capital initial', defaultValue:1000000, step:'1'}, {id:'versement', label:'Versement mensuel', defaultValue:50000, step:'1'},
+      {id:'taux', label:'Rendement annuel', suffix:'%', defaultValue:5, step:'0.01'}, {id:'annees', label:'Durée', suffix:'ans', defaultValue:10, step:'1'}],
+      compute:function(v){
+        var m = Math.round(v.annees * 12), r = v.taux / 100 / 12, fv = v.capital * Math.pow(1 + r, m) + (r === 0 ? v.versement * m : v.versement * (Math.pow(1 + r, m) - 1) / r);
+        var dep = v.capital + v.versement * m;
+        return [{label:'Total déposé', value:fcNum(dep), format:'text'}, {label:'Valeur finale', value:fcNum(fv), format:'text'}, {label:'Gain d’intérêts', value:fcNum(fv - dep), format:'text'}];
+      } },
+    { id:'van', title:'VAN, TRI et délai de récupération', hint:'Flux de trésorerie annuels de l’année 0 (investissement, négatif) à l’année 5.', fields:[
+      {id:'f0', label:'Année 0 (investissement, négatif)', defaultValue:-10000000, step:'1'}, {id:'f1', label:'Année 1', defaultValue:3000000, step:'1'}, {id:'f2', label:'Année 2', defaultValue:4000000, step:'1'},
+      {id:'f3', label:'Année 3', defaultValue:4500000, step:'1'}, {id:'f4', label:'Année 4', defaultValue:4500000, step:'1'}, {id:'f5', label:'Année 5', defaultValue:4000000, step:'1'}, {id:'taux', label:'Taux d’actualisation', suffix:'%', defaultValue:10, step:'0.01'}],
+      compute:function(v){
+        var f = [v.f0, v.f1, v.f2, v.f3, v.f4, v.f5];
+        var npv = function(r){ return f.reduce(function(s, x, t){ return s + x / Math.pow(1 + r, t); }, 0); };
+        var lo = -0.99, hi = 10, irr = null;
+        if(npv(lo) * npv(hi) < 0){ for(var k = 0; k < 200; k++){ var mid = (lo + hi) / 2; if(npv(lo) * npv(mid) <= 0) hi = mid; else lo = mid; } irr = (lo + hi) / 2; }
+        var cum = 0, pb = null; for(var t = 0; t < f.length; t++){ var prev = cum; cum += f[t]; if(pb === null && cum >= 0 && t > 0){ pb = (t - 1) + (-prev / f[t]); } }
+        var van = npv(v.taux / 100);
+        return [{label:'VAN au taux choisi', value:fcNum(van), format:'text'}, {label:'Décision', value: van > 0 ? 'Projet rentable (VAN > 0)' : 'Projet non rentable à ce taux', format:'text'}, {label:'TRI (taux de rendement interne)', value: irr === null ? 'non défini' : (irr * 100).toFixed(2) + ' %', format:'text'}, {label:'Délai de récupération', value: pb === null ? 'non récupéré en 5 ans' : pb.toFixed(1) + ' an(s)', format:'text'}];
+      } },
+    { id:'seuil', title:'Seuil de rentabilité', hint:'Quantité et chiffre d’affaires à atteindre pour couvrir tous les coûts.', fields:[
+      {id:'fixes', label:'Coûts fixes (période)', defaultValue:2400000, step:'1'}, {id:'prix', label:'Prix de vente unitaire', defaultValue:5000, step:'1'}, {id:'variable', label:'Coût variable unitaire', defaultValue:3000, step:'1'}, {id:'objectif', label:'Bénéfice visé (période)', defaultValue:0, step:'1'}],
+      compute:function(v){
+        var mc = v.prix - v.variable;
+        if(mc <= 0) return [{label:'Résultat', value:'Marge unitaire ≤ 0 : impossible d’atteindre le seuil', format:'text'}];
+        var q = (v.fixes + v.objectif) / mc;
+        return [{label:'Marge sur coût variable unitaire', value:fcNum(mc) + ' (' + (mc / v.prix * 100).toFixed(1) + ' %)', format:'text'}, {label:'Quantité à vendre', value:fcNum(Math.ceil(q)), format:'text'}, {label:'Chiffre d’affaires à atteindre', value:fcNum(Math.ceil(q) * v.prix), format:'text'}];
+      } },
+    { id:'marge', title:'Marge, majoration et prix de vente', hint:'À partir du coût et d’un taux de marge (sur le prix) ou de majoration (sur le coût).', fields:[
+      {id:'cout', label:'Coût d’achat ou de revient', defaultValue:10000, step:'0.01'}, {id:'margepct', label:'Taux de marge visé (sur le prix de vente)', suffix:'%', defaultValue:30, step:'0.01'}, {id:'majpct', label:'Taux de majoration (sur le coût)', suffix:'%', defaultValue:40, step:'0.01'}],
+      compute:function(v){
+        var pm = v.margepct >= 100 ? null : v.cout / (1 - v.margepct / 100), pj = v.cout * (1 + v.majpct / 100);
+        return [{label:'Prix pour la marge visée', value: pm === null ? 'impossible' : fcNum(pm, 2), format:'text'}, {label:'Bénéfice unitaire (marge)', value: pm === null ? '—' : fcNum(pm - v.cout, 2), format:'text'}, {label:'Prix avec la majoration', value:fcNum(pj, 2), format:'text'}, {label:'Marge correspondante', value:(pj ? ((pj - v.cout) / pj * 100).toFixed(1) : 0) + ' %', format:'text'}];
+      } },
+    { id:'taxes', title:'Taxes de vente (TPS / TVQ / TVA)', hint:'Taux par défaut : TPS 5 % et TVQ 9,975 % (Québec). Modifiez les taux au besoin (ex. TVA 18 %).', fields:[
+      {id:'ht', label:'Montant avant taxes', defaultValue:1000, step:'0.01'}, {id:'t1', label:'Taxe 1 (TPS/TVA)', suffix:'%', defaultValue:5, step:'0.001'}, {id:'t2', label:'Taxe 2 (TVQ)', suffix:'%', defaultValue:9.975, step:'0.001'}, {id:'ttc', label:'OU montant taxes incluses (laisser 0 si inutilisé)', defaultValue:0, step:'0.01'}],
+      compute:function(v){
+        var ht = v.ttc > 0 ? v.ttc / (1 + v.t1 / 100 + v.t2 / 100) : v.ht, a = ht * v.t1 / 100, b = ht * v.t2 / 100;
+        return [{label:'Montant avant taxes', value:fcNum(ht, 2), format:'text'}, {label:'Taxe 1', value:fcNum(a, 2), format:'text'}, {label:'Taxe 2', value:fcNum(b, 2), format:'text'}, {label:'Total taxes incluses', value:fcNum(ht + a + b, 2), format:'text'}];
+      } },
+    { id:'endettement', title:'Ratio d’endettement et capacité d’emprunt', hint:'Estimation indicative ; chaque banque applique ses propres critères.', fields:[
+      {id:'revenu', label:'Revenu mensuel brut', defaultValue:800000, step:'1'}, {id:'dettes', label:'Paiements mensuels de dettes actuelles', defaultValue:150000, step:'1'}, {id:'cible', label:'Ratio d’endettement maximal accepté', suffix:'%', defaultValue:40, step:'0.1'}, {id:'taux', label:'Taux annuel du nouveau prêt', suffix:'%', defaultValue:9, step:'0.01'}, {id:'mois', label:'Durée', suffix:'mois', defaultValue:60, step:'1'}],
+      compute:function(v){
+        var ratio = v.revenu ? v.dettes / v.revenu * 100 : 0, marge = Math.max(0, v.revenu * v.cible / 100 - v.dettes), i = v.taux / 100 / 12;
+        var cap = i === 0 ? marge * v.mois : marge * (1 - Math.pow(1 + i, -v.mois)) / i;
+        return [{label:'Ratio d’endettement actuel', value:ratio.toFixed(1) + ' %', format:'text'}, {label:'Paiement mensuel supplémentaire possible', value:fcNum(marge), format:'text'}, {label:'Capacité d’emprunt estimée', value:fcNum(cap), format:'text'}];
+      } },
+    { id:'devise', title:'Conversion de devises (taux saisi manuellement)', hint:'Aucun taux en direct : saisissez le taux du jour fourni par votre banque.', fields:[
+      {id:'montant', label:'Montant à convertir', defaultValue:1000, step:'0.01'}, {id:'taux', label:'Taux (1 unité source = ? unités cible)', defaultValue:450, step:'0.0001'}, {id:'frais', label:'Frais de change', suffix:'%', defaultValue:1.5, step:'0.01'}],
+      compute:function(v){ var brut = v.montant * v.taux, net = brut * (1 - v.frais / 100); return [{label:'Montant converti (sans frais)', value:fcNum(brut, 2), format:'text'}, {label:'Montant reçu après frais', value:fcNum(net, 2), format:'text'}, {label:'Coût des frais', value:fcNum(brut - net, 2), format:'text'}]; } }
+  ];
+  function fghlabCalculateursPanelHtml(info){
+    return '<div class="card hn-panel" id="fghlab-panel-calculateurs" hidden>' +
+      '<h2 style="margin:0 0 4px;">'+escapeHtml(info.title)+'</h2>' +
+      '<p class="hint" style="margin:0 0 12px;">'+escapeHtml(info.desc)+'</p>' +
+      FGHLAB_CALCULATEURS.map(function(c){ return fghlabCalculatorHtml('calc-' + c.id, c); }).join('') +
+      '<p class="hint" style="margin:6px 0 0; font-size:11.5px;">Résultats indicatifs, calculés sur cet appareil : ils ne remplacent pas l’avis d’un comptable ou d’un conseiller financier.</p>' +
+    '</div>';
+  }
+  function bindFghlabCalculateursPanel(){ FGHLAB_CALCULATEURS.forEach(function(c){ bindFghlabCalculator('calc-' + c.id, c); }); }
   function fghlabTrackerItems(key){
     if(!fghlabState.genericTools[key]) fghlabState.genericTools[key] = [];
     return fghlabState.genericTools[key];
@@ -15838,9 +16065,9 @@
     return { label: cfg.statuses[idx] ? cfg.statuses[idx].label : statutKey, color: FGHLAB_TRACKER_STATUS_PALETTE[idx % FGHLAB_TRACKER_STATUS_PALETTE.length] };
   }
   function fghlabTrackerModelSelectorHtml(key){
-    if(key !== 'etudes' && key !== 'conseiller') return '';
-    var list = key === 'etudes' ? FGHLAB_ETUDES_MISSION_TYPES : FGHLAB_CONSEILLER_MODULES;
-    var caption = key === 'etudes' ? 'Type de mission (modèle)' : 'Module de consultation (modèle)';
+    var list = fghlabModelListFor(key);
+    if(!list) return '';
+    var caption = key === 'etudes' ? 'Type de mission (modèle)' : (key === 'conseiller' ? 'Module de consultation (modèle)' : (key === 'bizplan' ? 'Modèle de business plan (selon le secteur)' : 'Modèle de plan rédigé (selon le destinataire)'));
     var options = '<option value="">— Choisir un modèle (facultatif) —</option>' + list.map(function(m){
       var num = key === 'etudes' ? (FGHLAB_ETUDES_MISSION_TYPE_NUMBERS[m.id] + ' — ') : '';
       return '<option value="'+escapeHtml(m.id)+'">'+escapeHtml(num + m.label)+'</option>';
@@ -16113,6 +16340,7 @@
       '<p class="hint" style="margin:0 0 12px;">'+escapeHtml(info.desc)+'</p>' +
       reperesHtml +
       calculatorHtml +
+      ((key === 'bizplan' || key === 'redaction') ? fghlabPlanToolsHtml(key) : '') +
       '<form id="fghlab-tracker-form-'+key+'" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">' +
         fghlabTrackerModelSelectorHtml(key) +
         '<input type="text" id="fghlab-tracker-title-'+key+'" maxlength="140" required placeholder="Titre ('+escapeHtml(cfg.itemLabel)+')" style="flex:1; min-width:180px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
@@ -16139,6 +16367,13 @@
       '<div id="fghlab-tracker-list-'+key+'"></div>' +
       '<p class="hint" style="margin-top:10px;">Registre local (fghlabState.genericTools), sans vérification ni validation externe.</p>' +
     '</div>';
+  }
+  var fghlabTrackerSort = {};
+  function fghlabTrackerIsOverdue(cfg, it){
+    if(!it.echeance) return false;
+    var last = cfg.statuses[cfg.statuses.length - 1].key;
+    if(it.statut === last) return false;
+    return String(it.echeance).slice(0, 10) < new Date().toISOString().slice(0, 10);
   }
   function renderFghlabTrackerList(key){
     var listEl = document.getElementById('fghlab-tracker-list-'+key);
@@ -16167,7 +16402,20 @@
         'Aucun '+escapeHtml(cfg.itemLabel)+' enregistré pour l\'instant.') + '</p>';
       return;
     }
-    listEl.innerHTML = filtered.slice().reverse().map(function(it){
+    var sortMode = fghlabTrackerSort[key] || 'recent';
+    var ordered = filtered.slice().reverse();
+    var statIdx = function(it){ for(var i = 0; i < cfg.statuses.length; i++){ if(cfg.statuses[i].key === it.statut) return i; } return 0; };
+    if(sortMode === 'echeance') ordered.sort(function(a, b){ return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : ((a.echeance || '9999') > (b.echeance || '9999') ? 1 : 0); });
+    else if(sortMode === 'statut') ordered.sort(function(a, b){ return statIdx(a) - statIdx(b); });
+    else if(sortMode === 'titre') ordered.sort(function(a, b){ return String(a.titre || '').localeCompare(String(b.titre || ''), 'fr'); });
+    var overdueCount = items.filter(function(it){ return fghlabTrackerIsOverdue(cfg, it); }).length;
+    var headerHtml = '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 8px; font-size:12px;">' +
+      '<span><strong>' + items.length + '</strong> ' + escapeHtml(cfg.itemLabel) + (items.length > 1 ? '(s)' : '') + (overdueCount ? ' · <span style="color:#B3261E; font-weight:700;">' + overdueCount + ' en retard</span>' : '') + '</span>' +
+      '<label style="display:flex; align-items:center; gap:5px; color:var(--muted);">Trier par ' +
+        '<select data-tracker-sort="'+key+'" style="border:1px solid var(--line); border-radius:7px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">' +
+          [['recent','Plus récent'],['echeance','Échéance'],['statut','Statut'],['titre','Titre (A–Z)']].map(function(o){ return '<option value="'+o[0]+'"'+(o[0] === sortMode ? ' selected' : '')+'>'+o[1]+'</option>'; }).join('') +
+        '</select></label></div>';
+    listEl.innerHTML = headerHtml + ordered.map(function(it){
       var st = fghlabTrackerStatusInfo(cfg, it.statut);
       var metaParts = [];
       if(it.echeance) metaParts.push('Échéance : '+escapeHtml(fmtFghlabShortDate(it.echeance)));
@@ -16180,8 +16428,10 @@
             '<div class="hint" style="margin:2px 0 0;">'+metaParts.join(' · ')+'</div>' +
           '</div>' +
           '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' +
+            (fghlabTrackerIsOverdue(cfg, it) ? '<span class="ctb-stub-badge" style="background:#B3261E; color:#fff;">En retard</span>' : '') +
             '<span class="ctb-stub-badge" style="background:'+st.color+'; color:#fff;">'+escapeHtml(st.label)+'</span>' +
-            '<button type="button" class="btn" data-tracker-detail="'+escapeHtml(it.id)+'" style="padding:3px 9px; font-size:12px;">🔍 Détail</button>' +
+            '<button type="button" class="btn" data-tracker-dup="'+escapeHtml(it.id)+'" style="padding:3px 9px; font-size:12px;" title="Créer une copie de cet élément">⧉ Dupliquer</button>' +
+            '<button type="button" class="btn" data-tracker-detail=""'+escapeHtml(it.id)+'" style="padding:3px 9px; font-size:12px;">🔍 Détail</button>' +
             '<button type="button" class="btn" data-tracker-edit="'+escapeHtml(it.id)+'" style="padding:3px 9px; font-size:12px;">Modifier</button>' +
             '<button type="button" class="btn danger" data-tracker-delete="'+escapeHtml(it.id)+'" style="padding:3px 9px; font-size:12px;">Supprimer</button>' +
           '</div>' +
@@ -16189,6 +16439,7 @@
         (it.notes ? '<div class="hint" style="margin-top:6px;">'+escapeHtml(it.notes)+'</div>' : '') +
       '</div>';
     }).join('');
+    if(key === 'bizplan' || key === 'redaction') fghlabPlanProgressRefresh(key);
   }
   function renderFghlabToolSnapshotList(key){
     var listEl = document.getElementById('fghlab-tb-snaplist-'+key);
@@ -16280,6 +16531,7 @@
   function bindFghlabTrackerPanel(key){
     var cfg = FGHLAB_TRACKER_CONFIG[key];
     if(cfg.calculator) bindFghlabCalculator(key, cfg.calculator);
+    if(key === 'bizplan' || key === 'redaction') bindFghlabPlanTools(key);
     renderFghlabTrackerList(key);
     var form = document.getElementById('fghlab-tracker-form-'+key);
     var titleInput = document.getElementById('fghlab-tracker-title-'+key);
@@ -16300,9 +16552,9 @@
       if(cancelBtn) cancelBtn.style.display = 'none';
     }
     if(cancelBtn) cancelBtn.addEventListener('click', resetFghlabTrackerForm);
-    if(key === 'etudes' || key === 'conseiller'){
+    if(fghlabModelListFor(key)){
       var modelSelect = document.getElementById('fghlab-tracker-modeltype-'+key);
-      var modelList = key === 'etudes' ? FGHLAB_ETUDES_MISSION_TYPES : FGHLAB_CONSEILLER_MODULES;
+      var modelList = fghlabModelListFor(key);
       var modelOtherInput = (key === 'etudes') ? document.getElementById('fghlab-tracker-modeltype-etudes-other') : null;
       if(modelSelect){
         modelSelect.addEventListener('change', function(){
@@ -16390,10 +16642,26 @@
       });
     }
     if(listEl){
+      listEl.addEventListener('change', function(e){
+        var sortSel = e.target.closest ? e.target.closest('[data-tracker-sort]') : null;
+        if(!sortSel) return;
+        fghlabTrackerSort[key] = sortSel.value; renderFghlabTrackerList(key);
+      });
       listEl.addEventListener('click', function(e){
         var editBtn = e.target.closest('[data-tracker-edit]');
         var delBtn = e.target.closest('[data-tracker-delete]');
         var detailBtn = e.target.closest('[data-tracker-detail]');
+        var dupBtn = e.target.closest('[data-tracker-dup]');
+        if(dupBtn){
+          var dupId = dupBtn.getAttribute('data-tracker-dup'), dupItems = fghlabTrackerItems(key), src = null;
+          dupItems.forEach(function(it){ if(it.id === dupId) src = it; });
+          if(src){
+            var copy = JSON.parse(JSON.stringify(src));
+            copy.id = makeFghlabTrackerId(); copy.titre = String(src.titre || '').slice(0, 125) + ' (copie)'; copy.createdOn = new Date().toISOString(); delete copy.exemple;
+            dupItems.push(copy); persistFghlabState(); renderFghlabTrackerList(key);
+          }
+          return;
+        }
         if(detailBtn){
           var detId = detailBtn.getAttribute('data-tracker-detail');
           var detItems = fghlabTrackerItems(key);
@@ -17443,6 +17711,7 @@
       if(key === 'coproject') return fghlabCoprojectPanelHtml(info);
       if(key === 'partnermarket') return fghlabPartnerPanelHtml(info);
       if(key === 'academie') return fghlabAcademiePanelHtml(info);
+      if(key === 'calculateurs') return fghlabCalculateursPanelHtml(info);
       if(key === 'rdv' && FGHLAB_TRACKER_CONFIG[key]) return fghlabRdvWrapPanel(fghlabTrackerPanelHtml(key, info));
       if(key === 'fgbankpartnership') return fghlabBankPanelHtml(info);
       if(key === 'touttest') return fghlabTouttestPanelHtml(info);
@@ -17463,6 +17732,7 @@
     if(visibleSet.coproject) bindFghlabCoprojectPanel();
     if(visibleSet.partnermarket) bindFghlabPartnerPanel();
     if(visibleSet.academie) bindFghlabAcademiePanel();
+    if(visibleSet.calculateurs) bindFghlabCalculateursPanel();
     if(visibleSet.fgbankpartnership) bindFghlabBankPanel();
     if(visibleSet.touttest) bindFghlabTouttestPanel();
     if(visibleSet.pese) bindFghlabPesePanel();
@@ -19911,6 +20181,9 @@
           var partner = null;
           fghlabState.partners.forEach(function(p){ if(p.id === o.partnerId) partner = p; });
           var isAccepted = proj.acceptedOfferId === o.id;
+          var editOfferBtn = isOwnerSession
+            ? '<button type="button" class="btn" data-fgbank-edit-offer="'+escapeHtml(proj.id)+'" data-offer-id="'+escapeHtml(o.id)+'" style="padding:3px 9px; font-size:11.5px;">✏️ Modifier cette offre</button>'
+            : '';
           var acceptBtn = (isOwnerSession && proj.status !== 'accepte')
             ? '<button type="button" class="btn primary" data-fgbank-accept-offer="'+escapeHtml(proj.id)+'" data-offer-id="'+escapeHtml(o.id)+'" style="padding:3px 9px; font-size:11.5px;">Accepter cette offre</button>'
             : '';
@@ -19918,10 +20191,18 @@
           return '<div style="border:1px solid var(--line); border-radius:9px; padding:7px 9px; margin-top:6px; background:var(--surface);'+(isAccepted ? ' outline:2px solid #2D9C93;' : '')+'">' +
             '<div style="font-size:12.5px;"><strong>'+escapeHtml(offerPartnerLabel)+'</strong> — Taux proposé : '+escapeHtml(String(o.rate))+'% · Montant : '+fgbankMoney(o.amount)+' · '+escapeHtml(fmtFghlabShortDate(o.submittedOn))+(isAccepted ? ' · <span style="color:#2D9C93; font-weight:700;">Acceptée</span>' : '')+'</div>' +
             (o.conditions ? '<div class="hint" style="margin:3px 0 0;">Conditions : '+escapeHtml(o.conditions)+'</div>' : '') +
-            (acceptBtn ? '<div style="margin-top:5px;">'+acceptBtn+'</div>' : '') +
+            ((acceptBtn || editOfferBtn) ? '<div style="margin-top:5px; display:flex; gap:6px; flex-wrap:wrap;">'+acceptBtn+editOfferBtn+'</div>' : '') +
           '</div>';
         }).join('') +
       '</div>') : '<p class="hint" style="margin:8px 0 0; font-size:12px;">Aucune offre soumise pour l\'instant.</p>';
+      var finLead = proj.sourceVehicleLeadId ? fghlabFindVehicleLead(proj.sourceVehicleLeadId) : null;
+      var toFinance = finLead ? Math.max(0, (Number(finLead.negotiatedPrice) || 0) - (Number(finLead.downPayment) || 0)) : 0;
+      var offerHelpHtml = '<div class="hint" style="margin:6px 0 0; font-size:11.5px; line-height:1.5;">' +
+        '<strong>Comment remplir :</strong> la banque ou microfinance vous communique son offre ; vous la saisissez ici au nom du partenaire. ' +
+        '<strong>Taux %</strong> = taux d\u2019intérêt annuel proposé. <strong>Montant</strong> = somme que le partenaire accepte de financer' + (toFinance ? ' (ici, montant à financer indicatif : <strong>'+fgbankMoney(toFinance)+'</strong> = prix convenu moins acompte)' : ' (le montant à financer du dossier, pas le prix total du bien)') + '. ' +
+        '<strong>Conditions</strong> = durée, garanties, frais, etc. (texte libre). ' +
+        '<strong>Commission FINECIA</strong> = '+escapeHtml(String(Number(fghlabState.monetizationConfig.commissionRate) || 0))+' % du <em>montant de l\u2019offre acceptée</em> (ex. 5 000 000 × '+escapeHtml(String(Number(fghlabState.monetizationConfig.commissionRate) || 0))+' % = '+fgbankMoney(5000000 * (Number(fghlabState.monetizationConfig.commissionRate) || 0) / 100)+'), payée par le partenaire ; ' +
+        '<strong>Frais de mise en relation</strong> = '+fgbankMoney(Number(fghlabState.monetizationConfig.introFee) || 0)+' par offre soumise. Aucun paiement réel n\u2019est encaissé ici.</div>';
       var offerFormHtml = (isOwnerSession && proj.status !== 'accepte')
         ? ('<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; align-items:center;">' +
             '<select data-fgbank-offer-partner="'+escapeHtml(proj.id)+'" style="border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
@@ -19929,7 +20210,7 @@
               activeBanks.map(function(p){ return '<option value="'+escapeHtml(p.id)+'">'+escapeHtml(p.name)+'</option>'; }).join('') +
             '</select>' +
             '<input type="number" step="0.01" min="0" data-fgbank-offer-rate="'+escapeHtml(proj.id)+'" placeholder="Taux %" style="width:90px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
-            '<input type="number" min="0" step="1" data-fgbank-offer-amount="'+escapeHtml(proj.id)+'" placeholder="Montant" style="width:130px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
+            '<input type="number" min="0" step="1" data-fgbank-offer-amount="'+escapeHtml(proj.id)+'" placeholder="Montant à financer" '+(toFinance ? 'value="'+toFinance+'" ' : '')+'style="width:150px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
             '<input type="text" maxlength="200" data-fgbank-offer-conditions="'+escapeHtml(proj.id)+'" placeholder="Conditions" style="flex:1; min-width:140px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
             '<button type="button" class="btn" data-fgbank-submit-offer="'+escapeHtml(proj.id)+'" style="white-space:nowrap; padding:4px 9px; font-size:12px;">Soumettre l\'offre</button>' +
           '</div>')
@@ -19961,7 +20242,7 @@
         ownerExtras +
         acceptedInfo +
         offersHtml +
-        offerFormHtml +
+        offerFormHtml + ((isOwnerSession && proj.status !== 'accepte') ? offerHelpHtml : '') +
       '</div>';
     }).join('');
   }
@@ -20068,6 +20349,29 @@
         var submitBtn = e.target.closest ? e.target.closest('[data-fgbank-submit-offer]') : null;
         var acceptBtn = e.target.closest ? e.target.closest('[data-fgbank-accept-offer]') : null;
         var refuseBtn = e.target.closest ? e.target.closest('[data-fgbank-refuse]') : null;
+        var editOfferBtn = e.target.closest ? e.target.closest('[data-fgbank-edit-offer]') : null;
+        if(editOfferBtn){
+          var eproj = null, eoffer = null;
+          fghlabState.fgbankProjects.forEach(function(p){ if(p.id === editOfferBtn.getAttribute('data-fgbank-edit-offer')) eproj = p; });
+          if(!eproj) return;
+          eproj.offers.forEach(function(o){ if(o.id === editOfferBtn.getAttribute('data-offer-id')) eoffer = o; });
+          if(!eoffer) return;
+          var nAmount = window.prompt('Montant de l\u2019offre (montant à financer) :', String(eoffer.amount));
+          if(nAmount === null) return;
+          var nAmountNum = Number(String(nAmount).replace(/\s/g, '').replace(',', '.'));
+          if(!isFinite(nAmountNum) || nAmountNum <= 0){ window.alert('Montant invalide.'); return; }
+          var nRate = window.prompt('Taux proposé (%) :', String(eoffer.rate));
+          if(nRate === null) return;
+          var nRateNum = Number(String(nRate).replace(',', '.'));
+          if(!isFinite(nRateNum) || nRateNum < 0){ window.alert('Taux invalide.'); return; }
+          var nCond = window.prompt('Conditions :', eoffer.conditions || '');
+          if(nCond === null) nCond = eoffer.conditions || '';
+          eoffer.amount = nAmountNum; eoffer.rate = nRateNum; eoffer.conditions = String(nCond).trim().slice(0, 200);
+          eoffer.editedOn = new Date().toISOString();
+          if(eproj.acceptedOfferId === eoffer.id) eproj.commissionAmount = nAmountNum * ((Number(eproj.commissionRateApplied) || 0) / 100); // commission recalculée
+          persistFghlabState(); renderFghlabBankProjectList(); renderFghlabRevenueDashboard();
+          return;
+        }
         if(submitBtn){
           var pid = submitBtn.getAttribute('data-fgbank-submit-offer');
           var proj = null;
@@ -20581,6 +20885,10 @@
   var ACADEMIE_DURATIONS = ['90 minutes', '½ journée', '1 journée', '2 à 5 jours', '8 semaines', 'Coaching mensuel', 'Mission d\u2019accompagnement', 'Sur mesure'];
   var ACADEMIE_REG_STATUS = ['Nouvelle', 'Contactée', 'Confirmée', 'Annulée'];
   var ACADEMIE_OTHER = '__autre__';
+  var GEO_COUNTRIES = [["Canada", "Amérique du Nord"], ["États-Unis", "Amérique du Nord"], ["Mexique", "Amérique du Nord"], ["France", "Europe"], ["Belgique", "Europe"], ["Suisse", "Europe"], ["Luxembourg", "Europe"], ["Allemagne", "Europe"], ["Italie", "Europe"], ["Espagne", "Europe"], ["Portugal", "Europe"], ["Royaume-Uni", "Europe"], ["Pays-Bas", "Europe"], ["Bénin", "Afrique de l'Ouest"], ["Burkina Faso", "Afrique de l'Ouest"], ["Côte d'Ivoire", "Afrique de l'Ouest"], ["Ghana", "Afrique de l'Ouest"], ["Guinée", "Afrique de l'Ouest"], ["Mali", "Afrique de l'Ouest"], ["Mauritanie", "Afrique de l'Ouest"], ["Niger", "Afrique de l'Ouest"], ["Nigeria", "Afrique de l'Ouest"], ["Sénégal", "Afrique de l'Ouest"], ["Togo", "Afrique de l'Ouest"], ["Sierra Leone", "Afrique de l'Ouest"], ["Liberia", "Afrique de l'Ouest"], ["Cap-Vert", "Afrique de l'Ouest"], ["Gambie", "Afrique de l'Ouest"], ["Guinée-Bissau", "Afrique de l'Ouest"], ["Cameroun", "Afrique centrale"], ["Congo (Brazzaville)", "Afrique centrale"], ["RD Congo", "Afrique centrale"], ["Gabon", "Afrique centrale"], ["Guinée équatoriale", "Afrique centrale"], ["Tchad", "Afrique centrale"], ["Centrafrique", "Afrique centrale"], ["Burundi", "Afrique centrale"], ["Rwanda", "Afrique de l'Est"], ["Kenya", "Afrique de l'Est"], ["Éthiopie", "Afrique de l'Est"], ["Tanzanie", "Afrique de l'Est"], ["Ouganda", "Afrique de l'Est"], ["Djibouti", "Afrique de l'Est"], ["Madagascar", "Afrique de l'Est"], ["Maurice", "Afrique de l'Est"], ["Comores", "Afrique de l'Est"], ["Algérie", "Afrique du Nord"], ["Maroc", "Afrique du Nord"], ["Tunisie", "Afrique du Nord"], ["Égypte", "Afrique du Nord"], ["Libye", "Afrique du Nord"], ["Afrique du Sud", "Afrique australe"], ["Angola", "Afrique australe"], ["Mozambique", "Afrique australe"], ["Zambie", "Afrique australe"], ["Zimbabwe", "Afrique australe"], ["Namibie", "Afrique australe"], ["Botswana", "Afrique australe"], ["Haïti", "Amérique latine & Caraïbes"], ["Brésil", "Amérique latine & Caraïbes"], ["Colombie", "Amérique latine & Caraïbes"], ["Argentine", "Amérique latine & Caraïbes"], ["Chili", "Amérique latine & Caraïbes"], ["Pérou", "Amérique latine & Caraïbes"], ["Martinique", "Amérique latine & Caraïbes"], ["Guadeloupe", "Amérique latine & Caraïbes"], ["Chine", "Asie"], ["Inde", "Asie"], ["Japon", "Asie"], ["Vietnam", "Asie"], ["Liban", "Moyen-Orient"], ["Arabie saoudite", "Moyen-Orient"], ["Émirats arabes unis", "Moyen-Orient"], ["Qatar", "Moyen-Orient"], ["Turquie", "Moyen-Orient"], ["Australie", "Océanie"], ["Nouvelle-Zélande", "Océanie"]];
+  var GEO_REGIONS = ["Amérique du Nord", "Amérique latine & Caraïbes", "Europe", "Afrique de l'Ouest", "Afrique centrale", "Afrique de l'Est", "Afrique du Nord", "Afrique australe", "Moyen-Orient", "Asie", "Océanie", "Autre"];
+  var ACADEMIE_CATS = ['Domaines de formation', 'Workshops signature', 'Programmes exécutifs signature', 'Parcours Finance & Projets', 'Autres formations'];
+  var FGHLAB_PSEUDO_TOOLS = { 'academie-edit': 'Modifier le catalogue FINECIA ACADÉMIE (administrateur)' };
   var ACADEMIE_CATALOG_VERSION = 3;
   var ACADEMIE_ON_REQUEST = ['TRANSFORMA', 'FISCALIA', 'EXECUTIVE ELITE'];
   /* Catalogue FINECIA Academy, repris tel que fourni par le propriétaire. Les prix ne sont pas dans le
@@ -20649,6 +20957,11 @@
           '<input type="text" id="acad-name" maxlength="120" placeholder="Nom et prénom" style="flex:1; min-width:180px; '+st+'">' +
           '<input type="email" id="acad-email" maxlength="140" placeholder="Courriel" style="flex:1; min-width:180px; '+st+'">' +
           '<input type="text" id="acad-phone" maxlength="40" placeholder="Téléphone" style="flex:1; min-width:140px; '+st+'">' +
+          '<input type="text" id="acad-country" list="acad-country-list" maxlength="80" placeholder="Pays de résidence" style="flex:1; min-width:150px; '+st+'"><datalist id="acad-country-list">'+GEO_COUNTRIES.map(function(c){ return '<option value="'+escapeHtml(c[0])+'">'; }).join('')+'</datalist>' +
+          '<input type="text" id="acad-province" maxlength="80" placeholder="Province / État de résidence" style="flex:1; min-width:150px; '+st+'">' +
+          '<input type="text" id="acad-city" maxlength="80" placeholder="Ville" style="flex:1; min-width:130px; '+st+'">' +
+          '<select id="acad-region" style="'+st+'"><option value="">Région / Continent…</option>'+GEO_REGIONS.map(function(r){ return '<option>'+escapeHtml(r)+'</option>'; }).join('')+'</select>' +
+          '<input type="text" id="acad-org" maxlength="120" placeholder="Organisation / entreprise (facultatif)" style="flex:1; min-width:180px; '+st+'">' +
           '<select id="acad-formation" style="'+st+'"></select>' +
           '<input type="text" id="acad-formation-other" maxlength="120" placeholder="Formation souhaitée (à préciser)" style="display:none; min-width:200px; '+st+'">' +
           '<select id="acad-format" style="'+st+'">'+fmtOpts+'</select>' +
@@ -20706,20 +21019,48 @@
       fghlabState.academieFormations.forEach(function(x){ if(x.id === sel.value) f = x; });
       h.textContent = f ? ('Prix proposé : ' + academiePriceText(f) + ' · durée habituelle : ' + (f.duration || '—')) : '';
     }
+    var canEdit = function(){
+      var m = getActiveFghlabMember();
+      return !m || !!(m.isAdmin && (m.authorizedTools || []).indexOf('academie-edit') !== -1);
+    };
+    var editing = null; // { id, isNew, f } — ligne en cours de modification
+    function rowEditHtml(e){
+      var f = e.f, st = academieSelStyle();
+      var catList = ACADEMIE_CATS.slice(); if(catList.indexOf(f.cat) === -1) catList.push(f.cat);
+      var durList = ACADEMIE_DURATIONS.slice(); if(f.duration && durList.indexOf(f.duration) === -1) durList.push(f.duration);
+      var curList = CURRENCIES.map(function(c){ return '<option value="'+escapeHtml(c.code)+'"'+(c.code === (f.currency || 'CAD') ? ' selected' : '')+'>'+escapeHtml(c.label)+'</option>'; }).join('');
+      var inp = function(k, ph, w, max){ return '<input type="text" data-acad-f="'+k+'" maxlength="'+(max || 200)+'" placeholder="'+ph+'" value="'+escapeHtml(f[k] || '')+'" style="'+(w || 'flex:1; min-width:150px;')+' '+st+'">'; };
+      return '<div data-acad-editrow="'+escapeHtml(f.id)+'" style="border:2px solid var(--accent, #2D9C93); border-radius:9px; padding:10px; margin-top:6px; background:var(--surface); display:flex; gap:6px; flex-wrap:wrap;">' +
+        '<select data-acad-f="cat" style="'+st+'">'+catList.map(function(c){ return '<option'+(c === f.cat ? ' selected' : '')+'>'+escapeHtml(c)+'</option>'; }).join('')+'</select>' +
+        inp('level', 'Niveau / numéro (ex. 05 · Institutionnel)', 'width:210px;', 60) +
+        inp('title', 'Titre de la formation', 'flex:1 1 100%;', 140) +
+        inp('description', 'Description', 'flex:1 1 100%;', 300) +
+        inp('audience', 'Public visé / format', 'flex:1 1 100%;', 200) +
+        '<select data-acad-f="duration" style="'+st+'"><option value="">Durée…</option>'+durList.map(function(d){ return '<option'+(d === f.duration ? ' selected' : '')+'>'+escapeHtml(d)+'</option>'; }).join('')+'</select>' +
+        '<input type="number" min="0" step="1" data-acad-f="price" placeholder="Prix" value="'+(Number(f.price) || '')+'" style="width:110px; '+st+'">' +
+        '<select data-acad-f="currency" style="'+st+'">'+curList+'</select>' +
+        '<label style="display:flex; align-items:center; gap:4px; font-size:12.5px;"><input type="checkbox" data-acad-f="onRequest"'+(f.onRequest ? ' checked' : '')+'> Sur demande (prix non affiché)</label>' +
+        '<div style="flex:1 1 100%; display:flex; gap:6px;"><button type="button" class="btn primary" data-acad-save="'+escapeHtml(f.id)+'" style="padding:5px 12px; font-size:12.5px;">Enregistrer</button>' +
+        '<button type="button" class="btn" data-acad-cancel="1" style="padding:5px 12px; font-size:12.5px;">Annuler</button></div>' +
+      '</div>';
+    }
     function drawCatalog(){
       var el = $('acad-catalog'), wrap = $('acad-form-wrap');
-      if(wrap) wrap.style.display = isOwner() ? 'flex' : 'none';
+      if(wrap) wrap.style.display = canEdit() ? 'flex' : 'none';
       if(!el) return;
-      if(!fghlabState.academieFormations.length){ el.innerHTML = '<p class="hint" style="margin:0;">Aucune formation au catalogue.</p>'; return; }
+      var list = fghlabState.academieFormations;
+      if(!list.length && !(editing && editing.isNew)){ el.innerHTML = '<p class="hint" style="margin:0;">Aucune formation au catalogue.</p>' + (canEdit() ? '<button type="button" class="btn primary" data-acad-addrow="1" style="margin-top:8px; padding:5px 12px; font-size:12.5px;">+ Ajouter une ligne</button>' : ''); return; }
       var cats = [];
-      fghlabState.academieFormations.forEach(function(f){ var c = f.cat || 'Autres formations'; if(cats.indexOf(c) === -1) cats.push(c); });
+      list.forEach(function(f){ var c = f.cat || 'Autres formations'; if(cats.indexOf(c) === -1) cats.push(c); });
+      if(editing && editing.isNew && cats.indexOf(editing.f.cat) === -1) cats.push(editing.f.cat);
       el.innerHTML = cats.map(function(c){
-        return '<div style="font-weight:700; font-size:13px; margin:12px 0 2px;">'+escapeHtml(c)+'</div>' +
-        fghlabState.academieFormations.filter(function(f){ return (f.cat || 'Autres formations') === c; }).map(function(f){
-          var priceCtl = isOwner()
+        var rows = list.filter(function(f){ return (f.cat || 'Autres formations') === c; }).map(function(f){
+          if(editing && !editing.isNew && editing.id === f.id) return rowEditHtml(editing);
+          var priceCtl = canEdit()
             ? '<input type="number" min="0" step="1" data-acad-price="'+escapeHtml(f.id)+'" value="'+(Number(f.price) || 0)+'" style="width:100px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;"> ' +
               '<span class="hint" style="margin:0;">'+escapeHtml(vehicleCurrencyShort(f.currency))+'</span> ' +
               '<label style="font-size:11.5px; display:flex; gap:3px; align-items:center;"><input type="checkbox" data-acad-onreq="'+escapeHtml(f.id)+'"'+(f.onRequest ? ' checked' : '')+'> Sur demande</label> ' +
+              '<button type="button" class="btn" data-acad-edit="'+escapeHtml(f.id)+'" style="padding:2px 8px; font-size:11.5px;">✏️ Modifier</button> ' +
               '<button type="button" class="btn danger" data-acad-del="'+escapeHtml(f.id)+'" style="padding:2px 8px; font-size:11.5px;">Retirer</button>'
             : '<strong>'+escapeHtml(academiePriceText(f))+'</strong>';
           var meta = [f.level, f.duration, f.audience].filter(Boolean).join(' · ');
@@ -20727,9 +21068,13 @@
             '<div style="font-size:12.5px; flex:1; min-width:200px;"><strong>'+escapeHtml(f.title)+'</strong>' +
             (f.description ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(f.description)+'</div>' : '') +
             (meta ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(meta)+'</div>' : '') + '</div>' +
-            '<div style="display:flex; gap:6px; align-items:center;">'+priceCtl+'</div></div>';
+            '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">'+priceCtl+'</div></div>';
         }).join('');
-      }).join('');
+        if(editing && editing.isNew && editing.f.cat === c) rows += rowEditHtml(editing);
+        return '<div style="font-weight:700; font-size:13px; margin:12px 0 2px;">'+escapeHtml(c)+'</div>' + rows;
+      }).join('') + (canEdit() && !(editing && editing.isNew)
+        ? '<button type="button" class="btn primary" data-acad-addrow="1" style="margin-top:12px; padding:6px 14px; font-size:12.5px;">+ Ajouter une ligne</button>'
+        : '') + (canEdit() ? '' : '<p class="hint" style="margin:10px 0 0; font-size:11.5px;">Seul le propriétaire (ou un administrateur autorisé par lui) peut modifier le catalogue.</p>');
     }
     function drawRegs(){
       var el = $('acad-regs');
@@ -20739,7 +21084,7 @@
       el.innerHTML = regs.map(function(r){
         var opts = ACADEMIE_REG_STATUS.map(function(s){ return '<option'+(s === r.status ? ' selected' : '')+'>'+s+'</option>'; }).join('');
         return '<div style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; margin-top:6px; background:var(--surface); font-size:12.5px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
-          '<div><strong>'+escapeHtml(r.name)+'</strong> — '+escapeHtml(r.formationTitle)+'<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.format)+' · '+escapeHtml(r.duration)+' · '+escapeHtml(r.email || '—')+' · '+escapeHtml(r.phone || '—')+' · '+escapeHtml(fmtFghlabShortDate(r.createdOn))+(r.priceText ? ' · '+escapeHtml(r.priceText) : '')+(r.source === 'public' ? ' · 🌐 via le lien public' : '')+'</div>'+(r.message ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.message)+'</div>' : '')+'</div>' +
+          '<div><strong>'+escapeHtml(r.name)+'</strong> — '+escapeHtml(r.formationTitle)+'<div class="hint" style="margin:2px 0 0;">'+escapeHtml([r.city, r.province, r.country, r.region].filter(Boolean).join(', ') || 'Lieu non précisé')+(r.organisation ? ' · '+escapeHtml(r.organisation) : '')+'</div><div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.format)+' · '+escapeHtml(r.duration)+' · '+escapeHtml(r.email || '—')+' · '+escapeHtml(r.phone || '—')+' · '+escapeHtml(fmtFghlabShortDate(r.createdOn))+(r.priceText ? ' · '+escapeHtml(r.priceText) : '')+(r.source === 'public' ? ' · 🌐 via le lien public' : '')+'</div>'+(r.message ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.message)+'</div>' : '')+'</div>' +
           '<select data-acad-regstatus="'+escapeHtml(r.id)+'" style="border:1px solid var(--line); border-radius:7px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">'+opts+'</select></div>';
       }).join('');
     }
@@ -20749,6 +21094,11 @@
     }
     drawFormationSelect(); drawPriceHint(); drawCatalog(); drawRegs();
     fghlabSyncRedraw.academie = function(){ drawFormationSelect(); drawPriceHint(); drawCatalog(); drawRegs(); };
+    var cSel = $('acad-country');
+    if(cSel) cSel.addEventListener('change', function(){
+      var v = cSel.value.trim().toLowerCase();
+      GEO_COUNTRIES.forEach(function(c){ if(c[0].toLowerCase() === v) $('acad-region').value = c[1]; });
+    });
     var fSel = $('acad-formation');
     if(fSel) fSel.addEventListener('change', function(){ toggleOther('acad-formation', 'acad-formation-other'); drawPriceHint(); });
     var fmSel = $('acad-format'); if(fmSel) fmSel.addEventListener('change', function(){ toggleOther('acad-format', 'acad-format-other'); });
@@ -20777,12 +21127,14 @@
         source: 'interne',
         id: 'fghrg-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         name: name, email: email, phone: ($('acad-phone').value || '').trim(),
+        country: ($('acad-country').value || '').trim(), province: ($('acad-province').value || '').trim(), city: ($('acad-city').value || '').trim(), region: $('acad-region').value || '', organisation: ($('acad-org').value || '').trim(),
         formationId: f ? f.id : null, formationTitle: title, format: fmt, duration: dur,
         priceText: f ? academiePriceText(f) : '', message: ($('acad-message').value || '').trim(),
         status: 'Nouvelle', createdOn: new Date().toISOString()
       });
       persistFghlabState();
-      ['acad-name','acad-email','acad-phone','acad-message','acad-formation-other','acad-format-other','acad-duration-other'].forEach(function(id){ if($(id)) $(id).value = ''; });
+      $('acad-region').value = '';
+      ['acad-country','acad-province','acad-city','acad-org','acad-name','acad-email','acad-phone','acad-message','acad-formation-other','acad-format-other','acad-duration-other'].forEach(function(id){ if($(id)) $(id).value = ''; });
       $('acad-formation').value = ''; toggleOther('acad-formation', 'acad-formation-other'); drawPriceHint();
       drawRegs();
       say('Inscription enregistrée ✓');
@@ -20795,7 +21147,7 @@
     });
     var addBtn = $('acad-new-add');
     if(addBtn) addBtn.addEventListener('click', function(){
-      if(!isOwner()) return;
+      if(!canEdit()) return;
       var title = ($('acad-new-title').value || '').trim();
       if(!title) return;
       fghlabState.academieFormations.push({
@@ -20810,7 +21162,7 @@
     var cat = $('acad-catalog');
     if(cat){
       cat.addEventListener('change', function(e){
-        if(!isOwner()) return;
+        if(!canEdit()) return;
         var oq = e.target.closest ? e.target.closest('[data-acad-onreq]') : null;
         if(oq){
           var qid = oq.getAttribute('data-acad-onreq');
@@ -20825,8 +21177,48 @@
         persistFghlabState(); drawCatalog(); drawPriceHint();
       });
       cat.addEventListener('click', function(e){
-        if(!isOwner()) return;
-        var d = e.target.closest ? e.target.closest('[data-acad-del]') : null;
+        if(!canEdit()) return;
+        var t = e.target.closest ? e.target.closest('button') : null;
+        if(!t) return;
+        if(t.hasAttribute('data-acad-addrow')){
+          var lastCat = fghlabState.academieFormations.length ? (fghlabState.academieFormations[fghlabState.academieFormations.length - 1].cat || 'Autres formations') : ACADEMIE_CATS[0];
+          editing = { id: 'fghfo-' + Math.random().toString(36).slice(2, 9), isNew: true, f: { id: '', cat: lastCat, level: '', title: '', description: '', audience: '', duration: '', price: 0, currency: 'CAD', onRequest: false, formats: [] } };
+          editing.f.id = editing.id;
+          drawCatalog();
+          var inp = cat.querySelector('[data-acad-f="title"]'); if(inp) inp.focus();
+          return;
+        }
+        if(t.hasAttribute('data-acad-edit')){
+          var eid = t.getAttribute('data-acad-edit'), src = null;
+          fghlabState.academieFormations.forEach(function(f){ if(f.id === eid) src = f; });
+          if(!src) return;
+          editing = { id: eid, isNew: false, f: JSON.parse(JSON.stringify(src)) };
+          drawCatalog();
+          return;
+        }
+        if(t.hasAttribute('data-acad-cancel')){ editing = null; drawCatalog(); return; }
+        if(t.hasAttribute('data-acad-save')){
+          if(!editing) return;
+          var row = cat.querySelector('[data-acad-editrow]'), vals = {};
+          if(!row) return;
+          Array.prototype.forEach.call(row.querySelectorAll('[data-acad-f]'), function(c){
+            var k = c.getAttribute('data-acad-f');
+            vals[k] = c.type === 'checkbox' ? c.checked : c.value;
+          });
+          var ttl = String(vals.title || '').trim();
+          if(!ttl){ var ti = row.querySelector('[data-acad-f="title"]'); if(ti){ ti.style.borderColor = '#B3261E'; ti.focus(); } return; }
+          var rec = editing.f;
+          rec.cat = vals.cat || rec.cat; rec.level = String(vals.level || '').trim(); rec.title = ttl;
+          rec.description = String(vals.description || '').trim(); rec.audience = String(vals.audience || '').trim();
+          rec.duration = vals.duration || ''; rec.price = Number(vals.price) || 0; rec.currency = vals.currency || 'CAD'; rec.onRequest = !!vals.onRequest;
+          rec.example = false;
+          if(editing.isNew){ fghlabState.academieFormations.push(rec); }
+          else { fghlabState.academieFormations = fghlabState.academieFormations.map(function(f){ return f.id === rec.id ? rec : f; }); }
+          editing = null;
+          persistFghlabState(); drawFormationSelect(); drawCatalog(); drawPriceHint();
+          return;
+        }
+        var d = t.hasAttribute('data-acad-del') ? t : null;
         if(!d) return;
         var id = d.getAttribute('data-acad-del');
         fghlabState.academieFormations = fghlabState.academieFormations.filter(function(f){ return f.id !== id; });
@@ -24830,15 +25222,16 @@
         (selectFghlabTool, showView, bouton de déconnexion). Visible côté propriétaire dans
         Réglages > Gestion du compte administrateur, fiche de chaque membre. */
   var FGHLAB_DOC_CONTENT = {
+    calculateurs: "Calculateurs regroupe huit calculateurs indicatifs : prêt et amortissement, intérêts composés, VAN/TRI et délai de récupération, seuil de rentabilité, marge et majoration, taxes de vente, ratio d'endettement et capacité d'emprunt, conversion de devises (taux saisi à la main). Les calculs se font sur l'appareil et ne sont pas enregistrés.",
     academie: "FINECIA ACADÉMIE regroupe le catalogue des formations de FINECIA GROUPE avec leur prix, et un formulaire d'inscription (formation, format, durée, avec « Autre (à préciser) »). Le propriétaire tient le catalogue et les prix ; les inscriptions reçues sont suivies par statut (Nouvelle, Contactée, Confirmée, Annulée). Données enregistrées sur cet appareil pour l'instant.",
     etudes: "Études sert à cadrer une enquête ou une recherche sur mesure pour un dossier ou un mandat : définir la question, la méthode et les sources, puis en tirer des constats exploitables par l'équipe. C'est pour l'instant un stub « Bientôt disponible » — la carte existe et est nommée correctement, mais aucune logique de collecte ou d'analyse n'y est encore branchée.",
-    bizplan: "Business plan accompagne la structuration d'un plan d'affaires section par section (marché, opérations, finances, etc.), pour garder une trame cohérente d'un mandat à l'autre. C'est un stub « Bientôt disponible » : la structure de la carte est prête, mais l'assistance section par section n'est pas encore implémentée.",
+    bizplan: "Business plan accompagne la rédaction d'un plan d'affaires section par section. Choisissez un modèle selon le secteur (commerce, restauration, agroalimentaire, e-commerce, technologie, transport, OBNL, véhicules, immobilier), suivez l'avancement par section, chargez un projet fictif pour vous exercer, puis assemblez le document complet.",
     conseiller: "Conseiller en finance et économie répond à des questions ponctuelles de finance ou d'économie avec des repères adaptés au contexte d'un mandat FINECIA GROUPE — un point d'entrée pour des éclairages rapides plutôt qu'une analyse complète. Stub « Bientôt disponible » pour l'instant.",
     compta: "Comptabilité, contrôle et audit vise des vérifications comptables et des contrôles internes de niveau cabinet : cohérence des écritures, pistes d'audit, repères de conformité. Stub « Bientôt disponible » — pas encore de checklist ou de calcul automatisé derrière la carte.",
     montage: "Montage de projets appuie la structuration financière d'un projet étape par étape (besoins, sources de financement, montage juridique et financier). Stub « Bientôt disponible », distinct de COPROJECT qui, lui, gère le suivi et l'évaluation des projets déjà en portefeuille.",
     pme: "Accompagnement des entreprises et PME regroupe le suivi des entreprises et PME clientes de FINECIA GROUPE — un espace pensé pour centraliser leur accompagnement dans la durée. Stub « Bientôt disponible » pour l'instant.",
     briefing: "Briefing FINECIA prépare des résumés et briefings internes pour tenir l'équipe informée (dossiers en cours, décisions, priorités). Stub « Bientôt disponible » — pas encore de génération ni d'archivage de briefings.",
-    redaction: "Rédaction de plan d'affaires aide à produire un plan d'affaires complet et prêt à présenter à un tiers (banque, partenaire, bailleur) — un usage plus « livrable final » que Business plan, qui sert surtout à structurer. Stub « Bientôt disponible ».",
+    redaction: "Rédaction de plan d'affaires produit un document livrable selon le destinataire : demande de prêt bancaire, investisseurs, bailleur de fonds, résumé exécutif, plan opérationnel interne ou reprise d'entreprise. Chaque modèle contient la structure et une liste de vérifications avant livraison ; des projets fictifs permettent de s'exercer.",
     rh: "Outils recrutement et RH couvre le recrutement et le suivi du personnel, autant pour les mandats clients que pour l'équipe interne de FINECIA GROUPE. Stub « Bientôt disponible » — pas encore de suivi de candidatures ou de dossiers employés.",
     formation: "Outils de formation rassemble des modules et supports de formation destinés à l'équipe et aux clients de FINECIA GROUPE. Stub « Bientôt disponible » pour l'instant.",
     etat: "L'outil d'accompagnement des États, municipalités et administrations offre un appui spécialisé pour ce type de clients publics, aux enjeux différents des entreprises privées (reddition de comptes, cadre réglementaire, budgets publics). Stub « Bientôt disponible ».",
@@ -25145,7 +25538,7 @@
       .filter(function(t){ return toolCounts[t] > 0; })
       .sort(function(a, b){ return toolCounts[b] - toolCounts[a]; })
       .slice(0, 3)
-      .map(function(t){ return (FGHLAB_INFO[t] ? FGHLAB_INFO[t].title : t) + ' (' + toolCounts[t] + ')'; });
+      .map(function(t){ return (FGHLAB_INFO[t] ? FGHLAB_INFO[t].title : (FGHLAB_PSEUDO_TOOLS[t] || t)) + ' (' + toolCounts[t] + ')'; });
     return { memberCount: memberCount, activeConnections: activeConnections, topTools: topTools, lastLogin: lastLogin };
   }
   function renderFghlabDashboard(){
@@ -29590,6 +29983,11 @@
         '<input type="checkbox" data-fghlab-tool-check="'+key+'"'+(selected[key] ? ' checked' : '')+'> ' +
         escapeHtml(info.title) +
       '</label>';
+    }).join('') + Object.keys(FGHLAB_PSEUDO_TOOLS).map(function(key){
+      return '<label style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer; border-top:1px dashed var(--line); padding-top:6px; margin-top:2px;">' +
+        '<input type="checkbox" data-fghlab-tool-check="'+key+'"'+(selected[key] ? ' checked' : '')+'> ✏️ ' +
+        escapeHtml(FGHLAB_PSEUDO_TOOLS[key]) +
+      '</label>';
     }).join('');
     applyFghlabToolsGate();
   }
@@ -29650,7 +30048,7 @@
   /* Noms lisibles (FGH-Colab) des outils actuellement autorisés d'un membre. */
   function fghlabToolNamesOf(member){
     return (member && Array.isArray(member.authorizedTools) ? member.authorizedTools : []).map(function(k){
-      return FGHLAB_INFO[k] ? FGHLAB_INFO[k].title : k;
+      return FGHLAB_INFO[k] ? FGHLAB_INFO[k].title : (FGHLAB_PSEUDO_TOOLS[k] || k);
     });
   }
   /* Le propriétaire (toujours) ou un administrateur connecté avec canViewAccessList peut voir la liste. */
