@@ -20526,7 +20526,8 @@
   var ACADEMIE_DURATIONS = ['90 minutes', '½ journée', '1 journée', '2 à 5 jours', '8 semaines', 'Coaching mensuel', 'Mission d\u2019accompagnement', 'Sur mesure'];
   var ACADEMIE_REG_STATUS = ['Nouvelle', 'Contactée', 'Confirmée', 'Annulée'];
   var ACADEMIE_OTHER = '__autre__';
-  var ACADEMIE_CATALOG_VERSION = 2;
+  var ACADEMIE_CATALOG_VERSION = 3;
+  var ACADEMIE_ON_REQUEST = ['TRANSFORMA', 'FISCALIA', 'EXECUTIVE ELITE'];
   /* Catalogue FINECIA Academy, repris tel que fourni par le propriétaire. Les prix ne sont pas dans le
      document : ils sont à « définir » (modifiables par le propriétaire dans la liste de prix). */
   var ACADEMIE_SEED = [
@@ -20552,11 +20553,19 @@
   ];
   function academieEnsureSeed(){
     if(!Array.isArray(fghlabState.academieFormations)) fghlabState.academieFormations = [];
-    if((fghlabState.academieCatalogVersion || 0) < ACADEMIE_CATALOG_VERSION){
+    if((fghlabState.academieCatalogVersion || 0) >= 2 && (fghlabState.academieCatalogVersion || 0) < 3){
+      // v3 : marque « Sur demande » les programmes institutionnels / d'élite, sans toucher aux prix déjà saisis
+      fghlabState.academieFormations.forEach(function(f){
+        if(f.onRequest === undefined && ACADEMIE_ON_REQUEST.some(function(k){ return (f.title || '').indexOf(k) === 0; })) f.onRequest = true;
+      });
+      fghlabState.academieCatalogVersion = 3;
+      persistFghlabState();
+    }
+    if((fghlabState.academieCatalogVersion || 0) < 2){
       // remplace les anciennes formations « exemple » par le vrai catalogue ; garde celles ajoutées par le propriétaire
       var kept = fghlabState.academieFormations.filter(function(f){ return !f.example; });
       var seeded = ACADEMIE_SEED.map(function(t, si){
-        return { id: 'fghfo-seed-' + (si + 1), cat: t.cat, level: t.level || '', title: t.title, description: t.description || '', audience: t.audience || '', price: 0, currency: 'CAD', formats: [], duration: t.duration || '' };
+        return { id: 'fghfo-seed-' + (si + 1), cat: t.cat, level: t.level || '', title: t.title, description: t.description || '', audience: t.audience || '', price: 0, currency: 'CAD', formats: [], duration: t.duration || '', onRequest: ACADEMIE_ON_REQUEST.some(function(k){ return t.title.indexOf(k) === 0; }) };
       });
       fghlabState.academieFormations = seeded.concat(kept);
       fghlabState.academieCatalogVersion = ACADEMIE_CATALOG_VERSION;
@@ -20566,6 +20575,7 @@
   }
   function academieSelStyle(){ return 'border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;'; }
   function academiePriceText(f){
+    if(f.onRequest) return 'Sur demande';
     return f.price ? (fmtFghlabAmount(f.price) + ' ' + vehicleCurrencyShort(f.currency)) : 'Prix à définir';
   }
   function fghlabAcademiePanelHtml(info){
@@ -20579,6 +20589,7 @@
       '<p class="hint" style="margin:0 0 12px;">'+escapeHtml(info.desc)+'</p>' +
       '<div class="card" style="background:var(--surface-2); margin-bottom:14px;">' +
         '<h3 style="margin:0 0 6px; font-size:14.5px;">Formulaire d’inscription</h3>' +
+        '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:8px;"><button type="button" class="btn" id="acad-copy-public" style="padding:4px 10px; font-size:12px;">Copier le lien public d’inscription</button><span class="copy-status" id="acad-copy-status"></span></div>' +
         '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
           '<input type="text" id="acad-name" maxlength="120" placeholder="Nom et prénom" style="flex:1; min-width:180px; '+st+'">' +
           '<input type="email" id="acad-email" maxlength="140" placeholder="Courriel" style="flex:1; min-width:180px; '+st+'">' +
@@ -20653,6 +20664,7 @@
           var priceCtl = isOwner()
             ? '<input type="number" min="0" step="1" data-acad-price="'+escapeHtml(f.id)+'" value="'+(Number(f.price) || 0)+'" style="width:100px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;"> ' +
               '<span class="hint" style="margin:0;">'+escapeHtml(vehicleCurrencyShort(f.currency))+'</span> ' +
+              '<label style="font-size:11.5px; display:flex; gap:3px; align-items:center;"><input type="checkbox" data-acad-onreq="'+escapeHtml(f.id)+'"'+(f.onRequest ? ' checked' : '')+'> Sur demande</label> ' +
               '<button type="button" class="btn danger" data-acad-del="'+escapeHtml(f.id)+'" style="padding:2px 8px; font-size:11.5px;">Retirer</button>'
             : '<strong>'+escapeHtml(academiePriceText(f))+'</strong>';
           var meta = [f.level, f.duration, f.audience].filter(Boolean).join(' · ');
@@ -20672,7 +20684,7 @@
       el.innerHTML = regs.map(function(r){
         var opts = ACADEMIE_REG_STATUS.map(function(s){ return '<option'+(s === r.status ? ' selected' : '')+'>'+s+'</option>'; }).join('');
         return '<div style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; margin-top:6px; background:var(--surface); font-size:12.5px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
-          '<div><strong>'+escapeHtml(r.name)+'</strong> — '+escapeHtml(r.formationTitle)+'<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.format)+' · '+escapeHtml(r.duration)+' · '+escapeHtml(r.email || '—')+' · '+escapeHtml(r.phone || '—')+' · '+escapeHtml(fmtFghlabShortDate(r.createdOn))+(r.priceText ? ' · '+escapeHtml(r.priceText) : '')+'</div>'+(r.message ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.message)+'</div>' : '')+'</div>' +
+          '<div><strong>'+escapeHtml(r.name)+'</strong> — '+escapeHtml(r.formationTitle)+'<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.format)+' · '+escapeHtml(r.duration)+' · '+escapeHtml(r.email || '—')+' · '+escapeHtml(r.phone || '—')+' · '+escapeHtml(fmtFghlabShortDate(r.createdOn))+(r.priceText ? ' · '+escapeHtml(r.priceText) : '')+(r.source === 'public' ? ' · 🌐 via le lien public' : '')+'</div>'+(r.message ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.message)+'</div>' : '')+'</div>' +
           '<select data-acad-regstatus="'+escapeHtml(r.id)+'" style="border:1px solid var(--line); border-radius:7px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">'+opts+'</select></div>';
       }).join('');
     }
@@ -20707,6 +20719,7 @@
       var dur = $('acad-duration').value === ACADEMIE_OTHER ? (($('acad-duration-other').value || '').trim() || 'Autre') : $('acad-duration').value;
       if(!Array.isArray(fghlabState.academieRegistrations)) fghlabState.academieRegistrations = [];
       fghlabState.academieRegistrations.push({
+        source: 'interne',
         id: 'fghrg-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         name: name, email: email, phone: ($('acad-phone').value || '').trim(),
         formationId: f ? f.id : null, formationTitle: title, format: fmt, duration: dur,
@@ -20718,6 +20731,12 @@
       $('acad-formation').value = ''; toggleOther('acad-formation', 'acad-formation-other'); drawPriceHint();
       drawRegs();
       say('Inscription enregistrée ✓');
+    });
+    var cp = $('acad-copy-public');
+    if(cp) cp.addEventListener('click', function(){
+      var stx = $('acad-copy-status'), url = fghlabPublicUrl('academie', '1');
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function(){ stx.textContent = 'Lien copié ✓'; }, function(){ stx.textContent = 'Copie impossible'; });
+      setTimeout(function(){ stx.textContent = ''; }, 2200);
     });
     var addBtn = $('acad-new-add');
     if(addBtn) addBtn.addEventListener('click', function(){
@@ -20737,6 +20756,13 @@
     if(cat){
       cat.addEventListener('change', function(e){
         if(!isOwner()) return;
+        var oq = e.target.closest ? e.target.closest('[data-acad-onreq]') : null;
+        if(oq){
+          var qid = oq.getAttribute('data-acad-onreq');
+          fghlabState.academieFormations.forEach(function(f){ if(f.id === qid) f.onRequest = !!oq.checked; });
+          persistFghlabState(); drawCatalog(); drawPriceHint();
+          return;
+        }
         var p = e.target.closest ? e.target.closest('[data-acad-price]') : null;
         if(!p) return;
         var id = p.getAttribute('data-acad-price');

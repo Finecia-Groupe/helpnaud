@@ -150,7 +150,63 @@
     });
   }
 
-  if(Q.get('invitation')) viewInvitation(Q.get('invitation'));
+
+  /* ---------- FINECIA ACADÉMIE : catalogue + inscription ---------- */
+  var A_FORMATS = ['Présentiel haut de gamme', 'En ligne', 'Hybride', 'Intra-entreprise', 'Inter-entreprises', 'Masterclass 90 minutes', 'Workshop ½ ou 1 journée', 'Bootcamp 2 à 5 jours', 'Programme sur mesure'];
+  var A_DURATIONS = ['90 minutes', '½ journée', '1 journée', '2 à 5 jours', '8 semaines', 'Coaching mensuel', 'Mission d’accompagnement', 'Sur mesure'];
+  function opts(list){ return list.map(function(x){ return '<option>' + esc(x) + '</option>'; }).join('') + '<option value="__autre__">Autre (à préciser)</option>'; }
+  function viewAcademie(){
+    call({ action:'academie-catalogue' }).then(function(r){
+      var list = r.formations || [], cats = [];
+      list.forEach(function(f){ var c = f.cat || 'Formations'; if(cats.indexOf(c) === -1) cats.push(c); });
+      var html = '<div class="card"><h1>FINECIA Academy</h1><p class="hint">Former les décideurs qui feront avancer les organisations. Des formations appliquées, ateliers exécutifs et workshops conçus à partir de situations réelles.</p></div>';
+      html += cats.map(function(c){
+        return '<div class="card"><strong>' + esc(c) + '</strong>' + list.filter(function(f){ return (f.cat || 'Formations') === c; }).map(function(f){
+          var price = f.onRequest ? 'Sur demande' : money(f.price, f.currency);
+          var meta = [f.level, f.duration, f.audience].filter(Boolean).join(' · ');
+          return '<div class="row" style="padding:9px 0; border-top:1px solid var(--line);"><div style="flex:1; min-width:200px;"><div><strong>' + esc(f.title) + '</strong></div>' +
+            (f.description ? '<div class="hint">' + esc(f.description) + '</div>' : '') + (meta ? '<div class="hint">' + esc(meta) + '</div>' : '') + '</div>' +
+            '<div style="text-align:right;"><div><strong>' + esc(price) + '</strong></div><button class="light" data-pick="' + esc(f.id) + '">S’inscrire</button></div></div>';
+        }).join('') + '</div>';
+      }).join('');
+      html += '<div class="card" id="reg"><h1 style="font-size:20px;">Formulaire d’inscription</h1>' +
+        '<label for="a-name">Nom et prénom</label><input id="a-name" maxlength="120">' +
+        '<label for="a-email">Courriel</label><input id="a-email" type="email" maxlength="140">' +
+        '<label for="a-phone">Téléphone</label><input id="a-phone" maxlength="40">' +
+        '<label for="a-formation">Formation</label><select id="a-formation"><option value="">Choisir…</option>' + list.map(function(f){ return '<option value="' + esc(f.id) + '">' + esc(f.title) + '</option>'; }).join('') + '<option value="__autre__">Autre (à préciser)</option></select>' +
+        '<input id="a-formation-o" maxlength="120" placeholder="Formation souhaitée (à préciser)" style="display:none; margin-top:6px;">' +
+        '<label for="a-format">Format</label><select id="a-format">' + opts(A_FORMATS) + '</select><input id="a-format-o" maxlength="80" placeholder="Format (à préciser)" style="display:none; margin-top:6px;">' +
+        '<label for="a-duration">Durée</label><select id="a-duration">' + opts(A_DURATIONS) + '</select><input id="a-duration-o" maxlength="60" placeholder="Durée (à préciser)" style="display:none; margin-top:6px;">' +
+        '<label for="a-msg">Message (facultatif)</label><textarea id="a-msg" rows="3" maxlength="600"></textarea>' + HONEY +
+        '<label style="display:flex; gap:8px; align-items:flex-start; color:var(--ink); margin-top:14px;"><input type="checkbox" id="a-consent" style="width:auto; margin-top:4px;"><span>J’accepte que FINECIA GROUPE utilise ces informations uniquement pour répondre à ma demande d’inscription.</span></label>' +
+        '<button id="a-send">Envoyer mon inscription</button><div id="a-out" class="msg"></div></div>';
+      app.innerHTML = html;
+      function toggle(sel, inp){ var s = document.getElementById(sel); s.addEventListener('change', function(){ document.getElementById(inp).style.display = s.value === '__autre__' ? '' : 'none'; }); }
+      toggle('a-formation', 'a-formation-o'); toggle('a-format', 'a-format-o'); toggle('a-duration', 'a-duration-o');
+      app.addEventListener('click', function(e){
+        var b = e.target.closest ? e.target.closest('[data-pick]') : null;
+        if(!b) return;
+        document.getElementById('a-formation').value = b.getAttribute('data-pick');
+        document.getElementById('reg').scrollIntoView({ behavior:'smooth' });
+      });
+      document.getElementById('a-send').addEventListener('click', function(){
+        var btn = this, out = document.getElementById('a-out'); out.className = 'msg'; out.textContent = '';
+        var fv = document.getElementById('a-formation').value;
+        if(!fv){ out.className = 'msg err'; out.textContent = 'Choisissez une formation.'; return; }
+        function pick(sel, inp){ var v = document.getElementById(sel).value; return v === '__autre__' ? val(inp) : v; }
+        btn.disabled = true;
+        call({ action:'academie-register', name: val('a-name'), email: val('a-email'), phone: val('a-phone'),
+          formationId: fv === '__autre__' ? '' : fv, formationOther: fv === '__autre__' ? val('a-formation-o') : '',
+          format: pick('a-format', 'a-format-o'), duration: pick('a-duration', 'a-duration-o'), message: val('a-msg'),
+          consent: document.getElementById('a-consent').checked, website: hv() }).then(function(){
+          app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre inscription est bien reçue.</p><p class="hint">Un conseiller FINECIA GROUPE vous contactera pour confirmer les détails.</p></div>';
+        }).catch(function(err){ out.className = 'msg err'; out.textContent = err.message; btn.disabled = false; });
+      });
+    }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
+  }
+
+  if(Q.get('academie')) viewAcademie();
+  else if(Q.get('invitation')) viewInvitation(Q.get('invitation'));
   else if(Q.get('catalogue')) viewCatalogue(Q.get('catalogue'));
   else if(Q.get('rdv')) viewRdv();
   else app.innerHTML = '<div class="card"><h1>FINECIA GROUPE</h1><p class="hint">Cette page s’ouvre depuis un lien envoyé par FINECIA GROUPE (invitation, rendez-vous ou catalogue).</p></div>';
