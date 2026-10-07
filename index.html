@@ -1,4 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+  .fghlab-navbar{ position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:8px; margin:0 0 10px; padding:6px 8px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  .fghlab-navbar .btn{ padding:5px 12px; font-size:13px; white-space:nowrap; }
+  .fghlab-navbar .btn:disabled{ opacity:.4; cursor:default; }
+  .lead-steps{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px; padding-top:6px; border-top:1px dashed var(--line); }
+</style></head><body>
 <title>HelpNaud</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4522,6 +4527,11 @@
            ici, sans avoir à défiler sous les ~8 groupes/39 outils de la grille — voir
            selectFghlabTool() en JS, qui fait défiler jusqu'à ce panneau. Vide (donc invisible) tant
            qu'aucun outil n'est sélectionné. -->
+      <div id="fghlab-nav" class="fghlab-navbar" role="navigation" aria-label="Navigation FGH-Colab">
+        <button type="button" class="btn" id="fghlab-nav-back" disabled>← Précédent</button>
+        <span id="fghlab-nav-where" class="hint" style="margin:0; flex:1; text-align:center; font-size:12px;"></span>
+        <button type="button" class="btn" id="fghlab-nav-fwd" disabled>Suivant →</button>
+      </div>
       <div id="fghlab-panels"></div>
       <div id="fghlab-grid"></div>
     </section>
@@ -19374,6 +19384,17 @@
         actions = '<div class="hint" style="margin-top:4px;">Dossier déposé dans FG &amp; Bank Partnership'+(linkedProj ? ' ('+escapeHtml(linkedProj.referenceId)+')' : '')+'.</div>' +
           (linkedProj && linkedProj.status === 'accepte' ? '<div style="margin-top:4px; color:#2D9C93; font-size:12.5px;">✓ Financement accepté par la banque — contrat signé, client livré.</div>' : '');
       }
+      var stIdx = VEHICLE_LEAD_STATUS.indexOf(lead.status), steps = '';
+      if(lead.status === 'Annulé'){
+        steps = '<button type="button" class="btn" data-lead-back="'+escapeHtml(lead.id)+'" style="padding:4px 10px; font-size:12px;">← Rouvrir le dossier</button>';
+      }else if(stIdx > 0 && lead.status !== 'Déposé chez FG & Bank Partnership'){
+        steps = '<button type="button" class="btn" data-lead-back="'+escapeHtml(lead.id)+'" title="Revenir à l\u2019étape « '+escapeHtml(VEHICLE_LEAD_STATUS[stIdx - 1])+' »" style="padding:4px 10px; font-size:12px;">← Étape précédente : '+escapeHtml(VEHICLE_LEAD_STATUS[stIdx - 1])+'</button>';
+      }
+      if(lead.status !== 'Intérêt manifesté' && lead.status !== 'Annulé' && lead.status !== 'Déposé chez FG & Bank Partnership' && stIdx < (Number(lead.furthestIdx) || 0)){
+        steps += '<button type="button" class="btn" data-lead-fwd="'+escapeHtml(lead.id)+'" style="padding:4px 10px; font-size:12px;">Étape suivante : '+escapeHtml(VEHICLE_LEAD_STATUS[stIdx + 1])+' →</button>';
+      }
+      if(lead.status === 'Déposé chez FG & Bank Partnership') steps = '<span class="hint" style="margin:0; font-size:11.5px;">Le dossier est déposé : pour le modifier, utilisez FG &amp; Bank Partnership.</span>';
+      if(steps) actions += '<div class="lead-steps">'+steps+'</div>';
       var cancelBtn = (lead.status !== 'Déposé chez FG & Bank Partnership' && lead.status !== 'Annulé')
         ? '<button type="button" class="btn danger" data-lead-cancel="'+escapeHtml(lead.id)+'" style="padding:3px 9px; font-size:11.5px; margin-top:6px;">Annuler</button>'
         : '';
@@ -19479,10 +19500,43 @@
         var acceptBtn = e.target.closest ? e.target.closest('[data-lead-accept]') : null;
         var depositBtn = e.target.closest ? e.target.closest('[data-lead-deposit]') : null;
         var cancelBtn = e.target.closest ? e.target.closest('[data-lead-cancel]') : null;
+        var backBtn = e.target.closest ? e.target.closest('[data-lead-back]') : null;
+        var fwdBtn = e.target.closest ? e.target.closest('[data-lead-fwd]') : null;
+        if(backBtn){
+          var leadB = fghlabFindVehicleLead(backBtn.getAttribute('data-lead-back'));
+          if(leadB && leadB.status !== 'Déposé chez FG & Bank Partnership'){
+            var curI = VEHICLE_LEAD_STATUS.indexOf(leadB.status);
+            if(leadB.status === 'Annulé'){
+              leadB.status = leadB.statusBeforeCancel || 'En négociation';
+            }else{
+              leadB.furthestIdx = Math.max(Number(leadB.furthestIdx) || 0, curI);
+              if(leadB.status === 'Offre acceptée par le client') leadB.dealerCommissionAmount = 0; // sera recalculée à la nouvelle acceptation
+              leadB.status = VEHICLE_LEAD_STATUS[Math.max(0, curI - 1)];
+            }
+            persistFghlabState(); renderFghlabVehicleLeadList(); renderFghlabRevenueDashboard();
+          }
+          return;
+        }
+        if(fwdBtn){
+          var leadF = fghlabFindVehicleLead(fwdBtn.getAttribute('data-lead-fwd'));
+          if(leadF){
+            var nxt = VEHICLE_LEAD_STATUS[VEHICLE_LEAD_STATUS.indexOf(leadF.status) + 1];
+            if(nxt === 'Prix convenu' && !(Number(leadF.negotiatedPrice) > 0)) return;
+            if(nxt === 'Offre de financement proposée') leadF.computedPayment = calcVehicleFinancingPayment(leadF.negotiatedPrice, leadF.downPayment, leadF.annualRatePct, leadF.termMonths, leadF.paymentFrequency || 'Mois');
+            if(nxt === 'Offre acceptée par le client'){
+              var pF = fghlabFindPartner(leadF.partnerId);
+              var rF = pF ? (Number(pF.dealerCommissionRate) || DEALER_DEFAULT_COMMISSION_RATE) : DEALER_DEFAULT_COMMISSION_RATE;
+              leadF.dealerCommissionAmount = (Number(leadF.negotiatedPrice) || 0) * (rF / 100);
+            }
+            if(nxt && nxt !== 'Déposé chez FG & Bank Partnership') leadF.status = nxt;
+            persistFghlabState(); renderFghlabVehicleLeadList(); renderFghlabRevenueDashboard();
+          }
+          return;
+        }
         if(advanceBtn){
           var lead1 = fghlabFindVehicleLead(advanceBtn.getAttribute('data-lead-advance'));
           if(lead1){
-            lead1.status = advanceBtn.getAttribute('data-next-status') || lead1.status;
+            lead1.status = advanceBtn.getAttribute('data-next-status') || lead1.status; lead1.furthestIdx = Math.max(Number(lead1.furthestIdx) || 0, VEHICLE_LEAD_STATUS.indexOf(lead1.status));
             persistFghlabState();
             renderFghlabVehicleLeadList();
           }
@@ -19495,7 +19549,7 @@
           var price = priceInputEl ? Number(priceInputEl.value) : NaN;
           if(!lead2 || !isFinite(price) || price <= 0) return;
           lead2.negotiatedPrice = price;
-          lead2.status = 'Prix convenu';
+          lead2.status = 'Prix convenu'; lead2.furthestIdx = Math.max(Number(lead2.furthestIdx) || 0, VEHICLE_LEAD_STATUS.indexOf(lead2.status));
           persistFghlabState();
           renderFghlabVehicleLeadList();
           return;
@@ -19504,7 +19558,7 @@
           var lead3 = fghlabFindVehicleLead(proposeBtn.getAttribute('data-lead-propose'));
           if(lead3){
             lead3.computedPayment = calcVehicleFinancingPayment(lead3.negotiatedPrice, lead3.downPayment, lead3.annualRatePct, lead3.termMonths, lead3.paymentFrequency || 'Mois');
-            lead3.status = 'Offre de financement proposée';
+            lead3.status = 'Offre de financement proposée'; lead3.furthestIdx = Math.max(Number(lead3.furthestIdx) || 0, VEHICLE_LEAD_STATUS.indexOf(lead3.status));
             persistFghlabState();
             renderFghlabVehicleLeadList();
           }
@@ -19516,7 +19570,7 @@
             var partner4 = fghlabFindPartner(lead4.partnerId);
             var rate4 = partner4 ? (Number(partner4.dealerCommissionRate) || DEALER_DEFAULT_COMMISSION_RATE) : DEALER_DEFAULT_COMMISSION_RATE;
             lead4.dealerCommissionAmount = (Number(lead4.negotiatedPrice) || 0) * (rate4 / 100);
-            lead4.status = 'Offre acceptée par le client';
+            lead4.status = 'Offre acceptée par le client'; lead4.furthestIdx = Math.max(Number(lead4.furthestIdx) || 0, VEHICLE_LEAD_STATUS.indexOf(lead4.status));
             persistFghlabState();
             renderFghlabVehicleLeadList();
             renderFghlabRevenueDashboard();
@@ -19542,6 +19596,7 @@
         if(cancelBtn){
           var lead6 = fghlabFindVehicleLead(cancelBtn.getAttribute('data-lead-cancel'));
           if(lead6){
+            lead6.statusBeforeCancel = lead6.status;
             lead6.status = 'Annulé';
             persistFghlabState();
             renderFghlabVehicleLeadList();
@@ -24952,6 +25007,52 @@
 
   buildFghlabGrid();
   var fghlabActiveTool = null;
+  /* Navigation Précédent / Suivant entre les écrans (outils) de FGH-Colab : historique des outils ouverts. */
+  var fghlabNavHist = [], fghlabNavIdx = -1;
+  function fghlabToolLabel(t){
+    if(!t) return 'Accueil FGH-Colab';
+    var c = document.querySelector('#fghlab-grid [data-fghlabtool="' + t + '"]');
+    var info = (typeof FGHLAB_INFO !== 'undefined' && FGHLAB_INFO[t]) ? FGHLAB_INFO[t] : null;
+    var txt = info && info.title ? info.title : (c ? (c.textContent || '').replace(/\s+/g, ' ').trim() : t);
+    return txt.length > 38 ? txt.slice(0, 36) + '…' : txt;
+  }
+  function fghlabNavRender(){
+    var b = document.getElementById('fghlab-nav-back'), f = document.getElementById('fghlab-nav-fwd'), w = document.getElementById('fghlab-nav-where');
+    if(!b || !f) return;
+    b.disabled = fghlabNavIdx <= 0; f.disabled = fghlabNavIdx >= fghlabNavHist.length - 1;
+    b.title = b.disabled ? '' : 'Retour : ' + fghlabToolLabel(fghlabNavHist[fghlabNavIdx - 1]);
+    f.title = f.disabled ? '' : 'Suivant : ' + fghlabToolLabel(fghlabNavHist[fghlabNavIdx + 1]);
+    if(w) w.textContent = fghlabToolLabel(fghlabNavHist[fghlabNavIdx]);
+  }
+  function fghlabNavRecord(tool, opts){
+    if(opts && opts.fromNav){ fghlabNavRender(); return; }
+    if(fghlabNavHist[fghlabNavIdx] === tool){ fghlabNavRender(); return; }
+    fghlabNavHist = fghlabNavHist.slice(0, fghlabNavIdx + 1);
+    fghlabNavHist.push(tool);
+    if(fghlabNavHist.length > 60) fghlabNavHist.shift();
+    fghlabNavIdx = fghlabNavHist.length - 1;
+    fghlabNavRender();
+  }
+  function fghlabNavGo(delta){
+    var ni = fghlabNavIdx + delta;
+    while(ni >= 0 && ni < fghlabNavHist.length){
+      var t = fghlabNavHist[ni];
+      var ok = !t || (document.getElementById('fghlab-panel-' + t) && document.querySelector('#fghlab-grid [data-fghlabtool="' + t + '"]'));
+      if(ok){
+        fghlabNavIdx = ni;
+        if(!t){ if(fghlabActiveTool) selectFghlabTool(fghlabActiveTool, { fromNav: true }); }
+        else selectFghlabTool(t, { noClose: true, fromNav: true });
+        fghlabNavRender();
+        return;
+      }
+      ni += delta; // outil devenu inaccessible : on le saute
+    }
+  }
+  (function(){
+    var b = document.getElementById('fghlab-nav-back'), f = document.getElementById('fghlab-nav-fwd');
+    if(b) b.addEventListener('click', function(){ fghlabNavGo(-1); });
+    if(f) f.addEventListener('click', function(){ fghlabNavGo(1); });
+  })();
   function selectFghlabTool(tool, opts){
     var grid = document.getElementById('fghlab-grid');
     var allowClose = !(opts && opts.noClose);
@@ -24961,6 +25062,7 @@
       fghlabDocCloseCurrentVisit();
     }
     fghlabActiveTool = nextTool;
+    fghlabNavRecord(nextTool, opts);
 
     Array.prototype.forEach.call(document.querySelectorAll('#fghlab-grid .cowork-card'), function(c){
       var isActive = c.dataset.fghlabtool === nextTool;
@@ -25011,6 +25113,7 @@
   }
   function refreshFghlabAccessUI(){
     fghlabActiveTool = null;
+    fghlabNavHist = []; fghlabNavIdx = -1;
     renderFghlabMemberStatus();
     buildFghlabGrid();
     var visibleTools = getFghlabVisibleTools();
