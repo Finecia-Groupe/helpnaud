@@ -60,15 +60,74 @@
         '<label for="f-email">Courriel</label><input id="f-email" type="email" maxlength="140">' +
         '<label for="f-phone">Téléphone</label><input id="f-phone" maxlength="40">' +
         '<label for="f-msg">Message (facultatif)</label><textarea id="f-msg" rows="3" maxlength="600"></textarea>' + HONEY +
+        policyBoxHtml(r) +
         '<button id="f-send">Envoyer ma demande d’inscription</button><div id="f-out" class="msg"></div></div>';
       document.getElementById('f-send').addEventListener('click', function(){
         var b = this, out = document.getElementById('f-out'); b.disabled = true; out.className = 'msg'; out.textContent = '';
-        call({ action:'invite-signup', token: token, name: val('f-name'), contact: val('f-contact'), email: val('f-email'), phone: val('f-phone'), message: val('f-msg'), website: hv() }).then(function(){
-          app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre demande est bien reçue.</p><p class="hint">FINECIA GROUPE vous contactera après examen de votre dossier.</p></div>';
+        var pc = document.getElementById('f-policy');
+        if(!pc || !pc.checked){ out.className = 'msg err'; out.textContent = 'Veuillez lire et accepter la politique pour continuer.'; b.disabled = false; return; }
+        call({ action:'invite-signup', token: token, name: val('f-name'), contact: val('f-contact'), email: val('f-email'), phone: val('f-phone'), message: val('f-msg'), policy: true, website: hv() }).then(function(res){
+          var docs = '';
+          if(res && res.docToken){
+            var link = location.origin + location.pathname + '?doc=' + encodeURIComponent(res.docToken);
+            docs = '<div class="card" style="background:var(--bg);"><strong>Documents de votre organisation (facultatif)</strong><p class="hint">Vous pouvez téléverser vos documents maintenant ou plus tard, à partir de votre lien personnel. Gardez ce lien : il est réservé à votre organisation.</p>' +
+              '<p style="word-break:break-all;"><a id="f-doclink" href="' + esc(link) + '">' + esc(link) + '</a></p></div>';
+          }
+          app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre demande est bien reçue.</p><p class="hint">FINECIA GROUPE vous contactera après examen de votre dossier.</p>' + docs + '</div>';
         }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
       });
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
   }
+  /* ---------- Politique de confidentialité et de conduite ---------- */
+  var DEFAULT_POLICY = {"partner": "1. Confidentialité des dossiers — Les dossiers, informations sur les clients, prix, offres, conditions et documents échangés par Partner Market et FG & Bank Partnership sont strictement confidentiels. Le partenaire les utilise uniquement pour l’opération visée et ne les communique à aucun tiers sans l’accord écrit de FINECIA GROUPE.\n\n2. Données personnelles des clients — Les coordonnées et renseignements d’un client ne servent qu’au dossier concerné. Toute prospection, revente ou réutilisation en dehors de ce dossier est interdite.\n\n3. Non-contournement — Le partenaire s’engage à ne pas contourner FINECIA GROUPE pour conclure une opération issue d’une mise en relation. Les commissions et frais prévus restent dus, y compris lorsque le client paie la totalité comptant, et y compris sur les garanties et extras ajoutés pendant la négociation.\n\n4. Exactitude et documents — Les informations fournies (identité, activité, prix, état des véhicules, taux) doivent être exactes. Les documents de l’entreprise sont facultatifs à l’inscription ; FINECIA GROUPE peut les demander ultérieurement et le partenaire s’engage à les fournir dans un délai raisonnable.\n\n5. Engagements pris — Les prix, garanties et extras convenus pendant la négociation doivent être respectés. Une garantie ou un service demandé par le client et accepté dans le dossier doit être fourni par le concessionnaire, l’entreprise ou le vendeur.\n\n6. Avertissements — En cas de manquement à cette politique, FINECIA GROUPE peut adresser un avertissement au partenaire.\n\n7. Pause, suspension, retrait — FINECIA GROUPE peut mettre un partenaire en pause pour une durée déterminée (par exemple 10, 20 ou 30 jours, ou plus selon la nature du manquement) : pendant la pause, il ne peut ni soumettre d’offres ni publier d’annonces. En cas de manquement grave, FINECIA GROUPE peut le suspendre sans délai ou le retirer définitivement de la plateforme.\n\n8. Accès aux dossiers internes — Le dossier interne de chaque partenaire (PartnerDoss) est réservé à l’équipe de FINECIA GROUPE ; aucun partenaire n’y a accès.\n\n9. Modification de la politique — FINECIA GROUPE se réserve le droit de modifier cette politique. La version en vigueur et sa date sont indiquées ; la poursuite de l’utilisation après modification vaut acceptation de la nouvelle version.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement.", "client": "1. Utilisation de vos informations — Vos coordonnées et renseignements ne servent qu’à traiter votre dossier avec FINECIA GROUPE et ses partenaires concernés (concessionnaire, banque ou microfinance).\n\n2. Aucun document à l’inscription — Aucun document ne vous est demandé avant, pendant ou après votre inscription. Si votre dossier est en cours, notre équipe peut vous contacter pour compléter uniquement les informations de ce dossier.\n\n3. Confidentialité — Vos informations ne sont pas partagées en dehors du dossier sans votre accord, et ne sont jamais vendues.\n\n4. Vos droits — Vous pouvez demander l’accès à vos informations, leur correction ou leur suppression en écrivant à FINECIA GROUPE.\n\n5. Modification — FINECIA GROUPE peut mettre à jour cette politique ; la version en vigueur est toujours affichée à l’inscription.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement."};
+  function policyBoxHtml(r){
+    var pol = (r && r.policy) || {};
+    var isClient = r && r.type === 'Client';
+    var txt = (isClient ? pol.clientText : pol.partnerText) || (isClient ? DEFAULT_POLICY.client : DEFAULT_POLICY.partner);
+    var ver = pol.version || 1;
+    return '<div class="card" style="background:var(--bg); margin-top:14px;"><strong>' + (isClient ? 'Politique de confidentialité' : 'Politique de confidentialité et de conduite des partenaires') + ' <span class="hint">(version ' + esc(ver) + ')</span></strong>' +
+      '<div id="f-policytext" style="white-space:pre-wrap; font-size:13px; max-height:220px; overflow:auto; margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:10px; background:var(--surface);">' + esc(txt) + '</div>' +
+      '<label style="display:flex; gap:8px; align-items:flex-start; color:var(--ink); margin-top:10px;"><input id="f-policy" type="checkbox" style="width:auto; margin-top:4px;"><span>J’ai lu et j’accepte cette politique' + (isClient ? '.' : ' et je m’engage à la respecter. FINECIA GROUPE peut la modifier et adresser des avertissements, mettre en pause, suspendre ou retirer un partenaire.') + '</span></label></div>';
+  }
+  /* ---------- Dépôt de documents du partenaire (lien personnel) ---------- */
+  var DOC_KINDS = ['Registre du commerce / immatriculation','Licence ou agrément','Statuts','Pièce d’identité du représentant','Preuve d’adresse','Attestation fiscale','Assurance','Autre'];
+  function fmtSize(n){ n = Number(n) || 0; return n > 1048576 ? (n / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' Ko'; }
+  function viewDocs(token){
+    function draw(){
+      call({ action:'partner-doc-info', token: token }).then(function(r){
+        if(!r.ok){ app.innerHTML = '<div class="card"><h1>Lien non valide</h1><p class="hint">Ce lien n’est plus valide. Contactez FINECIA GROUPE.</p></div>'; return; }
+        var req = r.request && r.request.items && r.request.items.length ? '<div class="card" style="background:var(--bg);"><strong>Documents demandés par FINECIA GROUPE</strong><ul>' + r.request.items.map(function(i){ return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>' + (r.request.note ? '<p class="hint">' + esc(r.request.note) + '</p>' : '') + '</div>' : '<p class="hint">Aucun document n’est exigé pour le moment. Le dépôt est facultatif.</p>';
+        var list = (r.docs || []).map(function(d){ return '<div class="row" style="padding:6px 0; border-top:1px solid var(--line);"><span>' + esc(d.name) + ' <span class="hint">· ' + esc(d.kind) + ' · ' + fmtSize(d.size) + '</span></span>' + (d.source === 'partner' ? '<button class="light" data-del="' + esc(d.id) + '">Retirer</button>' : '') + '</div>'; }).join('') || '<p class="hint">Aucun document déposé.</p>';
+        var opts = DOC_KINDS.map(function(k){ return '<option>' + esc(k) + '</option>'; }).join('');
+        app.innerHTML = '<div class="card"><h1>Documents — ' + esc(r.name) + '</h1><p class="hint">Espace confidentiel : seuls les membres de l’équipe FINECIA GROUPE peuvent consulter vos documents. Formats PDF, JPEG ou PNG, 2 Mo maximum par fichier, 15 fichiers au plus.</p>' + req +
+          '<div id="d-list">' + list + '</div>' +
+          (r.blocked ? '<p class="err">Votre compte est suspendu : le dépôt est désactivé.</p>' :
+          '<label for="d-kind">Type de document</label><select id="d-kind">' + opts + '</select><label for="d-file">Fichier</label><input id="d-file" type="file" accept="application/pdf,image/jpeg,image/png">' + HONEY +
+          '<button id="d-send">Téléverser</button>') + '<div id="d-out" class="msg"></div></div>';
+        var send = document.getElementById('d-send');
+        if(send) send.addEventListener('click', function(){
+          var out = document.getElementById('d-out'), f = document.getElementById('d-file').files[0];
+          out.className = 'msg'; out.textContent = '';
+          if(!f){ out.className = 'msg err'; out.textContent = 'Choisissez un fichier.'; return; }
+          if(['application/pdf','image/jpeg','image/png'].indexOf(f.type) === -1){ out.className = 'msg err'; out.textContent = 'Formats acceptés : PDF, JPEG ou PNG.'; return; }
+          if(f.size > 2000000){ out.className = 'msg err'; out.textContent = 'Fichier trop volumineux (2 Mo maximum).'; return; }
+          send.disabled = true;
+          var fr = new FileReader();
+          fr.onload = function(){
+            call({ action:'partner-doc-put', token: token, kind: document.getElementById('d-kind').value, name: f.name, mime: f.type, data: fr.result, website: hv() }).then(function(){ draw(); })
+              .catch(function(e){ out.className = 'msg err'; out.textContent = e.message; send.disabled = false; });
+          };
+          fr.onerror = function(){ out.className = 'msg err'; out.textContent = 'Lecture du fichier impossible.'; send.disabled = false; };
+          fr.readAsDataURL(f);
+        });
+        Array.prototype.forEach.call(app.querySelectorAll('[data-del]'), function(b){
+          b.addEventListener('click', function(){ call({ action:'partner-doc-delete', token: token, id: b.getAttribute('data-del') }).then(draw); });
+        });
+      }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
+    }
+    draw();
+  }
+
   function val(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; }
 
   /* ---------- Prendre mon rendez-vous ---------- */
@@ -220,6 +279,7 @@
   if(Q.get('academie')) viewAcademie();
   else if(Q.get('invitation')) viewInvitation(Q.get('invitation'));
   else if(Q.get('catalogue')) viewCatalogue(Q.get('catalogue'));
+  else if(Q.get('doc')) viewDocs(Q.get('doc'));
   else if(Q.get('rdv')) viewRdv();
   else app.innerHTML = '<div class="card"><h1>FINECIA GROUPE</h1><p class="hint">Cette page s’ouvre depuis un lien envoyé par FINECIA GROUPE (invitation, rendez-vous ou catalogue).</p></div>';
 })();
