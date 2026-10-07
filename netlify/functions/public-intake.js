@@ -53,7 +53,10 @@ exports.handler = async function(event){
   const ip = String(h['x-nf-client-connection-ip'] || h['x-forwarded-for'] || 'unknown').split(',')[0].trim();
   const action = str(p.action, 40);
   const writes = ['invite-signup', 'book', 'interest', 'academie-register'];
-  if (limited(ip + (writes.includes(action) ? ':w' : ':r'), writes.includes(action) ? 8 : 60, 10 * 60 * 1000)) {
+  const docWrites = ['partner-doc-put', 'partner-doc-delete'];
+  if (docWrites.includes(action)) {
+    if (limited(ip + ':d', 40, 10 * 60 * 1000)) return out(429, { error: 'Trop de demandes. Réessayez dans quelques minutes.' });
+  } else if (limited(ip + (writes.includes(action) ? ':w' : ':r'), writes.includes(action) ? 8 : 60, 10 * 60 * 1000)) {
     return out(429, { error: 'Trop de demandes. Réessayez dans quelques minutes.' });
   }
   if (str(p.website, 50)) return out(200, { ok: true }); // champ piège : les robots le remplissent
@@ -68,9 +71,31 @@ exports.handler = async function(event){
       if (!okToken(token)) return out(400, { error: 'Lien d’invitation invalide.' });
       if (name.length < 2) return out(400, { error: 'Indiquez le nom de votre organisation ou votre nom.' });
       if (!isEmail(email)) return out(400, { error: 'Courriel invalide.' });
-      const r = await svcRpc('svc_invite_signup', { p_token: token, p: { name, email, contact: str(p.contact, 100), phone: str(p.phone, 40), message: str(p.message, 600) } });
-      if (!r || r.ok !== true) return out(400, { error: r && r.error === 'invalid' ? 'Ce lien d’invitation n’est plus valide.' : (r && r.error === 'busy' ? 'Trop d’inscriptions en attente, réessayez plus tard.' : 'Vérifiez les informations saisies.') });
+      if (p.policy !== true) return out(400, { error: 'Veuillez lire et accepter la politique de confidentialité et de conduite pour vous inscrire.' });
+      const r = await svcRpc('svc_invite_signup', { p_token: token, p: { name, email, contact: str(p.contact, 100), phone: str(p.phone, 40), message: str(p.message, 600), policy: 'true' } });
+      if (!r || r.ok !== true) return out(400, { error: r && r.error === 'invalid' ? 'Ce lien d’invitation n’est plus valide.' : (r && r.error === 'busy' ? 'Trop d’inscriptions en attente, réessayez plus tard.' : (r && r.error === 'policy' ? 'Veuillez accepter la politique pour vous inscrire.' : 'Vérifiez les informations saisies.')) });
+      return out(200, { ok: true, docToken: (r.docToken && okToken(r.docToken)) ? r.docToken : null });
+    }
+    if (action === 'partner-doc-info') {
+      const token = str(p.token, 40);
+      if (!okToken(token) || token.length < 16) return out(200, { ok: false });
+      return out(200, await svcRpc('svc_partner_doc_info', { p_token: token }));
+    }
+    if (action === 'partner-doc-put') {
+      const token = str(p.token, 40), name = str(p.name, 200), kind = str(p.kind, 80), mime = str(p.mime, 40), data = typeof p.data === 'string' ? p.data : '';
+      if (!okToken(token) || token.length < 16) return out(400, { error: 'Lien invalide.' });
+      if (!name) return out(400, { error: 'Nom du fichier manquant.' });
+      if (!['application/pdf', 'image/jpeg', 'image/png'].includes(mime)) return out(400, { error: 'Formats acceptés : PDF, JPEG ou PNG.' });
+      if (data.length < 100 || data.length > 3000000) return out(400, { error: 'Fichier trop volumineux (2 Mo maximum).' });
+      if (!/^data:(application\/pdf|image\/jpeg|image\/png);base64,[A-Za-z0-9+\/=]+$/.test(data)) return out(400, { error: 'Fichier invalide.' });
+      const r = await svcRpc('svc_partner_doc_put', { p_token: token, p_kind: kind || 'Autre', p_name: name, p_mime: mime, p_data: data });
+      if (!r || r.ok !== true) return out(400, { error: r && r.error === 'blocked' ? 'Votre compte est suspendu : le téléversement est désactivé.' : (r && r.error === 'limit' ? 'Nombre maximal de documents atteint (15).' : 'Téléversement impossible.') });
       return out(200, { ok: true });
+    }
+    if (action === 'partner-doc-delete') {
+      const token = str(p.token, 40), id = str(p.id, 80);
+      if (!okToken(token) || token.length < 16 || !okId(id)) return out(400, { error: 'Demande invalide.' });
+      return out(200, await svcRpc('svc_partner_doc_delete', { p_token: token, p_id: id }));
     }
     if (action === 'academie-catalogue') return out(200, { ok: true, formations: await svcRpc('svc_academie_catalogue', {}) });
     if (action === 'academie-register') {
