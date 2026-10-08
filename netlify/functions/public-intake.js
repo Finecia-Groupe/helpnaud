@@ -40,6 +40,25 @@ async function svcRpc(fn, args){
   return data;
 }
 
+
+/* Envoi de courriel : la base met le message en file (fgh_outbox) ; si un service d'envoi est configuré dans
+   Netlify (RESEND_API_KEY + MAIL_FROM), il part tout de suite, sinon il reste « en attente » et l'équipe le voit. */
+const RESEND_KEY = process.env.RESEND_API_KEY || '';
+const MAIL_FROM = process.env.MAIL_FROM || '';
+async function sendQueued(mailId){
+  if (!mailId || !/^fghml-[a-f0-9]{14}$/.test(mailId)) return;
+  try {
+    if (!RESEND_KEY || !MAIL_FROM) return;           // reste en file d'attente
+    const m = await svcRpc('svc_outbox_get', { p_id: mailId });
+    if (!m || !m.to_email) return;
+    const res = await fetch('https://api.resend.com/emails', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RESEND_KEY },
+      body: JSON.stringify({ from: MAIL_FROM, to: [m.to_email], subject: m.subject, text: m.body }) });
+    await svcRpc('svc_outbox_mark', { p_id: mailId, p_ok: res.ok, p_error: res.ok ? null : ('HTTP ' + res.status) });
+  } catch (e) { try { await svcRpc('svc_outbox_mark', { p_id: mailId, p_ok: false, p_error: 'exception' }); } catch (x) {} }
+}
+function okNumber(v){ return /^[0-9]{10}$/.test(v); }
+
 exports.handler = async function(event){
   const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
   const out = (st, o) => { const r = reply(st, o); r.headers = Object.assign({}, r.headers, cors); return r; };
@@ -54,7 +73,12 @@ exports.handler = async function(event){
   const action = str(p.action, 40);
   const writes = ['invite-signup', 'book', 'interest', 'academie-register'];
   const docWrites = ['partner-doc-put', 'partner-doc-delete'];
-  if (docWrites.includes(action)) {
+  const espaceActions = ['espace-enter', 'espace-exit', 'espace-update', 'espace-support', 'espace-notices'];
+  if (action === 'espace-enter') {
+    if (limited(ip + ':e', 12, 10 * 60 * 1000)) return out(429, { error: 'Trop de tentatives. Réessayez dans quelques minutes.' });
+  } else if (espaceActions.includes(action)) {
+    if (limited(ip + ':eu', 40, 10 * 60 * 1000)) return out(429, { error: 'Trop de demandes. Réessayez dans quelques minutes.' });
+  } else if (docWrites.includes(action)) {
     if (limited(ip + ':d', 40, 10 * 60 * 1000)) return out(429, { error: 'Trop de demandes. Réessayez dans quelques minutes.' });
   } else if (limited(ip + (writes.includes(action) ? ':w' : ':r'), writes.includes(action) ? 8 : 60, 10 * 60 * 1000)) {
     return out(429, { error: 'Trop de demandes. Réessayez dans quelques minutes.' });
@@ -74,7 +98,8 @@ exports.handler = async function(event){
       if (p.policy !== true) return out(400, { error: 'Veuillez lire et accepter la politique de confidentialité et de conduite pour vous inscrire.' });
       const r = await svcRpc('svc_invite_signup', { p_token: token, p: { name, email, contact: str(p.contact, 100), phone: str(p.phone, 40), message: str(p.message, 600), policy: 'true' } });
       if (!r || r.ok !== true) return out(400, { error: r && r.error === 'invalid' ? 'Ce lien d’invitation n’est plus valide.' : (r && r.error === 'busy' ? 'Trop d’inscriptions en attente, réessayez plus tard.' : (r && r.error === 'policy' ? 'Veuillez accepter la politique pour vous inscrire.' : 'Vérifiez les informations saisies.')) });
-      return out(200, { ok: true, docToken: (r.docToken && okToken(r.docToken)) ? r.docToken : null });
+      await sendQueued(r.mailId);
+      return out(200, { ok: true, docToken: (r.docToken && okToken(r.docToken)) ? r.docToken : null, partnerNumber: okNumber(String(r.partnerNumber || '')) ? r.partnerNumber : null });
     }
     if (action === 'partner-doc-info') {
       const token = str(p.token, 40);
@@ -96,6 +121,53 @@ exports.handler = async function(event){
       const token = str(p.token, 40), id = str(p.id, 80);
       if (!okToken(token) || token.length < 16 || !okId(id)) return out(400, { error: 'Demande invalide.' });
       return out(200, await svcRpc('svc_partner_doc_delete', { p_token: token, p_id: id }));
+    }
+    if (action === 'espace-enter') {
+      const num = str(p.number, 20).replace(/\s+/g, '');
+      if (!okNumber(num)) return out(400, { error: 'Le numéro de partenaire compte 10 chiffres.' });
+      const r = await svcRpc('svc_partner_enter', { p_number: num });
+      if (!r || r.ok !== true) return out(200, { ok: false, error: r && r.error === 'locked' ? 'locked' : 'unknown', name: r && r.name ? r.name : undefined });
+      return out(200, r);
+    }
+    if (action === 'espace-exit') {
+      const token = str(p.token, 40);
+      if (!okToken(token) || token.length < 16) return out(200, { ok: true });
+      return out(200, await svcRpc('svc_partner_exit', { p_token: token }));
+    }
+    if (action === 'espace-notices') {
+      const token = str(p.token, 40);
+      if (!okToken(token) || token.length < 16) return out(200, { ok: false });
+      return out(200, await svcRpc('svc_partner_notices_read', { p_token: token }));
+    }
+    if (action === 'espace-update') {
+      const token = str(p.token, 40);
+      if (!okToken(token) || token.length < 16) return out(400, { error: 'Session expirée. Identifiez-vous de nouveau.', code: 'session' });
+      const ch = (p.changes && typeof p.changes === 'object') ? p.changes : {};
+      const docs = Array.isArray(p.docs) ? p.docs.slice(0, 3) : [];
+      const del = (Array.isArray(p.deleteDocs) ? p.deleteDocs : []).map(x => str(x, 80)).filter(okId).slice(0, 15);
+      let total = 0;
+      const cleanDocs = [];
+      for (const d of docs) {
+        const name = str(d && d.name, 200), kind = str(d && d.kind, 80), mime = str(d && d.mime, 40), data = typeof (d && d.data) === 'string' ? d.data : '';
+        if (!name || !['application/pdf', 'image/jpeg', 'image/png'].includes(mime)) return out(400, { error: 'Formats acceptés : PDF, JPEG ou PNG.' });
+        if (data.length < 100 || data.length > 3000000 || !/^data:(application\/pdf|image\/jpeg|image\/png);base64,[A-Za-z0-9+\/=]+$/.test(data)) return out(400, { error: 'Fichier invalide ou trop volumineux (2 Mo maximum).' });
+        total += data.length; cleanDocs.push({ name, kind: kind || 'Autre', mime, data });
+      }
+      if (total > 4200000) return out(400, { error: 'Les fichiers sont trop volumineux pour un seul envoi (4 Mo au total). Envoyez-les en deux fois.' });
+      const r = await svcRpc('svc_partner_update', { p_token: token, p: { nom: str(p.nom, 80), prenom: str(p.prenom, 80), email: str(p.email, 140).toLowerCase(),
+        changes: { contact: str(ch.contact, 100), phone: str(ch.phone, 40), address: str(ch.address, 200) }, docs: cleanDocs, deleteDocs: del } });
+      if (r && r.mailId) await sendQueued(r.mailId);
+      if (!r || r.ok !== true) return out(200, { ok: false, error: (r && r.error) || 'failed', attempts: r && r.attempts, remaining: r && r.remaining });
+      return out(200, { ok: true, view: r.view });
+    }
+    if (action === 'espace-support') {
+      const num = str(p.number, 20).replace(/\s+/g, '');
+      if (!okNumber(num)) return out(400, { error: 'Numéro invalide.' });
+      const msg = str(p.message, 1000);
+      if (msg.length < 10) return out(400, { error: 'Décrivez brièvement le problème (10 caractères au moins).' });
+      const r = await svcRpc('svc_partner_support', { p_number: num, p: { message: msg, name: str(p.name, 120), contact: str(p.contact, 140) } });
+      if (!r || r.ok !== true) return out(400, { error: r && r.error === 'limit' ? 'Vous avez déjà envoyé plusieurs demandes aujourd’hui. Nous vous répondrons dès que possible.' : 'Demande impossible pour le moment.' });
+      return out(200, { ok: true });
     }
     if (action === 'academie-catalogue') return out(200, { ok: true, formations: await svcRpc('svc_academie_catalogue', {}) });
     if (action === 'academie-register') {
