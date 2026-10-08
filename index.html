@@ -5082,6 +5082,21 @@
         </div>
       </div>
 
+      <!-- Logo de profil (favicon) FINECIA GROUPE : onglet du navigateur + en-tête FGH-Colab. -->
+      <div class="card" id="fghlab-brandlogo-card" style="margin-bottom:16px;">
+        <h2 style="margin:0 0 4px; font-size:15px;">🖼️ Logo de profil (favicon) — FINECIA GROUPE</h2>
+        <p class="hint" style="margin:0 0 10px;">Image carrée recommandée (PNG, JPG, SVG ou WebP). Elle devient l’icône de l’onglet du navigateur (profil de la marque). L’icône de FGH-Colab, notre outil de travail, reste inchangée. Redimensionnée automatiquement ; stockée sur cet appareil.</p>
+        <div class="logo-upload-row">
+          <div class="logo-preview" id="fghlab-brandlogo-preview" style="width:64px; height:64px;">Logo</div>
+          <div>
+            <button type="button" class="btn" id="fghlab-brandlogo-btn">Téléverser le logo</button>
+            <button type="button" class="btn" id="fghlab-brandlogo-remove" style="margin-left:6px;">Retirer</button>
+            <input type="file" id="fghlab-brandlogo-input" accept="image/*" hidden>
+            <span class="copy-status" id="fghlab-brandlogo-status"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Connexion sécurisée du propriétaire (Supabase Auth) — phase 1 de la migration vers un vrai
            serveur. Le mot de passe n'est jamais stocké dans l'application : il est vérifié par le
            serveur, et le rôle « owner » est confirmé côté base (fonction current_team_role()). La
@@ -35613,6 +35628,53 @@
     var sel=document.getElementById('setting-sendicon');
     if(sel){ sel.value=mode(); sel.addEventListener('change',function(){ try{localStorage.setItem(KEY,sel.value);}catch(e){} idx=0; apply(current()); }); }
     apply(current());
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+<script>
+(function(){
+  var KEY='helpnaud_fgh_brandlogo';
+  function get(){ try{ return localStorage.getItem(KEY)||''; }catch(e){ return ''; } }
+  function setIcon(url){
+    var head=document.head;
+    ['icon','apple-touch-icon'].forEach(function(rel){
+      var l=head.querySelector('link[data-fgh-brand="'+rel+'"]');
+      if(!url){ if(l) l.remove(); return; }
+      if(!l){ l=document.createElement('link'); l.rel=rel; l.setAttribute('data-fgh-brand',rel); head.appendChild(l); }
+      l.href=url; if(rel==='icon') l.type='image/png';
+    });
+  }
+  function apply(){
+    var url=get();
+    setIcon(url);
+    var pv=document.getElementById('fghlab-brandlogo-preview');
+    if(pv) pv.innerHTML=url?'<img alt="Logo FINECIA GROUPE" src="'+url+'">':'Logo';
+  }
+  function status(t){ var e=document.getElementById('fghlab-brandlogo-status'); if(!e) return; e.textContent=t; setTimeout(function(){e.textContent='';},2600); }
+  function init(){
+    var btn=document.getElementById('fghlab-brandlogo-btn'), inp=document.getElementById('fghlab-brandlogo-input'), rm=document.getElementById('fghlab-brandlogo-remove');
+    if(btn) btn.addEventListener('click',function(){ inp.click(); });
+    if(rm) rm.addEventListener('click',function(){ try{localStorage.removeItem(KEY);}catch(e){} apply(); status('Logo retiré.'); });
+    if(inp) inp.addEventListener('change',function(e){
+      var f=e.target.files&&e.target.files[0]; if(!f) return;
+      if(!/^image\//.test(f.type)){ status('Choisissez un fichier image.'); e.target.value=''; return; }
+      var r=new FileReader();
+      r.onload=function(ev){
+        var img=new Image();
+        img.onload=function(){
+          var c=document.createElement('canvas'); c.width=c.height=128; var x=c.getContext('2d');
+          var side=Math.min(img.width||128,img.height||128)||128;
+          x.drawImage(img,((img.width||side)-side)/2,((img.height||side)-side)/2,side,side,0,0,128,128);
+          try{ localStorage.setItem(KEY,c.toDataURL('image/png')); }catch(err){ status('Stockage impossible.'); return; }
+          apply(); status('Logo mis à jour ✓');
+        };
+        img.onerror=function(){ status('Image illisible.'); };
+        img.src=ev.target.result;
+      };
+      r.readAsDataURL(f); e.target.value='';
+    });
+    apply();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
