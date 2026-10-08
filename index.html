@@ -5,10 +5,6 @@
   .lead-steps{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px; padding-top:6px; border-top:1px dashed var(--line); }
 </style></head><body>
 <title>HelpNaud</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" data-hn-default="1">
-<link rel="icon" href="/favicon.ico" sizes="any" data-hn-default="1">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" data-hn-default="1">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Spectral:wght@600&display=swap">
@@ -561,11 +557,11 @@
   .chat-input-wrap input, .chat-input-wrap textarea{ padding-right:76px; }
   .chat-send-btn{ position:absolute; right:4px; bottom:4px; padding:6px 7px; }
   .chat-send-btn svg{ width:15px; height:15px; }
-  .chat-send-btn.si-white{ background:#F7F5F0; color:#16304A; border-color:#16304A; }
-  .chat-send-btn.si-white svg{ stroke:#16304A; }
-  .chat-send-btn.si-navy{ background:#16304A; border-color:#16304A; color:#fff; }
+  .chat-send-btn.si-white{ background:#fff; color:#1f6feb; border-color:#1f6feb; }
+  .chat-send-btn.si-white svg{ stroke:#1f6feb; }
+  .chat-send-btn.si-navy{ background:#0A1633; border-color:#0A1633; color:#fff; }
   .chat-send-btn.si-teal{ background:#2D9C93; border-color:#2D9C93; color:#fff; }
-  .chat-send-btn.si-gold{ background:#C89B3C; border-color:#C89B3C; color:#fff; }
+  .chat-send-btn.si-gold{ background:#C9A227; border-color:#C9A227; color:#fff; }
   .chat-send-btn.si-arrow svg, .chat-send-btn.si-white svg, .chat-send-btn.si-teal svg{ fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
   /* Le micro est ancré juste à gauche du bouton Envoyer, dans la même case que le champ de
      saisie, plutôt qu'isolé à l'autre bout de la barre d'outils — geste naturel « parler puis
@@ -2411,7 +2407,7 @@
           <select id="setting-sendicon">
             <option value="plane">Avion de papier sur fond bleu</option>
             <option value="arrow">Flèche sur fond bleu</option>
-            <option value="white">Flèche marine sur fond ivoire</option>
+            <option value="white">Flèche blanche (fond blanc, contour bleu)</option>
             <option value="navy">Avion de papier — bleu marine de la marque</option>
             <option value="teal">Flèche — turquoise de la marque</option>
             <option value="gold">Avion de papier — or de la marque</option>
@@ -2829,23 +2825,10 @@
         <div style="margin-bottom:10px;">
           <label for="cowork-code-type" style="font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:4px;">Type de code</label>
           <select id="cowork-code-type" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
-            <optgroup label="Sites et applications web">
-              <option value="web" selected>Site / application web (HTML, CSS, JavaScript)</option>
-              <option value="node">API / serveur Node.js</option>
-              <option value="javascript">JavaScript (exécutable avec aperçu)</option>
-              <option value="typescript">TypeScript</option>
-            </optgroup>
-            <optgroup label="Scripts et données">
-              <option value="python">Script Python</option>
-              <option value="sql">SQL (requêtes, schéma, index)</option>
-              <option value="bash">Script Bash / automatisation</option>
-              <option value="java">Java</option>
-            </optgroup>
-            <optgroup label="Bureautique">
-              <option value="appsscript">Script Google Apps Script</option>
-              <option value="excel">Formule Excel</option>
-              <option value="sheets">Formule Google Sheets</option>
-            </optgroup>
+            <option value="python">Script Python</option>
+            <option value="appsscript">Script Google Apps Script</option>
+            <option value="excel">Formule Excel</option>
+            <option value="sheets">Formule Google Sheets</option>
           </select>
         </div>
         <textarea id="cowork-code-input" rows="4" placeholder="Ex. : Un script Python qui fusionne plusieurs fichiers CSV de transactions en un seul, en supprimant les doublons."></textarea>
@@ -2856,7 +2839,7 @@
           <span class="copy-status" id="cowork-code-status"></span>
         </div>
         <pre class="report-box" id="cowork-code-result" style="margin-top:14px"></pre>
-        <p class="hint" style="margin-top:10px;">Le code généré est une base professionnelle à relire et tester avant usage. Les sites web et le JavaScript s'exécutent dans un aperçu isolé avec console d'erreurs ; les autres langages (Python, SQL, Java…) doivent être exécutés sur votre poste. Utilisez « Audit qualité et sécurité » avant toute mise en production.</p>
+        <p class="hint" style="margin-top:10px;">Le code généré est une ébauche à relire et tester avant usage — HelpNaud ne l'exécute pas pour vous.</p>
       </div>
 
     </section>
@@ -4122,13 +4105,7 @@
             <button type="button" class="btn" data-hweb-template-key="about">+ À propos</button>
             <button type="button" class="btn" data-hweb-template-key="services">+ Services/Offres en grille</button>
             <button type="button" class="btn" data-hweb-template-key="testimonials">+ Témoignages clients</button>
-            <button type="button" class="btn" data-hweb-template-key="contact">+ Formulaire de contact (fonctionnel)</button>
-            <button type="button" class="btn" data-hweb-template-key="pricing">+ Tarifs (3 forfaits)</button>
-            <button type="button" class="btn" data-hweb-template-key="faq">+ Questions fréquentes</button>
-            <button type="button" class="btn" data-hweb-template-key="team">+ Équipe</button>
-            <button type="button" class="btn" data-hweb-template-key="stats">+ Chiffres clés</button>
-            <button type="button" class="btn" data-hweb-template-key="gallery">+ Galerie de réalisations</button>
-            <button type="button" class="btn" data-hweb-template-key="cta">+ Bandeau d'appel à l'action</button>
+            <button type="button" class="btn" data-hweb-template-key="contact">+ Formulaire de contact</button>
             <button type="button" class="btn" data-hweb-template-key="footer">+ Pied de page avec liens</button>
           </div>
         </details>
@@ -5105,21 +5082,6 @@
         </div>
       </div>
 
-      <!-- Logo de profil (favicon) FINECIA GROUPE : onglet du navigateur + en-tête FGH-Colab. -->
-      <div class="card" id="fghlab-brandlogo-card" style="margin-bottom:16px;">
-        <h2 style="margin:0 0 4px; font-size:15px;">🖼️ Logo de profil (favicon) — FINECIA GROUPE</h2>
-        <p class="hint" style="margin:0 0 10px;">Image carrée recommandée (PNG, JPG, SVG ou WebP). Elle devient l’icône de l’onglet du navigateur (profil de la marque). L’icône de FGH-Colab, notre outil de travail, reste inchangée. Redimensionnée automatiquement ; stockée sur cet appareil.</p>
-        <div class="logo-upload-row">
-          <div class="logo-preview" id="fghlab-brandlogo-preview" style="width:64px; height:64px;">Logo</div>
-          <div>
-            <button type="button" class="btn" id="fghlab-brandlogo-btn">Téléverser le logo</button>
-            <button type="button" class="btn" id="fghlab-brandlogo-remove" style="margin-left:6px;">Retirer</button>
-            <input type="file" id="fghlab-brandlogo-input" accept="image/*" hidden>
-            <span class="copy-status" id="fghlab-brandlogo-status"></span>
-          </div>
-        </div>
-      </div>
-
       <!-- Connexion sécurisée du propriétaire (Supabase Auth) — phase 1 de la migration vers un vrai
            serveur. Le mot de passe n'est jamais stocké dans l'application : il est vérifié par le
            serveur, et le rôle « owner » est confirmé côté base (fonction current_team_role()). La
@@ -5710,17 +5672,6 @@
     fghlabOwnerGateOn = (fghlabGateStored === null) ? (fghlabCloudFlag() || !fghlabState.team.length) : (fghlabGateStored === '1');
   }catch(e){}
   try{ fghlabOwnerRecovery = /(^|[#&?])type=recovery(&|$)/.test(String(location.hash || '')); }catch(e){}
-  // Copie des jetons du lien de réinitialisation, lus avant que le hash ne soit effacé (secours si la session n'a pas été créée automatiquement).
-  var fghlabRecoveryTokens = null, fghlabRecoveryError = '';
-  try{
-    var fghlabHashParams = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
-    if(fghlabHashParams.get('access_token') && fghlabHashParams.get('refresh_token')){
-      fghlabRecoveryTokens = { access_token: fghlabHashParams.get('access_token'), refresh_token: fghlabHashParams.get('refresh_token') };
-    }
-    if(fghlabHashParams.get('error_code') || fghlabHashParams.get('error')){
-      fghlabRecoveryError = String(fghlabHashParams.get('error_code') || fghlabHashParams.get('error'));
-    }
-  }catch(e){}
   var fghlabSbSessionStore = {
     getItem: function(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } },
     setItem: function(k, v){ try{ sessionStorage.setItem(k, v); }catch(e){} },
@@ -5748,8 +5699,6 @@
     var msg = String((error && (error.message || error.error_description)) || '').toLowerCase();
     var code = String((error && error.code) || '').toLowerCase();
     var status = error && error.status;
-    if(error && error.hnFriendly) return error.message;
-    if(msg.indexOf('auth session missing') >= 0) return "Le lien de réinitialisation a expiré ou a déjà été utilisé. Cliquez sur « Mot de passe oublié » pour en recevoir un nouveau, puis ouvrez-le une seule fois, dans ce même navigateur.";
     if(code === 'invalid_credentials' || msg.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
     if(code === 'email_not_confirmed' || msg.indexOf('email not confirmed') >= 0) return "Ce courriel n'est pas confirmé dans Supabase (cochez « Auto Confirm User » à la création du compte).";
     if(status === 429 || code.indexOf('rate_limit') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('too many') >= 0) return 'Trop de tentatives. Réessayez dans quelques minutes.';
@@ -5885,21 +5834,8 @@
     if(pw1 !== pw2){ fghlabOwnerMsg('error', 'Les deux mots de passe ne correspondent pas.'); return Promise.resolve(); }
     var wasRecovery = fghlabOwnerRecovery;
     fghlabOwnerMsg('', '');
-    function fghlabTryUpdate(){ return sb.auth.updateUser({ password: pw1 }); }
-    // Secours : si aucune session n'existe (jeton non pris en compte automatiquement), on l'établit à partir des jetons du lien.
-    return sb.auth.getSession().then(function(g){
-      var has = g && g.data && g.data.session;
-      if(!has && wasRecovery && fghlabRecoveryTokens){
-        return sb.auth.setSession(fghlabRecoveryTokens).then(function(r){ if(r && r.error) throw r.error; return fghlabTryUpdate(); });
-      }
-      if(!has){
-        var err = new Error(wasRecovery ? "Le lien de réinitialisation a expiré ou a déjà été utilisé. Cliquez sur « Mot de passe oublié » pour recevoir un nouveau lien, puis ouvrez-le une seule fois, dans ce même navigateur." : "Votre session a expiré. Reconnectez-vous puis réessayez.");
-        err.hnFriendly = true; throw err;
-      }
-      return fghlabTryUpdate();
-    }).then(function(res){
+    return sb.auth.updateUser({ password: pw1 }).then(function(res){
       if(res.error) throw res.error;
-      fghlabRecoveryTokens = null;
       fghlabOwnerRecovery = false;
       fghlabOwnerChangePwOpen = false;
       var a = fghlabOwnerEl('fghlab-ownercloud-newpw'); if(a) a.value = '';
@@ -5991,7 +5927,6 @@
         }
       }, 0);
     });
-    if(fghlabRecoveryError){ setTimeout(function(){ try{ fghlabOwnerMsg('error', 'Ce lien de réinitialisation est invalide, expiré ou déjà utilisé. Demandez-en un nouveau avec « Mot de passe oublié ».'); }catch(e){} }, 900); }
     sb.auth.getSession().then(function(res){
       var s = res && res.data && res.data.session;
       if(s && !fghlabOwnerRecovery) return fghlabOwnerVerify(s);
@@ -10758,12 +10693,6 @@
       speakBtn.addEventListener('click', function(){ speakMsgText(getMsgText(msgEl), speakBtn); });
       bar.appendChild(speakBtn);
       bar.appendChild(hnRateControl(msgEl));
-      var retryBtn = document.createElement('button');
-      retryBtn.type = 'button'; retryBtn.className = 'msg-action-btn'; retryBtn.title = 'Réessayer';
-      retryBtn.setAttribute('aria-label', 'Réessayer');
-      retryBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>';
-      retryBtn.addEventListener('click', function(){ if(window.__hnRetry) window.__hnRetry(msgEl); });
-      bar.appendChild(retryBtn);
       bar.appendChild(status);
       var time = document.createElement('span');
       time.className = 'msg-time';
@@ -31142,88 +31071,15 @@
     contact: {
       label: 'Formulaire de contact',
       build: function(ctx){
-        var f = 'padding:11px;border:1px solid #ccc;border-radius:6px;font:inherit;';
         return '<section id="' + ctx.slug + '" data-hweb-label="Contact" style="padding:56px 24px;max-width:620px;margin:0 auto;">' +
           '<a id="hweb-contact-anchor"></a>' +
           '<h2 style="color:' + ctx.c1 + ';margin-top:0;">Contactez-nous</h2>' +
-          '<!-- Formulaire fonctionnel : s\'il est hébergé sur Netlify, les messages arrivent dans Netlify > Forms (activez les notifications par courriel). Ailleurs, remplacez action="" par l\'adresse de votre service (ex. Formspree). -->' +
-          '<form name="contact" method="POST" action="/merci" data-netlify="true" netlify-honeypot="bot-field" style="display:grid;gap:12px;">' +
-          '<input type="hidden" name="form-name" value="contact">' +
-          '<p style="display:none"><label>Ne pas remplir : <input name="bot-field"></label></p>' +
-          '<label style="display:grid;gap:4px;font-weight:600;font-size:.9rem;">Nom<input type="text" name="nom" required autocomplete="name" style="' + f + '"></label>' +
-          '<label style="display:grid;gap:4px;font-weight:600;font-size:.9rem;">Courriel<input type="email" name="courriel" required autocomplete="email" style="' + f + '"></label>' +
-          '<label style="display:grid;gap:4px;font-weight:600;font-size:.9rem;">Téléphone (facultatif)<input type="tel" name="telephone" autocomplete="tel" style="' + f + '"></label>' +
-          '<label style="display:grid;gap:4px;font-weight:600;font-size:.9rem;">Message<textarea name="message" rows="4" required style="' + f + '"></textarea></label>' +
+          '<form style="display:grid;gap:12px;" onsubmit="return false;">' +
+          '<input type="text" placeholder="Votre nom" style="padding:11px;border:1px solid #ccc;border-radius:6px;">' +
+          '<input type="email" placeholder="Votre courriel" style="padding:11px;border:1px solid #ccc;border-radius:6px;">' +
+          '<textarea rows="4" placeholder="Votre message" style="padding:11px;border:1px solid #ccc;border-radius:6px;"></textarea>' +
           '<button type="submit" style="background:' + ctx.c1 + ';color:#fff;border:none;padding:12px;border-radius:6px;font-weight:700;cursor:pointer;">Envoyer</button>' +
-          '</form></section>';
-      }
-    },
-    pricing: {
-      label: 'Tarifs (3 forfaits)',
-      build: function(ctx){
-        var card = function(nom, prix, vedette){
-          return '<div style="background:#fff;border:' + (vedette ? '2px solid ' + ctx.c2 : '1px solid #e6e6e6') + ';border-radius:12px;padding:26px;text-align:center;">' +
-            (vedette ? '<p style="margin:0 0 6px;color:' + ctx.c2 + ';font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;">Le plus populaire</p>' : '') +
-            '<h3 style="margin:0 0 6px;color:' + ctx.c1 + ';">' + nom + '</h3>' +
-            '<p style="font-size:2rem;font-weight:800;margin:0 0 12px;">' + prix + '</p>' +
-            '<ul style="list-style:none;padding:0;margin:0 0 18px;font-size:.95rem;line-height:1.9;"><li>Avantage clé n° 1</li><li>Avantage clé n° 2</li><li>Avantage clé n° 3</li></ul>' +
-            '<a href="#hweb-contact-anchor" style="display:inline-block;background:' + ctx.c1 + ';color:#fff;padding:11px 22px;border-radius:8px;font-weight:700;text-decoration:none;">Choisir</a></div>';
-        };
-        return '<section id="' + ctx.slug + '" data-hweb-label="Tarifs" style="padding:56px 24px;background:#f7f7f8;">' +
-          '<h2 style="color:' + ctx.c1 + ';text-align:center;margin-top:0;">Nos forfaits</h2>' +
-          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;max-width:980px;margin:24px auto 0;align-items:start;">' +
-          card('Essentiel', '— $', false) + card('Professionnel', '— $', true) + card('Entreprise', 'Sur devis', false) + '</div></section>';
-      }
-    },
-    faq: {
-      label: 'Questions fréquentes (FAQ)',
-      build: function(ctx){
-        var q = function(t){
-          return '<details style="border-bottom:1px solid #e6e6e6;padding:14px 0;"><summary style="cursor:pointer;font-weight:600;color:' + ctx.c1 + ';">' + t + '</summary>' +
-            '<p style="margin:10px 0 0;">Rédigez ici une réponse claire et rassurante.</p></details>';
-        };
-        return '<section id="' + ctx.slug + '" data-hweb-label="FAQ" style="padding:56px 24px;max-width:780px;margin:0 auto;">' +
-          '<h2 style="color:' + ctx.c1 + ';margin-top:0;">Questions fréquentes</h2>' +
-          q('Comment obtenir une soumission ?') + q('Quels sont vos délais ?') + q('Quelles garanties offrez-vous ?') + q('Quelles zones desservez-vous ?') + '</section>';
-      }
-    },
-    team: {
-      label: 'Équipe',
-      build: function(ctx){
-        var m = function(n){
-          return '<div style="text-align:center;"><div style="width:96px;height:96px;border-radius:50%;background:' + ctx.c2 + ';margin:0 auto 10px;opacity:.85;"></div>' +
-            '<strong style="color:' + ctx.c1 + ';">Prénom Nom ' + n + '</strong><p style="margin:4px 0 0;font-size:.9rem;color:#555;">Poste ou spécialité</p></div>';
-        };
-        return '<section id="' + ctx.slug + '" data-hweb-label="Équipe" style="padding:56px 24px;">' +
-          '<h2 style="color:' + ctx.c1 + ';text-align:center;margin-top:0;">Notre équipe</h2>' +
-          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:22px;max-width:900px;margin:24px auto 0;">' + m(1) + m(2) + m(3) + '</div></section>';
-      }
-    },
-    stats: {
-      label: 'Chiffres clés',
-      build: function(ctx){
-        var n = function(v, l){ return '<div><p style="font-size:2.2rem;font-weight:800;margin:0;">' + v + '</p><p style="margin:4px 0 0;opacity:.9;">' + l + '</p></div>'; };
-        return '<section id="' + ctx.slug + '" data-hweb-label="Chiffres clés" style="padding:48px 24px;background:' + ctx.c1 + ';color:#fff;text-align:center;">' +
-          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;max-width:900px;margin:0 auto;">' +
-          n('20+', 'années d\'expérience') + n('500+', 'clients servis') + n('98 %', 'clients satisfaits') + n('24/7', 'disponibilité') + '</div></section>';
-      }
-    },
-    gallery: {
-      label: 'Galerie de réalisations',
-      build: function(ctx){
-        var b = function(){ return '<div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,' + ctx.c1 + '22,' + ctx.c2 + '55);display:flex;align-items:center;justify-content:center;color:#666;font-size:.85rem;">Votre photo ici</div>'; };
-        return '<section id="' + ctx.slug + '" data-hweb-label="Galerie" style="padding:56px 24px;">' +
-          '<h2 style="color:' + ctx.c1 + ';text-align:center;margin-top:0;">Nos réalisations</h2>' +
-          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:1000px;margin:24px auto 0;">' + b() + b() + b() + b() + b() + b() + '</div></section>';
-      }
-    },
-    cta: {
-      label: 'Bandeau d\'appel à l\'action',
-      build: function(ctx){
-        return '<section id="' + ctx.slug + '" data-hweb-label="Appel à l\'action" style="padding:44px 24px;background:' + ctx.c2 + ';text-align:center;">' +
-          '<h2 style="margin:0 0 10px;color:#1b1f27;">Prêt à démarrer votre projet ?</h2>' +
-          '<p style="margin:0 0 18px;color:#1b1f27;">Obtenez une réponse rapide et une soumission sans engagement.</p>' +
-          '<a href="#hweb-contact-anchor" style="display:inline-block;background:' + ctx.c1 + ';color:#fff;padding:13px 26px;border-radius:8px;font-weight:700;text-decoration:none;">Nous joindre</a></section>';
+          '</form><p class="hint" style="margin-top:8px;font-size:.8rem;">Remarque : ce formulaire est un gabarit visuel — branchez-le à un service d\'envoi (ex. Formspree, mailto:) après l\'export.</p></section>';
       }
     },
     footer: {
@@ -31636,18 +31492,6 @@
     edv.setUint16(20, 0, true);
     return new Blob(localParts.concat(centralParts, [end]), { type: 'application/zip' });
   }
-
-  /* Pont minimal vers les petits modules ajoutés en fin de page (Atelier de code, H-Start, H-Web) :
-     ils vivent dans des <script> séparés et n'ont pas accès à ce qui est privé à ce bloc. */
-  window.__hn = {
-    buildZip: buildZip,
-    requireSample: requireSample,
-    saveOrFallback: saveOrFallback,
-    copyText: copyTextToClipboard,
-    showStatus: showTempStatus,
-    sample: function(){ return sampleCap; },
-    ready: function(){ return sampleReady; }
-  };
 
   if(coworkWebsiteDownloadZip) coworkWebsiteDownloadZip.addEventListener('click', function(){
     if(!coworkWebsiteGeneratedHtml) return;
@@ -33721,24 +33565,6 @@
     if(e.target.closest('#hstat-domain-wrap')) return;
     closeHstatDomainMenu();
   });
-  /* Pont pour le module « Historique » de H-Start (script séparé en fin de page). */
-  window.__hnHstat = {
-    history: function(){ return hstatHistory.slice(); },
-    domainId: function(){ return hstatDomain ? hstatDomain.id : null; },
-    restore: function(items){
-      hstatHistory.length = 0;
-      (items || []).forEach(function(x){ hstatHistory.push({ role:x.role, content:x.content }); });
-      hstatLog.innerHTML = '';
-      hstatUserMsgCount = hstatHistory.filter(function(x){ return x.role === 'user'; }).length;
-      hstatHistory.forEach(function(x){ addHstatMsg(x.content, x.role === 'user' ? 'user' : 'bot'); });
-      hstatLog.scrollTop = hstatLog.scrollHeight;
-    },
-    fresh: function(){
-      hstatHistory.length = 0; hstatLog.innerHTML = ''; hstatUserMsgCount = 0;
-      delete hstatLog.dataset.ready;
-      try{ renderHstatIntro(); }catch(e){}
-    }
-  };
   function renderHstatIntro(){
     if(hstatLog.dataset.ready) return;
     hstatLog.dataset.ready = '1';
@@ -33913,21 +33739,6 @@
     onError: function(msg){ addHstatMsg(msg, 'bot'); if(voiceModeActive.hstat) stopVoiceMode('hstat'); }
   });
 
-  /* ---- Consultant IA expert : doctrine commune + profil mémorisé de l'utilisateur ---- */
-  var HSTART_DOCTRINE = "Tu es H-Start, le consultant IA de HelpNaud.ai : un conseiller de très haut niveau qui répond avec la profondeur d'un expert reconnu du domaine concerné, et qui accompagne la personne dans son travail comme dans sa vie. " +
-    "Méthode : 1) reformule brièvement l'enjeu réel derrière la question ; 2) donne d'abord la réponse ou la recommandation principale, puis le raisonnement ; 3) structure l'analyse (cadres reconnus du domaine, hypothèses explicites, chiffres et formules avec un exemple calculé quand c'est utile, comparaison d'options, scénarios, risques et leviers) ; 4) termine par des prochaines étapes concrètes et priorisées. " +
-    "Rigueur : appuie-toi sur les normes, lois, standards et références reconnus du domaine (cite-les par leur nom quand tu es certain), distingue clairement les faits établis, les pratiques courantes et ton opinion, signale les juridictions et les dates qui changent la réponse, et dis franchement quand tu n'es pas sûr ou quand une information récente est nécessaire — n'invente jamais de chiffre, de source, de loi ou de citation. " +
-    "Accompagnement : adapte le niveau de langage à la personne, pose au plus une ou deux questions de clarification seulement si elles changent vraiment la réponse (sinon réponds avec des hypothèses annoncées), propose des alternatives, et sois chaleureux et respectueux dans les sujets personnels. " +
-    "Domaines sensibles (santé, droit, finance, sécurité) : donne l'information utile en profondeur, sans refuser par réflexe, puis précise en une phrase quand une consultation d'un professionnel agréé est réellement nécessaire pour décider ; en cas de danger immédiat, oriente d'abord vers les services d'urgence. " +
-    "Forme : français clair, titres et listes seulement quand ils aident, tableaux pour comparer, sans remplissage ni formules creuses.";
-  function hstatProfileText(){
-    try{
-      var raw = localStorage.getItem('helpnaud_hstat_profile');
-      var t = (raw || '').trim().slice(0, 1200);
-      return t ? ("Contexte mémorisé sur la personne (à utiliser pour personnaliser, sans le répéter) : " + t) : '';
-    }catch(e){ return ''; }
-  }
-
   function submitHstat(q, opts){
     opts = opts || {};
     hstatHistory.push({ role:'user', content:q });
@@ -33946,14 +33757,8 @@
       var systemPrompt = hstatDomain
         ? ('Tu es un expert en ' + hstatDomain.label.toLowerCase() + '. Réponds en français de façon professionnelle et avancée, avec méthodologie et détails pratiques quand c\'est pertinent. Si l\'utilisateur pose une question hors de ce domaine, réponds-y quand même avec la même rigueur et le même niveau d\'expertise plutôt que de refuser ou de renvoyer vers un autre domaine.')
         : 'Tu es un consultant expert généraliste en statistiques, finance, économie, gestion de portefeuilles, gestion de projets, informatique, génie (civil, mécanique, industriel), droit, éducation, développement personnel, gestion du travail, restauration/hôtellerie, assurance et santé (information générale, non diagnostique). Réponds en français de façon professionnelle et avancée, avec formules et méthodologie quand c\'est pertinent. Tu as l\'autorité et la capacité de répondre en profondeur à absolument n\'importe quelle question, dans n\'importe quel domaine, y compris au-delà de cette liste de domaines officiels — ne refuse jamais une question ni ne réduis ta rigueur seulement parce qu\'elle sort de ces domaines listés.';
-      systemPrompt += "\n\n" + HSTART_DOCTRINE;
-      var hstatProfile = hstatProfileText();
-      if(hstatProfile) systemPrompt += "\n\n" + hstatProfile;
       systemPrompt += "\n\n" + hmodelPromptInstruction('hstat');
-      // Fenêtre de contexte élargie ; elle doit toujours commencer par un message de l'utilisateur,
-      // sinon les consignes (placées sur le premier message) seraient perdues dans les longues conversations.
-      var recent = hstatHistory.slice(-20);
-      if(recent.length && recent[0].role !== 'user') recent = recent.slice(1);
+      var recent = hstatHistory.slice(-10);
       var msgs = recent.map(function(h, i){
         var content = h.content;
         if(i === 0 && h.role === 'user') content = systemPrompt + "\n\n" + content;
@@ -33971,7 +33776,6 @@
       sampleCap(msgs, sampleOpts).then(function(res){
         hstatHistory.push({ role:'assistant', content: res.text });
         setMsgText(thinkingEl, res.text);
-        try{ if(window.__hnHstatChanged) window.__hnHstatChanged(); }catch(e){}
         fillHstatSuggestRow(suggestionsAfter);
         if(opts.voiceReply) autoSpeakBubble(thinkingEl);
       }).catch(function(){
@@ -35805,558 +35609,12 @@
     var t=document.getElementById('cowork-draft-input'); if(!t) return;
     t.value=b.getAttribute('data-draft-suggest'); t.dispatchEvent(new Event('input',{bubbles:true})); t.focus();
   });
-  /* Réessayer : renvoie la dernière question de l'utilisateur dans la même vue (Assistant, Co-work, H-Start). */
-  function lastUserText(scope, before){
-    var list=[].slice.call(scope.querySelectorAll('.msg.user'));
-    if(before){ list=list.filter(function(m){ return !!(m.compareDocumentPosition(before)&Node.DOCUMENT_POSITION_FOLLOWING); }); }
-    var m=list[list.length-1]; if(!m) return '';
-    var t=m.querySelector('.msg-text'); return t?String(t.textContent||'').trim():'';
-  }
-  function resend(form, text){
-    var ta=form&&form.querySelector('textarea, input[type=text]'); if(!ta||!text) return false;
-    ta.value=text; ta.dispatchEvent(new Event('input',{bubbles:true}));
-    form.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true}));
-    return true;
-  }
-  function viewOf(el){ return el.closest('section.view')||document; }
-  function formOf(scope){ var b=scope.querySelector('.chat-send-btn'); return b?b.closest('form'):null; }
-  window.__hnRetry=function(msgEl){
-    var scope=viewOf(msgEl); resend(formOf(scope), lastUserText(scope, msgEl));
-  };
-  function addRetryRows(){
-    document.querySelectorAll('.chat-send-btn').forEach(function(b){
-      var form=b.closest('form'); if(!form||form.dataset.hnRetry) return; form.dataset.hnRetry='1';
-      var row=document.createElement('div'); row.className='hn-retry-row'; row.style.cssText='display:flex; justify-content:flex-end; margin-top:4px;';
-      var btn=document.createElement('button'); btn.type='button'; btn.className='btn'; btn.title='Réessayer la dernière question'; btn.setAttribute('aria-label','Réessayer');
-      btn.style.cssText='padding:3px 10px; font-size:12px; display:inline-flex; align-items:center; gap:6px;';
-      btn.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg><span>Réessayer</span>';
-      btn.addEventListener('click',function(){ var sc=viewOf(form); if(!resend(form,lastUserText(sc))){ btn.title='Aucune question à renvoyer pour le moment'; } });
-      row.appendChild(btn); form.parentNode.insertBefore(row, form.nextSibling);
-    });
-  }
   function init(){
     var sel=document.getElementById('setting-sendicon');
     if(sel){ sel.value=mode(); sel.addEventListener('change',function(){ try{localStorage.setItem(KEY,sel.value);}catch(e){} idx=0; apply(current()); }); }
     apply(current());
-    addRetryRows();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script>
-(function(){
-  var KEY='helpnaud_fgh_brandlogo';
-  function get(){ try{ return localStorage.getItem(KEY)||''; }catch(e){ return ''; } }
-  function setIcon(url){
-    var head=document.head;
-    var defs=head.querySelectorAll('link[data-hn-default]');
-    for(var i=0;i<defs.length;i++){ if(url){ defs[i].setAttribute('data-hn-off',defs[i].getAttribute('href')); defs[i].removeAttribute('href'); } else if(defs[i].getAttribute('data-hn-off')){ defs[i].setAttribute('href',defs[i].getAttribute('data-hn-off')); defs[i].removeAttribute('data-hn-off'); } }
-    ['icon','apple-touch-icon'].forEach(function(rel){
-      var l=head.querySelector('link[data-fgh-brand="'+rel+'"]');
-      if(!url){ if(l) l.remove(); return; }
-      if(!l){ l=document.createElement('link'); l.rel=rel; l.setAttribute('data-fgh-brand',rel); head.appendChild(l); }
-      l.href=url; if(rel==='icon') l.type='image/png';
-    });
-  }
-  function apply(){
-    var url=get();
-    setIcon(url);
-    var pv=document.getElementById('fghlab-brandlogo-preview');
-    if(pv) pv.innerHTML=url?'<img alt="Logo FINECIA GROUPE" src="'+url+'">':'Logo';
-  }
-  function status(t){ var e=document.getElementById('fghlab-brandlogo-status'); if(!e) return; e.textContent=t; setTimeout(function(){e.textContent='';},2600); }
-  function init(){
-    var btn=document.getElementById('fghlab-brandlogo-btn'), inp=document.getElementById('fghlab-brandlogo-input'), rm=document.getElementById('fghlab-brandlogo-remove');
-    if(btn) btn.addEventListener('click',function(){ inp.click(); });
-    if(rm) rm.addEventListener('click',function(){ try{localStorage.removeItem(KEY);}catch(e){} apply(); status('Logo retiré.'); });
-    if(inp) inp.addEventListener('change',function(e){
-      var f=e.target.files&&e.target.files[0]; if(!f) return;
-      if(!/^image\//.test(f.type)){ status('Choisissez un fichier image.'); e.target.value=''; return; }
-      var r=new FileReader();
-      r.onload=function(ev){
-        var img=new Image();
-        img.onload=function(){
-          var c=document.createElement('canvas'); c.width=c.height=128; var x=c.getContext('2d');
-          var side=Math.min(img.width||128,img.height||128)||128;
-          x.drawImage(img,((img.width||side)-side)/2,((img.height||side)-side)/2,side,side,0,0,128,128);
-          try{ localStorage.setItem(KEY,c.toDataURL('image/png')); }catch(err){ status('Stockage impossible.'); return; }
-          apply(); status('Logo mis à jour ✓');
-        };
-        img.onerror=function(){ status('Image illisible.'); };
-        img.src=ev.target.result;
-      };
-      r.readAsDataURL(f); e.target.value='';
-    });
-    apply();
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
-})();
-</script>
-<style>
-.cs-wrap{margin-top:14px}
-.cs-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
-.cs-tab{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px 8px 0 0;padding:6px 10px;font:600 12px/1 ui-monospace,Menlo,Consolas,monospace;cursor:pointer}
-.cs-tab.active{background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.cs-editor{width:100%;min-height:300px;max-height:60vh;font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:0 10px 10px 10px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical;tab-size:2;white-space:pre;overflow:auto}
-.cs-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
-.cs-sub input[type=text],.cs-sub select{border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:var(--surface);color:var(--ink);font-size:13px;min-width:0}
-.cs-panel{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-top:10px;overflow:hidden}
-.cs-panel>header{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border-bottom:1px solid var(--line)}
-.cs-panel iframe{width:100%;height:380px;border:0;background:#fff;display:block}
-.cs-console{margin:0;padding:8px 10px;max-height:180px;overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;color:var(--ink)}
-.cs-console .e{color:#B3261E}.cs-console .w{color:#9a6a00}.cs-console .i{color:var(--muted)}
-.cs-notes{padding:10px 12px;font-size:13px;line-height:1.55;white-space:pre-wrap}
-.cs-msg{font-size:12px;color:var(--muted)}
-</style>
-<script>
-(function(){
-  'use strict';
-  var $=function(id){return document.getElementById(id);};
-  var typeSel=$('cowork-code-type'), input=$('cowork-code-input'), gen=$('cowork-code-generate'),
-      copyBtn=$('cowork-code-copy'), dlBtn=$('cowork-code-download'), statusEl=$('cowork-code-status'), pre=$('cowork-code-result');
-  if(!typeSel||!gen||!pre) return;
-  var card=pre.parentNode;
-  var STORE='helpnaud_code_projects';
-
-  var state={ files:[], active:0, name:'', type:'web', notes:'' };
-
-  /* ---------- Consignes de niveau professionnel, par type ---------- */
-  var COMMON="Tu es un ingénieur logiciel senior (niveau staff/principal) qui livre du code de qualité professionnelle, prêt pour la production. "+
-  "Respecte les normes reconnues du domaine : sécurité selon l'OWASP Top 10 et l'ASVS (validation et assainissement des entrées, requêtes paramétrées, aucun secret en dur, gestion d'erreurs sûre, principe du moindre privilège), "+
-  "qualité selon ISO/IEC 25010 (lisibilité, maintenabilité, testabilité), accessibilité WCAG 2.2 niveau AA pour toute interface, et conventions idiomatiques du langage. "+
-  "Structure le projet proprement (séparation des responsabilités, noms explicites, pas de duplication), gère les cas limites et les erreurs, commente en français ce qui n'est pas évident, et inclus un fichier README.md (installation, lancement, tests, choix techniques). "+
-  "Quand c'est pertinent, ajoute des tests automatisés. N'invente aucune API ni bibliothèque : si tu n'es pas certain, utilise la bibliothèque standard. ";
-  var TYPE_RULES={
-    web:"Livre un site ou une application web complète et moderne, sans étape de build : index.html (HTML5 sémantique, balises meta, lang=fr), style.css (CSS moderne, variables, responsive mobile-first, mode sombre si pertinent, prefers-reduced-motion) et script.js (JavaScript ES2022 modulaire, sans dépendance externe sauf nécessité absolue). Aucune ressource externe bloquante. Formulaires validés côté client avec messages d'erreur accessibles. L'aperçu doit fonctionner en ouvrant simplement index.html.",
-    node:"Livre une API/serveur Node.js (LTS) : package.json, src/ (routes, services, validation), .env.example, tests (node:test ou Jest), README. Utilise express avec helmet, limitation de débit, validation stricte des entrées, journalisation sobre, gestion centralisée des erreurs, codes HTTP corrects, CORS restrictif. Aucun secret dans le code.",
-    javascript:"Livre un programme JavaScript (ES2022) exécutable dans le navigateur ET lisible : index.html minimal qui charge script.js, et script.js dont les résultats s'affichent avec console.log. Pas de dépendance externe.",
-    typescript:"Livre du TypeScript en mode strict (tsconfig.json avec strict:true), types explicites, pas de any, package.json avec scripts build/test, tests, README.",
-    python:"Livre du Python 3.11+ conforme PEP 8 et PEP 257 : annotations de types, docstrings, gestion d'erreurs explicite, journalisation (logging), bibliothèque standard en priorité, tests pytest dans tests/, requirements.txt si nécessaire.",
-    sql:"Livre du SQL propre et portable (indique le SGBD visé, PostgreSQL par défaut) : schéma normalisé avec clés, contraintes et index justifiés, requêtes paramétrées, jeux de données d'exemple, scripts de migration, commentaires sur les plans d'exécution quand utile.",
-    bash:"Livre un script Bash robuste : shebang, set -euo pipefail, variables entre guillemets, fonctions, trap pour le nettoyage, aide (-h), vérification des prérequis, journalisation claire, compatible ShellCheck.",
-    java:"Livre du Java 17+ idiomatique avec structure Maven (pom.xml), packages clairs, immutabilité quand possible, gestion d'exceptions, tests JUnit 5, README.",
-    appsscript:"Livre un script Google Apps Script (V8) avec Code.gs et appsscript.json, commentaires en français, gestion des quotas et des erreurs, LockService si écritures concurrentes, aucun identifiant en dur (PropertiesService).",
-    excel:"Réponds avec chaque formule Excel prête à coller (commençant par =) sur sa propre ligne dans le fichier formules.txt, suivie d'une courte explication en français et d'un exemple. Préfère les fonctions modernes (XLOOKUP, FILTER, LET) en indiquant l'alternative compatible anciennes versions.",
-    sheets:"Réponds avec chaque formule Google Sheets prête à coller (commençant par =) sur sa propre ligne dans le fichier formules.txt, suivie d'une courte explication en français et d'un exemple (ARRAYFORMULA, QUERY, XLOOKUP au besoin)."
-  };
-  var FORMAT="\n\nFORMAT DE SORTIE OBLIGATOIRE : réponds uniquement avec des fichiers, chacun encadré ainsi, sans aucun texte hors de ces blocs, sans balises ``` :\n"+
-  "=== FILE: chemin/nom.ext ===\n(contenu complet du fichier)\n=== END FILE ===\n"+
-  "Termine par un dernier bloc « === FILE: NOTES.md === » contenant en français : choix techniques, limites connues, et points à vérifier avant mise en production.";
-
-  function sys(type){ return COMMON+(TYPE_RULES[type]||TYPE_RULES.web)+FORMAT; }
-
-  /* ---------- Analyse de la réponse ---------- */
-  function parseFiles(text){
-    var out=[], re=/=== FILE: (.+?) ===\r?\n([\s\S]*?)\r?\n=== END FILE ===/g, m;
-    while((m=re.exec(text))){ out.push({name:m[1].trim().replace(/^\/+/,''), content:m[2]}); }
-    if(!out.length){
-      var t=(text||'').trim(), f=t.match(/^```[a-zA-Z0-9]*\n?([\s\S]*?)\n?```$/);
-      if(t) out.push({name:defaultName(typeSel.value), content:f?f[1]:t});
-    }
-    return out;
-  }
-  function defaultName(t){ return ({web:'index.html',node:'src/index.js',javascript:'script.js',typescript:'src/index.ts',python:'main.py',sql:'script.sql',bash:'script.sh',java:'Main.java',appsscript:'Code.gs',excel:'formules.txt',sheets:'formules.txt'})[t]||'code.txt'; }
-
-  /* ---------- Interface ---------- */
-  var wrap=document.createElement('div'); wrap.className='cs-wrap'; wrap.hidden=true;
-  wrap.innerHTML=
-   '<div class="cs-sub">'+
-     '<input type="text" id="cs-name" placeholder="Nom du projet" maxlength="60" aria-label="Nom du projet">'+
-     '<button class="btn" id="cs-save" type="button">Enregistrer</button>'+
-     '<button class="btn" id="cs-zip" type="button">Télécharger (.zip)</button>'+
-     '<button class="btn primary" id="cs-run" type="button" hidden>▶ Aperçu</button>'+
-   '</div>'+
-   '<div class="cs-bar" id="cs-tabs" role="tablist"></div>'+
-   '<textarea class="cs-editor" id="cs-editor" spellcheck="false" aria-label="Contenu du fichier"></textarea>'+
-   '<div class="cs-sub">'+
-     '<button class="btn" id="cs-addfile" type="button">+ Fichier</button>'+
-     '<button class="btn" id="cs-rename" type="button">Renommer</button>'+
-     '<button class="btn" id="cs-delfile" type="button">Supprimer le fichier</button>'+
-   '</div>'+
-   '<div class="cs-sub">'+
-     '<input type="text" id="cs-change" style="flex:1 1 240px" placeholder="Demander une modification : ex. ajoute un formulaire de contact validé, ou corrige l’erreur affichée" aria-label="Demande de modification">'+
-     '<button class="btn primary" id="cs-apply" type="button">Modifier</button>'+
-     '<button class="btn" id="cs-audit" type="button">Audit qualité et sécurité</button>'+
-   '</div>'+
-   '<div class="cs-panel" id="cs-notes-panel" hidden><header><span id="cs-notes-title">Notes</span><button class="btn" id="cs-notes-close" type="button">Fermer</button></header><div class="cs-notes" id="cs-notes"></div></div>'+
-   '<div class="cs-panel" id="cs-preview-panel" hidden><header><span>Aperçu</span><span class="cs-msg" id="cs-preview-msg"></span></header><iframe id="cs-frame" title="Aperçu du projet" sandbox="allow-scripts allow-forms allow-modals"></iframe></div>'+
-   '<div class="cs-panel" id="cs-console-panel" hidden><header><span>Console <span id="cs-errcount"></span></span><button class="btn" id="cs-console-clear" type="button">Effacer</button></header><pre class="cs-console" id="cs-console"></pre></div>'+
-   '<div class="cs-sub"><label class="cs-msg" for="cs-open">Projets enregistrés sur cet appareil :</label>'+
-     '<select id="cs-open"></select>'+
-     '<button class="btn" id="cs-load" type="button">Ouvrir</button>'+
-     '<button class="btn" id="cs-del" type="button">Supprimer</button>'+
-   '</div>';
-  pre.parentNode.insertBefore(wrap, pre.nextSibling);
-  var E=function(id){return $(id);};
-  var tabs=E('cs-tabs'), editor=E('cs-editor'), consoleEl=E('cs-console');
-
-  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function say(t,ms){ try{ if(window.__hn) window.__hn.showStatus(statusEl,t,ms||2600); else statusEl.textContent=t; }catch(e){} }
-
-  function runnable(){ return state.files.some(function(f){return /\.html?$/i.test(f.name);}) || state.type==='javascript'; }
-  function render(){
-    wrap.hidden=!state.files.length; pre.hidden=!!state.files.length;
-    copyBtn.hidden=dlBtn.hidden=!state.files.length;
-    tabs.innerHTML='';
-    state.files.forEach(function(f,i){
-      var b=document.createElement('button'); b.type='button'; b.className='cs-tab'+(i===state.active?' active':''); b.setAttribute('role','tab'); b.textContent=f.name;
-      b.addEventListener('click',function(){ keep(); state.active=i; render(); });
-      tabs.appendChild(b);
-    });
-    var f=state.files[state.active]; editor.value=f?f.content:'';
-    E('cs-name').value=state.name||'';
-    E('cs-run').hidden=!runnable();
-    refreshProjects();
-  }
-  function keep(){ var f=state.files[state.active]; if(f) f.content=editor.value; }
-  editor.addEventListener('input',keep);
-  editor.addEventListener('keydown',function(e){
-    if(e.key==='Tab'&&!e.shiftKey){ e.preventDefault(); var s=editor.selectionStart; editor.setRangeText('  ',s,editor.selectionEnd,'end'); keep(); }
-  });
-
-  /* ---------- Génération et modification ---------- */
-  var busy=false;
-  function ask(prompt,onText){
-    if(!window.__hn) return Promise.reject({code:'unavailable'});
-    return window.__hn.requireSample(statusEl).then(function(cap){
-      if(!cap) return Promise.reject({code:'ai_unavailable'});
-      return cap(prompt,{modelTier:'default',cache:false,onText:onText});
-    });
-  }
-  function setBusy(b){ busy=b; gen.disabled=b; E('cs-apply').disabled=b; E('cs-audit').disabled=b; }
-  function fail(err){
-    var c=(err&&err.code)||'inconnue';
-    var m=(c==='ai_unavailable')?"L’assistant IA n’est pas disponible pour l’instant.":"La génération n’a pas pu être complétée ("+c+").";
-    pre.hidden=false; wrap.hidden=!state.files.length; pre.textContent=state.files.length?pre.textContent:m; say(m,4200); setBusy(false);
-  }
-  function filesToPrompt(){
-    keep();
-    return state.files.map(function(f){return '=== FILE: '+f.name+' ===\n'+f.content+'\n=== END FILE ===';}).join('\n');
-  }
-  function generate(){
-    var brief=input.value.trim();
-    if(!brief){ say('Décrivez ce que vous voulez construire.',2500); return; }
-    if(busy) return; setBusy(true);
-    state.type=typeSel.value; state.notes=''; state.files=[]; state.active=0;
-    pre.hidden=false; pre.textContent='Réflexion…'; wrap.hidden=true;
-    ask(sys(state.type)+'\n\nDEMANDE :\n'+brief,function(ev){ pre.textContent=ev.text; })
-    .then(function(res){ loadResult(res.text); setBusy(false); }).catch(fail);
-  }
-  function loadResult(text){
-    var files=parseFiles(text), notes='';
-    files=files.filter(function(f){ if(/^NOTES\.md$/i.test(f.name)){ notes=f.content; return false; } return true; });
-    if(!files.length){ pre.textContent=text; return; }
-    state.files=files; state.active=0; state.notes=notes;
-    if(!state.name) state.name=(input.value.trim().slice(0,40)||'Projet');
-    render();
-    if(notes) showNotes('Notes de l’ingénieur',notes);
-    if(runnable()) runPreview();
-  }
-  function modify(){
-    var ch=E('cs-change').value.trim();
-    if(!ch){ say('Décrivez la modification voulue.',2500); return; }
-    if(busy) return; setBusy(true);
-    var errs=consoleErrors();
-    var p=sys(state.type).replace(/FORMAT DE SORTIE OBLIGATOIRE[\s\S]*$/,'')+
-      "\n\nVoici le projet actuel. Applique la modification demandée en conservant tout ce qui fonctionne, et renvoie TOUS les fichiers du projet (modifiés ou non) au format : === FILE: chemin ===\\ncontenu\\n=== END FILE ===, puis un bloc === FILE: NOTES.md === listant en français ce qui a changé."+
-      "\n\nPROJET ACTUEL :\n"+filesToPrompt()+(errs?"\n\nERREURS ACTUELLEMENT AFFICHÉES DANS LA CONSOLE :\n"+errs:"")+"\n\nMODIFICATION DEMANDÉE :\n"+ch;
-    say('Modification en cours…',60000);
-    ask(p).then(function(res){
-      var nf=parseFiles(res.text), notes='';
-      nf=nf.filter(function(f){ if(/^NOTES\.md$/i.test(f.name)){ notes=f.content; return false; } return true; });
-      if(nf.length){ state.files=nf; state.active=Math.min(state.active,nf.length-1); render(); if(notes) showNotes('Modifications',notes); if(runnable()) runPreview(); E('cs-change').value=''; say('Projet mis à jour ✓'); }
-      else say('Réponse inattendue, aucune modification appliquée.',4000);
-      setBusy(false);
-    }).catch(fail);
-  }
-  function audit(){
-    if(busy||!state.files.length) return; setBusy(true);
-    var p="Tu es un auditeur de code senior. Audite le projet ci-dessous en français, de façon concrète et priorisée : "+
-      "1) Sécurité (OWASP Top 10 : injection, XSS, contrôle d'accès, secrets, dépendances, configuration), 2) Qualité et maintenabilité (ISO/IEC 25010), 3) Accessibilité WCAG 2.2 AA si interface, 4) Performance, 5) Tests manquants. "+
-      "Pour chaque point : gravité (critique/élevée/moyenne/faible), où (fichier et ligne ou fonction), pourquoi c'est un problème, correctif précis. Termine par une note sur 10 et les 3 actions prioritaires. Sois honnête : ne dis pas que c'est sans faille si tu ne peux pas le garantir.\n\nPROJET :\n"+filesToPrompt();
-    say('Audit en cours…',60000);
-    showNotes('Audit qualité et sécurité','Analyse en cours…');
-    ask(p,function(ev){E('cs-notes').textContent=ev.text;}).then(function(res){ E('cs-notes').textContent=res.text; say('Audit terminé ✓'); setBusy(false); }).catch(fail);
-  }
-  function showNotes(title,text){ E('cs-notes-title').textContent=title; E('cs-notes').textContent=text; E('cs-notes-panel').hidden=false; }
-  E('cs-notes-close').addEventListener('click',function(){E('cs-notes-panel').hidden=true;});
-
-  /* ---------- Aperçu en bac à sable + console ---------- */
-  var HOOK="<script>(function(){function s(t,a){try{parent.postMessage({__hncs:1,t:t,m:Array.prototype.map.call(a,function(x){try{return typeof x==='string'?x:(x instanceof Error?x.stack||x.message:JSON.stringify(x));}catch(e){return String(x);}}).join(' ')},'*');}catch(e){}}"+
-   "['log','info','warn','error'].forEach(function(k){var o=console[k];console[k]=function(){s(k,arguments);try{o.apply(console,arguments);}catch(e){}};});"+
-   "window.addEventListener('error',function(e){s('error',[(e.message||'Erreur')+(e.filename?' ('+String(e.filename).split('/').pop()+':'+e.lineno+')':'')]);});"+
-   "window.addEventListener('unhandledrejection',function(e){s('error',['Promesse rejetée : '+(e.reason&&e.reason.message||e.reason)]);});})();<\/script>";
-  function byName(n){ n=n.replace(/^\.?\//,''); return state.files.filter(function(f){return f.name===n||f.name.split('/').pop()===n.split('/').pop();})[0]; }
-  function safe(js){ return js.replace(/<\/script/gi,'<\\/script'); }
-  function buildDoc(){
-    keep();
-    var html=state.files.filter(function(f){return /^index\.html?$/i.test(f.name.split('/').pop());})[0]||state.files.filter(function(f){return /\.html?$/i.test(f.name);})[0];
-    if(!html){
-      var js=state.files.filter(function(f){return /\.js$/i.test(f.name);}).map(function(f){return f.content;}).join('\n');
-      return '<!doctype html><meta charset="utf-8"><body style="font:14px system-ui;padding:12px"><p style="color:#666">Exécution du script — voir la console ci-dessous.</p>'+HOOK+'<script>'+safe(js)+'<\/script>';
-    }
-    var d=html.content;
-    d=d.replace(/<link[^>]+href=["']([^"']+\.css)["'][^>]*>/gi,function(m,h){var f=byName(h);return f?'<style>'+f.content+'</style>':m;});
-    d=d.replace(/<script([^>]*)\ssrc=["']([^"']+\.js)["']([^>]*)><\/script>/gi,function(m,a,h,b){var f=byName(h);return f?'<script'+a+b+'>'+safe(f.content)+'<\/script>':m;});
-    return /<head[^>]*>/i.test(d)?d.replace(/<head[^>]*>/i,function(m){return m+HOOK;}):HOOK+d;
-  }
-  var errN=0;
-  function log(t,m){
-    var l=document.createElement('div'); l.className=t==='error'?'e':t==='warn'?'w':t==='info'?'i':'';
-    l.textContent=(t==='error'?'✖ ':t==='warn'?'⚠ ':'› ')+m; consoleEl.appendChild(l); consoleEl.scrollTop=consoleEl.scrollHeight;
-    if(t==='error'){ errN++; E('cs-errcount').textContent='· '+errN+' erreur'+(errN>1?'s':''); }
-  }
-  function consoleErrors(){ return Array.prototype.filter.call(consoleEl.children,function(c){return c.className==='e';}).map(function(c){return c.textContent;}).join('\n'); }
-  function clearConsole(){ consoleEl.innerHTML=''; errN=0; E('cs-errcount').textContent=''; }
-  E('cs-console-clear').addEventListener('click',clearConsole);
-  window.addEventListener('message',function(e){
-    var d=e.data; if(!d||!d.__hncs||e.source!==E('cs-frame').contentWindow) return;
-    log(d.t,d.m);
-  });
-  function runPreview(){
-    clearConsole(); E('cs-preview-panel').hidden=false; E('cs-console-panel').hidden=false;
-    E('cs-preview-msg').textContent='bac à sable isolé';
-    E('cs-frame').srcdoc=buildDoc();
-    setTimeout(function(){ if(!consoleEl.children.length) log('info','Aucune erreur détectée au chargement.'); },1200);
-  }
-  E('cs-run').addEventListener('click',runPreview);
-
-  /* ---------- Fichiers ---------- */
-  E('cs-addfile').addEventListener('click',function(){
-    keep(); var n=prompt('Nom du nouveau fichier (ex. src/utils.js) :'); if(!n) return; n=n.trim().replace(/^\/+/,''); if(!n||/\.\./.test(n)) return;
-    if(byNameExact(n)){ say('Ce fichier existe déjà.'); return; }
-    state.files.push({name:n,content:''}); state.active=state.files.length-1; render(); editor.focus();
-  });
-  function byNameExact(n){ return state.files.some(function(f){return f.name===n;}); }
-  E('cs-rename').addEventListener('click',function(){
-    var f=state.files[state.active]; if(!f) return; var n=prompt('Nouveau nom :',f.name); if(!n) return; n=n.trim().replace(/^\/+/,''); if(!n||/\.\./.test(n)||(n!==f.name&&byNameExact(n))) return; keep(); f.name=n; render();
-  });
-  E('cs-delfile').addEventListener('click',function(){
-    if(state.files.length<2){ say('Il faut garder au moins un fichier.'); return; }
-    if(!confirm('Supprimer « '+state.files[state.active].name+' » ?')) return;
-    state.files.splice(state.active,1); state.active=Math.max(0,state.active-1); render();
-  });
-
-  /* ---------- Téléchargement ---------- */
-  function download(name,blob,fallbackText){
-    if(window.claude&&window.__hn){ window.__hn.saveOrFallback({filename:name,data:blob,statusEl:statusEl,fallbackText:fallbackText,fallbackSourceEl:editor}); return; }
-    try{ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},800); say('Téléchargé ✓'); }catch(e){ say('Téléchargement impossible ici.'); }
-  }
-  function slug(s){ return (s||'projet').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'projet'; }
-  E('cs-zip').addEventListener('click',function(){
-    keep(); if(!state.files.length||!window.__hn) return;
-    var files=state.files.map(function(f){return {name:f.name,content:f.content};});
-    if(state.notes) files.push({name:'NOTES.md',content:state.notes});
-    download(slug(state.name)+'.zip',window.__hn.buildZip(files),null);
-  });
-  function singleDownload(){
-    keep(); var f=state.files[state.active]; if(!f) return;
-    download(f.name.split('/').pop(),new Blob([f.content],{type:'text/plain;charset=utf-8'}),f.content);
-  }
-
-  /* ---------- Projets enregistrés (cet appareil) ---------- */
-  function load(){ try{ return JSON.parse(localStorage.getItem(STORE)||'[]')||[]; }catch(e){ return []; } }
-  function store(a){ try{ localStorage.setItem(STORE,JSON.stringify(a)); return true; }catch(e){ say('Enregistrement impossible (stockage plein ou bloqué).',3500); return false; } }
-  function refreshProjects(){
-    var sel=E('cs-open'), a=load(); sel.innerHTML='';
-    if(!a.length){ var o=document.createElement('option'); o.textContent='Aucun projet enregistré'; o.value=''; sel.appendChild(o); return; }
-    a.forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.name+' — '+new Date(p.updated).toLocaleDateString('fr-CA'); sel.appendChild(o); });
-  }
-  E('cs-save').addEventListener('click',function(){
-    keep(); if(!state.files.length) return;
-    state.name=(E('cs-name').value.trim()||'Projet sans nom');
-    var a=load(), id=state.id, p=a.filter(function(x){return x.id===id;})[0];
-    if(!p){ id='p'+Date.now().toString(36); state.id=id; p={id:id}; a.unshift(p); }
-    p.name=state.name; p.type=state.type; p.files=state.files; p.notes=state.notes; p.updated=Date.now();
-    if(store(a.slice(0,40))){ refreshProjects(); E('cs-open').value=id; say('Projet enregistré ✓'); }
-  });
-  E('cs-load').addEventListener('click',function(){
-    var id=E('cs-open').value; var p=load().filter(function(x){return x.id===id;})[0]; if(!p) return;
-    state.id=p.id; state.name=p.name; state.type=p.type||'web'; state.files=p.files; state.notes=p.notes||''; state.active=0; typeSel.value=state.type; render(); if(runnable()) runPreview();
-  });
-  E('cs-del').addEventListener('click',function(){
-    var id=E('cs-open').value; if(!id||!confirm('Supprimer ce projet enregistré ?')) return;
-    store(load().filter(function(x){return x.id!==id;})); if(state.id===id) state.id=null; refreshProjects();
-  });
-
-  /* ---------- Branchement (capture : remplace l'ancien bouton « Générer » simple) ---------- */
-  card.addEventListener('click',function(e){
-    var t=e.target.closest&&e.target.closest('button'); if(!t) return;
-    if(t===gen){ e.stopPropagation(); e.preventDefault(); generate(); }
-    else if(t===copyBtn){ e.stopPropagation(); keep(); var f=state.files[state.active]; if(f&&window.__hn) window.__hn.copyText(f.content,statusEl,editor); }
-    else if(t===dlBtn){ e.stopPropagation(); singleDownload(); }
-  },true);
-  E('cs-apply').addEventListener('click',modify);
-  E('cs-audit').addEventListener('click',audit);
-  E('cs-change').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); modify(); } });
-  input.placeholder="Ex. : Un site vitrine pour une clinique dentaire avec prise de rendez-vous, ou une API de gestion de factures avec authentification et tests.";
-  refreshProjects();
-  window.__hnCodeStudio={ state:state, parse:parseFiles, buildDoc:buildDoc, load:loadResult };
-})();
-</script>
-
-<style>
-.hh-box{display:flex;flex-direction:column;gap:8px;padding:8px 2px}
-.hh-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.hh-row input[type=search],.hh-box textarea{border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:var(--surface);color:var(--ink);font-size:13px;min-width:0;font-family:inherit}
-.hh-list{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow:auto}
-.hh-item{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:6px 8px;background:var(--surface)}
-.hh-item.cur{border-color:var(--accent)}
-.hh-item .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--ink);background:none;border:0;text-align:left;cursor:pointer;padding:2px}
-.hh-item .d{font-size:11px;color:var(--muted);white-space:nowrap}
-.hh-item button.i{background:none;border:0;cursor:pointer;font-size:14px;padding:2px 4px;color:var(--muted)}
-.hh-empty{font-size:12px;color:var(--muted)}
-</style>
-<script>
-(function(){
-  'use strict';
-  var log=document.getElementById('hstat-log'); var tpl=document.getElementById('hstat-templates-details');
-  if(!log||!tpl) return;
-  var KEY='helpnaud_hstat_convs', PKEY='helpnaud_hstat_profile', cur=null;
-  function load(){ try{ var a=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
-  function save(a){
-    for(var n=a.length;n>=1;n--){ try{ localStorage.setItem(KEY,JSON.stringify(a.slice(0,n))); return true; }catch(e){} }
-    return false;
-  }
-  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function st(t){ var e=document.getElementById('hh-status'); if(!e) return; e.textContent=t; setTimeout(function(){e.textContent='';},2600); }
-
-  var det=document.createElement('details'); det.className='collapsible suggest-collapsible'; det.id='hstat-history-details';
-  det.innerHTML='<summary>🕘 Historique et mémoire <svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>'+
-   '<div class="hh-box">'+
-    '<div class="hh-row"><button type="button" class="btn primary" id="hh-new">＋ Nouvelle conversation</button>'+
-    '<button type="button" class="btn" id="hh-export">⤓ Exporter (.md)</button>'+
-    '<input type="search" id="hh-q" placeholder="Rechercher dans mes conversations" aria-label="Rechercher dans mes conversations" style="flex:1 1 180px"><span class="copy-status" id="hh-status"></span></div>'+
-    '<div class="hh-list" id="hh-list"></div>'+
-    '<label for="hh-profile" class="hint" style="margin:6px 0 0"><b>Ce que H-Start doit savoir de moi</b> (profession, secteur, pays, objectifs, niveau d’expertise) — utilisé pour personnaliser chaque réponse.</label>'+
-    '<textarea id="hh-profile" rows="3" maxlength="1200" placeholder="Ex. : Directrice financière d’une PME de transport au Québec ; je préfère des réponses chiffrées et des plans d’action."></textarea>'+
-    '<div class="hh-row"><button type="button" class="btn" id="hh-profile-save">Enregistrer ma mémoire</button><button type="button" class="btn" id="hh-profile-clear">Effacer</button>'+
-    '<span class="hint" style="margin:0">Stocké uniquement sur cet appareil.</span></div>'+
-   '</div>';
-  tpl.parentNode.insertBefore(det,tpl.nextSibling);
-  var list=document.getElementById('hh-list'), q=document.getElementById('hh-q');
-
-  function fmt(t){ try{ return new Date(t).toLocaleDateString('fr-CA',{month:'short',day:'numeric'}); }catch(e){ return ''; } }
-  function render(){
-    var a=load(), term=(q.value||'').trim().toLowerCase();
-    if(term) a=a.filter(function(c){ return c.title.toLowerCase().indexOf(term)>=0 || c.messages.some(function(m){return m.content.toLowerCase().indexOf(term)>=0;}); });
-    a.sort(function(x,y){ return (y.pinned?1:0)-(x.pinned?1:0) || y.updated-x.updated; });
-    if(!a.length){ list.innerHTML='<span class="hh-empty">'+(term?'Aucun résultat.':'Aucune conversation enregistrée pour l’instant — elles s’enregistrent automatiquement sur cet appareil.')+'</span>'; return; }
-    list.innerHTML=a.map(function(c){
-      return '<div class="hh-item'+(c.id===cur?' cur':'')+'" data-id="'+c.id+'"><button type="button" class="i" data-a="pin" title="'+(c.pinned?'Désépingler':'Épingler')+'" aria-label="Épingler">'+(c.pinned?'📌':'📍')+'</button>'+
-        '<button type="button" class="t" data-a="open" title="'+esc(c.title)+'">'+esc(c.title)+'</button><span class="d">'+fmt(c.updated)+'</span>'+
-        '<button type="button" class="i" data-a="del" title="Supprimer" aria-label="Supprimer">🗑️</button></div>';
-    }).join('');
-  }
-  list.addEventListener('click',function(e){
-    var b=e.target.closest('button[data-a]'); if(!b) return; var id=b.parentNode.getAttribute('data-id'); var a=load(), c=a.filter(function(x){return x.id===id;})[0]; if(!c) return;
-    var act=b.getAttribute('data-a');
-    if(act==='open'){ cur=c.id; if(window.__hnHstat) window.__hnHstat.restore(c.messages); render(); }
-    else if(act==='pin'){ c.pinned=!c.pinned; save(a); render(); }
-    else if(act==='del'){ if(!confirm('Supprimer cette conversation ?')) return; save(a.filter(function(x){return x.id!==id;})); if(cur===id) cur=null; render(); }
-  });
-  q.addEventListener('input',render);
-
-  window.__hnHstatChanged=function(){
-    if(!window.__hnHstat) return;
-    var h=window.__hnHstat.history(); if(!h.length) return;
-    var a=load(), c=a.filter(function(x){return x.id===cur;})[0];
-    if(!c){ cur='c'+Date.now().toString(36); c={id:cur,pinned:false}; a.unshift(c); }
-    var first=h.filter(function(m){return m.role==='user';})[0];
-    c.title=c.title||((first&&first.content||'Conversation').replace(/\s+/g,' ').trim().slice(0,60));
-    c.messages=h.slice(-60); c.updated=Date.now(); c.domain=window.__hnHstat.domainId();
-    if(!save(a.slice(0,60))) st('Historique plein : supprimez d’anciennes conversations.');
-    render();
-  };
-  document.getElementById('hh-new').addEventListener('click',function(){
-    if(!window.__hnHstat) return; cur=null; window.__hnHstat.fresh(); render(); st('Nouvelle conversation.');
-  });
-  document.getElementById('hh-export').addEventListener('click',function(){
-    if(!window.__hnHstat) return; var h=window.__hnHstat.history(); if(!h.length){ st('Rien à exporter.'); return; }
-    var md='# Conversation H-Start — '+new Date().toLocaleDateString('fr-CA')+'\n\n'+h.map(function(m){return '**'+(m.role==='user'?'Moi':'H-Start')+'**\n\n'+m.content;}).join('\n\n---\n\n')+'\n';
-    var blob=new Blob([md],{type:'text/markdown;charset=utf-8'});
-    if(window.claude&&window.__hn){ window.__hn.saveOrFallback({filename:'h-start-conversation.md',data:blob,statusEl:document.getElementById('hh-status'),fallbackText:md}); return; }
-    var l=document.createElement('a'); l.href=URL.createObjectURL(blob); l.download='h-start-conversation.md'; document.body.appendChild(l); l.click(); setTimeout(function(){URL.revokeObjectURL(l.href);l.remove();},800);
-  });
-  var pf=document.getElementById('hh-profile');
-  try{ pf.value=localStorage.getItem(PKEY)||''; }catch(e){}
-  document.getElementById('hh-profile-save').addEventListener('click',function(){ try{ localStorage.setItem(PKEY,pf.value.trim()); st('Mémoire enregistrée ✓'); }catch(e){ st('Enregistrement impossible.'); } });
-  document.getElementById('hh-profile-clear').addEventListener('click',function(){ pf.value=''; try{ localStorage.removeItem(PKEY); }catch(e){} st('Mémoire effacée.'); });
-  render();
-})();
-</script>
-
-<style>
-.hp-box{display:flex;flex-direction:column;gap:10px;padding:8px 2px}
-.hp-svc{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);cursor:pointer}
-.hp-svc input{margin-top:4px}
-.hp-svc b{color:var(--ink);font-size:13.5px}
-.hp-svc span{display:block;font-size:12.5px;color:var(--muted);line-height:1.45}
-.hp-svc em{margin-left:auto;font-style:normal;font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap}
-.hp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
-.hp-grid input,.hp-grid textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;min-width:0;width:100%;box-sizing:border-box}
-.hp-grid .full{grid-column:1/-1}
-.hp-guide{font-size:12.5px;line-height:1.6;color:var(--ink);background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
-</style>
-<script>
-(function(){
-  'use strict';
-  var anchor=document.getElementById('hweb-templates-details'); if(!anchor) return;
-  /* ===== Configuration ===== 
-     - Adresse qui reçoit les demandes (à remplacer par la boîte pro quand elle existera).
-     - price: nombre (ex. 1490) pour afficher un prix, ou null pour « Sur devis ».
-     - stripePriceId : à renseigner lors du branchement de Stripe (paiement en ligne). */
-  var CONTACT='contact@helpnaud.ai';
-  var SERVICES=[
-    {id:'mise-en-ligne',  label:'Mise en ligne professionnelle', desc:'Hébergement, nom de domaine, HTTPS, redirections et configuration du courriel.', price:null, stripePriceId:null},
-    {id:'design',         label:'Design sur mesure',             desc:'Maquette unique à l’image de votre marque, réalisée par un designer, avec retouches incluses.', price:null, stripePriceId:null},
-    {id:'redaction',      label:'Rédaction et SEO avancé',       desc:'Textes professionnels, structure optimisée pour Google, balisage, vitesse et accessibilité.', price:null, stripePriceId:null},
-    {id:'formulaires',    label:'Formulaires et automatisations',desc:'Formulaires de contact et de soumission reliés à votre courriel ou à votre CRM, réponses automatiques.', price:null, stripePriceId:null},
-    {id:'boutique',       label:'Boutique en ligne et paiements',desc:'Catalogue, panier, paiement sécurisé par carte, taxes et courriels de confirmation.', price:null, stripePriceId:null},
-    {id:'maintenance',    label:'Maintenance et support mensuels',desc:'Mises à jour, sauvegardes, surveillance, modifications de contenu et assistance.', price:null, stripePriceId:null}
-  ];
-  var KEY='helpnaud_hweb_requests';
-  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  var det=document.createElement('details'); det.id='hweb-premium-details'; det.style.marginTop='14px';
-  det.innerHTML='<summary class="hint" style="cursor:pointer; margin:0; font-weight:600;">💼 Services professionnels : faire réaliser et mettre en ligne un vrai site</summary>'+
-  '<div class="hp-box">'+
-   '<p class="hint" style="margin:6px 0 0">Le site généré ici est une excellente base, gratuite. Pour un site professionnel complet, réalisé, sécurisé et mis en ligne par l’équipe HelpNaud, choisissez un ou plusieurs services : vous recevez un devis clair avant tout paiement.</p>'+
-   SERVICES.map(function(s){return '<label class="hp-svc"><input type="checkbox" data-id="'+s.id+'"><div><b>'+esc(s.label)+'</b><span>'+esc(s.desc)+'</span></div><em>'+(s.price?esc(s.price)+' $':'Sur devis')+'</em></label>';}).join('')+
-   '<div class="hp-grid">'+
-    '<input type="text" id="hp-name" placeholder="Votre nom" autocomplete="name" aria-label="Votre nom">'+
-    '<input type="email" id="hp-mail" placeholder="Votre courriel" autocomplete="email" aria-label="Votre courriel">'+
-    '<input type="tel" id="hp-tel" placeholder="Téléphone (facultatif)" autocomplete="tel" aria-label="Téléphone">'+
-    '<textarea id="hp-msg" class="full" rows="3" placeholder="Décrivez votre projet, votre échéancier et votre budget approximatif" aria-label="Description du projet"></textarea>'+
-   '</div>'+
-   '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
-    '<button type="button" class="btn primary" id="hp-send">Demander un devis</button>'+
-    '<button type="button" class="btn" id="hp-copy">Copier la demande</button>'+
-    '<span class="copy-status" id="hp-status"></span>'+
-    '<span class="badge-soon">Paiement en ligne par carte : bientôt</span>'+
-   '</div>'+
-   '<div class="hp-guide"><b>Publier vous-même, gratuitement :</b> téléchargez le site (.zip), décompressez-le, puis glissez le dossier sur <b>app.netlify.com/drop</b>. Votre site est en ligne en quelques secondes avec une adresse en .netlify.app ; vous pourrez ensuite y brancher votre propre nom de domaine. Les formulaires de contact des modèles fonctionnent automatiquement chez Netlify.</div>'+
-  '</div>';
-  anchor.parentNode.insertBefore(det,anchor.nextSibling);
-  function st(t){var e=document.getElementById('hp-status');e.textContent=t;setTimeout(function(){e.textContent='';},3200);}
-  function build(){
-    var picked=[].slice.call(det.querySelectorAll('input[type=checkbox]:checked')).map(function(c){return SERVICES.filter(function(s){return s.id===c.getAttribute('data-id');})[0].label;});
-    var siteName=(document.getElementById('cowork-website-name')||{}).value||'';
-    var d={name:document.getElementById('hp-name').value.trim(),mail:document.getElementById('hp-mail').value.trim(),tel:document.getElementById('hp-tel').value.trim(),msg:document.getElementById('hp-msg').value.trim(),services:picked,site:siteName};
-    var ok=d.name&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.mail)&&picked.length;
-    var text='Demande de devis — H-Web (HelpNaud.ai)\n\nServices : '+picked.join(', ')+'\nEntreprise / site : '+(siteName||'—')+'\nNom : '+d.name+'\nCourriel : '+d.mail+(d.tel?'\nTéléphone : '+d.tel:'')+'\n\nProjet :\n'+(d.msg||'—')+'\n';
-    return {d:d,ok:ok,text:text};
-  }
-  document.getElementById('hp-send').addEventListener('click',function(){
-    var r=build(); if(!r.ok){ st('Choisissez au moins un service et indiquez votre nom et un courriel valide.'); return; }
-    try{ var a=JSON.parse(localStorage.getItem(KEY)||'[]'); a.unshift({t:Date.now(),d:r.d}); localStorage.setItem(KEY,JSON.stringify(a.slice(0,20))); }catch(e){}
-    window.location.href='mailto:'+CONTACT+'?subject='+encodeURIComponent('Demande de devis — site web ('+r.d.services.length+' service'+(r.d.services.length>1?'s':'')+')')+'&body='+encodeURIComponent(r.text);
-    st('Votre messagerie s’ouvre : envoyez le message pour finaliser la demande.');
-  });
-  document.getElementById('hp-copy').addEventListener('click',function(){
-    var r=build(); if(window.__hn){ window.__hn.copyText(r.text,document.getElementById('hp-status'),null); } else if(navigator.clipboard){ navigator.clipboard.writeText(r.text).then(function(){st('Copié ✓');}); }
-  });
-  window.__hnWebPremium={services:SERVICES};
-})();
-</script>
-
 </body></html>
