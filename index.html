@@ -5687,6 +5687,17 @@
     fghlabOwnerGateOn = (fghlabGateStored === null) ? (fghlabCloudFlag() || !fghlabState.team.length) : (fghlabGateStored === '1');
   }catch(e){}
   try{ fghlabOwnerRecovery = /(^|[#&?])type=recovery(&|$)/.test(String(location.hash || '')); }catch(e){}
+  // Copie des jetons du lien de réinitialisation, lus avant que le hash ne soit effacé (secours si la session n'a pas été créée automatiquement).
+  var fghlabRecoveryTokens = null, fghlabRecoveryError = '';
+  try{
+    var fghlabHashParams = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+    if(fghlabHashParams.get('access_token') && fghlabHashParams.get('refresh_token')){
+      fghlabRecoveryTokens = { access_token: fghlabHashParams.get('access_token'), refresh_token: fghlabHashParams.get('refresh_token') };
+    }
+    if(fghlabHashParams.get('error_code') || fghlabHashParams.get('error')){
+      fghlabRecoveryError = String(fghlabHashParams.get('error_code') || fghlabHashParams.get('error'));
+    }
+  }catch(e){}
   var fghlabSbSessionStore = {
     getItem: function(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } },
     setItem: function(k, v){ try{ sessionStorage.setItem(k, v); }catch(e){} },
@@ -5714,6 +5725,8 @@
     var msg = String((error && (error.message || error.error_description)) || '').toLowerCase();
     var code = String((error && error.code) || '').toLowerCase();
     var status = error && error.status;
+    if(error && error.hnFriendly) return error.message;
+    if(msg.indexOf('auth session missing') >= 0) return "Le lien de réinitialisation a expiré ou a déjà été utilisé. Cliquez sur « Mot de passe oublié » pour en recevoir un nouveau, puis ouvrez-le une seule fois, dans ce même navigateur.";
     if(code === 'invalid_credentials' || msg.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
     if(code === 'email_not_confirmed' || msg.indexOf('email not confirmed') >= 0) return "Ce courriel n'est pas confirmé dans Supabase (cochez « Auto Confirm User » à la création du compte).";
     if(status === 429 || code.indexOf('rate_limit') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('too many') >= 0) return 'Trop de tentatives. Réessayez dans quelques minutes.';
@@ -5849,8 +5862,21 @@
     if(pw1 !== pw2){ fghlabOwnerMsg('error', 'Les deux mots de passe ne correspondent pas.'); return Promise.resolve(); }
     var wasRecovery = fghlabOwnerRecovery;
     fghlabOwnerMsg('', '');
-    return sb.auth.updateUser({ password: pw1 }).then(function(res){
+    function fghlabTryUpdate(){ return sb.auth.updateUser({ password: pw1 }); }
+    // Secours : si aucune session n'existe (jeton non pris en compte automatiquement), on l'établit à partir des jetons du lien.
+    return sb.auth.getSession().then(function(g){
+      var has = g && g.data && g.data.session;
+      if(!has && wasRecovery && fghlabRecoveryTokens){
+        return sb.auth.setSession(fghlabRecoveryTokens).then(function(r){ if(r && r.error) throw r.error; return fghlabTryUpdate(); });
+      }
+      if(!has){
+        var err = new Error(wasRecovery ? "Le lien de réinitialisation a expiré ou a déjà été utilisé. Cliquez sur « Mot de passe oublié » pour recevoir un nouveau lien, puis ouvrez-le une seule fois, dans ce même navigateur." : "Votre session a expiré. Reconnectez-vous puis réessayez.");
+        err.hnFriendly = true; throw err;
+      }
+      return fghlabTryUpdate();
+    }).then(function(res){
       if(res.error) throw res.error;
+      fghlabRecoveryTokens = null;
       fghlabOwnerRecovery = false;
       fghlabOwnerChangePwOpen = false;
       var a = fghlabOwnerEl('fghlab-ownercloud-newpw'); if(a) a.value = '';
@@ -5942,6 +5968,7 @@
         }
       }, 0);
     });
+    if(fghlabRecoveryError){ setTimeout(function(){ try{ fghlabOwnerMsg('error', 'Ce lien de réinitialisation est invalide, expiré ou déjà utilisé. Demandez-en un nouveau avec « Mot de passe oublié ».'); }catch(e){} }, 900); }
     sb.auth.getSession().then(function(res){
       var s = res && res.data && res.data.session;
       if(s && !fghlabOwnerRecovery) return fghlabOwnerVerify(s);
