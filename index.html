@@ -16351,6 +16351,247 @@
     { id: 'methodes', label: 'Méthodes d’impact', html: advPolMethods }
   ];
 
+
+  /* ================= Lot 9 — N° de partenaire à 10 chiffres, espace sécurisé, blocage, nouveau numéro, sanctions ================= */
+  var L9_EV_LABEL = { inscription: 'Inscription', entree: 'Entrée dans l’espace partenaire', sortie: 'Sortie de l’espace partenaire', modification: 'Mise à jour du dossier', tentative_echouee: 'Tentative de modification refusée', blocage: 'Dossier bloqué (5 échecs)', support: 'Demande de support', activation: 'Dossier réactivé par l’équipe', nouveau_numero: 'Nouveau numéro généré', levee: 'Sanction levée', courriel: 'Courriel' };
+  var l9Cache = {};
+  var L9_SANCTION_ACTIONS = ['Mise en pause', 'Suspension', 'Sanction levée', 'Fin de pause (automatique)'];
+  function l9Can(perm){
+    var m = getActiveFghlabMember();
+    if(!m) return true;
+    return !!(m.isAdmin && (m.authorizedTools || []).indexOf(perm) !== -1);
+  }
+  function l9Is10(n){ return /^[0-9]{10}$/.test(String(n || '')); }
+  function l9NumberExists(n){ var r = false; (fghlabState.partners || []).forEach(function(p){ if(p && p.partnerNumber === n) r = true; }); return r; }
+  function l9GenLocal(){
+    var n, i = 0;
+    do {
+      var a = new Uint32Array(2); try{ crypto.getRandomValues(a); }catch(e){ a[0] = Math.random() * 4294967295; a[1] = Math.random() * 4294967295; }
+      n = String(1 + (a[0] % 9)) + String(a[1] % 1000000000).padStart(9, '0');
+      i++;
+    } while(l9NumberExists(n) && i < 60);
+    return n;
+  }
+  function l9Backfill(){
+    if(getActiveFghlabMember() || fghlabSyncActive() && fghlabCloudRole !== 'owner') return false;
+    var changed = false;
+    (fghlabState.partners || []).forEach(function(p){
+      if(!p || p.type === 'Client' || l9Is10(p.partnerNumber)) return;
+      p.partnerNumber = l9GenLocal(); changed = true;
+      l6Hist(p, 'Numéro attribué', 'N° de partenaire à 10 chiffres généré automatiquement.');
+    });
+    if(changed) persistFghlabState();
+    return changed;
+  }
+  function l9Fmt(iso){ try{ return new Date(iso).toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' }); }catch(e){ return String(iso || ''); } }
+  function l9EventLine(ev){
+    var d = ev.detail || {}, extra = '';
+    if(ev.kind === 'tentative_echouee') extra = ' — essai ' + d.attempt + '/5 · saisi : ' + [d.prenom, d.nom].filter(Boolean).join(' ') + ' · ' + (d.emailSaisi || '');
+    else if(ev.kind === 'modification') extra = ' — par ' + [d.prenom, d.nom].filter(Boolean).join(' ') + ' · champs : ' + ((d.champs || []).join(', ') || 'aucun') + ' · ' + (d.docsAjoutes || 0) + ' doc. ajouté(s), ' + (d.docsSupprimes || 0) + ' supprimé(s)';
+    else if(ev.kind === 'support') extra = ' — ' + (d.message || '') + (d.contact ? ' (' + d.contact + ')' : '');
+    else if(ev.kind === 'entree' && d.refused) extra = ' — refusée (dossier bloqué)';
+    else if(ev.kind === 'sortie' && d.mode) extra = ' — ' + d.mode;
+    else if(ev.kind === 'activation' || ev.kind === 'levee') extra = ' — par ' + (d.par || '');
+    else if(ev.kind === 'nouveau_numero') extra = ' — par ' + (d.par || '') + ' · envoi : ' + (d.envoi || '');
+    else if(ev.kind === 'courriel') extra = ' — ' + (d.statut || '') + (d.erreur ? ' (' + d.erreur + ')' : '');
+    return '<div class="hint" style="margin:2px 0;">• ' + l6Esc(l9Fmt(ev.at)) + ' — <strong>' + l6Esc(L9_EV_LABEL[ev.kind] || ev.kind) + '</strong>' + l6Esc(extra) + '</div>';
+  }
+  function l9LoadEvents(pid){
+    if(!fghlabSyncActive()){ l9Cache[pid] = { local: true }; l9FillActivity(pid); return Promise.resolve(); }
+    return fghlabSb.rpc('fgh_partner_events_list', { p_partner_id: pid }).then(function(r){
+      l9Cache[pid] = (!r.error && r.data) ? r.data : { error: true }; l9FillActivity(pid);
+    }, function(){ l9Cache[pid] = { error: true }; l9FillActivity(pid); });
+  }
+  function l9FillActivity(pid){
+    var host = document.querySelector('[data-l9-activity="' + pid + '"]'); if(!host) return;
+    var c = l9Cache[pid], p = fghlabFindPartner(pid);
+    if(!c){ host.innerHTML = '<span class="hint">Chargement…</span>'; return; }
+    if(c.local){ host.innerHTML = '<span class="hint">L’activité de l’espace partenaire (entrées, sorties, tentatives) est enregistrée par le serveur : elle s’affiche en mode connexion sécurisée.</span>'; return; }
+    if(c.error){ host.innerHTML = '<span class="hint">Activité indisponible (mise à jour « phase 3e » du serveur à exécuter, ou droits insuffisants).</span>'; return; }
+    var pend = (c.mails || []).filter(function(m){ return m.status === 'queued' || m.status === 'sending'; }).length;
+    host.innerHTML = (c.locked ? '<div style="border:1px solid #B3261E; border-radius:9px; padding:6px 9px; margin:4px 0; font-size:12.5px;"><strong>⛔ Dossier bloqué</strong> après ' + (Number(c.failed) || 5) + ' tentatives refusées.' + (l9CanActivate() ? ' <button type="button" class="btn danger" data-l9-unblock-p="' + l6Esc(pid) + '" style="padding:3px 9px; font-size:12px;">Activer ce dossier</button>' : '') + '</div>' : (c.failed ? '<div class="hint">Tentatives refusées en cours : ' + c.failed + ' / 5.</div>' : '')) +
+      (pend ? '<div class="hint">✉️ ' + pend + ' courriel(s) en attente d’envoi (service d’envoi non configuré ou en cours). <button type="button" class="btn" data-l9-flush="1" style="padding:2px 8px; font-size:11.5px;">Envoyer maintenant</button></div>' : '') +
+      ((c.events || []).length ? (c.events || []).map(l9EventLine).join('') : '<div class="hint">Aucune activité enregistrée dans l’espace partenaire.</div>');
+  }
+  function l9CanActivate(){ var m = getActiveFghlabMember(); return !m || (getFghlabVisibleTools().indexOf('fgbankpartnership') !== -1); }
+  function l9OpenFiles(p){
+    var out = [], pid = p.id;
+    (fghlabState.vehicleLeads || []).forEach(function(l){
+      if(!l || l.partnerId !== pid) return;
+      out.push({ key: 'lead:' + l.id, kind: 'Opportunité véhicule', ref: l.id, client: l.clientName || l.name || '', label: l.vehicleLabel || l.title || 'Véhicule', amount: leadPrice(l), status: l.status, ended: l.status === 'Complété' || l.status === 'Annulé' });
+    });
+    (fghlabState.fgbankProjects || []).forEach(function(pr){
+      var involved = false; (pr.offers || []).forEach(function(o){ if(o.partnerId === pid) involved = true; });
+      if(!involved && pr.sourceVehicleLeadId){ var ld = fghlabFindVehicleLead(pr.sourceVehicleLeadId); if(ld && ld.partnerId === pid) involved = true; }
+      if(!involved) return;
+      out.push({ key: 'proj:' + pr.id, kind: 'Dossier FG & Bank', ref: pr.referenceId || pr.id, client: pr.client || '', label: pr.title || 'Projet', amount: 0, status: pr.status, ended: pr.status === 'accepte' || pr.status === 'refuse' });
+    });
+    var done = {}; (p.archivedFiles || []).forEach(function(a){ done[a.key] = true; });
+    return out.filter(function(f){ return !done[f.key]; });
+  }
+  function l9DossExtraHtml(p){
+    var id = l6Esc(p.id), num = p.partnerNumber, isClient = p.type === 'Client';
+    var html = '';
+    if(!isClient){
+      html += '<div style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; margin:6px 0; background:var(--surface); font-size:12.5px;">' +
+        '<strong>N° de partenaire :</strong> <span style="font-size:15px; letter-spacing:2px;">' + l6Esc(num || '— (sera attribué à l’ouverture par le propriétaire)') + '</span> ' +
+        (num ? '<button type="button" class="btn" data-l9-copynum="' + id + '" style="padding:2px 8px; font-size:11.5px;">Copier</button> ' : '') +
+        (num && l9Can('partner-newnumber') ? '<button type="button" class="btn danger" data-l9-newnum="' + id + '" style="padding:2px 8px; font-size:11.5px;">Générer un nouveau numéro</button>' : (num ? '<span class="hint" style="margin:0;">Nouveau numéro : propriétaire ou administrateur autorisé.</span>' : '')) +
+        (p.partnerNumberChangedOn ? '<div class="hint" style="margin:3px 0 0;">Numéro remplacé le ' + l6Esc(fmtFghlabShortDate(p.partnerNumberChangedOn)) + '.</div>' : '') + '</div>' +
+        '<details data-open6="act-' + id + '" data-l9-actdetails="' + id + '"' + (fghlabOpen6['act-' + p.id] ? ' open' : '') + ' style="margin-top:6px;"><summary style="cursor:pointer; font-size:12.5px; font-weight:600;">Entrées, sorties, modifications et tentatives (espace partenaire)</summary><div data-l9-activity="' + id + '" style="margin-top:6px;"><span class="hint">Ouvrez pour charger…</span></div></details>';
+    }
+    if(p.status !== 'Actif' && p.status !== 'En attente'){
+      var files = l9OpenFiles(p);
+      html += '<div style="margin-top:8px; font-size:12.5px; font-weight:600;">Dossiers en cours restant suivis (partenaire ' + l6Esc((p.status || '').toLowerCase()) + ')</div>' +
+        (files.length ? files.map(function(f){ return '<div style="display:flex; gap:8px; justify-content:space-between; align-items:center; flex-wrap:wrap; padding:4px 0; border-top:1px solid var(--line); font-size:12.5px;"><span>🗂️ <strong>' + l6Esc(f.kind) + '</strong> — ' + l6Esc(f.label) + ' · client ' + l6Esc(f.client || '—') + ' · <em>' + l6Esc(f.status || '') + '</em></span>' +
+          (f.ended ? '<button type="button" class="btn primary" data-l9-archive="' + id + '" data-key="' + l6Esc(f.key) + '" style="padding:3px 9px; font-size:12px;">Ajouter au dossier</button>' : '<span class="hint" style="margin:0;">à ajouter une fois le dossier terminé</span>') + '</div>'; }).join('') : '<p class="hint" style="margin:2px 0;">Aucun dossier en cours.</p>');
+    }
+    return html;
+  }
+  /* Dossiers terminés ajoutés manuellement par l'équipe : ils s'ajoutent à « Dossiers finalisés » */
+  var l9PrevFinalized = l6FinalizedFiles;
+  l6FinalizedFiles = function(p){
+    var out = l9PrevFinalized(p), seen = {};
+    out.forEach(function(f){ seen[f.ref] = true; });
+    (p.archivedFiles || []).forEach(function(a){ if(!seen[a.ref]) out.push({ kind: a.kind, ref: a.ref, client: a.client, label: a.label, amount: a.amount, date: a.addedOn, note: 'Ajouté au dossier par ' + fghlabActorLabel(a.addedBy) + ' (' + a.status + ')' }); });
+    return out.sort(function(a, b){ return Date.parse(b.date) - Date.parse(a.date); });
+  };
+
+  /* ---- Courriels : envoi des messages en attente (nécessite le service d'envoi dans Netlify) ---- */
+  function l9FlushMail(quiet){
+    if(!fghlabSyncActive()) return Promise.resolve();
+    return fghlabSb.auth.getSession().then(function(res){
+      var s = res && res.data && res.data.session; if(!s) return;
+      return fetch('/.netlify/functions/partner-mail', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + s.access_token }, body: '{}' }).then(function(r){ return r.json().catch(function(){ return {}; }); }).then(function(j){
+        if(!quiet){ l6Toast(j && j.configured === false ? 'Service d’envoi non configuré : les courriels restent en attente.' : ((j && j.sent) ? j.sent + ' courriel(s) envoyé(s).' : 'Aucun courriel à envoyer.')); }
+      });
+    }).catch(function(){ if(!quiet) l6Toast('Envoi impossible pour le moment.'); });
+  }
+
+  /* ---- Nouveau numéro ---- */
+  function l9NewNumber(pid){
+    var p = fghlabFindPartner(pid); if(!p) return;
+    if(!l9Can('partner-newnumber')){ l6Toast('Réservé au propriétaire ou à un administrateur autorisé.'); return; }
+    if(!window.confirm('Générer un NOUVEAU numéro pour ' + p.name + ' ? L’ancien numéro cessera immédiatement de fonctionner (partout : Partner Market, PartnerDoss). Cette action est consignée dans l’historique.')) return;
+    var byEmail = window.confirm('Envoyer le nouveau numéro par courriel à ' + (p.email || 'le courriel du dossier') + ' ?\n\nOK = par courriel · Annuler = vous le communiquerez vous-même par téléphone.');
+    function finish(num, by){
+      p.partnerNumber = num; p.partnerNumberChangedOn = l6Now();
+      l6Hist(p, 'Nouveau numéro', 'Nouveau N° généré (se terminant par ' + num.slice(-3) + ') — envoi ' + (byEmail ? 'par courriel' : 'par téléphone / remise directe') + '.');
+      persistFghlabState(); l6RenderPartnerDoss(); try{ renderFghlabPartnerList(); }catch(e){}
+      try{ window.prompt('Nouveau numéro du partenaire (à transmettre ' + (byEmail ? 'si le courriel ne parvient pas' : 'par téléphone') + ') :', num); }catch(e){}
+      if(byEmail) l9FlushMail(true);
+    }
+    if(fghlabSyncActive()){
+      fghlabSb.rpc('fgh_partner_new_number', { p_partner_id: pid, p_send_email: byEmail }).then(function(r){
+        if(r.error || !r.data || r.data.ok !== true){ l6Toast('Refusé par le serveur (droits ou mise à jour « phase 3e » manquante).'); return; }
+        finish(String(r.data.number), r.data.by);
+      }, function(){ l6Toast('Serveur injoignable.'); });
+    }else finish(l9GenLocal());
+  }
+  /* ---- Activation d'un dossier bloqué ---- */
+  function l9Unblock(pid, alertId){
+    if(!l9CanActivate()){ l6Toast('Droit insuffisant.'); return; }
+    if(!fghlabSyncActive()){ l6Toast('L’activation passe par le serveur : ouvrez une session sécurisée.'); return; }
+    fghlabSb.rpc('fgh_partner_unblock', { p_partner_id: pid, p_alert_id: alertId || null }).then(function(r){
+      if(r.error || !r.data || r.data.ok !== true){ l6Toast('Activation refusée par le serveur.'); return; }
+      var a = alertId ? l6FindAlert(alertId) : null; if(a){ a.activatedOn = l6Now(); a.activatedBy = fghlabActorLabel(fghlabActor()); a.read = true; }
+      var p = fghlabFindPartner(pid); if(p){ l6Hist(p, 'Dossier réactivé', 'Dossier bloqué réactivé par l’équipe ; message envoyé au partenaire dans son espace.'); }
+      persistFghlabState(); l6Toast('Dossier activé : le partenaire en est informé dans son espace.');
+      delete l9Cache[pid]; l9LoadEvents(pid); try{ renderFghlabBankAlerts(); }catch(e){} l6RenderPartnerDoss();
+    }, function(){ l6Toast('Serveur injoignable.'); });
+  }
+  /* ---- Levée de sanction ---- */
+  function l9Lift(pid){
+    var p = fghlabFindPartner(pid); if(!p) return;
+    if(!l9Can('partner-sanction')){ l6Toast('Réservé au propriétaire ou à un administrateur autorisé à « Sanction / levée de sanction ».'); return; }
+    if(!window.confirm('Lever la sanction de ' + p.name + ' ? Le partenaire redevient actif.')) return;
+    var m = getActiveFghlabMember();
+    if(fghlabSyncActive() && m){
+      fghlabSb.rpc('fgh_partner_sanction_lift', { p_partner_id: pid }).then(function(r){
+        if(r.error || !r.data || r.data.ok !== true){ l6Toast('Refusé par le serveur (droits ou mise à jour « phase 3e » manquante).'); return; }
+        var d = r.data.data || {}; ['status', 'sanction', 'history'].forEach(function(k){ p[k] = d[k]; });
+        persistFghlabState(); l9RenderSanctions(); l6AfterPartnerChange();
+      }, function(){ l6Toast('Serveur injoignable.'); });
+      return;
+    }
+    l6LiftSanction(p, false); l9RenderSanctions(); l6AfterPartnerChange();
+  }
+  function l9Archive(pid, key){
+    var p = fghlabFindPartner(pid); if(!p) return;
+    var f = null; l9OpenFiles(p).forEach(function(x){ if(x.key === key) f = x; });
+    if(!f || !f.ended) return;
+    if(!Array.isArray(p.archivedFiles)) p.archivedFiles = [];
+    p.archivedFiles.push({ key: f.key, kind: f.kind, ref: f.ref, client: f.client, label: f.label, amount: f.amount, status: f.status, addedOn: l6Now(), addedBy: fghlabActor() });
+    l6Hist(p, 'Dossier terminé ajouté', f.kind + ' — ' + f.label + ' (' + f.status + ')');
+    persistFghlabState(); l6RenderPartnerDoss(); l6Toast('Dossier ajouté au PartnerDoss du partenaire.');
+  }
+  /* ---- Onglet « Sanction / levée de sanction » ---- */
+  function l9SanctionsShell(){
+    var allowed = l9Can('partner-sanction');
+    return '<div class="card" style="background:var(--surface-2); margin-bottom:10px;"><strong>⚖️ Sanction / levée de sanction</strong>' +
+      '<p class="hint" style="margin:6px 0 8px;">Une pause se lève <strong>automatiquement</strong> à son échéance, ou ici dès qu’elle est terminée : le propriétaire (ou un administrateur désigné avec l’autorisation « Sanction / levée de sanction ») clique sur « Pause terminée » et le partenaire redevient actif. ' + (allowed ? '' : '<strong>Vous n’avez pas cette autorisation : lecture seule.</strong>') + '</p></div>' +
+      '<div id="l9-sanc-list"></div>' +
+      '<div style="margin-top:10px; font-size:12.5px; font-weight:600;">Historique « Sanction / levée de sanction »</div><div id="l9-sanc-hist"></div>';
+  }
+  function l9SanctionHistory(filter){
+    var rows = [];
+    (fghlabState.partners || []).forEach(function(p){ (p.history || []).forEach(function(h){ if(L9_SANCTION_ACTIONS.indexOf(h.action) > -1 && (!filter || filter(h))) rows.push({ p: p, h: h }); }); });
+    return rows.sort(function(a, b){ return Date.parse(b.h.on) - Date.parse(a.h.on); });
+  }
+  function l9NumberHistory(filter){
+    var rows = [];
+    (fghlabState.partners || []).forEach(function(p){ (p.history || []).forEach(function(h){ if(h.action === 'Nouveau numéro' && (!filter || filter(h))) rows.push({ p: p, h: h }); }); });
+    return rows.sort(function(a, b){ return Date.parse(b.h.on) - Date.parse(a.h.on); });
+  }
+  function l9RowsHtml(rows, empty){
+    return rows.length ? rows.map(function(r){ return '<div class="hint" style="margin:2px 0;">• ' + l6Esc(fmtFghlabShortDate(r.h.on)) + ' — <strong>' + l6Esc(r.h.action) + '</strong> · ' + l6Esc(r.p.name) + ' ' + l6Esc(r.h.text || '') + ' <em>(' + l6Esc(fghlabActorLabel(r.h.by)) + ')</em></div>'; }).join('') : '<p class="hint" style="margin:2px 0;">' + empty + '</p>';
+  }
+  function l9RenderSanctions(){
+    var host = document.getElementById('fgbank-tab-sanctions'); if(!host) return;
+    if(!host.querySelector('#l9-sanc-list')) host.innerHTML = l9SanctionsShell();
+    var allowed = l9Can('partner-sanction');
+    var sanc = (fghlabState.partners || []).filter(function(p){ return p.status === 'En pause' || p.status === 'Suspendu'; });
+    host.querySelector('#l9-sanc-list').innerHTML = sanc.length ? sanc.map(function(p){
+      var s = p.sanction || {}, id = l6Esc(p.id);
+      return '<div style="border:1px solid #B3261E; border-radius:10px; padding:8px 11px; margin-bottom:8px; background:var(--surface-2);"><strong>' + l6Esc(p.name) + '</strong> ' + l6Chip(p.status, '#B3261E') + ' <span class="hint" style="margin:0;">' + l6Esc(p.type) + (p.partnerNumber ? ' · N° ' + l6Esc(p.partnerNumber) : '') + '</span>' +
+        '<div class="hint" style="margin:3px 0;">Depuis le ' + l6Esc(fmtFghlabShortDate(s.startedOn)) + (s.until ? ' · fin prévue le <strong>' + l6Esc(fmtFghlabShortDate(s.until)) + '</strong> (levée automatique)' : ' · suspension sans échéance') + (s.reason ? ' · Motif : ' + l6Esc(s.reason) : '') + '</div>' +
+        (allowed ? '<button type="button" class="btn primary" data-l9-lift="' + id + '" style="padding:4px 10px; font-size:12px;">' + (s.kind === 'pause' ? 'Pause terminée — rendre le partenaire actif' : 'Lever la suspension') + '</button>' : '') + '</div>';
+    }).join('') : '<p class="hint">Aucun partenaire sous sanction.</p>';
+    host.querySelector('#l9-sanc-hist').innerHTML = l9RowsHtml(l9SanctionHistory(), 'Aucune sanction ni levée enregistrée.');
+  }
+  /* ---- Historiques dans la fiche d'un membre de l'équipe (après « Historique TOUTTEST ») ---- */
+  function l9MemberMatch(member){ return function(h){ return h.by && (h.by.id === member.id || (member.memberNumber && h.by.number === member.memberNumber)); }; }
+  function l9MemberHistoryHtml(member){
+    var f = l9MemberMatch(member), sc = l9SanctionHistory(f), nn = l9NumberHistory(f);
+    return '<details style="margin-top:6px;"><summary style="cursor:pointer; font-size:12px; color:var(--muted);">Historique « Nouveau numéro au partenaire » (' + nn.length + ')</summary><div style="margin-top:6px; max-height:180px; overflow-y:auto;">' + l9RowsHtml(nn, 'Aucun nouveau numéro généré par ce membre.') + '</div></details>' +
+      '<details style="margin-top:6px;"><summary style="cursor:pointer; font-size:12px; color:var(--muted);">Historique « Sanction / levée de sanction » (' + sc.length + ')</summary><div style="margin-top:6px; max-height:180px; overflow-y:auto;">' + l9RowsHtml(sc, 'Aucune sanction ni levée effectuée par ce membre.') + '</div></details>';
+  }
+  /* ---- Alertes de l'espace partenaire ---- */
+  var L9_ALERT_KINDS = { partner_attempt: ['tentative', '#C89B3C'], partner_blocked: ['bloqué', '#B3261E'], partner_update: ['mise à jour', '#2D9C93'], partner_support: ['support', '#16304A'] };
+  function l9AlertExtraHtml(a){
+    if(a.kind !== 'partner_blocked') return '';
+    if(a.activatedOn) return '<span class="hint" style="margin:0;">✓ Activé le ' + l6Esc(fmtFghlabShortDate(a.activatedOn)) + (a.activatedBy ? ' par ' + l6Esc(a.activatedBy) : '') + '</span>';
+    return l9CanActivate() ? '<button type="button" class="btn danger" data-l9-unblock="' + l6Esc(a.id) + '" data-pid="' + l6Esc(a.partnerId) + '" style="padding:3px 10px; font-size:12px;">Veuillez cliquer ici pour activer ce dossier</button>' : '';
+  }
+  function l9OnClick(e){
+    var t = e.target; if(!t || !t.closest) return; var b;
+    if((b = t.closest('[data-l9-copynum]'))){ var p = fghlabFindPartner(b.getAttribute('data-l9-copynum')); if(p && p.partnerNumber) l6Copy(p.partnerNumber, 'Numéro copié ✓'); return; }
+    if((b = t.closest('[data-l9-newnum]'))){ l9NewNumber(b.getAttribute('data-l9-newnum')); return; }
+    if((b = t.closest('[data-l9-unblock]'))){ l9Unblock(b.getAttribute('data-pid'), b.getAttribute('data-l9-unblock')); return; }
+    if((b = t.closest('[data-l9-unblock-p]'))){
+      var pid = b.getAttribute('data-l9-unblock-p'), al = null; (fghlabState.alerts || []).forEach(function(x){ if(x.kind === 'partner_blocked' && x.partnerId === pid && !x.activatedOn) al = x; });
+      l9Unblock(pid, al ? al.id : null); return;
+    }
+    if((b = t.closest('[data-l9-lift]'))){ l9Lift(b.getAttribute('data-l9-lift')); return; }
+    if((b = t.closest('[data-l9-archive]'))){ l9Archive(b.getAttribute('data-l9-archive'), b.getAttribute('data-key')); return; }
+    if((b = t.closest('[data-l9-flush]'))){ l9FlushMail(false).then(function(){ var d = t.closest('[data-l9-activity]'); if(d){ var pid2 = d.getAttribute('data-l9-activity'); delete l9Cache[pid2]; l9LoadEvents(pid2); } }); return; }
+    var sm = t.closest('summary'); if(sm && sm.parentNode && sm.parentNode.hasAttribute && sm.parentNode.hasAttribute('data-l9-actdetails')){
+      var det = sm.parentNode, id3 = det.getAttribute('data-l9-actdetails');
+      setTimeout(function(){ if(det.open){ delete l9Cache[id3]; l9LoadEvents(id3); } }, 30);
+    }
+  }
+  if(!window.__l9Bound){ window.__l9Bound = true; document.addEventListener('click', l9OnClick); }
+
   var FGHLAB_TRACKER_CONFIG = {
     etudes: { itemLabel:'étude', statuses:[{key:'cadrage',label:'Cadrage'},{key:'encours',label:'En cours'},{key:'analyse',label:'Analyse'},{key:'terminee',label:'Terminée'}], reperes:["Toujours cadrer la mission avant de lancer la collecte de données.", "Documenter la méthodologie utilisée pour chaque étude.", "Archiver les données brutes séparément des résultats analysés."],
       calculator: { title:'Tests statistiques — moyenne, écart-type, test t à un échantillon', hint:"Test t à un échantillon (bilatéral) — calcul exact basé sur la distribution de Student (fonction bêta incomplète régularisée). Vérifiez que les conditions d'application du test (normalité approximative, indépendance des observations) sont raisonnables pour vos données.", fields: [
@@ -19611,7 +19852,7 @@
      « Revenus & commissions » de l'outil FG & Bank Partnership (simulation locale, voir
      computeFghlabRevenue). */
   var PARTNER_TYPES = ['Banque', 'Microfinance', 'Concessionnaire', 'Vendeur', 'Client', 'Autre'];
-  var PARTNER_STATUS_OPTIONS = ['En attente', 'Actif', 'En pause', 'Suspendu'];
+  var PARTNER_STATUS_OPTIONS = ['En attente', 'Actif', 'En pause', 'Suspendu', 'Retiré'];
   var PARTNER_TIERS = ['Standard', 'Médium', 'Premium', 'Prétium'];
   var PARTNER_TIER_DEFAULT_FEES = { Standard: 15000, 'Médium': 25000, Premium: 40000, 'Prétium': 70000 };
   /* Champs spécifiques aux partenaires de type « Concessionnaire » (modèle d'affaires
@@ -19828,7 +20069,7 @@
     if(el) el.innerHTML = l6PolicyCardHtml(!getActiveFghlabMember());
   }
   function l6PartnerBlockHtml(p, owner){
-    return l6ComplianceHtml(p, owner) + l6DocsHtml(p, owner, 'rw');
+    return (owner && p.partnerNumber ? '<div class="hint" style="margin:6px 0 0;">N° de partenaire : <strong style="letter-spacing:2px;">' + l6Esc(p.partnerNumber) + '</strong></div>' : '') + l6ComplianceHtml(p, owner) + l6DocsHtml(p, owner, 'rw');
   }
   function l6AfterPartnerRender(){
     l6RenderPolicyCard();
@@ -19953,6 +20194,7 @@
     return '<details data-open6="pdd-card-'+id+'"'+(fghlabOpen6['pdd-card-' + p.id] ? ' open' : '')+' data-pdd-card="'+id+'" style="border:1px solid var(--line); border-radius:11px; background:var(--surface-2); padding:8px 12px; margin-bottom:8px;"><summary style="cursor:pointer; font-weight:700; font-size:13.5px;">' + l6Esc(p.name) + ' ' + chips.join(' ') + '</summary><div style="margin-top:8px;">' +
       '<div class="hint" style="margin:0 0 6px;">Dossier ouvert automatiquement le ' + l6Esc(fmtFghlabShortDate(p.dossierCreatedOn || p.registeredOn)) + (p.source === 'invitation' ? ' (inscription en ligne)' : ' (saisie par l’équipe)') + ' · Contact : ' + l6Esc(p.contact || '—') + ' · ' + l6Esc(p.email || '—') + (p.phone ? ' · ' + l6Esc(p.phone) : '') + '</div>' +
       '<div style="font-size:12.5px; margin-bottom:6px;"><strong>Conformité :</strong> ' + (p.policyAcceptedAt ? 'politique v' + (Number(p.policyVersion) || 1) + ' acceptée le ' + l6Esc(fmtFghlabShortDate(p.policyAcceptedAt)) : '<span style="color:#B3261E;">politique non acceptée</span>') + ' · ' + ((p.warnings || []).length) + ' avertissement(s)' + (p.sanction ? ' · <span style="color:#B3261E;">' + (p.sanction.kind === 'pause' ? 'en pause jusqu’au ' + l6Esc(fmtFghlabShortDate(p.sanction.until)) : 'suspendu') + '</span>' : '') + ' · Politique en vigueur : v' + pol.version + '</div>' +
+      l9DossExtraHtml(p) +
       l6DocsHtml(p, false, 'ro') +
       '<div style="margin-top:8px; font-size:12.5px; font-weight:600;">Dossiers finalisés</div>' + finHtml +
       (hist ? '<div style="margin-top:8px; font-size:12.5px; font-weight:600;">Historique (avertissements, pauses, suspensions)</div>' + hist : '') +
@@ -19967,6 +20209,7 @@
   function l6RenderPartnerDoss(){
     var host = document.getElementById('fgbank-tab-partnerdoss');
     if(!host) return;
+    l9Backfill();
     if(!host.querySelector('#l6-doss-list')) host.innerHTML = l6PartnerDossShell();
     var list = host.querySelector('#l6-doss-list');
     Array.prototype.forEach.call(list.querySelectorAll('details[data-open6]'), function(d){ fghlabOpen6[d.getAttribute('data-open6')] = d.open; });
@@ -19978,9 +20221,10 @@
     Array.prototype.forEach.call(list.querySelectorAll('details[data-pdocs-details][open]'), function(d){ l6LoadDocs(d.getAttribute('data-pdocs-details')); });
   }
   function l6ShowFgbankTab(name){
-    var d = document.getElementById('fgbank-tab-dossiers'), pd = document.getElementById('fgbank-tab-partnerdoss');
+    var d = document.getElementById('fgbank-tab-dossiers'), pd = document.getElementById('fgbank-tab-partnerdoss'), sd = document.getElementById('fgbank-tab-sanctions');
     if(!d || !pd) return;
-    d.hidden = name !== 'dossiers'; pd.hidden = name !== 'partnerdoss';
+    d.hidden = name !== 'dossiers'; pd.hidden = name !== 'partnerdoss'; if(sd) sd.hidden = name !== 'sanctions';
+    if(name === 'sanctions') l9RenderSanctions();
     Array.prototype.forEach.call(document.querySelectorAll('[data-fgbank-tab]'), function(b){ b.classList.toggle('primary', b.getAttribute('data-fgbank-tab') === name); });
     if(name === 'partnerdoss') l6RenderPartnerDoss();
   }
@@ -20503,7 +20747,7 @@
     var hint = document.getElementById('partnermarket-hint');
     if(!listEl) return;
     Array.prototype.forEach.call(listEl.querySelectorAll('details[data-open6]'), function(d){ fghlabOpen6[d.getAttribute('data-open6')] = d.open; });
-    l6SanctionTick();
+    l6SanctionTick(); l9Backfill();
     var isOwnerSession = !getActiveFghlabMember();
     if(formWrap) formWrap.style.display = isOwnerSession ? 'flex' : 'none';
     if(hint) hint.textContent = isOwnerSession
@@ -20906,6 +21150,16 @@
         var delBtn = e.target.closest ? e.target.closest('[data-partner-delete]') : null;
         if(!delBtn) return;
         var delId = delBtn.getAttribute('data-partner-delete');
+        var ppx = fghlabFindPartner(delId);
+        if(ppx && (ppx.history || []).length + l9OpenFiles(ppx).length + l6FinalizedFiles(ppx).length + (Number(ppx.docsCount) || 0) > 1){
+          if(!window.confirm('Retirer ' + ppx.name + ' ? Il quitte le catalogue, mais son historique et tous les dossiers auxquels il a participé restent dans son dossier PartnerDoss. Les dossiers en cours restent suivis ; à leur fin, un membre de l’équipe les ajoute à son dossier.')) return;
+          if(ppx.status !== 'En pause' && ppx.status !== 'Suspendu' && ppx.status !== 'Retiré') ppx.statusBeforeSanction = ppx.status;
+          ppx.status = 'Retiré'; ppx.sanction = null; ppx.removedOn = l6Now();
+          l6Hist(ppx, 'Retrait', 'Partenaire retiré — historique et dossiers conservés dans PartnerDoss.');
+          persistFghlabState(); renderFghlabPartnerList(); renderFghlabBankProjectList(); renderFghlabRevenueDashboard(); try{ l6RenderPartnerDoss(); }catch(e){}
+          l6Toast('Partenaire retiré : son historique est conservé dans PartnerDoss.');
+          return;
+        }
         fghlabState.partners = fghlabState.partners.filter(function(p){ return p.id !== delId; });
         fghlabState.vehicleListings = fghlabState.vehicleListings.filter(function(v){ return v.partnerId !== delId; });
         persistFghlabState();
@@ -21513,7 +21767,7 @@
       '<h2 style="margin:0 0 4px;">'+escapeHtml(info.title)+'</h2>' +
       '<p class="hint" style="margin:0 0 6px;">'+escapeHtml(info.desc)+'</p>' +
       '<p class="hint" data-fgh-sync-status style="margin:0 0 10px; font-size:12px;">'+escapeHtml(fghlabSync.statusText || fghlabSyncIdleText())+'</p>' +
-      '<div id="fgbank-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"><button type="button" class="btn primary" data-fgbank-tab="dossiers">📂 Dossiers</button><button type="button" class="btn" data-fgbank-tab="partnerdoss">🗄️ PartnerDoss</button></div>' +
+      '<div id="fgbank-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"><button type="button" class="btn primary" data-fgbank-tab="dossiers">📂 Dossiers</button><button type="button" class="btn" data-fgbank-tab="partnerdoss">🗄️ PartnerDoss</button><button type="button" class="btn" data-fgbank-tab="sanctions">⚖️ Sanction / levée de sanction</button></div>' +
       '<div id="fgbank-tab-dossiers">' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">' +
         '<label for="fgbank-currency" class="hint" style="margin:0;">Devise de cet outil</label>' +
@@ -21542,6 +21796,7 @@
       '</div>' +
       '</div>' +
       '<div id="fgbank-tab-partnerdoss" hidden></div>' +
+      '<div id="fgbank-tab-sanctions" hidden></div>' +
     '</div>';
   }
   function fghlabBankHandlerHtml(proj){
@@ -22226,11 +22481,11 @@
     el.innerHTML = '<div style="border:1px solid #C89B3C; border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:12px;">' +
       '<div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">🔔 Alertes Partner Market' + (unread ? ' <span class="ctb-stub-badge" style="background:#C89B3C; color:#fff;">'+unread+' nouvelle'+(unread > 1 ? 's' : '')+'</span>' : '') + '</div>' +
       alerts.map(function(a){
-        var done = a.kind === 'vehicle_completed';
+        var done = a.kind === 'vehicle_completed', l9k = L9_ALERT_KINDS[a.kind];
         return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:5px 0; border-top:1px solid var(--line); font-size:12.5px;'+(a.read && !(done && !a.classifiedOn) ? ' opacity:.65;' : '')+'" data-alert-row="'+escapeHtml(a.id)+'">' +
-          '<span>'+(done ? '<span class="ctb-stub-badge" style="background:#2D9C93; color:#fff;">complété</span> ' : '')+escapeHtml(a.text)+'<span class="hint" style="margin:0;"> · '+escapeHtml(fmtFghlabDate(a.createdOn))+' · par '+escapeHtml(fghlabActorLabel(a.createdBy))+'</span></span>' +
+          '<span>'+(done ? '<span class="ctb-stub-badge" style="background:#2D9C93; color:#fff;">complété</span> ' : '')+(l9k ? '<span class="ctb-stub-badge" style="background:'+l9k[1]+'; color:#fff;">'+l9k[0]+'</span> ' : '')+escapeHtml(a.text)+'<span class="hint" style="margin:0;"> · '+escapeHtml(fmtFghlabDate(a.createdOn))+' · par '+escapeHtml(fghlabActorLabel(a.createdBy))+'</span></span>' +
           '<button type="button" class="btn primary" data-alert-open="'+escapeHtml(a.id)+'" style="padding:3px 10px; font-size:12px;">Ouvrir le dossier</button>' +
-          (done ? l6AlertVerifHtml(a) : '') +
+          (done ? l6AlertVerifHtml(a) : '') + l9AlertExtraHtml(a) +
         '</div>';
       }).join('') + '</div>';
   }
@@ -22241,6 +22496,13 @@
     a.read = true;
     persistFghlabState();
     renderFghlabBankAlerts();
+    if(L9_ALERT_KINDS[a.kind]){
+      if(getFghlabVisibleTools().indexOf('fgbankpartnership') === -1 && getFghlabVisibleTools().indexOf('partnermarket') === -1){ window.alert('Le dossier du partenaire se trouve dans PartnerDoss (FG & Bank Partnership), un outil non autorisé pour votre compte.'); return; }
+      selectFghlabTool('fgbankpartnership', { noClose: true });
+      l6ShowFgbankTab('partnerdoss'); fghlabOpen6['pdd-card-' + a.partnerId] = true; fghlabOpen6['act-' + a.partnerId] = true; l6RenderPartnerDoss(); l9LoadEvents(a.partnerId);
+      setTimeout(function(){ var card = document.querySelector('[data-pdd-card="' + a.partnerId + '"]'); if(card){ if(card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.style.outline = '3px solid #C89B3C'; setTimeout(function(){ card.style.outline = ''; }, 3500); } }, 250);
+      return;
+    }
     if(a.kind === 'partner_docs'){
       if(getFghlabVisibleTools().indexOf('partnermarket') === -1){ window.alert('Les documents se trouvent dans Partner Market, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.'); return; }
       fghlabOpen6['docs-' + a.partnerId] = true;
@@ -22304,7 +22566,7 @@
   var GEO_COUNTRIES = [["Canada", "Amérique du Nord"], ["États-Unis", "Amérique du Nord"], ["Mexique", "Amérique du Nord"], ["France", "Europe"], ["Belgique", "Europe"], ["Suisse", "Europe"], ["Luxembourg", "Europe"], ["Allemagne", "Europe"], ["Italie", "Europe"], ["Espagne", "Europe"], ["Portugal", "Europe"], ["Royaume-Uni", "Europe"], ["Pays-Bas", "Europe"], ["Bénin", "Afrique de l'Ouest"], ["Burkina Faso", "Afrique de l'Ouest"], ["Côte d'Ivoire", "Afrique de l'Ouest"], ["Ghana", "Afrique de l'Ouest"], ["Guinée", "Afrique de l'Ouest"], ["Mali", "Afrique de l'Ouest"], ["Mauritanie", "Afrique de l'Ouest"], ["Niger", "Afrique de l'Ouest"], ["Nigeria", "Afrique de l'Ouest"], ["Sénégal", "Afrique de l'Ouest"], ["Togo", "Afrique de l'Ouest"], ["Sierra Leone", "Afrique de l'Ouest"], ["Liberia", "Afrique de l'Ouest"], ["Cap-Vert", "Afrique de l'Ouest"], ["Gambie", "Afrique de l'Ouest"], ["Guinée-Bissau", "Afrique de l'Ouest"], ["Cameroun", "Afrique centrale"], ["Congo (Brazzaville)", "Afrique centrale"], ["RD Congo", "Afrique centrale"], ["Gabon", "Afrique centrale"], ["Guinée équatoriale", "Afrique centrale"], ["Tchad", "Afrique centrale"], ["Centrafrique", "Afrique centrale"], ["Burundi", "Afrique centrale"], ["Rwanda", "Afrique de l'Est"], ["Kenya", "Afrique de l'Est"], ["Éthiopie", "Afrique de l'Est"], ["Tanzanie", "Afrique de l'Est"], ["Ouganda", "Afrique de l'Est"], ["Djibouti", "Afrique de l'Est"], ["Madagascar", "Afrique de l'Est"], ["Maurice", "Afrique de l'Est"], ["Comores", "Afrique de l'Est"], ["Algérie", "Afrique du Nord"], ["Maroc", "Afrique du Nord"], ["Tunisie", "Afrique du Nord"], ["Égypte", "Afrique du Nord"], ["Libye", "Afrique du Nord"], ["Afrique du Sud", "Afrique australe"], ["Angola", "Afrique australe"], ["Mozambique", "Afrique australe"], ["Zambie", "Afrique australe"], ["Zimbabwe", "Afrique australe"], ["Namibie", "Afrique australe"], ["Botswana", "Afrique australe"], ["Haïti", "Amérique latine & Caraïbes"], ["Brésil", "Amérique latine & Caraïbes"], ["Colombie", "Amérique latine & Caraïbes"], ["Argentine", "Amérique latine & Caraïbes"], ["Chili", "Amérique latine & Caraïbes"], ["Pérou", "Amérique latine & Caraïbes"], ["Martinique", "Amérique latine & Caraïbes"], ["Guadeloupe", "Amérique latine & Caraïbes"], ["Chine", "Asie"], ["Inde", "Asie"], ["Japon", "Asie"], ["Vietnam", "Asie"], ["Liban", "Moyen-Orient"], ["Arabie saoudite", "Moyen-Orient"], ["Émirats arabes unis", "Moyen-Orient"], ["Qatar", "Moyen-Orient"], ["Turquie", "Moyen-Orient"], ["Australie", "Océanie"], ["Nouvelle-Zélande", "Océanie"]];
   var GEO_REGIONS = ["Amérique du Nord", "Amérique latine & Caraïbes", "Europe", "Afrique de l'Ouest", "Afrique centrale", "Afrique de l'Est", "Afrique du Nord", "Afrique australe", "Moyen-Orient", "Asie", "Océanie", "Autre"];
   var ACADEMIE_CATS = ['Domaines de formation', 'Workshops signature', 'Programmes exécutifs signature', 'Parcours Finance & Projets', 'Autres formations'];
-  var FGHLAB_PSEUDO_TOOLS = { 'academie-edit': 'Modifier le catalogue FINECIA ACADÉMIE (administrateur)' };
+  var FGHLAB_PSEUDO_TOOLS = { 'academie-edit': 'Modifier le catalogue FINECIA ACADÉMIE (administrateur)', 'partner-newnumber': 'Générer un « nouveau numéro au partenaire » (administrateur)', 'partner-sanction': 'Sanction / levée de sanction des partenaires (administrateur)' };
   var ACADEMIE_CATALOG_VERSION = 3;
   var ACADEMIE_ON_REQUEST = ['TRANSFORMA', 'FISCALIA', 'EXECUTIVE ELITE'];
   /* Catalogue FINECIA Academy, repris tel que fourni par le propriétaire. Les prix ne sont pas dans le
@@ -31773,6 +32035,7 @@
             '<summary style="cursor:pointer; font-size:12px; color:var(--muted);">Historique TOUTTEST ('+fghlabTouttestHistoryFor(member).length+')</summary>' +
             '<div style="margin-top:6px; max-height:180px; overflow-y:auto;">'+fghlabTouttestHistorySummaryHtml(member)+'</div>' +
           '</details>' +
+          l9MemberHistoryHtml(member) +
         '</div>';
       }).join('');
     }

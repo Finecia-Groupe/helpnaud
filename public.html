@@ -73,7 +73,8 @@
             docs = '<div class="card" style="background:var(--bg);"><strong>Documents de votre organisation (facultatif)</strong><p class="hint">Vous pouvez téléverser vos documents maintenant ou plus tard, à partir de votre lien personnel. Gardez ce lien : il est réservé à votre organisation.</p>' +
               '<p style="word-break:break-all;"><a id="f-doclink" href="' + esc(link) + '">' + esc(link) + '</a></p></div>';
           }
-          app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre demande est bien reçue.</p><p class="hint">FINECIA GROUPE vous contactera après examen de votre dossier.</p>' + docs + '</div>';
+          var numBox = (res && res.partnerNumber) ? '<div class="card" style="background:var(--bg); border-color:var(--gold);"><strong>Votre numéro de partenaire</strong><p style="font-size:26px; letter-spacing:3px; margin:6px 0;">' + esc(res.partnerNumber) + '</p><p class="hint">Conservez-le précieusement et ne le communiquez à personne. Il sert à vous identifier sur Partner Market pour compléter votre dossier ou mettre à jour un document. Il vous est aussi envoyé par courriel. <a href="' + esc(location.origin + location.pathname + '?espace=1') + '">Ouvrir mon espace partenaire</a></p></div>' : '';
+          app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre demande est bien reçue.</p><p class="hint">FINECIA GROUPE vous contactera après examen de votre dossier.</p>' + numBox + docs + '</div>';
         }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
       });
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
@@ -126,6 +127,109 @@
       }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
     }
     draw();
+  }
+
+
+  /* ---------- Espace partenaire : identification par numéro à 10 chiffres ---------- */
+  var ESP = { token: null, view: null, number: null };
+  function viewEspace(){
+    ESP = { token: null, view: null, number: null };
+    app.innerHTML = '<div class="card"><h1>Espace partenaire</h1><p class="hint">Identifiez-vous avec votre numéro de partenaire à 10 chiffres pour compléter votre dossier ou mettre à jour un document. Ne communiquez ce numéro à personne.</p>' +
+      '<label for="e-num">Numéro de partenaire</label><input id="e-num" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="0000000000">' + HONEY +
+      '<button id="e-go">Entrer</button><div id="e-out" class="msg"></div></div>';
+    document.getElementById('e-go').addEventListener('click', function(){
+      var b = this, out = document.getElementById('e-out'), num = val('e-num').replace(/\s+/g, '');
+      out.className = 'msg'; out.textContent = '';
+      if(!/^[0-9]{10}$/.test(num)){ out.className = 'msg err'; out.textContent = 'Le numéro de partenaire compte 10 chiffres.'; return; }
+      b.disabled = true;
+      call({ action:'espace-enter', number: num, website: hv() }).then(function(r){
+        if(r.ok){ ESP.token = r.token; ESP.view = r; ESP.number = num; drawEspace(); return; }
+        if(r.error === 'locked'){ viewSupport(num, r.name, true); return; }
+        out.className = 'msg err'; out.textContent = 'Numéro non reconnu. Vérifiez-le et réessayez.'; b.disabled = false;
+      }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+    });
+  }
+  function viewSupport(num, name, fromLock){
+    app.innerHTML = '<div class="card"><h1>Support</h1>' +
+      (fromLock ? '<p class="err">Pour votre sécurité, l’accès à ce dossier est temporairement bloqué' + (name ? ' (' + esc(name) + ')' : '') + '.</p><p class="hint">Décrivez brièvement le problème : notre équipe examinera votre demande et réactivera le dossier si tout est en ordre.</p>' : '') +
+      '<label for="s-name">Votre nom</label><input id="s-name" maxlength="120">' +
+      '<label for="s-contact">Comment vous joindre (téléphone ou courriel)</label><input id="s-contact" maxlength="140">' +
+      '<label for="s-msg">Détail du problème</label><textarea id="s-msg" rows="4" maxlength="1000"></textarea>' + HONEY +
+      '<button id="s-send">Envoyer au support</button> <button class="light" id="s-back" style="margin-left:6px;">Retour</button><div id="s-out" class="msg"></div></div>';
+    document.getElementById('s-back').addEventListener('click', viewEspace);
+    document.getElementById('s-send').addEventListener('click', function(){
+      var b = this, out = document.getElementById('s-out'); out.className = 'msg'; out.textContent = ''; b.disabled = true;
+      call({ action:'espace-support', number: num, name: val('s-name'), contact: val('s-contact'), message: val('s-msg'), website: hv() }).then(function(){
+        out.className = 'msg ok'; out.textContent = 'Votre demande est envoyée. FINECIA GROUPE vous répondra dès que possible.';
+      }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+    });
+  }
+  var stagedFiles = [];
+  function drawEspace(msg){
+    var r = ESP.view, ro = r.readonly;
+    var notices = (r.notices || []).map(function(n){ return '<div class="card" style="background:var(--bg); border-color:var(--gold);"><strong>Message de FINECIA GROUPE</strong><p style="margin:6px 0 0;">' + esc(n.text) + '</p></div>'; }).join('');
+    var opts = DOC_KINDS.map(function(k){ return '<option>' + esc(k) + '</option>'; }).join('');
+    var docs = (r.docs || []).map(function(d){ return '<label style="display:flex; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--line); color:var(--ink); margin:0;">' +
+      (d.source === 'partner' && !ro ? '<input type="checkbox" data-deldoc="' + esc(d.id) + '" style="width:auto;" title="Cocher pour supprimer">' : '<span style="width:16px;"></span>') +
+      '<span>' + esc(d.name) + ' <span class="hint">· ' + esc(d.kind) + ' · ' + fmtSize(d.size) + (d.source === 'partner' ? '' : ' · ajouté par FINECIA') + '</span></span></label>'; }).join('') || '<p class="hint">Aucun document pour le moment.</p>';
+    var req = r.request && r.request.items && r.request.items.length ? '<div class="card" style="background:var(--bg);"><strong>Documents demandés par FINECIA GROUPE</strong><ul>' + r.request.items.map(function(i){ return '<li>' + esc(i) + '</li>'; }).join('') + '</ul></div>' : '';
+    app.innerHTML = '<div class="card"><div class="row"><h1 style="margin:0;">' + esc(r.name) + '</h1><button class="light" id="e-exit">Quitter</button></div>' +
+      '<p class="hint">Statut : <strong>' + esc(r.status) + '</strong> · Courriel au dossier : ' + esc(r.emailMasked || '—') + '</p>' + (msg || '') + notices +
+      (ro ? '<p class="err">Ce dossier est ' + (r.status === 'Retiré' ? 'retiré' : 'suspendu') + ' : les modifications sont désactivées. Contactez FINECIA GROUPE.</p>' : '') + '</div>' + req +
+      '<div class="card"><strong>Documents</strong><div id="e-docs">' + docs + '</div>' +
+      (ro ? '' : '<p class="hint" style="margin-top:8px;">Cochez un document que vous avez déposé pour le supprimer. Pour en ajouter, choisissez un fichier (PDF, JPEG ou PNG, 2 Mo maximum, 3 fichiers par envoi).</p>' +
+        '<label for="e-kind">Type de document</label><select id="e-kind">' + opts + '</select><label for="e-file">Fichier à ajouter</label><input id="e-file" type="file" accept="application/pdf,image/jpeg,image/png">' +
+        '<div id="e-staged" class="hint"></div><button class="light" id="e-addfile" style="margin-top:8px;">Ajouter ce fichier à la mise à jour</button>') + '</div>' +
+      (ro ? '' : '<div class="card"><strong>Informations à mettre à jour (facultatif)</strong><p class="hint">Laissez vide ce qui ne change pas. Le courriel du dossier ne peut pas être modifié ici.</p>' +
+        '<label for="e-contact">Nouvelle personne-contact</label><input id="e-contact" maxlength="100"><label for="e-phone">Nouveau téléphone</label><input id="e-phone" maxlength="40"><label for="e-addr">Nouvelle adresse</label><input id="e-addr" maxlength="200">' +
+        '<button id="e-submit">Soumettre la mise à jour</button><div id="e-out" class="msg"></div></div>') +
+      '<div id="e-dialog"></div>';
+    stagedFiles = [];
+    if((r.notices || []).length) call({ action:'espace-notices', token: ESP.token }).catch(function(){});
+    document.getElementById('e-exit').addEventListener('click', function(){ call({ action:'espace-exit', token: ESP.token }).catch(function(){}).then(function(){ app.innerHTML = '<div class="card"><h1>À bientôt</h1><p class="ok">Vous avez quitté votre espace partenaire.</p><p class="hint">Votre entrée et votre sortie sont consignées dans votre dossier.</p></div>'; }); });
+    if(ro) return;
+    function drawStaged(){ document.getElementById('e-staged').innerHTML = stagedFiles.map(function(f, i){ return '• ' + esc(f.name) + ' <a href="#" data-unstage="' + i + '">retirer</a>'; }).join('<br>'); Array.prototype.forEach.call(app.querySelectorAll('[data-unstage]'), function(a){ a.addEventListener('click', function(ev){ ev.preventDefault(); stagedFiles.splice(Number(a.getAttribute('data-unstage')), 1); drawStaged(); }); }); }
+    document.getElementById('e-addfile').addEventListener('click', function(){
+      var out = document.getElementById('e-out'), f = document.getElementById('e-file').files[0]; out.className = 'msg'; out.textContent = '';
+      if(!f){ out.className = 'msg err'; out.textContent = 'Choisissez un fichier.'; return; }
+      if(['application/pdf','image/jpeg','image/png'].indexOf(f.type) === -1){ out.className = 'msg err'; out.textContent = 'Formats acceptés : PDF, JPEG ou PNG.'; return; }
+      if(f.size > 2000000){ out.className = 'msg err'; out.textContent = 'Fichier trop volumineux (2 Mo maximum).'; return; }
+      if(stagedFiles.length >= 3){ out.className = 'msg err'; out.textContent = '3 fichiers au plus par envoi.'; return; }
+      var fr = new FileReader();
+      fr.onload = function(){ stagedFiles.push({ name: f.name, mime: f.type, kind: document.getElementById('e-kind').value, data: fr.result }); document.getElementById('e-file').value = ''; drawStaged(); };
+      fr.readAsDataURL(f);
+    });
+    document.getElementById('e-submit').addEventListener('click', function(){
+      var out = document.getElementById('e-out'); out.className = 'msg'; out.textContent = '';
+      var dels = Array.prototype.map.call(app.querySelectorAll('[data-deldoc]:checked'), function(c){ return c.getAttribute('data-deldoc'); });
+      var changes = { contact: val('e-contact'), phone: val('e-phone'), address: val('e-addr') };
+      if(!changes.contact && !changes.phone && !changes.address && !stagedFiles.length && !dels.length){ out.className = 'msg err'; out.textContent = 'Aucune modification à soumettre.'; return; }
+      confirmDialog(changes, dels);
+    });
+  }
+  function confirmDialog(changes, dels){
+    var box = document.getElementById('e-dialog');
+    box.innerHTML = '<div class="card" style="border-color:var(--gold);"><strong>Confirmer la modification</strong><p class="hint">Pour votre sécurité, confirmez votre identité. Le courriel doit être celui inscrit dans votre dossier : un message de confirmation y sera envoyé.</p>' +
+      '<label for="c-nom">Nom</label><input id="c-nom" maxlength="80" autocomplete="family-name"><label for="c-prenom">Prénom</label><input id="c-prenom" maxlength="80" autocomplete="given-name">' +
+      '<label for="c-email">Courriel inscrit dans votre dossier</label><input id="c-email" type="email" maxlength="140" autocomplete="off">' +
+      '<label style="display:flex; gap:8px; align-items:flex-start; color:var(--ink);"><input id="c-ok" type="checkbox" style="width:auto; margin-top:4px;"><span>Je confirme cette modification de mon dossier.</span></label>' +
+      '<button id="c-send">Confirmer et soumettre</button> <button class="light" id="c-cancel" style="margin-left:6px;">Annuler</button><div id="c-out" class="msg"></div></div>';
+    if(box.scrollIntoView) box.scrollIntoView({ behavior:'smooth', block:'center' });
+    document.getElementById('c-cancel').addEventListener('click', function(){ box.innerHTML = ''; });
+    document.getElementById('c-send').addEventListener('click', function(){
+      var b = this, out = document.getElementById('c-out'); out.className = 'msg'; out.textContent = '';
+      if(!document.getElementById('c-ok').checked){ out.className = 'msg err'; out.textContent = 'Cochez la case de confirmation.'; return; }
+      b.disabled = true;
+      call({ action:'espace-update', token: ESP.token, nom: val('c-nom'), prenom: val('c-prenom'), email: val('c-email'), changes: changes, docs: stagedFiles, deleteDocs: dels }).then(function(r){
+        if(r.ok){ ESP.view = r.view; drawEspace('<p class="ok">Mise à jour enregistrée. Un message de confirmation a été envoyé au courriel inscrit dans votre dossier.</p>'); return; }
+        if(r.error === 'locked'){ viewSupport(ESP.number, ESP.view && ESP.view.name, true); return; }
+        if(r.error === 'mismatch'){
+          var last = r.remaining === 1;
+          out.className = 'msg err'; out.textContent = 'Mise à jour refusée : les informations ne correspondent pas à votre dossier (tentative ' + r.attempts + ' sur 5). ' + (last ? 'Attention : une dernière erreur bloquera votre dossier.' : 'Un avertissement a été envoyé au courriel du dossier.'); b.disabled = false; return;
+        }
+        out.className = 'msg err'; out.textContent = ({ session: 'Session expirée : identifiez-vous de nouveau.', readonly: 'Ce dossier ne peut pas être modifié actuellement.', nothing: 'Aucune modification à soumettre.', limit: 'Nombre maximal de documents atteint.', bad_input: 'Vérifiez les informations saisies.' })[r.error] || 'Mise à jour impossible.'; b.disabled = false;
+      }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+    });
   }
 
   function val(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; }
@@ -276,7 +380,8 @@
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
   }
 
-  if(Q.get('academie')) viewAcademie();
+  if(Q.get('espace')) viewEspace();
+  else if(Q.get('academie')) viewAcademie();
   else if(Q.get('invitation')) viewInvitation(Q.get('invitation'));
   else if(Q.get('catalogue')) viewCatalogue(Q.get('catalogue'));
   else if(Q.get('doc')) viewDocs(Q.get('doc'));
