@@ -349,7 +349,9 @@
         '<label for="a-duration">Durée</label><select id="a-duration">' + opts(A_DURATIONS) + '</select><input id="a-duration-o" maxlength="60" placeholder="Durée (à préciser)" style="display:none; margin-top:6px;">' +
         '<label for="a-msg">Message (facultatif)</label><textarea id="a-msg" rows="3" maxlength="600"></textarea>' + HONEY +
         '<label style="display:flex; gap:8px; align-items:flex-start; color:var(--ink); margin-top:14px;"><input type="checkbox" id="a-consent" style="width:auto; margin-top:4px;"><span>J’accepte que FINECIA GROUPE utilise ces informations uniquement pour répondre à ma demande d’inscription.</span></label>' +
-        '<button id="a-send">Envoyer mon inscription</button><div id="a-out" class="msg"></div></div>';
+        '<p class="hint" style="margin-top:14px;">En cliquant sur continuer, j’accepte les <strong>conditions</strong>, la <strong>politique de confidentialité</strong> et la <strong>politique relative aux cookies</strong> de HelpNaud.</p>' +
+        '<label style="display:flex; gap:8px; align-items:flex-start; color:var(--ink); margin-top:8px;"><input type="checkbox" id="a-marketing" style="width:auto; margin-top:4px;"><span>[Facultatif] Je souhaite recevoir par e-mail des mises à jour occasionnelles et des offres spéciales sur les produits, services, évènements et programmes HelpNaud.</span></label>' +
+        '<button id="a-send">S’inscrire</button><p class="hint" style="text-align:center; margin-top:12px;">Vous possédez déjà un compte ? <a href="?espace=1"><strong>Se connecter</strong></a></p><div id="a-out" class="msg"></div></div>';
       app.innerHTML = html;
       function toggle(sel, inp){ var s = document.getElementById(sel); s.addEventListener('change', function(){ document.getElementById(inp).style.display = s.value === '__autre__' ? '' : 'none'; }); }
       document.getElementById('a-country').addEventListener('change', function(){
@@ -372,7 +374,7 @@
         btn.disabled = true;
         call({ action:'academie-register', country: val('a-country'), province: val('a-province'), city: val('a-city'), region: val('a-region'), organisation: val('a-org'), name: val('a-name'), email: val('a-email'), phone: val('a-phone'),
           formationId: fv === '__autre__' ? '' : fv, formationOther: fv === '__autre__' ? val('a-formation-o') : '',
-          format: pick('a-format', 'a-format-o'), duration: pick('a-duration', 'a-duration-o'), message: val('a-msg'),
+          format: pick('a-format', 'a-format-o'), duration: pick('a-duration', 'a-duration-o'), message: val('a-msg') + (document.getElementById('a-marketing').checked ? ' [Accepte de recevoir les offres par courriel]' : ''),
           consent: document.getElementById('a-consent').checked, website: hv() }).then(function(){
           app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre inscription est bien reçue.</p><p class="hint">Un conseiller FINECIA GROUPE vous contactera pour confirmer les détails.</p></div>';
         }).catch(function(err){ out.className = 'msg err'; out.textContent = err.message; btn.disabled = false; });
