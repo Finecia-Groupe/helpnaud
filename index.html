@@ -36807,4 +36807,31 @@
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 </script>
+<script>
+/* Menus déroulants (hamburger, 🧰 Co-work) : toujours entièrement visibles dans l'écran sur mobile */
+(function(){
+  var PAIRS = [ ['quicklaunch-menu','sidebar-quicklaunch-hamburger-btn','right',300], ['cowork-tools-menu','cowork-tools-quicklaunch-btn','center',340] ];
+  var PROPS = ['position','top','left','right','bottom','width','maxWidth','maxHeight','transform'];
+  function mobile(){ return window.matchMedia && window.matchMedia('(max-width: 860px)').matches; }
+  function reset(m){ PROPS.forEach(function(p){ m.style[p] = ''; }); if(m.id==='quicklaunch-menu'){ m.style.width='260px'; m.style.maxHeight='min(70vh,560px)'; } }
+  function place(pr){
+    var m = document.getElementById(pr[0]), b = document.getElementById(pr[1]); if(!m || !b || m.hidden) return;
+    if(!mobile()){ reset(m); return; }
+    var r = b.getBoundingClientRect(), vw = document.documentElement.clientWidth, w = Math.min(pr[3], vw - 16);
+    var left = pr[2] === 'right' ? r.right - w : r.left + r.width / 2 - w / 2;
+    left = Math.max(8, Math.min(left, vw - w - 8));
+    var top = r.bottom + 6;
+    m.style.position = 'fixed'; m.style.top = top + 'px'; m.style.left = left + 'px'; m.style.right = 'auto'; m.style.bottom = 'auto';
+    m.style.width = w + 'px'; m.style.maxWidth = w + 'px'; m.style.transform = 'none';
+    m.style.maxHeight = Math.max(160, window.innerHeight - top - 90) + 'px';
+  }
+  function all(){ PAIRS.forEach(place); }
+  PAIRS.forEach(function(pr){
+    var m = document.getElementById(pr[0]); if(!m) return;
+    new MutationObserver(function(){ place(pr); }).observe(m, { attributes:true, attributeFilter:['hidden'] });
+  });
+  window.addEventListener('scroll', all, { passive:true });
+  window.addEventListener('resize', all);
+})();
+</script>
 </body></html>
