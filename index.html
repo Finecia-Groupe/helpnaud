@@ -6061,11 +6061,17 @@
     });
     var gotoBtn = fghlabOwnerEl('fghlab-lock-goto-btn');
     if(gotoBtn) gotoBtn.addEventListener('click', function(){
+      // Sur un nouvel appareil (ou une autre adresse, ex. helpnaud.netlify.app), la carte propriétaire est
+      // masquée par défaut : ce bouton la révèle sur cet appareil avant d'y amener.
+      try{ localStorage.setItem(HN_TEAM_KEY, '1'); }catch(e){}
+      hnTeamForceHide = false;
+      try{ hnApplyTeamUi(); }catch(e){}
       showView('settings');
+      try{ hnApplyTeamUi(); }catch(e){}
       setTimeout(function(){
         var card = fghlabOwnerEl('fghlab-owner-cloud-card');
         try{ if(card && card.scrollIntoView) card.scrollIntoView({ block:'start' }); }catch(e){}
-      }, 60);
+      }, 150);
     });
   })();
   (function initFghlabOwnerCloud(){
