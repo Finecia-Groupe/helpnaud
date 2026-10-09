@@ -1237,6 +1237,12 @@
      est masquée. Gating visuel — voir le disclaimer dans la carte de connexion sécurisée. */
   #view-fghlab.fghlab-owner-locked > *:not(.topbar):not(#fghlab-intro-card):not(#fghlab-lock-notice){ display:none !important; }
   body.fghlab-owner-locked #fghlab-admin-card{ display:none !important; }
+  /* Espace équipe : ces cartes de Réglages ne s'affichent qu'au propriétaire (ou à l'administrateur pour
+     la sienne) ; les autres utilisateurs ne les voient pas. Masquage d'affichage seulement : la vraie
+     protection reste côté serveur (Supabase). */
+  body.hn-owner-hidden #fghlab-owner-cloud-card{ display:none !important; }
+  body.hn-member-hidden #fghlab-brandlogo-card{ display:none !important; }
+  body.hn-admin-hidden #fghlab-admin-card{ display:none !important; }
   .legal-text{ font-size:12.5px; line-height:1.65; color:var(--ink); max-height:360px; overflow-y:auto; padding-right:8px; }
   .legal-text h3{ font-size:13px; margin:14px 0 4px; }
   .legal-text h3:first-child{ margin-top:0; }
@@ -4900,9 +4906,12 @@
         </div>
       </div>
 
-      <div class="card">
+      <!-- Bouton d'envoi : réglage GLOBAL (serveur). Visible seulement par le propriétaire, et par les
+           administrateurs si le propriétaire leur en donne l'accès. Les autres utilisateurs ne le voient pas :
+           ils reçoivent simplement le choix du propriétaire. -->
+      <div class="card" id="setting-sendicon-card" style="display:none;">
         <h2>Bouton d’envoi</h2>
-        <p class="hint">Choisissez l’icône du bouton d’envoi des messages, ou faites-les alterner automatiquement à chaque message. Ce choix est mémorisé sur cet appareil.</p>
+        <p class="hint">Votre choix s’applique à <strong>tous les utilisateurs</strong> de HelpNaud. Choisissez une des six icônes, ou « Alterner » pour qu’elles changent à chaque message envoyé.</p>
         <div class="settings-form">
           <div class="full">
             <label for="setting-sendicon">Icône du bouton d’envoi</label>
@@ -4915,6 +4924,13 @@
             <option value="gold">Avion de papier — or de la marque</option>
             <option value="mix">Alterner automatiquement les six</option>
           </select>
+            <span class="copy-status" id="setting-sendicon-status"></span>
+          </div>
+          <div class="full" id="setting-sendicon-deleg-wrap" style="display:none;">
+            <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:13px; text-transform:none; letter-spacing:0; font-weight:400;">
+              <input type="checkbox" id="setting-sendicon-deleg" style="margin-top:3px;">
+              <span>Autoriser les administrateurs à choisir le bouton d’envoi (alterner ou fixer une icône pour tout le monde)</span>
+            </label>
           </div>
         </div>
       </div>
@@ -5148,6 +5164,7 @@
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn" id="fghlab-ownercloud-changepw-btn" style="padding:4px 10px; font-size:12px;">Changer mon mot de passe</button>
               <button type="button" class="btn" id="fghlab-ownercloud-logout-btn" style="padding:4px 10px; font-size:12px;">Se déconnecter</button>
+              <button type="button" class="btn" id="hn-team-hide-btn" style="padding:4px 10px; font-size:12px;" title="Retire cet espace de Réglages sur cet appareil. Pour le revoir : ouvrez helpnaud.ai/?equipe=1">Masquer cet espace ici</button>
             </div>
           </div>
           <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:13px; margin-bottom:6px;">
@@ -5781,6 +5798,50 @@
     if(msg.indexOf('failed to fetch') >= 0 || msg.indexOf('network') >= 0 || msg.indexOf('load failed') >= 0) return 'Connexion au serveur impossible. Vérifiez votre connexion Internet.';
     return 'Erreur : ' + ((error && error.message) ? error.message : 'inconnue') + '.';
   }
+  /* ---- Espace équipe : visibilité des cartes réservées (Réglages) ----
+     - Membres de l'équipe (connectés) : voient « Logo de profil ».
+     - Propriétaire : voit « Connexion sécurisée » et « Logo de profil » une fois connecté, ou sur un appareil
+       où il a ouvert l'adresse /?equipe=1 (mémorisé ; bouton « Masquer… » pour le retirer).
+     - Administrateur : voit la carte ADMINISTRATEUR quand son rôle confirmé par le serveur est « admin ».
+     - Tous les autres : aucune de ces cartes. */
+  var HN_TEAM_KEY = 'helpnaud_team_ui', hnTeamForceHide = false;
+  try{
+    var hnQs = new URLSearchParams(location.search || '');
+    if(hnQs.get('equipe') === '1'){
+      try{ localStorage.setItem(HN_TEAM_KEY, '1'); }catch(e){}
+      hnQs.delete('equipe');
+      var hnQsOut = hnQs.toString();
+      try{ history.replaceState(null, '', location.pathname + (hnQsOut ? '?' + hnQsOut : '') + (location.hash || '')); }catch(e){}
+    }
+  }catch(e){}
+  function hnApplyTeamUi(){
+    var ownerNow = !!fghlabOwnerCloud || !!fghlabOwnerRecovery;
+    if(ownerNow && !hnTeamForceHide){ try{ localStorage.setItem(HN_TEAM_KEY, '1'); }catch(e){} }
+    var flag = false;
+    try{ flag = localStorage.getItem(HN_TEAM_KEY) === '1'; }catch(e){}
+    var showOwner = !hnTeamForceHide && (ownerNow || flag);
+    var showAdmin = showOwner || fghlabCloudRole === 'admin';
+    // Logo de profil : propriétaire, ou tout membre de l'équipe connecté (membre ou administrateur).
+    var activeMember = null;
+    try{ activeMember = (typeof getActiveFghlabMember === 'function') ? getActiveFghlabMember() : null; }catch(e){}
+    var showMember = showOwner || !!fghlabCloudRole || !!activeMember;
+    if(document.body){
+      document.body.classList.toggle('hn-owner-hidden', !showOwner);
+      document.body.classList.toggle('hn-admin-hidden', !showAdmin);
+      document.body.classList.toggle('hn-member-hidden', !showMember);
+    }
+    try{ document.dispatchEvent(new CustomEvent('hn-auth', { detail: { owner: !!fghlabOwnerCloud, role: fghlabCloudRole || (fghlabOwnerCloud ? 'owner' : null) } })); }catch(e){}
+  }
+  function hnHideTeamUiHere(){
+    try{ localStorage.removeItem(HN_TEAM_KEY); }catch(e){}
+    hnTeamForceHide = true; hnApplyTeamUi();
+  }
+  window.__hnAuth = {
+    owner: function(){ return !!fghlabOwnerCloud; },
+    role: function(){ return fghlabCloudRole || (fghlabOwnerCloud ? 'owner' : null); },
+    client: function(){ return fghlabSb; },
+    url: FGHLAB_SB_URL, key: FGHLAB_SB_KEY
+  };
   function fghlabOwnerRefresh(){
     var member = (typeof getActiveFghlabMember === 'function') ? getActiveFghlabMember() : null;
     var locked = !!(fghlabOwnerGateOn && !fghlabOwnerCloud && !member);
@@ -5820,6 +5881,7 @@
     if(signedIn) signedIn.style.display = showSigned ? 'block' : 'none';
     if(pwForm) pwForm.style.display = showPw ? 'flex' : 'none';
     if(typeof fghlabCloudRenderTeamPanel === 'function') fghlabCloudRenderTeamPanel();
+    hnApplyTeamUi();
   }
   function fghlabOwnerVerify(session){
     var sb = fghlabSb;
@@ -5953,6 +6015,8 @@
     });
     var forgot = fghlabOwnerEl('fghlab-ownercloud-forgot-btn');
     if(forgot) forgot.addEventListener('click', function(){ fghlabOwnerForgotPassword(); });
+    var hideTeam = fghlabOwnerEl('hn-team-hide-btn');
+    if(hideTeam) hideTeam.addEventListener('click', function(){ if(window.confirm('Masquer l’espace équipe sur cet appareil ? Pour le revoir, ouvrez helpnaud.ai/?equipe=1')) hnHideTeamUiHere(); });
     var logout = fghlabOwnerEl('fghlab-ownercloud-logout-btn');
     if(logout) logout.addEventListener('click', function(){ fghlabOwnerSignOut(); });
     var changePw = fghlabOwnerEl('fghlab-ownercloud-changepw-btn');
@@ -6104,6 +6168,7 @@
     fghlabCloudAdminCode = null;
     fghlabAdminSessionActive = false;
     try{ sessionStorage.removeItem(FGHLAB_CLOUD_MARK); }catch(e){}
+    try{ hnApplyTeamUi(); }catch(e){}
   }
 
   /* ---- chargement de l'équipe (cache d'affichage) ---- */
@@ -6310,6 +6375,7 @@
     }).then(function(info){
       fghlabCloudBusy = false;
       hnScrollTopAfterAuth();
+      hnApplyTeamUi();
       return info;
     }, function(e){
       var cleanup = function(){
@@ -6339,6 +6405,7 @@
         var after = function(){
           fghlabCloudWriteMark();
           fghlabCloudStartTimer();
+          hnApplyTeamUi();
           try{ if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI(); }catch(e){}
           try{ if(typeof renderFghlabAdmin === 'function') renderFghlabAdmin(); }catch(e){}
           return true;
@@ -27832,6 +27899,7 @@
           setFghlabActiveMember(info.id);
           fghlabCloudWriteMark();
           fghlabCloudStartTimer();
+          hnApplyTeamUi();
           fghlabResetLoginFlow();
           refreshFghlabAccessUI();
           if(wasProvisional) showFghlabProvisionalNotice();
@@ -35120,6 +35188,7 @@
       btn.classList.toggle('active', btn.dataset.view === name);
     });
     try{ localStorage.setItem('helpnaud_view', name); }catch(e){}
+    if(name === 'settings'){ try{ hnApplyTeamUi(); }catch(e){} }
     scrollAppToTop();
     // Un deuxième passage après le prochain repaint : certains navigateurs/contextes
     // d'affichage réajustent le scroll juste après le changement de contenu (ancrage de
@@ -35812,7 +35881,11 @@
   var KEY='helpnaud_sendicon', PLANE='m3 11 18-8-8 18-2-8-8-2z', ARROW='M12 19V5M5 12l7-7 7 7';
   var VARIANTS={plane:['',PLANE],arrow:['si-arrow',ARROW],white:['si-white',ARROW],navy:['si-navy',PLANE],teal:['si-teal',ARROW],gold:['si-gold',PLANE]};
   var order=['plane','arrow','white','navy','teal','gold'], idx=0;
-  function mode(){ try{ return localStorage.getItem(KEY)||'plane'; }catch(e){ return 'plane'; } }
+  var SKEY='helpnaud_sendicon_srv', DKEY='helpnaud_sendicon_deleg', VALID=['plane','arrow','white','navy','teal','gold','mix'];
+  function ls(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function setLs(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  /* Choix GLOBAL : celui du serveur (fixé par le propriétaire) ; à défaut, le choix local de l'appareil. */
+  function mode(){ var m=ls(SKEY)||ls(KEY)||'plane'; return VALID.indexOf(m)>=0?m:'plane'; }
   function apply(v){
     var def=VARIANTS[v]||VARIANTS.plane;
     document.querySelectorAll('.chat-send-btn').forEach(function(b){
@@ -35859,11 +35932,57 @@
       row.appendChild(btn); form.parentNode.insertBefore(row, form.nextSibling);
     });
   }
+  /* ---- Lecture / écriture du réglage global sur le serveur ---- */
+  function fetchSetting(key){
+    var A=window.__hnAuth; if(!A) return Promise.resolve(undefined);
+    var ctl=window.AbortController?new AbortController():null; if(ctl) setTimeout(function(){ctl.abort();},7000);
+    return fetch(A.url+'/rest/v1/rpc/public_setting_get',{method:'POST',headers:{'Content-Type':'application/json',apikey:A.key},body:JSON.stringify({p_key:key}),signal:ctl?ctl.signal:undefined})
+      .then(function(r){ return r.ok?r.json():undefined; }).catch(function(){ return undefined; });
+  }
+  function saveSetting(key,value){
+    var A=window.__hnAuth, sb=A&&A.client&&A.client(); if(!sb) return Promise.resolve({ok:false,why:'Service indisponible.'});
+    return sb.rpc('app_setting_set',{p_key:key,p_value:value}).then(function(r){
+      if(r&&r.error){ var c=String(r.error.code||''); return {ok:false,why:(c==='42501'?'Action réservée au propriétaire ou à un administrateur autorisé.':(c==='PGRST202'?'Le serveur n’est pas encore configuré (fichier supabase-phase3f.sql à exécuter).':'Enregistrement impossible.'))}; }
+      return {ok:true};
+    },function(){ return {ok:false,why:'Connexion au serveur impossible.'}; });
+  }
+  function st(t){ var e=document.getElementById('setting-sendicon-status'); if(!e) return; e.textContent=t; setTimeout(function(){e.textContent='';},4200); }
+  var lastAuth={owner:false,role:null};
+  function updateCard(){
+    var card=document.getElementById('setting-sendicon-card'); if(!card) return;
+    var deleg=ls(DKEY)==='1', isOwner=!!lastAuth.owner, isAdmin=lastAuth.role==='admin';
+    card.style.display=(isOwner||(isAdmin&&deleg))?'':'none';
+    var w=document.getElementById('setting-sendicon-deleg-wrap'); if(w) w.style.display=isOwner?'':'none';
+    var cb=document.getElementById('setting-sendicon-deleg'); if(cb) cb.checked=deleg;
+  }
+  function syncFromServer(){
+    fetchSetting('sendicon').then(function(v){
+      if(v===undefined) return;
+      if(typeof v==='string'&&VALID.indexOf(v)>=0) setLs(SKEY,v); else { try{localStorage.removeItem(SKEY);}catch(e){} }
+      var sel=document.getElementById('setting-sendicon'); if(sel) sel.value=mode();
+      apply(current());
+    });
+    fetchSetting('sendicon_admin').then(function(v){ if(v===undefined) return; setLs(DKEY,v===true?'1':'0'); updateCard(); });
+  }
+  document.addEventListener('hn-auth',function(e){ lastAuth=e.detail||lastAuth; updateCard(); });
   function init(){
     var sel=document.getElementById('setting-sendicon');
-    if(sel){ sel.value=mode(); sel.addEventListener('change',function(){ try{localStorage.setItem(KEY,sel.value);}catch(e){} idx=0; apply(current()); }); }
+    if(sel){ sel.value=mode(); sel.addEventListener('change',function(){
+      var v=sel.value; setLs(KEY,v); setLs(SKEY,v); idx=0; apply(current());
+      saveSetting('sendicon',v).then(function(r){ st(r.ok?'Enregistré pour tous les utilisateurs ✓':('Appliqué sur cet appareil seulement. '+r.why)); });
+    }); }
+    var cb=document.getElementById('setting-sendicon-deleg');
+    if(cb) cb.addEventListener('change',function(){
+      var on=cb.checked; setLs(DKEY,on?'1':'0');
+      saveSetting('sendicon_admin',on).then(function(r){ if(!r.ok){ cb.checked=!on; setLs(DKEY,on?'0':'1'); st(r.why); } else st(on?'Les administrateurs peuvent maintenant choisir le bouton d’envoi.':'Accès administrateur retiré.'); });
+    });
+    if(window.__hnAuth){ lastAuth={owner:window.__hnAuth.owner(),role:window.__hnAuth.role()}; }
+    updateCard();
     apply(current());
     addRetryRows();
+    syncFromServer();
+    setInterval(syncFromServer,300000);
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) syncFromServer(); });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
