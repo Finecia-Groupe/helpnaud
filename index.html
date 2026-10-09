@@ -1185,6 +1185,7 @@
   /* Réglages */
   .settings-form{ display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; }
   .settings-form .full{ grid-column:1/-1; }
+  .settings-form input[type="checkbox"], .settings-form input[type="radio"]{ width:auto; flex:none; padding:0; }
   .settings-form label{ font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:3px; }
   .settings-form input, .settings-form select, .settings-form textarea{
     width:100%; border:1px solid var(--line); border-radius:7px; padding:8px 9px;
@@ -35545,7 +35546,7 @@
   var HNO_OPTIONS = [
     { n: 1, id: 'assistant', view: 'assistant', emoji: '💬', label: 'Assistant (chat)', best: 'Questions libres, explications, rédaction et analyse de votre dossier.' },
     { n: 2, id: 'cowork', view: 'cowork', emoji: '🫂', label: 'Co-work', best: 'Travailler sur vos fichiers et documents avec les outils (Excel, rapports, rédaction, discussion).' },
-    { n: 3, id: 'hstat', view: 'hstat', emoji: '📈', label: 'H-Start', best: 'Statistiques, calculatrices et analyses de données.' }
+    { n: 3, id: 'hstat', view: 'hstat', emoji: '📈', label: 'H-Start', best: 'Clavardage, statistiques, rédaction de document et analyse de données.' }
   ];
   var HNO_SUGGEST = { dashboard: 'assistant', documents: 'assistant', catalogue: 'assistant', anomalies: 'assistant', report: 'assistant', resolutions: 'assistant', library: 'cowork', tasks: 'cowork', database: 'hstat', hweb: 'cowork', hntools: 'cowork', fghlab: 'cowork', settings: 'assistant' };
   function hnoTest(){ return window.__HNO_TEST || {}; }
@@ -36721,6 +36722,89 @@
       if(f){ f.scrollIntoView({block:'center'}); f.focus(); }
     }
   }, {passive:true});
+})();
+</script>
+<style>
+.hn-fold-head{ cursor:pointer; position:relative; -webkit-tap-highlight-color:transparent; }
+.hn-fold-head:not(.hn-fold-member-head){ padding-right:30px !important; }
+.hn-fold-caret{ position:absolute; right:6px; top:50%; transform:translateY(-50%); width:22px; height:22px; line-height:22px; text-align:center; border-radius:50%; font-size:13px; color:var(--muted); background:var(--surface-2); transition:transform .15s; pointer-events:none; }
+.hn-fold-member-head .hn-fold-caret{ position:static; display:inline-block; transform:none; margin-right:6px; vertical-align:middle; }
+.hn-fold-card.hn-collapsed > .hn-fold-head .hn-fold-caret{ transform:translateY(-50%) rotate(-90deg); }
+.hn-fold-card.hn-collapsed > .hn-fold-member-head .hn-fold-caret{ transform:rotate(-90deg); }
+.hn-fold-card.hn-collapsed > :not(.hn-fold-head){ display:none !important; }
+.hn-fold-card.hn-collapsed > .hn-fold-head > p, .hn-fold-card.hn-collapsed > .hn-fold-head > .hint{ display:none; }
+.hn-fold-member.hn-collapsed > .hn-fold-head > div + div{ display:none !important; }
+.hn-fold-member.hn-collapsed > .hn-fold-head .hint, .hn-fold-member.hn-collapsed > .hn-fold-head span:not(.hn-fold-caret){ display:none; }
+</style>
+<script>
+/* Cartes pliables/dépliables (Réglages, FGH-Colab, H-Web, Outils) — état mémorisé sur l'appareil */
+(function(){
+  var VIEWS = ['settings','fghlab','hweb','hntools'];
+  var SK = 'helpnaud_folds', folds = {};
+  try{ (JSON.parse(localStorage.getItem(SK) || '[]') || []).forEach(function(k){ folds[k] = 1; }); }catch(e){}
+  function save(){ try{ localStorage.setItem(SK, JSON.stringify(Object.keys(folds).slice(-400))); }catch(e){} }
+  var HEAD = /^H[1-4]$/;
+  function findHead(card){
+    var f = card.firstElementChild; if(!f) return null;
+    if(HEAD.test(f.tagName)) return f;
+    if(f.tagName === 'DIV' && f.querySelector('h1,h2,h3,h4') && f.textContent.trim().length < 400) return f;
+    return null;
+  }
+  function keyFor(card, head, view){
+    var t = (head.textContent || '').replace(/[▾▸]/g,'').replace(/\s+/g,' ').trim().slice(0, 70);
+    return view + '|' + (card.id || '') + '|' + t;
+  }
+  function setup(card, head, view, member){
+    if(head.getAttribute('data-hn-fold') === '1' && card.classList.contains('hn-fold-card')) return;
+    card.classList.add('hn-fold-card'); head.classList.add('hn-fold-head');
+    if(member){ card.classList.add('hn-fold-member'); head.classList.add('hn-fold-member-head'); }
+    head.setAttribute('data-hn-fold','1'); head.setAttribute('role','button'); head.tabIndex = 0;
+    var caret = document.createElement('span'); caret.className = 'hn-fold-caret'; caret.setAttribute('aria-hidden','true'); caret.textContent = '▾';
+    if(member){ var anchor = head.firstElementChild; if(anchor) anchor.insertBefore(caret, anchor.firstChild); else head.appendChild(caret); }
+    else head.appendChild(caret);
+    var k = keyFor(card, head, view); card.setAttribute('data-hn-fold-key', k);
+    if(folds[k]) card.classList.add('hn-collapsed');
+    head.setAttribute('aria-expanded', folds[k] ? 'false' : 'true');
+  }
+  function enhance(){
+    VIEWS.forEach(function(v){
+      var root = document.getElementById('view-' + v); if(!root) return;
+      Array.prototype.forEach.call(root.querySelectorAll('.card, #fghlab-legacy-admin-section, div[style*="border:1px solid"]'), function(card){
+        if(card.tagName === 'DETAILS' || card.children.length < 2) return;
+        var f = card.firstElementChild;
+        if(card.className.indexOf('card') < 0 && card.id !== 'fghlab-legacy-admin-section' && !(f && f.tagName === 'H3')) return;
+        var head = findHead(card);
+        if(head) setup(card, head, v, false);
+      });
+      Array.prototype.forEach.call(root.querySelectorAll('[data-fghlab-team-edit]'), function(btn){
+        var hd = btn.parentElement && btn.parentElement.parentElement, card = hd && hd.parentElement;
+        if(hd && card && card.children.length >= 2 && card.firstElementChild === hd) setup(card, hd, v, true);
+      });
+    });
+  }
+  function toggle(head){
+    var card = head.parentElement; if(!card || !card.classList.contains('hn-fold-card')) return;
+    var c = card.classList.toggle('hn-collapsed'), k = card.getAttribute('data-hn-fold-key') || '';
+    if(c) folds[k] = 1; else delete folds[k];
+    head.setAttribute('aria-expanded', c ? 'false' : 'true'); save();
+  }
+  document.addEventListener('click', function(e){
+    var t = e.target; if(!t || !t.closest) return;
+    var head = t.closest('.hn-fold-head'); if(!head) return;
+    if(t.closest('button, a, input, select, textarea, summary, label, details')) return;
+    toggle(head);
+  });
+  document.addEventListener('keydown', function(e){
+    if((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('hn-fold-head')){ e.preventDefault(); toggle(e.target); }
+  });
+  var timer = null;
+  function schedule(){ if(timer) return; timer = setTimeout(function(){ timer = null; try{ enhance(); }catch(e){} }, 60); }
+  function boot(){
+    enhance();
+    var mo = new MutationObserver(schedule);
+    VIEWS.forEach(function(v){ var r = document.getElementById('view-' + v); if(r) mo.observe(r, { childList:true, subtree:true }); });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 </script>
 </body></html>
