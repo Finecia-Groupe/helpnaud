@@ -4449,6 +4449,22 @@
         </div>
       </div>
 
+      <!-- Logo de profil (favicon) FINECIA GROUPE : onglet du navigateur + en-tête FGH-Colab. -->
+      <div class="card" id="fghlab-brandlogo-card" style="margin-bottom:16px;">
+        <h2 style="margin:0 0 4px; font-size:15px;">🖼️ Logo de profil (favicon) — FINECIA GROUPE</h2>
+        <p class="hint" style="margin:0 0 10px;">Image carrée recommandée (PNG, JPG, SVG ou WebP). Elle devient l’icône de l’onglet du navigateur (profil de la marque). L’icône de FGH-Colab, notre outil de travail, reste inchangée. Redimensionnée automatiquement ; stockée sur cet appareil.</p>
+        <div class="logo-upload-row">
+          <div class="logo-preview" id="fghlab-brandlogo-preview" style="width:64px; height:64px;">Logo</div>
+          <div>
+            <button type="button" class="btn" id="fghlab-brandlogo-btn">Téléverser le logo</button>
+            <button type="button" class="btn" id="fghlab-brandlogo-remove" style="margin-left:6px;">Retirer</button>
+            <input type="file" id="fghlab-brandlogo-input" accept="image/*" hidden>
+            <span class="copy-status" id="fghlab-brandlogo-status"></span>
+          </div>
+        </div>
+      </div>
+
+
       <!-- Avis de verrouillage de l'espace propriétaire : affiché seulement quand le verrou est actif
            et qu'aucune session propriétaire (Supabase) ni membre n'est ouverte — voir
            fghlabOwnerRefresh() en JS. -->
@@ -5124,21 +5140,6 @@
           <div class="modal-actions" style="justify-content:flex-start; margin-top:14px;">
             <button class="btn primary" id="plans-save" type="button">Enregistrer les offres</button>
             <span class="copy-status" id="plans-status"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Logo de profil (favicon) FINECIA GROUPE : onglet du navigateur + en-tête FGH-Colab. -->
-      <div class="card" id="fghlab-brandlogo-card" style="margin-bottom:16px;">
-        <h2 style="margin:0 0 4px; font-size:15px;">🖼️ Logo de profil (favicon) — FINECIA GROUPE</h2>
-        <p class="hint" style="margin:0 0 10px;">Image carrée recommandée (PNG, JPG, SVG ou WebP). Elle devient l’icône de l’onglet du navigateur (profil de la marque). L’icône de FGH-Colab, notre outil de travail, reste inchangée. Redimensionnée automatiquement ; stockée sur cet appareil.</p>
-        <div class="logo-upload-row">
-          <div class="logo-preview" id="fghlab-brandlogo-preview" style="width:64px; height:64px;">Logo</div>
-          <div>
-            <button type="button" class="btn" id="fghlab-brandlogo-btn">Téléverser le logo</button>
-            <button type="button" class="btn" id="fghlab-brandlogo-remove" style="margin-left:6px;">Retirer</button>
-            <input type="file" id="fghlab-brandlogo-input" accept="image/*" hidden>
-            <span class="copy-status" id="fghlab-brandlogo-status"></span>
           </div>
         </div>
       </div>
@@ -36500,6 +36501,169 @@
     var r=build(); if(window.__hn){ window.__hn.copyText(r.text,document.getElementById('hp-status'),null); } else if(navigator.clipboard){ navigator.clipboard.writeText(r.text).then(function(){st('Copié ✓');}); }
   });
   window.__hnWebPremium={services:SERVICES};
+})();
+</script>
+
+<script>
+(function(){
+  'use strict';
+  var CKEY='helpnaud_brandlogo_cache', FGHKEY='helpnaud_fgh_brandlogo', DKEY='helpnaud_brandlogo_deleg';
+  var serverUrl='';
+  function ls(k){ try{ return localStorage.getItem(k)||''; }catch(e){ return ''; } }
+  function setLs(k,v){ try{ if(v) localStorage.setItem(k,v); else localStorage.removeItem(k); }catch(e){} }
+  function validLogo(v){ return typeof v==='string' && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(v) && v.length<=250000; }
+  var mark=document.querySelector('.brand-mark'), originalMark=mark?mark.innerHTML:'';
+
+  /* ---- Affichage : logo de l'application (barre latérale) + icône d'onglet ---- */
+  function placeFavicon(){
+    var head=document.head;
+    var fgh=ls(FGHKEY);                       // logo de profil choisi localement par un membre : prioritaire sur cet appareil
+    var mine=head.querySelectorAll('link[data-hn-brand]');
+    if(fgh){ for(var i=0;i<mine.length;i++) mine[i].remove(); return; }
+    var defs=head.querySelectorAll('link[data-hn-default]');
+    for(var j=0;j<defs.length;j++){
+      var d=defs[j];
+      if(serverUrl){ if(d.getAttribute('href')){ d.setAttribute('data-hn-off',d.getAttribute('href')); d.removeAttribute('href'); } }
+      else if(d.getAttribute('data-hn-off')){ d.setAttribute('href',d.getAttribute('data-hn-off')); d.removeAttribute('data-hn-off'); }
+    }
+    ['icon','apple-touch-icon'].forEach(function(rel){
+      var l=head.querySelector('link[data-hn-brand="'+rel+'"]');
+      if(!serverUrl){ if(l) l.remove(); return; }
+      if(!l){ l=document.createElement('link'); l.rel=rel; l.setAttribute('data-hn-brand',rel); head.appendChild(l); }
+      l.type='image/png'; l.href=serverUrl;
+    });
+  }
+  function applyBrand(){
+    if(mark){
+      if(serverUrl){
+        mark.innerHTML='<img alt="HelpNaud" decoding="async" style="width:100%;height:100%;object-fit:contain;display:block;">';
+        mark.firstChild.src=serverUrl;
+      } else mark.innerHTML=originalMark;
+    }
+    var pv=document.getElementById('hn-brandlogo-preview');
+    if(pv) pv.innerHTML=serverUrl?'<img alt="Logo HelpNaud" src="'+serverUrl+'" style="width:100%;height:100%;object-fit:contain;">':originalMark;
+    placeFavicon();
+  }
+  var rm=document.getElementById('fghlab-brandlogo-remove');
+  if(rm) rm.addEventListener('click',function(){ setTimeout(placeFavicon,60); });
+  var fin=document.getElementById('fghlab-brandlogo-input');
+  if(fin) fin.addEventListener('change',function(){ setTimeout(placeFavicon,500); });
+  var cached=ls(CKEY); if(validLogo(cached)) serverUrl=cached;
+
+  /* ---- Serveur : lecture publique, écriture réservée (propriétaire / administrateur autorisé) ---- */
+  function fetchSetting(key){
+    var A=window.__hnAuth; if(!A) return Promise.resolve(undefined);
+    var ctl=window.AbortController?new AbortController():null; if(ctl) setTimeout(function(){ctl.abort();},7000);
+    return fetch(A.url+'/rest/v1/rpc/public_setting_get',{method:'POST',headers:{'Content-Type':'application/json',apikey:A.key},body:JSON.stringify({p_key:key}),signal:ctl?ctl.signal:undefined})
+      .then(function(r){ return r.ok?r.json():undefined; }).catch(function(){ return undefined; });
+  }
+  function saveSetting(key,value){
+    var A=window.__hnAuth, sb=A&&A.client&&A.client(); if(!sb) return Promise.resolve({ok:false,why:'Service indisponible.'});
+    return sb.rpc('app_setting_set',{p_key:key,p_value:value}).then(function(r){
+      if(r&&r.error){ var c=String(r.error.code||'');
+        return {ok:false,why:(c==='42501'?'Action réservée au propriétaire ou à un administrateur autorisé (connecté à ADMINISTRATEUR).':(c==='PGRST202'?'Le serveur n’est pas encore configuré (fichier supabase-phase3g.sql à exécuter dans Supabase).':(c==='22023'?'Image refusée (PNG, 250 Ko maximum).':'Enregistrement impossible.')))}; }
+      return {ok:true};
+    },function(){ return {ok:false,why:'Connexion au serveur impossible.'}; });
+  }
+  function syncFromServer(){
+    fetchSetting('brandlogo').then(function(v){
+      if(v===undefined) return;                       // serveur injoignable : on garde l'affichage actuel
+      serverUrl=validLogo(v)?v:''; setLs(CKEY,serverUrl); applyBrand();
+    });
+    fetchSetting('brandlogo_admin').then(function(v){ if(v===undefined) return; setLs(DKEY,v===true?'1':''); updateCard(); });
+  }
+
+  /* ---- Carte « Logo de la marque HelpNaud » dans ADMINISTRATEUR ---- */
+  var host=document.querySelector('#fghlab-admin-card .collapsible-body')||document.getElementById('fghlab-admin-card');
+  var card=null, lastAuth={owner:false,role:null};
+  function st(t){ var e=document.getElementById('hn-brandlogo-status'); if(!e) return; e.textContent=t; setTimeout(function(){e.textContent='';},5200); }
+  if(host){
+    card=document.createElement('div'); card.id='hn-brandlogo-card'; card.style.cssText='display:none;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--surface-2);margin:14px 0;';
+    card.innerHTML=
+     '<h3 style="margin:0 0 4px;font-size:14px;">🏷️ Logo de la marque HelpNaud</h3>'+
+     '<p class="hint" style="margin:0 0 10px;">Le logo téléversé ici devient automatiquement, sur <b>tous les appareils</b>, le logo de l’application (barre latérale) et l’icône de l’onglet du navigateur. Image carrée recommandée en <b>PNG, JPG, WebP ou SVG</b> (au moins 256 × 256 px) : elle est convertie en PNG net, 256 px.</p>'+
+     '<div class="logo-upload-row"><div class="logo-preview" id="hn-brandlogo-preview" style="width:64px;height:64px;padding:0;"></div>'+
+     '<div><button type="button" class="btn" id="hn-brandlogo-btn">Téléverser le logo</button> '+
+     '<button type="button" class="btn" id="hn-brandlogo-reset" style="margin-left:6px;">Rétablir le logo par défaut</button>'+
+     '<input type="file" id="hn-brandlogo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>'+
+     '<span class="copy-status" id="hn-brandlogo-status"></span></div></div>'+
+     '<label id="hn-brandlogo-deleg-wrap" style="display:none;align-items:flex-start;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;"><input type="checkbox" id="hn-brandlogo-deleg" style="margin-top:3px;"><span>Autoriser les administrateurs désignés (connectés à ADMINISTRATEUR) à changer le logo de la marque HelpNaud.</span></label>';
+    host.appendChild(card);
+  }
+  function sessionOpen(){ var z=document.getElementById('fghlab-admin-session-zone'); return !!(z && z.style.display!=='none' && z.offsetParent!==null); }
+  function updateCard(){
+    if(!card) return;
+    var isOwner=!!lastAuth.owner, deleg=!!ls(DKEY);
+    var isAdmin=lastAuth.role==='admin';
+    card.style.display=(isOwner||(isAdmin&&deleg&&sessionOpen()))?'':'none';
+    var w=document.getElementById('hn-brandlogo-deleg-wrap'); if(w) w.style.display=isOwner?'flex':'none';
+    var cb=document.getElementById('hn-brandlogo-deleg'); if(cb) cb.checked=deleg;
+    var pv=document.getElementById('hn-brandlogo-preview'); if(pv && !pv.firstChild) applyBrand();
+  }
+  document.addEventListener('hn-auth',function(e){ lastAuth=e.detail||lastAuth; updateCard(); });
+  var sz=document.getElementById('fghlab-admin-session-zone');
+  if(sz && window.MutationObserver) new MutationObserver(updateCard).observe(sz,{attributes:true,attributeFilter:['style']});
+
+  /* Conversion : n'importe quelle image -> PNG carré 256 px, fond transparent, proportions conservées. */
+  function toPng(file){
+    return new Promise(function(resolve,reject){
+      var fr=new FileReader();
+      fr.onerror=function(){ reject(new Error('read')); };
+      fr.onload=function(ev){
+        var img=new Image();
+        img.onerror=function(){ reject(new Error('img')); };
+        img.onload=function(){
+          var sizes=[256,192,128];
+          for(var i=0;i<sizes.length;i++){
+            var S=sizes[i], c=document.createElement('canvas'); c.width=c.height=S; var x=c.getContext('2d');
+            var w=img.naturalWidth||img.width||S, h=img.naturalHeight||img.height||S, k=Math.min(S/w,S/h), dw=w*k, dh=h*k;
+            x.imageSmoothingQuality='high'; x.drawImage(img,(S-dw)/2,(S-dh)/2,dw,dh);
+            var url=c.toDataURL('image/png'); if(url.length<=240000){ resolve(url); return; }
+          }
+          reject(new Error('big'));
+        };
+        img.src=ev.target.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  var btn=document.getElementById('hn-brandlogo-btn'), inp=document.getElementById('hn-brandlogo-input');
+  if(btn&&inp){
+    btn.addEventListener('click',function(){ inp.click(); });
+    inp.addEventListener('change',function(e){
+      var f=e.target.files&&e.target.files[0]; if(!f) return;
+      if(!/^image\//.test(f.type)){ st('Choisissez un fichier image.'); e.target.value=''; return; }
+      st('Envoi en cours…');
+      toPng(f).then(function(url){
+        return saveSetting('brandlogo',url).then(function(r){
+          if(!r.ok){ st(r.why); return; }
+          serverUrl=url; setLs(CKEY,url); applyBrand(); st('Logo mis à jour sur tous les appareils ✓');
+        });
+      }).catch(function(err){ st(err&&err.message==='big'?'Image trop lourde : choisissez une image plus simple.':'Image illisible.'); });
+      e.target.value='';
+    });
+  }
+  var rs=document.getElementById('hn-brandlogo-reset');
+  if(rs) rs.addEventListener('click',function(){
+    if(!window.confirm('Rétablir le logo HelpNaud par défaut sur tous les appareils ?')) return;
+    saveSetting('brandlogo','').then(function(r){ if(!r.ok){ st(r.why); return; } serverUrl=''; setLs(CKEY,''); applyBrand(); st('Logo par défaut rétabli ✓'); });
+  });
+  var dcb=document.getElementById('hn-brandlogo-deleg');
+  if(dcb) dcb.addEventListener('change',function(){
+    var on=dcb.checked; setLs(DKEY,on?'1':'');
+    saveSetting('brandlogo_admin',on).then(function(r){
+      if(!r.ok){ dcb.checked=!on; setLs(DKEY,on?'':'1'); st(r.why); }
+      else st(on?'Les administrateurs autorisés peuvent maintenant changer le logo.':'Accès administrateur retiré.');
+    });
+  });
+
+  function init(){
+    if(window.__hnAuth) lastAuth={owner:window.__hnAuth.owner(),role:window.__hnAuth.role()};
+    applyBrand(); updateCard(); syncFromServer();
+    setInterval(syncFromServer,300000);
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) syncFromServer(); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){ setTimeout(init,0); }); else setTimeout(init,0);
 })();
 </script>
 

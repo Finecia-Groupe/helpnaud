@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>FINECIA GROUPE — Partner Market</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" data-hn-default="1">
+<link rel="icon" href="/favicon.ico" sizes="any" data-hn-default="1">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" data-hn-default="1">
+
 <style>
   :root{ --bg:#F6F4EF; --surface:#fff; --ink:#16304A; --muted:#5B6B7B; --line:#D9D4C7; --accent:#2D9C93; --gold:#C89B3C; --bad:#B3261E; }
   @media (prefers-color-scheme: dark){ :root{ --bg:#0F1B28; --surface:#16273A; --ink:#EAF0F6; --muted:#9FB0C2; --line:#2B3E54; --accent:#46C2B8; --gold:#E0B04F; --bad:#F2685C; } }
@@ -389,6 +393,23 @@
   else if(Q.get('doc')) viewDocs(Q.get('doc'));
   else if(Q.get('rdv')) viewRdv();
   else app.innerHTML = '<div class="card"><h1>FINECIA GROUPE</h1><p class="hint">Cette page s’ouvre depuis un lien envoyé par FINECIA GROUPE (invitation, rendez-vous ou catalogue).</p></div>';
+})();
+</script>
+<script>
+/* Logo de la marque HelpNaud (choisi par le propriétaire, commun à tous les appareils) : icône d'onglet. */
+(function(){
+  var URL_='https://elzdsyfxpeqnrhlxbgbk.supabase.co', KEY='sb_publishable_5ZLQ6FIGJMATE6YslnS_Dw_D9x8TL7P', C='helpnaud_brandlogo_cache';
+  function ok(v){ return typeof v==='string' && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(v) && v.length<=250000; }
+  function put(u){
+    var h=document.head, d=h.querySelectorAll('link[data-hn-default]'), i;
+    for(i=0;i<d.length;i++){ if(u){ if(d[i].getAttribute('href')){ d[i].setAttribute('data-hn-off',d[i].getAttribute('href')); d[i].removeAttribute('href'); } } else if(d[i].getAttribute('data-hn-off')){ d[i].setAttribute('href',d[i].getAttribute('data-hn-off')); d[i].removeAttribute('data-hn-off'); } }
+    ['icon','apple-touch-icon'].forEach(function(rel){ var l=h.querySelector('link[data-hn-brand="'+rel+'"]'); if(!u){ if(l) l.remove(); return; } if(!l){ l=document.createElement('link'); l.rel=rel; l.setAttribute('data-hn-brand',rel); h.appendChild(l); } l.type='image/png'; l.href=u; });
+  }
+  try{ var c=localStorage.getItem(C); if(ok(c)) put(c); }catch(e){}
+  try{
+    fetch(URL_+'/rest/v1/rpc/public_setting_get',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY},body:JSON.stringify({p_key:'brandlogo'})})
+      .then(function(r){ return r.ok?r.json():undefined; }).then(function(v){ if(v===undefined) return; var u=ok(v)?v:''; try{ localStorage.setItem(C,u); }catch(e){} put(u); }).catch(function(){});
+  }catch(e){}
 })();
 </script>
 </body>
