@@ -217,6 +217,15 @@
   }
 
   /* Sidebar */
+  /* Anti-débordement mobile + style des Options 1/2/3 */
+  select, .card, .view, .main{ max-width:100%; }
+  select{ min-width:0; text-overflow:ellipsis; }
+  .card{ min-width:0; box-sizing:border-box; }
+  .hno-pill{ display:inline-block; padding:3px 16px; border-radius:999px; background:var(--accent-soft); color:var(--accent-ink); border:1px solid var(--accent); font-weight:700; font-size:12.5px; }
+  .hno-line{ position:relative; height:22px; margin:2px 0 0; }
+  .hno-line::before{ content:""; position:absolute; left:0; right:0; top:50%; height:2px; background:var(--accent); transform:translateY(-50%); opacity:.55; }
+  .hno-node{ position:absolute; left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:var(--surface); border:3px solid var(--accent); box-sizing:border-box; }
+  .hno-label{ font-weight:700; font-size:14.5px; }
   .sidebar{
     width:236px;
     flex:none;
@@ -2953,7 +2962,7 @@
               <!-- Commandes rapides : tapez / (ex. /van, /ecart-type, /calculateurs) pour obtenir des
                    suggestions H-Start, comme pour Co-work — voir HSTAT_SLASH_COMMANDS. -->
               <div class="cowork-slash-menu" id="hstat-slash-menu" hidden role="listbox" aria-label="Commandes rapides"></div>
-              <textarea id="hstat-input" rows="1" placeholder="Posez votre question, ou choisissez d'abord un domaine ci-dessus. Tapez / pour des suggestions." autocomplete="off"></textarea>
+              <textarea id="hstat-input" rows="1" placeholder="Clavardez avec H-Start : posez votre question, ou choisissez d'abord un domaine. Tapez / pour des suggestions." autocomplete="off"></textarea>
               <button class="btn icon-only mic-btn chat-mic-btn" id="hstat-mic" type="button" title="Note vocale">
                 <svg viewBox="0 0 24 24"><path d="M12 15a3.4 3.4 0 0 0 3.4-3.4V6a3.4 3.4 0 0 0-6.8 0v5.6A3.4 3.4 0 0 0 12 15z"/><path d="M6 11a6 6 0 0 0 12 0M12 17.5V21"/></svg>
               </button>
@@ -17189,7 +17198,7 @@
       '<div style="margin-bottom:8px;"><div style="display:flex; justify-content:space-between; font-size:12px;"><span id="fghlab-planprog-label-'+key+'">Avancement</span><strong id="fghlab-planprog-pct-'+key+'">0 %</strong></div>' +
         '<div style="height:8px; background:var(--line); border-radius:6px; overflow:hidden;"><div id="fghlab-planprog-bar-'+key+'" style="height:100%; width:0; background:#2D9C93;"></div></div></div>' +
       '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">' +
-        '<select id="fghlab-planex-select-'+key+'" style="'+st+'">' + FGHLAB_PLAN_EXAMPLES.map(function(e){ return '<option value="'+e.id+'">'+escapeHtml(e.name + ' — ' + e.tagline)+'</option>'; }).join('') + '</select>' +
+        '<select id="fghlab-planex-select-'+key+'" style="'+st+' max-width:100%; min-width:0; flex:1 1 100%; width:100%; box-sizing:border-box; text-overflow:ellipsis;">' + FGHLAB_PLAN_EXAMPLES.map(function(e){ return '<option value="'+e.id+'">'+escapeHtml(e.name + ' — ' + e.tagline)+'</option>'; }).join('') + '</select>' +
         '<button type="button" class="btn" id="fghlab-planex-load-'+key+'" style="padding:5px 10px; font-size:12px;">📚 Charger ce projet fictif pour s’exercer</button>' +
         '<button type="button" class="btn danger" id="fghlab-planex-clear-'+key+'" style="padding:5px 10px; font-size:12px;">Retirer les exemples fictifs</button>' +
         '<span class="copy-status" id="fghlab-planex-status-'+key+'"></span></div>' +
@@ -17350,8 +17359,8 @@
     }).join('');
     var otherHtml = (key === 'etudes') ?
       ('<input type="text" id="fghlab-tracker-modeltype-etudes-other" placeholder="Précisez le type de recensement" style="display:none; margin-top:6px; width:100%; flex:1 1 100%; border:1px solid var(--line); border-radius:9px; padding:6px 9px; background:var(--surface); color:var(--ink); font-size:12.5px;">') : '';
-    return '<label style="display:flex; flex-direction:column; gap:2px; font-size:10.5px; color:var(--muted); flex:1 1 100%;">'+escapeHtml(caption)+
-      '<select id="fghlab-tracker-modeltype-'+key+'" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">'+options+'</select>' +
+    return '<label style="display:flex; flex-direction:column; gap:2px; font-size:10.5px; color:var(--muted); flex:1 1 100%; min-width:0; max-width:100%;">'+escapeHtml(caption)+
+      '<select id="fghlab-tracker-modeltype-'+key+'" style="max-width:100%; min-width:0; width:100%; box-sizing:border-box; text-overflow:ellipsis; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">'+options+'</select>' +
     '</label>' + otherHtml;
   }
   /* ===== Outil Performance organisationnelle (perforg) — lignes supplémentaires dynamiques =====
@@ -33836,7 +33845,7 @@
   function renderHstatIntro(){
     if(hstatLog.dataset.ready) return;
     hstatLog.dataset.ready = '1';
-    addHstatMsg("Bonjour, je suis HelpNaud.ai — H-Start. Choisissez un domaine ci-dessus pour une consultation avancée orientée.", 'bot');
+    addHstatMsg("Bonjour, je suis HelpNaud.ai — H-Start. Choisissez un domaine ci-dessus pour une consultation avancée orientée. Vous pouvez aussi clavarder (clavardage) librement : écrivez simplement votre question, ou tapez /clavarder.", 'bot');
     renderHstatDomainRow();
     fillHstatSuggestRow(HSTAT_DEFAULT_SUGGESTIONS);
   }
@@ -33949,10 +33958,12 @@
     { cmd:'sharpe', aliases:['sharpe','ratio'], label:"Calculer un ratio de Sharpe", icon:'📐', text:'Calcule le ratio de Sharpe de ce portefeuille : ' },
     { cmd:'interet', aliases:['interet','intérêt','compose','composé'], label:'Calculer un intérêt composé', icon:'💹', text:"Calcule l'intérêt composé pour : " },
     { cmd:'amortissement', aliases:['amortissement','pret','prêt'], label:"Calculer l'amortissement d'un prêt", icon:'🏦', text:"Calcule l'amortissement de ce prêt : " },
+    { cmd:'clavarder', aliases:['clavarder','clavardage','clavardez','clavarde','discuter','chat'], label:'Clavarder (clavardage) librement avec H-Start', icon:'💬', action:'chat' },
     { cmd:'calculateurs', aliases:['calculateurs','calc','calculatrice','calculatrices'], label:'Ouvrir les calculateurs hors-ligne', icon:'🧮', action:'calc' },
     { cmd:'domaine', aliases:['domaine','domain','domaines'], label:'Choisir un domaine de consultation', icon:'🗂️', action:'domain' }
   ];
   function runHstatSlashCommand(command, rest){
+    if(command.action === 'chat'){ switchHstatTab('consult'); hstatInput.value = rest || ''; hstatInputResize(); setTimeout(function(){ hstatInput.focus(); }, 80); return; }
     if(command.action === 'calc'){ switchHstatTab('calc'); return; }
     if(command.action === 'domain'){ if(hstatDomainToggle) hstatDomainToggle.click(); return; }
     var text = command.text + (rest || '');
@@ -35526,7 +35537,7 @@
 
   /* ================= Lot 7 — Options (Assistant / Co-work / H-Start), recherche, crédits ================= */
   var HNO_OPTIONS = [
-    { n: 1, id: 'assistant', view: 'assistant', emoji: '💬', label: 'Assistant (Chat)', best: 'Questions libres, explications, rédaction et analyse de votre dossier.' },
+    { n: 1, id: 'assistant', view: 'assistant', emoji: '💬', label: 'Assistant (chat)', best: 'Questions libres, explications, rédaction et analyse de votre dossier.' },
     { n: 2, id: 'cowork', view: 'cowork', emoji: '🫂', label: 'Co-work', best: 'Travailler sur vos fichiers et documents avec les outils (Excel, rapports, rédaction, discussion).' },
     { n: 3, id: 'hstat', view: 'hstat', emoji: '📈', label: 'H-Start', best: 'Statistiques, calculatrices et analyses de données.' }
   ];
@@ -35548,13 +35559,14 @@
     return b ? (b.textContent || '').replace(/\s+/g, ' ').trim() : view;
   }
   function hnoTilesHtml(current){
-    return '<div style="display:flex; gap:10px; flex-wrap:wrap;">' + HNO_OPTIONS.map(function(o){
+    return '<div class="hno-tiles" style="display:flex; gap:10px; flex-wrap:wrap;">' + HNO_OPTIONS.map(function(o){
       var isPref = hnoState.pref === o.id, isCur = current === o.id;
-      return '<div data-hno-tile="' + o.id + '" style="flex:1; min-width:170px; border:' + (isPref ? '2px solid var(--accent)' : '1px solid var(--line)') + '; border-radius:12px; padding:10px 12px; background:var(--surface);">' +
-        '<div style="font-size:11px; font-weight:700; letter-spacing:.04em; color:var(--muted); text-transform:uppercase;">Option ' + o.n + (isCur ? ' · en cours' : '') + '</div>' +
-        '<div style="font-weight:700; font-size:14.5px; margin:2px 0;">' + o.emoji + ' ' + o.label + '</div>' +
-        '<div class="hint" style="margin:0 0 8px; font-size:12px; line-height:1.45;">' + o.best + '</div>' +
-        '<div style="display:flex; gap:6px; flex-wrap:wrap;"><button type="button" class="btn' + (isCur ? '' : ' primary') + '" data-hno-go="' + o.view + '" style="padding:4px 10px; font-size:12px;">' + (isCur ? 'Rester ici' : 'Utiliser') + '</button>' +
+      return '<div data-hno-tile="' + o.id + '" style="flex:1 1 150px; min-width:0; box-sizing:border-box; border:' + (isPref ? '2px solid var(--accent)' : '1px solid var(--line)') + '; border-radius:12px; padding:12px; background:var(--surface); text-align:center;">' +
+        '<span class="hno-pill">Option ' + o.n + '</span>' +
+        '<div class="hno-line" aria-hidden="true"><span class="hno-node"></span></div>' +
+        '<div class="hno-label">' + o.label + (isCur ? ' <span style="font-weight:500; color:var(--muted); font-size:11px;">· en cours</span>' : '') + '</div>' +
+        '<div class="hint" style="margin:4px 0 8px; font-size:12px; line-height:1.45;">' + o.best + '</div>' +
+        '<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center;"><button type="button" class="btn' + (isCur ? '' : ' primary') + '" data-hno-go="' + o.view + '" style="padding:4px 10px; font-size:12px;">' + (isCur ? 'Rester ici' : 'Utiliser') + '</button>' +
         '<button type="button" class="btn" data-hno-pick="' + o.id + '" style="padding:4px 10px; font-size:12px;" aria-pressed="' + (isPref ? 'true' : 'false') + '">' + (isPref ? '★ Ma préférée' : '☆ La meilleure pour moi') + '</button></div></div>';
     }).join('') + '</div>';
   }
@@ -36667,4 +36679,42 @@
 })();
 </script>
 
+<script>
+/* Gestes tactiles mobile : glisser vers la droite = menu vertical (Accès rapide) ; vers la gauche = écran de saisie */
+(function(){
+  var sx=0, sy=0, st=0, ok=false;
+  function menu(){ return document.getElementById('quicklaunch-menu'); }
+  function mobile(){ return window.matchMedia && window.matchMedia('(max-width: 860px)').matches; }
+  function blocked(t){
+    while(t && t.nodeType===1 && t!==document.body){
+      var tg=t.tagName;
+      if(/^(INPUT|TEXTAREA|SELECT|TABLE|PRE|CANVAS)$/.test(tg) || t.isContentEditable) return true;
+      if(t.id==='hno-panel' || (t.getAttribute && t.getAttribute('role')==='dialog') || /modal/i.test(t.className||'')) return true;
+      if(t.scrollWidth>t.clientWidth+4){ var ox=getComputedStyle(t).overflowX; if(ox==='auto'||ox==='scroll') return true; }
+      t=t.parentNode;
+    }
+    return false;
+  }
+  document.addEventListener('touchstart', function(e){
+    if(!mobile()||e.touches.length!==1){ ok=false; return; }
+    var t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); ok=!blocked(e.target);
+  }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if(!ok) return; ok=false;
+    var t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Date.now()-st>800 || Math.abs(dx)<70 || Math.abs(dy)>50 || Math.abs(dx)<Math.abs(dy)*1.5) return;
+    var m=menu(), b=document.getElementById('sidebar-quicklaunch-hamburger-btn');
+    if(dx>0){ if(m && m.hidden && b) b.click(); }
+    else{
+      if(m && !m.hidden && b){ b.click(); return; }
+      var v=document.querySelector('.view:not([hidden])'); if(!v) return;
+      var ta=v.querySelector('#chat-input, #cowork-discuss-input, #hstat-input') ;
+      var cands=v.querySelectorAll('textarea'); var f=null;
+      for(var i=0;i<cands.length;i++){ if(cands[i].offsetParent!==null){ f=cands[i]; break; } }
+      if(ta && ta.offsetParent!==null) f=ta;
+      if(f){ f.scrollIntoView({block:'center'}); f.focus(); }
+    }
+  }, {passive:true});
+})();
+</script>
 </body></html>
