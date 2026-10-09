@@ -1837,6 +1837,7 @@
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="database">🗄️ <span>HelpNaud Database</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="hweb">🌐 <span>H-Web</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="hntools">🛠️ <span>Outils HelpNaud</span></button>
+        <button type="button" class="attach-menu-opt" data-quicklaunch-view="ifhelp">🧩 <span>Interface Help</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="fghlab" data-fghlab-nav hidden style="border-top:1px dashed var(--line); margin-top:4px; padding-top:9px;">🔒 <span>FGH-Colab <span class="badge-private">Privé</span></span></button>
       </div>
     </div>
@@ -1908,6 +1909,10 @@
       <button class="nav-btn" data-view="hntools">
         <svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l1.5 1.5 5.3-5.3a4 4 0 0 1 5.4-5.4l-2.2 2.2 1.5 1.5 2.2-2.2z"/></svg>
         <span data-i18n="nav.hntools">Outils HelpNaud</span>
+      </button>
+      <button class="nav-btn" data-view="ifhelp">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14l-2 2 2 2M16 14l2 2-2 2"/></svg>
+        <span>Interface Help</span>
       </button>
       <!-- FGH-Lab : module interne FINECIA GROUPE, masqué par défaut (voir Réglages > Gestion du
            compte administrateur > FGH-Lab — Autorisation). Visibilité pilotée localement par
@@ -4906,6 +4911,8 @@
         </details>
       </div>
     </section>
+
+    <section class="view" id="view-ifhelp" hidden></section>
 
     <section class="view" id="view-settings" hidden>
       <header class="topbar">
@@ -35166,7 +35173,7 @@
   });
 
   /* ================= Nav ================= */
-  var views = ['dashboard','documents','catalogue','anomalies','assistant','cowork','hstat','report','resolutions','tasks','library','database','hweb','hntools','fghlab','settings'];
+  var views = ['dashboard','documents','catalogue','anomalies','assistant','cowork','hstat','report','resolutions','tasks','library','database','hweb','hntools','fghlab','ifhelp','settings'];
   function scrollAppToTop(){
     // Remonte en haut de la page à chaque changement de vue (Tableau, Docs, Catalogue,
     // Alertes, Chat, Co-work, Rapport, Infos) : sans ça, l'utilisateur reste scrollé là où
@@ -36686,44 +36693,6 @@
 })();
 </script>
 
-<script>
-/* Gestes tactiles mobile : glisser vers la droite = menu vertical (Accès rapide) ; vers la gauche = écran de saisie */
-(function(){
-  var sx=0, sy=0, st=0, ok=false;
-  function menu(){ return document.getElementById('quicklaunch-menu'); }
-  function mobile(){ return window.matchMedia && window.matchMedia('(max-width: 860px)').matches; }
-  function blocked(t){
-    while(t && t.nodeType===1 && t!==document.body){
-      var tg=t.tagName;
-      if(/^(INPUT|TEXTAREA|SELECT|TABLE|PRE|CANVAS)$/.test(tg) || t.isContentEditable) return true;
-      if(t.id==='hno-panel' || (t.getAttribute && t.getAttribute('role')==='dialog') || /modal/i.test(t.className||'')) return true;
-      if(t.scrollWidth>t.clientWidth+4){ var ox=getComputedStyle(t).overflowX; if(ox==='auto'||ox==='scroll') return true; }
-      t=t.parentNode;
-    }
-    return false;
-  }
-  document.addEventListener('touchstart', function(e){
-    if(!mobile()||e.touches.length!==1){ ok=false; return; }
-    var t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); ok=!blocked(e.target);
-  }, {passive:true});
-  document.addEventListener('touchend', function(e){
-    if(!ok) return; ok=false;
-    var t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
-    if(Date.now()-st>800 || Math.abs(dx)<70 || Math.abs(dy)>50 || Math.abs(dx)<Math.abs(dy)*1.5) return;
-    var m=menu(), b=document.getElementById('sidebar-quicklaunch-hamburger-btn');
-    if(dx>0){ if(m && m.hidden && b) b.click(); }
-    else{
-      if(m && !m.hidden && b){ b.click(); return; }
-      var v=document.querySelector('.view:not([hidden])'); if(!v) return;
-      var ta=v.querySelector('#chat-input, #cowork-discuss-input, #hstat-input') ;
-      var cands=v.querySelectorAll('textarea'); var f=null;
-      for(var i=0;i<cands.length;i++){ if(cands[i].offsetParent!==null){ f=cands[i]; break; } }
-      if(ta && ta.offsetParent!==null) f=ta;
-      if(f){ f.scrollIntoView({block:'center'}); f.focus(); }
-    }
-  }, {passive:true});
-})();
-</script>
 <style>
 .hn-fold-head{ cursor:pointer; position:relative; -webkit-tap-highlight-color:transparent; }
 .hn-fold-head:not(.hn-fold-member-head){ padding-right:30px !important; }
@@ -36832,6 +36801,432 @@
   });
   window.addEventListener('scroll', all, { passive:true });
   window.addEventListener('resize', all);
+})();
+</script>
+<style>
+#hnd-backdrop{ position:fixed; inset:0; background:rgba(15,23,32,.45); z-index:9590; opacity:0; pointer-events:none; transition:opacity .2s; }
+#hnd-drawer{ position:fixed; top:0; left:0; bottom:0; width:min(330px, 86vw); background:var(--bg); color:var(--ink); z-index:9600; transform:translateX(-102%); transition:transform .24s ease; display:none; flex-direction:column; box-shadow:6px 0 30px rgba(0,0,0,.25); border-radius:0 18px 18px 0; padding-top:max(14px, env(safe-area-inset-top,0px)); }
+body.hnd-open #hnd-backdrop{ opacity:1; pointer-events:auto; }
+body.hnd-open #hnd-drawer{ transform:none; }
+body.hnd-open{ overflow:hidden; }
+@media (max-width: 860px){ #hnd-drawer{ display:flex; } }
+@media (min-width: 861px){ #hnd-backdrop, #hnd-drawer{ display:none !important; } }
+.hnd-top{ display:flex; align-items:center; gap:8px; padding:6px 14px 10px; }
+.hnd-who{ flex:1; min-width:0; }
+.hnd-who b{ display:block; font-size:16px; } .hnd-who small{ display:block; color:var(--muted); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hnd-ic{ width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--ink); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+.hnd-ic svg, .hnd-item svg, .hnd-newsession svg{ width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.hnd-scroll{ flex:1; overflow-y:auto; padding:0 10px 12px; -webkit-overflow-scrolling:touch; }
+.hnd-item{ width:100%; display:flex; align-items:center; gap:12px; padding:11px 10px; border:0; background:transparent; color:var(--ink); font-size:15px; text-align:left; border-radius:10px; cursor:pointer; position:relative; }
+.hnd-item:hover, .hnd-item:active{ background:var(--surface-2); }
+.hnd-item .hnd-badge{ margin-left:auto; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#c0392b; color:#fff; font-size:11px; line-height:18px; text-align:center; }
+.hnd-item .hnd-chev{ margin-left:auto; color:var(--muted); font-size:12px; transition:transform .15s; }
+.hnd-item[aria-expanded="true"] .hnd-chev{ transform:rotate(90deg); }
+.hnd-panel{ margin:0 4px 8px 34px; padding:6px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.hnd-panel[hidden]{ display:none; }
+.hnd-sub{ width:100%; display:flex; align-items:center; gap:8px; padding:8px; border:0; background:transparent; color:var(--ink); font-size:13.5px; text-align:left; border-radius:8px; cursor:pointer; }
+.hnd-sub:hover{ background:var(--surface-2); }
+.hnd-sub small{ color:var(--muted); margin-left:auto; font-size:11px; }
+.hnd-sub .x{ margin-left:auto; color:var(--muted); padding:0 6px; }
+.hnd-label{ margin:12px 10px 4px; font-size:12.5px; color:var(--muted); display:flex; align-items:center; }
+.hnd-label button{ margin-left:auto; border:0; background:transparent; color:var(--accent-ink); font-size:12px; cursor:pointer; }
+.hnd-empty{ margin:2px 10px 6px; font-size:12.5px; color:var(--muted); }
+.hnd-foot{ display:flex; align-items:center; gap:10px; padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px)); position:relative; }
+.hnd-avatar{ width:42px; height:42px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:var(--ink); }
+.hnd-newsession{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:999px; border:0; background:var(--ink); color:var(--bg); font-size:14.5px; font-weight:600; cursor:pointer; }
+.hnd-sessmenu{ position:absolute; left:14px; right:14px; bottom:calc(66px + env(safe-area-inset-bottom,0px)); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:6px; }
+.hnd-sessmenu[hidden]{ display:none; }
+/* Interface Help + annonce */
+.ifh-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; margin-top:12px; }
+.ifh-card{ min-width:0; }
+.ifh-card h3{ margin:0 0 2px; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ifh-card .btn{ padding:4px 9px; font-size:12px; }
+.ifh-actions{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.ifh-editor textarea{ width:100%; box-sizing:border-box; min-height:200px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; border:1px solid var(--line); border-radius:9px; padding:9px; background:var(--surface); color:var(--ink); }
+.ifh-editor input[type=text]{ width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:14px; }
+.ifh-frame-wrap{ margin-top:10px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); padding:8px; overflow:auto; }
+.ifh-frame{ display:block; margin:0 auto; border:0; background:#fff; border-radius:8px; width:100%; height:460px; max-width:100%; }
+#hnd-ad-modal{ position:fixed; inset:0; z-index:9700; background:rgba(15,23,32,.55); display:none; align-items:center; justify-content:center; padding:14px; }
+#hnd-ad-modal.open{ display:flex; }
+#hnd-ad-box{ background:var(--surface); color:var(--ink); border-radius:16px; max-width:520px; width:100%; max-height:90vh; overflow:auto; padding:16px 18px; box-sizing:border-box; }
+#hnd-ad-box label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 3px; }
+#hnd-ad-box input, #hnd-ad-box textarea{ width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--bg); color:var(--ink); font-size:14px; }
+.hnd-adtip{ border-left:3px solid var(--accent); padding:4px 10px; margin:6px 0; font-size:13px; color:var(--ink); }
+#hnd-ad-nudge{ position:fixed; left:12px; right:12px; bottom:84px; max-width:440px; margin:0 auto; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:14px; box-shadow:0 12px 40px rgba(0,0,0,.28); padding:12px 14px; z-index:8900; }
+</style>
+<script>
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  function J(k, d){ try{ var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; }catch(e){ return d; } }
+  function S(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function mobile(){ return window.matchMedia && window.matchMedia('(max-width: 860px)').matches; }
+  function uid(){ return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function toast(t){ var d = document.createElement('div'); d.textContent = t; d.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 14px;border-radius:10px;font-size:13px;z-index:99999;max-width:90vw;'; document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 2600); }
+  function go(view){
+    var b = document.querySelector('#nav-desktop [data-view="' + view + '"], .nav-btn[data-view="' + view + '"]');
+    if(b) b.click();
+  }
+  var ICON = {
+    proj:'<svg viewBox="0 0 24 24"><path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 8l2-4h12l2 4M10 12h4"/></svg>',
+    menu:'<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+    code:'<svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 5l-4 14"/></svg>',
+    ifh:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14l-2 2 2 2M16 14l2 2-2 2"/></svg>',
+    task:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.3l3.6 2.1"/></svg>',
+    bell:'<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>',
+    ad:'<svg viewBox="0 0 24 24"><path d="M3 11v3a1 1 0 0 0 1 1h3l8 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M18 9a4 4 0 0 1 0 6"/></svg>',
+    pen:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+    search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
+    pin:'<svg viewBox="0 0 24 24"><path d="M9 3h6l-1 6 3 3H7l3-3zM12 12v9"/></svg>'
+  };
+
+  /* ---------- Données ---------- */
+  var RK = 'helpnaud_recent', PK = 'helpnaud_pins', NK = 'helpnaud_notifs', IK = 'helpnaud_ifhelp', AK = 'helpnaud_ads';
+  function viewLabel(v){ var b = document.querySelector('.nav-btn[data-view="' + v + '"]'); return b ? (b.textContent || '').replace(/\s+/g, ' ').trim() : v; }
+  function curView(){ var v = document.querySelector('.view:not([hidden])'); return v && v.id ? v.id.replace(/^view-/, '') : 'dashboard'; }
+  function recordRecent(kind, ref, label){
+    var a = J(RK, []).filter(function(r){ return !(r.kind === kind && r.ref === ref); });
+    a.unshift({ kind: kind, ref: ref, label: label, ts: Date.now() });
+    S(RK, a.slice(0, 30));
+  }
+  function notifs(){ return J(NK, []); }
+  function notify(text, action){ var a = notifs(); a.unshift({ id: uid(), text: text, action: action || null, ts: Date.now(), read: false }); S(NK, a.slice(0, 50)); renderDrawer(); }
+  window.__hnNotify = notify;
+  if(!J('helpnaud_notif_seed', false)){
+    S('helpnaud_notif_seed', true);
+    S(NK, [
+      { id: uid(), text: 'Astuce : glissez l’écran vers la droite pour ouvrir le menu, vers la gauche pour écrire.', ts: Date.now(), read: false },
+      { id: uid(), text: 'Créez votre 1ère annonce HelpNaud en quelques clics.', action: 'ad', ts: Date.now() - 1, read: false }
+    ]);
+  }
+
+  /* ---------- Tiroir ---------- */
+  var drawer, backdrop, openPanels = {}, recentAll = false;
+  function build(){
+    backdrop = document.createElement('div'); backdrop.id = 'hnd-backdrop';
+    drawer = document.createElement('aside'); drawer.id = 'hnd-drawer'; drawer.setAttribute('aria-label', 'Menu'); drawer.setAttribute('aria-hidden', 'true');
+    drawer.innerHTML =
+      '<div class="hnd-top"><div class="hnd-who"><b>HelpNaud</b><small id="hnd-folder"></small></div>' +
+      '<button type="button" class="hnd-ic" data-hnd="search" aria-label="Rechercher">' + ICON.search + '</button>' +
+      '<button type="button" class="hnd-ic" data-hnd="close" aria-label="Fermer">✕</button></div>' +
+      '<div class="hnd-scroll" id="hnd-scroll"></div>' +
+      '<div class="hnd-foot"><div class="hnd-sessmenu" id="hnd-sessmenu" hidden></div><span class="hnd-avatar" id="hnd-avatar">H</span>' +
+      '<button type="button" class="hnd-newsession" data-hnd="newsession">' + ICON.pen + ' Nouvelle session</button></div>';
+    document.body.appendChild(backdrop); document.body.appendChild(drawer);
+    backdrop.addEventListener('click', close);
+    drawer.addEventListener('click', onClick);
+  }
+  function open(){ if(!drawer) build(); renderDrawer(); document.body.classList.add('hnd-open'); drawer.setAttribute('aria-hidden', 'false'); }
+  function close(){ document.body.classList.remove('hnd-open'); if(drawer) drawer.setAttribute('aria-hidden', 'true'); var m = $('hnd-sessmenu'); if(m) m.hidden = true; }
+  function isOpen(){ return document.body.classList.contains('hnd-open'); }
+  window.__hnDrawer = { open: open, close: close, isOpen: isOpen };
+
+  function item(key, icon, label, extra){
+    var exp = (key in openPanels) ? ' aria-expanded="' + (openPanels[key] ? 'true' : 'false') + '"' : '';
+    return '<button type="button" class="hnd-item" data-hnd="' + key + '"' + exp + '>' + icon + '<span>' + label + '</span>' + (extra || '') + '</button>';
+  }
+  function renderDrawer(){
+    if(!drawer) return;
+    var sc = $('hnd-scroll'); if(!sc) return;
+    var unread = notifs().filter(function(n){ return !n.read; }).length;
+    var h = '';
+    openPanels.projets = openPanels.projets || false; openPanels.menu = openPanels.menu || false; openPanels.notif = openPanels.notif || false;
+    h += item('projets', ICON.proj, 'Projets', '<span class="hnd-chev">▸</span>');
+    if(openPanels.projets) h += '<div class="hnd-panel">' + projetsHtml() + '</div>';
+    h += item('menu', ICON.menu, 'Menu (toutes les sections)', '<span class="hnd-chev">▸</span>');
+    if(openPanels.menu) h += '<div class="hnd-panel">' + menuHtml() + '</div>';
+    h += item('code', ICON.code, 'Code');
+    h += item('ifhelp', ICON.ifh, 'Interface Help');
+    h += item('tasks', ICON.task, 'Tâches (Planning)');
+    h += item('notif', ICON.bell, 'Notification', unread ? '<span class="hnd-badge">' + unread + '</span>' : '<span class="hnd-chev">▸</span>');
+    if(openPanels.notif) h += '<div class="hnd-panel">' + notifHtml() + '</div>';
+    h += item('ad', ICON.ad, 'Votre annonce HelpNaud');
+    // Épinglés
+    var pins = J(PK, []);
+    h += '<div class="hnd-label">Épinglés<button type="button" data-hnd="pinhere">+ Épingler cette page</button></div>';
+    h += pins.length ? pins.map(function(p){ return '<div style="display:flex;align-items:center;"><button type="button" class="hnd-sub" data-hnd-pin="' + esc(p.id) + '">' + ICON.pin + '<span>' + esc(p.label) + '</span></button><button type="button" class="hnd-sub x" data-hnd-unpin="' + esc(p.id) + '" aria-label="Retirer" style="width:auto;">✕</button></div>'; }).join('') : '<div class="hnd-empty">Aucun élément épinglé. Épinglez votre travail pour y revenir vite.</div>';
+    // Récents
+    var rec = J(RK, []);
+    h += '<div class="hnd-label">Activité récente</div>';
+    var shown = recentAll ? rec : rec.slice(0, 5);
+    h += shown.length ? shown.map(function(r, i){ return '<button type="button" class="hnd-sub" data-hnd-rec="' + rec.indexOf(r) + '"><span>' + esc(r.label) + '</span><small>' + new Date(r.ts).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' }) + '</small></button>'; }).join('') : '<div class="hnd-empty">Votre activité récente apparaîtra ici.</div>';
+    if(rec.length > 5) h += '<button type="button" class="hnd-sub" data-hnd="allrec" style="color:var(--muted);">' + (recentAll ? 'Réduire' : 'Afficher tous') + ' ›</button>';
+    sc.innerHTML = h;
+    var f = $('hnd-folder'), sel = $('folder-select');
+    if(f) f.textContent = sel && sel.options[sel.selectedIndex] ? 'Dossier : ' + sel.options[sel.selectedIndex].text : '';
+  }
+  function projetsHtml(){
+    var sel = $('folder-select'), h = '';
+    if(sel) Array.prototype.forEach.call(sel.options, function(o, i){ h += '<button type="button" class="hnd-sub" data-hnd-folder="' + esc(o.value) + '">' + (i === sel.selectedIndex ? '✓ ' : '') + esc(o.text) + '</button>'; });
+    return h + '<button type="button" class="hnd-sub" data-hnd="newfolder"><b>+ Nouveau dossier</b></button>';
+  }
+  function menuHtml(){
+    var h = '';
+    Array.prototype.forEach.call(document.querySelectorAll('#quicklaunch-menu [data-quicklaunch-view]'), function(b){
+      if(b.hidden) return;
+      h += '<button type="button" class="hnd-sub" data-hnd-view="' + esc(b.getAttribute('data-quicklaunch-view')) + '">' + (b.textContent || '').replace(/\s+/g, ' ').trim() + '</button>';
+    });
+    return h || '<div class="hnd-empty">Aucune section.</div>';
+  }
+  function notifHtml(){
+    var a = notifs();
+    if(!a.length) return '<div class="hnd-empty">Aucune notification.</div>';
+    return a.slice(0, 15).map(function(n){ return '<button type="button" class="hnd-sub" data-hnd-notif="' + esc(n.id) + '" style="align-items:flex-start;' + (n.read ? 'opacity:.65;' : 'font-weight:600;') + '"><span>' + esc(n.text) + '</span></button>'; }).join('') +
+      '<button type="button" class="hnd-sub" data-hnd="readall" style="color:var(--muted);">Tout marquer comme lu</button>';
+  }
+  function toggle(key){ openPanels[key] = !openPanels[key]; if(key === 'notif' && !openPanels[key]) {} renderDrawer(); }
+  function onClick(e){
+    var t = e.target.closest('[data-hnd],[data-hnd-view],[data-hnd-folder],[data-hnd-pin],[data-hnd-unpin],[data-hnd-rec],[data-hnd-notif],[data-hnd-sess]');
+    if(!t) return;
+    var k = t.getAttribute('data-hnd');
+    if(t.hasAttribute('data-hnd-view')){ var v = t.getAttribute('data-hnd-view'); close(); go(v); return; }
+    if(t.hasAttribute('data-hnd-folder')){ var sel = $('folder-select'); if(sel){ sel.value = t.getAttribute('data-hnd-folder'); sel.dispatchEvent(new Event('change', { bubbles: true })); } close(); go('dashboard'); return; }
+    if(t.hasAttribute('data-hnd-pin')){ var p = J(PK, []).filter(function(x){ return x.id === t.getAttribute('data-hnd-pin'); })[0]; if(p){ close(); openRef(p.kind, p.ref); } return; }
+    if(t.hasAttribute('data-hnd-unpin')){ S(PK, J(PK, []).filter(function(x){ return x.id !== t.getAttribute('data-hnd-unpin'); })); renderDrawer(); return; }
+    if(t.hasAttribute('data-hnd-rec')){ var r = J(RK, [])[+t.getAttribute('data-hnd-rec')]; if(r){ close(); openRef(r.kind, r.ref); } return; }
+    if(t.hasAttribute('data-hnd-notif')){ var a = notifs(), n = a.filter(function(x){ return x.id === t.getAttribute('data-hnd-notif'); })[0]; if(n){ n.read = true; S(NK, a); if(n.action === 'ad'){ close(); openAd(); return; } } renderDrawer(); return; }
+    if(t.hasAttribute('data-hnd-sess')){ newSession(t.getAttribute('data-hnd-sess')); return; }
+    switch(k){
+      case 'close': close(); break;
+      case 'search': close(); var inp = document.querySelector('.global-search-field input'); if(inp){ try{ inp.scrollIntoView({ block: 'center' }); }catch(x){} setTimeout(function(){ inp.focus(); }, 120); } break;
+      case 'projets': case 'menu': case 'notif': toggle(k); break;
+      case 'code': close(); go('cowork'); setTimeout(function(){ var b = document.querySelector('#cowork-tools-menu [data-coworktools-tool="code"]'); if(b) b.click(); }, 120); break;
+      case 'ifhelp': close(); go('ifhelp'); break;
+      case 'tasks': close(); go('tasks'); break;
+      case 'ad': close(); openAd(); break;
+      case 'newfolder': close(); go('dashboard'); setTimeout(function(){ var b = $('folder-new-btn'); if(b) b.click(); }, 150); break;
+      case 'pinhere': var v2 = curView(), pins = J(PK, []); if(!pins.some(function(x){ return x.ref === v2 && x.kind === 'view'; })){ pins.unshift({ id: uid(), kind: 'view', ref: v2, label: viewLabel(v2) }); S(PK, pins.slice(0, 20)); toast('Page épinglée ✓'); } else toast('Déjà épinglée.'); renderDrawer(); break;
+      case 'allrec': recentAll = !recentAll; renderDrawer(); break;
+      case 'readall': var all = notifs(); all.forEach(function(n){ n.read = true; }); S(NK, all); renderDrawer(); break;
+      case 'newsession': var m = $('hnd-sessmenu'); if(m){ m.innerHTML = '<button type="button" class="hnd-sub" data-hnd-sess="assistant">💬 <span>Assistant (chat)</span></button><button type="button" class="hnd-sub" data-hnd-sess="cowork">🫂 <span>Co-work (discussion)</span></button><button type="button" class="hnd-sub" data-hnd-sess="hstat">📈 <span>H-Start (clavardage)</span></button>'; m.hidden = !m.hidden; } break;
+    }
+  }
+  function newSession(kind){
+    close();
+    if(kind === 'assistant'){ var a = $('newchat-opt-assistant'); if(a) a.click(); else go('assistant'); }
+    else if(kind === 'cowork'){ var c = $('newchat-opt-cowork'); if(c) c.click(); else go('cowork'); }
+    else { go('hstat'); setTimeout(function(){ var i = $('hstat-input'); if(i){ i.value = ''; i.focus(); } }, 200); }
+  }
+  function openRef(kind, ref){
+    if(kind === 'ifhelp'){ go('ifhelp'); setTimeout(function(){ ifhPreview(ref); }, 100); }
+    else go(ref);
+  }
+
+  /* Suivi des vues pour « Activité récente » */
+  (function(){
+    var last = null;
+    function rec(){ var v = curView(); if(v && v !== last){ last = v; if(v !== 'ifhelp') recordRecent('view', v, viewLabel(v)); } }
+    var mo = new MutationObserver(function(){ rec(); });
+    Array.prototype.forEach.call(document.querySelectorAll('.view'), function(el){ mo.observe(el, { attributes: true, attributeFilter: ['hidden'] }); });
+    setTimeout(rec, 800);
+  })();
+
+  /* Bouton ☰ : ouvre le tiroir sur mobile (le menu déroulant reste dans « Menu ») */
+  var hb = $('sidebar-quicklaunch-hamburger-btn');
+  if(hb) hb.addEventListener('click', function(e){
+    if(!mobile()) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    isOpen() ? close() : open();
+  }, true);
+
+  /* Gestes : droite = ouvrir le tiroir ; gauche = fermer, sinon aller à la saisie (iPhone et Android) */
+  (function(){
+    var sx = 0, sy = 0, st = 0, ok = false;
+    function blocked(t){
+      while(t && t.nodeType === 1 && t !== document.body){
+        if(/^(INPUT|TEXTAREA|SELECT|TABLE|PRE|CANVAS|IFRAME)$/.test(t.tagName) || t.isContentEditable) return true;
+        if(t.id === 'hno-panel' || t.id === 'hnd-ad-modal' || (t.getAttribute && t.getAttribute('role') === 'dialog')) return true;
+        if(t.scrollWidth > t.clientWidth + 4){ var ox = getComputedStyle(t).overflowX; if(ox === 'auto' || ox === 'scroll') return true; }
+        t = t.parentNode;
+      }
+      return false;
+    }
+    document.addEventListener('touchstart', function(e){
+      if(!mobile() || e.touches.length !== 1){ ok = false; return; }
+      var t = e.touches[0], vw = document.documentElement.clientWidth;
+      sx = t.clientX; sy = t.clientY; st = Date.now();
+      // Marge de 24 px : ne gêne pas les gestes système (retour iPhone / Android)
+      ok = (sx > 24 && sx < vw - 24) && (isOpen() || !blocked(e.target));
+    }, { passive: true });
+    document.addEventListener('touchend', function(e){
+      if(!ok) return; ok = false;
+      var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if(Date.now() - st > 800 || Math.abs(dx) < 70 || Math.abs(dy) > 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if(dx > 0){ if(!isOpen()) open(); }
+      else{
+        if(isOpen()){ close(); return; }
+        var v = document.querySelector('.view:not([hidden])'); if(!v) return;
+        var f = v.querySelector('#chat-input, #cowork-discuss-input, #hstat-input');
+        if(!f || f.offsetParent === null){ var c = v.querySelectorAll('textarea'); f = null; for(var i = 0; i < c.length; i++){ if(c[i].offsetParent !== null){ f = c[i]; break; } } }
+        if(f){ try{ f.scrollIntoView({ block: 'center' }); }catch(x){} f.focus(); }
+      }
+    }, { passive: true });
+  })();
+
+  /* ---------- Interface Help ---------- */
+  var ifhEl = $('view-ifhelp'), ifhCur = null;
+  function items(){ return J(IK, []); }
+  function saveItems(a){ if(!S(IK, a.slice(0, 60))) toast('Enregistrement impossible (stockage plein ou bloqué).'); }
+  function cleanHtml(t){ var s = String(t || '').trim(); var m = s.match(/^```[a-zA-Z]*\n?([\s\S]*?)\n?```$/); return m ? m[1] : s; }
+  function ifhRender(){
+    if(!ifhEl) return;
+    var a = items();
+    ifhEl.innerHTML =
+      '<div class="card"><h1 style="margin:0 0 4px; font-size:22px;">Interface Help</h1>' +
+      '<p class="hint" style="margin:0 0 10px;">Vos créations HelpNaud : pages, mini-applications, tableaux de bord et maquettes. Décrivez ce que vous voulez, HelpNaud le génère, vous l’aperçevez en direct (mobile, tablette, ordinateur), le modifiez, l’épinglez, le copiez ou le téléchargez.</p>' +
+      '<div class="ifh-actions"><button type="button" class="btn primary" id="ifh-new">＋ Nouvelle interface</button><button type="button" class="btn" id="ifh-import">📥 Importer depuis l’Atelier de code</button></div>' +
+      '<div id="ifh-body"></div></div>' +
+      '<div class="ifh-grid" id="ifh-grid">' + (a.length ? a.map(function(it){
+        return '<div class="card ifh-card"><h3 title="' + esc(it.title) + '">' + esc(it.title) + '</h3><div class="hint" style="margin:0;">Modifiée le ' + new Date(it.updated).toLocaleDateString('fr-CA') + ' · ' + Math.round((it.html || '').length / 1024) + ' Ko</div>' +
+          '<div class="ifh-actions"><button class="btn primary" data-ifh="open" data-id="' + esc(it.id) + '">Ouvrir</button><button class="btn" data-ifh="pin" data-id="' + esc(it.id) + '">📌 Épingler</button><button class="btn" data-ifh="copy" data-id="' + esc(it.id) + '">Copier</button><button class="btn" data-ifh="dl" data-id="' + esc(it.id) + '">Télécharger</button><button class="btn" data-ifh="del" data-id="' + esc(it.id) + '">Supprimer</button></div></div>';
+      }).join('') : '<div class="card"><p class="hint" style="margin:0;">Aucune interface pour l’instant. Cliquez sur « Nouvelle interface » pour commencer.</p></div>') + '</div>';
+  }
+  function ifhEditor(it){
+    ifhCur = it;
+    var body = $('ifh-body'); if(!body) return;
+    body.innerHTML = '<div class="ifh-editor" style="margin-top:12px;">' +
+      '<input type="text" id="ifh-title" maxlength="80" placeholder="Titre de l’interface" value="' + esc(it.title) + '" aria-label="Titre">' +
+      '<label class="hint" style="display:block;margin:8px 0 3px;">Décrivez ce que vous voulez créer ou modifier (HelpNaud écrit le code pour vous)</label>' +
+      '<textarea id="ifh-prompt" style="min-height:70px;font-family:inherit;font-size:14px;" placeholder="Ex. : Une page d’accueil pour mon cabinet de comptabilité avec un formulaire de contact."></textarea>' +
+      '<div class="ifh-actions"><button type="button" class="btn primary" id="ifh-gen">✨ Générer / améliorer avec l’IA</button><span class="hint" id="ifh-status" style="margin:0;align-self:center;"></span></div>' +
+      '<label class="hint" style="display:block;margin:8px 0 3px;">Code (HTML, CSS et JavaScript dans un seul fichier)</label>' +
+      '<textarea id="ifh-code" spellcheck="false">' + esc(it.html) + '</textarea>' +
+      '<div class="ifh-actions"><button type="button" class="btn" id="ifh-run">▶ Aperçu</button><button type="button" class="btn primary" id="ifh-save">Enregistrer</button>' +
+      '<button type="button" class="btn" data-w="390">📱 Mobile</button><button type="button" class="btn" data-w="768">Tablette</button><button type="button" class="btn" data-w="100%">Ordinateur</button></div>' +
+      '<div class="ifh-frame-wrap"><iframe class="ifh-frame" id="ifh-frame" title="Aperçu" sandbox="allow-scripts allow-forms allow-modals"></iframe></div></div>';
+    ifhRun();
+    body.scrollIntoView({ block: 'start' });
+  }
+  function ifhRun(){ var f = $('ifh-frame'), c = $('ifh-code'); if(f && c) f.srcdoc = c.value || '<p style="font-family:sans-serif;color:#667">Aucun contenu.</p>'; }
+  function ifhPreview(id){ var it = items().filter(function(x){ return x.id === id; })[0]; if(it){ ifhEditor(it); recordRecent('ifhelp', it.id, 'Interface : ' + it.title); } }
+  function ifhSave(){
+    var a = items(), it = ifhCur; if(!it) return;
+    it.title = ($('ifh-title').value.trim() || 'Interface sans titre'); it.html = $('ifh-code').value; it.updated = Date.now();
+    var i = a.findIndex(function(x){ return x.id === it.id; }); if(i < 0) a.unshift(it); else a[i] = it;
+    saveItems(a); ifhRender(); ifhEditor(it); toast('Interface enregistrée ✓');
+  }
+  function inlineProject(p){
+    var f = {}; (p.files || []).forEach(function(x){ f[x.name] = x.content; });
+    var html = f['index.html'] || (p.files && p.files[0] && p.files[0].content) || '';
+    html = html.replace(/<link[^>]+href=["']([^"']+\.css)["'][^>]*>/gi, function(m, h){ return f[h] != null ? '<style>' + f[h] + '</style>' : m; });
+    html = html.replace(/<script[^>]+src=["']([^"']+\.js)["'][^>]*>\s*<\/script>/gi, function(m, h){ return f[h] != null ? '<script>' + String(f[h]).replace(/<\/script/gi, '<\\/script') + '<\/script>' : m; });
+    return html;
+  }
+  function ifhGen(){
+    var pr = $('ifh-prompt').value.trim(), code = $('ifh-code').value, st = $('ifh-status');
+    if(!pr){ st.textContent = 'Décrivez d’abord ce que vous voulez.'; return; }
+    if(!window.__hn || !window.__hn.requireSample){ st.textContent = 'L’assistant IA n’est pas disponible pour l’instant.'; return; }
+    var sys = 'Tu es un ingénieur front-end senior et designer d’interface. Livre UN SEUL document HTML complet et autonome (CSS et JavaScript intégrés, aucune dépendance externe, aucun appel réseau), en français, responsive mobile-first, accessible (WCAG 2.2 AA), sémantique, sobre et professionnel, sans clé ni donnée sensible. Réponds uniquement avec le code HTML, sans texte autour.';
+    var prompt = sys + '\n\n' + (code.trim() ? 'Document actuel à modifier :\n' + code + '\n\nModification demandée : ' : 'Interface à créer : ') + pr;
+    st.textContent = 'Génération en cours…'; $('ifh-gen').disabled = true;
+    window.__hn.requireSample(st).then(function(cap){
+      if(!cap) return Promise.reject({ code: 'ai_unavailable' });
+      return cap(prompt, { modelTier: 'default', cache: false, onText: function(ev){ $('ifh-code').value = cleanHtml(ev.text); } });
+    }).then(function(res){ $('ifh-code').value = cleanHtml(res.text); ifhRun(); st.textContent = 'Prêt ✓ — pensez à enregistrer.'; }).catch(function(err){
+      st.textContent = (err && err.code === 'ai_unavailable') ? 'L’assistant IA n’est pas disponible pour l’instant.' : 'La génération n’a pas pu être complétée.';
+    }).then(function(){ var g = $('ifh-gen'); if(g) g.disabled = false; });
+  }
+  if(ifhEl){
+    ifhRender();
+    ifhEl.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      if(b.id === 'ifh-new'){ ifhEditor({ id: uid(), title: 'Nouvelle interface', html: '', created: Date.now(), updated: Date.now() }); return; }
+      if(b.id === 'ifh-import'){
+        var ps = J('helpnaud_code_projects', []).filter(function(p){ return p.files && p.files.length; });
+        if(!ps.length){ toast('Aucun projet dans l’Atelier de code.'); return; }
+        var list = ps.map(function(p, i){ return (i + 1) + '. ' + p.name; }).join('\n');
+        var n = parseInt(window.prompt('Quel projet importer ?\n' + list, '1'), 10);
+        var p = ps[n - 1]; if(!p) return;
+        var it = { id: uid(), title: p.name, html: inlineProject(p), created: Date.now(), updated: Date.now() };
+        var a = items(); a.unshift(it); saveItems(a); ifhRender(); ifhEditor(it); toast('Projet importé ✓'); return;
+      }
+      if(b.id === 'ifh-gen'){ ifhGen(); return; }
+      if(b.id === 'ifh-run'){ ifhRun(); return; }
+      if(b.id === 'ifh-save'){ ifhSave(); return; }
+      if(b.hasAttribute('data-w')){ var f = $('ifh-frame'); if(f) f.style.width = b.getAttribute('data-w').indexOf('%') > 0 ? '100%' : b.getAttribute('data-w') + 'px'; return; }
+      var act = b.getAttribute('data-ifh'), id = b.getAttribute('data-id');
+      var it2 = items().filter(function(x){ return x.id === id; })[0]; if(!it2) return;
+      if(act === 'open') ifhPreview(id);
+      else if(act === 'pin'){ var pins = J(PK, []); if(!pins.some(function(x){ return x.kind === 'ifhelp' && x.ref === id; })){ pins.unshift({ id: uid(), kind: 'ifhelp', ref: id, label: 'Interface : ' + it2.title }); S(PK, pins.slice(0, 20)); } toast('Épinglée ✓'); renderDrawer(); }
+      else if(act === 'copy'){ if(window.__hn && window.__hn.copyText) window.__hn.copyText(it2.html); else if(navigator.clipboard) navigator.clipboard.writeText(it2.html); toast('Code copié ✓'); }
+      else if(act === 'dl'){ var bl = new Blob([it2.html], { type: 'text/html' }), u = URL.createObjectURL(bl), l = document.createElement('a'); l.href = u; l.download = (it2.title || 'interface').replace(/[^\w\-]+/g, '-').toLowerCase() + '.html'; document.body.appendChild(l); l.click(); setTimeout(function(){ URL.revokeObjectURL(u); l.remove(); }, 500); }
+      else if(act === 'del'){ if(window.confirm('Supprimer cette interface ?')){ saveItems(items().filter(function(x){ return x.id !== id; })); S(PK, J(PK, []).filter(function(x){ return !(x.kind === 'ifhelp' && x.ref === id); })); ifhRender(); renderDrawer(); } }
+    });
+  }
+
+  /* ---------- Votre annonce HelpNaud ---------- */
+  var TIPS = ['Créez votre 1ère annonce HelpNaud en quelques clics.', 'Créez votre annonce HelpNaud en quelques secondes.', 'Créez votre annonce, ajoutez le lien de votre business ou l’URL de votre site web, vérifiez l’annonce suggérée par HelpNaud, puis lancez-la auprès des utilisateurs éligibles de HelpNaud Go Go — gratuitement, quand vous êtes prêt à aller loin.'];
+  function openAd(){
+    var m = $('hnd-ad-modal');
+    if(!m){
+      m = document.createElement('div'); m.id = 'hnd-ad-modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'Votre annonce HelpNaud');
+      m.innerHTML = '<div id="hnd-ad-box"></div>'; document.body.appendChild(m);
+      m.addEventListener('click', function(e){ if(e.target === m) m.classList.remove('open'); });
+    }
+    var draft = J(AK, [])[0] || {};
+    var box = $('hnd-ad-box');
+    box.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><h2 style="margin:0;font-size:18px;flex:1;">Votre annonce HelpNaud</h2><button type="button" class="hnd-ic" id="hnd-ad-x" aria-label="Fermer">✕</button></div>' +
+      TIPS.map(function(t){ return '<div class="hnd-adtip">' + esc(t) + '</div>'; }).join('') +
+      '<label>Nom de votre entreprise ou activité</label><input id="hnd-ad-name" maxlength="80" value="' + esc(draft.name || '') + '">' +
+      '<label>Lien de votre business ou URL de votre site web (https://…)</label><input id="hnd-ad-url" type="url" inputmode="url" maxlength="200" placeholder="https://" value="' + esc(draft.url || '') + '">' +
+      '<label>Ce que vous offrez (une ou deux phrases)</label><textarea id="hnd-ad-about" rows="2" maxlength="300">' + esc(draft.about || '') + '</textarea>' +
+      '<div class="ifh-actions"><button type="button" class="btn" id="hnd-ad-suggest">✨ Suggérer l’annonce</button><span class="hint" id="hnd-ad-st" style="margin:0;align-self:center;"></span></div>' +
+      '<label>Annonce suggérée (modifiable — vérifiez avant de lancer)</label><textarea id="hnd-ad-text" rows="4" maxlength="400">' + esc(draft.text || '') + '</textarea>' +
+      '<div class="ifh-actions" style="margin-top:12px;"><button type="button" class="btn" id="hnd-ad-save">Enregistrer le brouillon</button><button type="button" class="btn primary" id="hnd-ad-launch">🚀 Lancer auprès des utilisateurs HelpNaud Go Go (gratuit)</button></div>' +
+      '<p class="hint" id="hnd-ad-note" style="margin:8px 0 0;">' + (draft.status === 'queued' ? 'Statut : en file d’attente de diffusion.' : '') + '</p>';
+    m.classList.add('open');
+    $('hnd-ad-x').onclick = function(){ m.classList.remove('open'); };
+    function read(){ return { id: draft.id || uid(), name: $('hnd-ad-name').value.trim(), url: $('hnd-ad-url').value.trim(), about: $('hnd-ad-about').value.trim(), text: $('hnd-ad-text').value.trim(), status: draft.status || 'draft', ts: Date.now() }; }
+    function store(d){ var a = J(AK, []).filter(function(x){ return x.id !== d.id; }); a.unshift(d); S(AK, a.slice(0, 20)); draft = d; }
+    function okUrl(u){ return !u || /^https:\/\/[^\s"'<>]+$/i.test(u); }
+    $('hnd-ad-suggest').onclick = function(){
+      var d = read(), st = $('hnd-ad-st');
+      if(!d.name){ st.textContent = 'Indiquez le nom de votre activité.'; return; }
+      if(!okUrl(d.url)){ st.textContent = 'Le lien doit commencer par https://'; return; }
+      var fallback = d.name + ' — ' + (d.about || 'découvrez notre offre') + (d.url ? ' → ' + d.url : '');
+      if(!window.__hn || !window.__hn.requireSample){ $('hnd-ad-text').value = fallback; st.textContent = 'Suggestion simple (IA indisponible).'; return; }
+      st.textContent = 'Rédaction en cours…';
+      window.__hn.requireSample(st).then(function(cap){
+        if(!cap) return Promise.reject({});
+        return cap('Rédige en français une annonce publicitaire courte (maximum 280 caractères), claire, honnête et sans promesse exagérée, pour : ' + d.name + '. Offre : ' + (d.about || 'non précisée') + '. Site : ' + (d.url || 'non précisé') + '. Réponds uniquement avec le texte de l’annonce.', { modelTier: 'default', cache: false });
+      }).then(function(res){ $('hnd-ad-text').value = String(res.text || '').trim().slice(0, 400); st.textContent = 'Suggestion prête — vérifiez-la.'; }).catch(function(){ $('hnd-ad-text').value = fallback; st.textContent = 'Suggestion simple (IA indisponible).'; });
+    };
+    $('hnd-ad-save').onclick = function(){ var d = read(); if(!okUrl(d.url)){ $('hnd-ad-st').textContent = 'Le lien doit commencer par https://'; return; } store(d); $('hnd-ad-st').textContent = 'Brouillon enregistré ✓'; };
+    $('hnd-ad-launch').onclick = function(){
+      var d = read();
+      if(!d.name || !d.text){ $('hnd-ad-st').textContent = 'Ajoutez le nom et le texte de l’annonce.'; return; }
+      if(!okUrl(d.url)){ $('hnd-ad-st').textContent = 'Le lien doit commencer par https://'; return; }
+      d.status = 'queued'; store(d);
+      $('hnd-ad-note').textContent = 'Votre annonce est enregistrée et en file d’attente de diffusion. La diffusion aux autres utilisateurs HelpNaud Go Go s’activera dès que la plateforme serveur sera branchée.';
+      notify('Annonce « ' + d.name + ' » en file d’attente de diffusion.', 'ad');
+    };
+  }
+  window.__hnOpenAd = openAd;
+
+  /* Rappel occasionnel (au plus une fois par jour, après 8 min d’utilisation, jamais pendant la saisie) */
+  (function(){
+    var active = 0, last = Date.now();
+    setInterval(function(){
+      var now = Date.now(), dt = now - last; last = now;
+      if(document.hidden) return; active += Math.min(dt, 60000);
+      var st = J('helpnaud_ad_nudge', { day: '', never: false, i: 0 });
+      var day = new Date().toISOString().slice(0, 10);
+      if(st.never || st.day === day || active < 8 * 60000) return;
+      if($('hno-panel') || $('hnd-ad-nudge') || $('hnd-ad-modal') && $('hnd-ad-modal').classList.contains('open') || isOpen()) return;
+      var a = document.activeElement; if(a && /^(TEXTAREA|INPUT)$/.test(a.tagName) && a.value) return;
+      var tip = TIPS[st.i % TIPS.length];
+      var d = document.createElement('div'); d.id = 'hnd-ad-nudge'; d.setAttribute('role', 'dialog');
+      d.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">Votre annonce HelpNaud</div><div style="font-size:13px;margin-bottom:8px;">' + esc(tip) + '</div><div class="ifh-actions"><button class="btn primary" data-n="go">Créer mon annonce</button><button class="btn" data-n="later">Plus tard</button><button class="btn" data-n="never">Ne plus afficher</button></div>';
+      document.body.appendChild(d);
+      d.addEventListener('click', function(e){
+        var b = e.target.closest('button'); if(!b) return;
+        var n = b.getAttribute('data-n'); d.remove();
+        if(n === 'never'){ st.never = true; } if(n === 'go') openAd();
+      });
+      st.day = day; st.i = (st.i || 0) + 1; S('helpnaud_ad_nudge', st); active = 0;
+    }, 30000);
+  })();
 })();
 </script>
 </body></html>
