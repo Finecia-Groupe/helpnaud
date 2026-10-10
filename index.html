@@ -5497,7 +5497,7 @@
      activé pour le propriétaire (ce compte local = le propriétaire de FINECIA GROUPE). Chargé en
      tout début de script pour que la navigation (menu latéral, menu mobile, accès rapide, visite
      guidée) et le guard de showView() puissent s'appuyer dessus dès l'initialisation. */
-  var fghlabState = { enabled: true, team: [], adminProfile: { name: 'Propriétaire', number: '' }, projects: [], announcements: [], coprojects: [], partners: [], fgbankProjects: [], monetizationConfig: { commissionRate: 2, introFee: 25000 }, touttestSessions: [], touttestCandidates: [], touttestResults: [], peseEmployees: [], peseEvaluations: [], vehicleListings: [], vehicleLeads: [], genericTools: {}, financialStatements: {}, calcSheets: [], toolSnapshots: {}, hstatisDatasets: [], fgbankCurrency: null, coprojectCurrency: null, partnermarketCurrency: null, clientRegistry: {}, alerts: [], partnerPolicy: [], invites: [], academieFormations: [], academieRegistrations: [], academieSeeded: false, academieCatalogVersion: 0, rdvSlots: [] };
+  var fghlabState = { enabled: true, team: [], adminProfile: { name: 'Propriétaire', number: '' }, projects: [], announcements: [], coprojects: [], partners: [], fgbankProjects: [], monetizationConfig: { commissionRate: 2, introFee: 25000 }, touttestSessions: [], touttestCandidates: [], touttestResults: [], peseEmployees: [], peseEvaluations: [], vehicleListings: [], vehicleLeads: [], genericTools: {}, financialStatements: {}, calcSheets: [], toolSnapshots: {}, hstatisDatasets: [], fgbankCurrency: null, coprojectCurrency: null, partnermarketCurrency: null, clientRegistry: {}, alerts: [], partnerPolicy: [], invites: [], coLinks: [], academieFormations: [], academieRegistrations: [], academieSeeded: false, academieCatalogVersion: 0, rdvSlots: [] };
   function loadFghlabState(){
     try{
       var raw = localStorage.getItem('helpnaud_fghlab');
@@ -5520,6 +5520,7 @@
         fghlabState.alerts = Array.isArray(parsed.alerts) ? parsed.alerts : [];
         fghlabState.partnerPolicy = Array.isArray(parsed.partnerPolicy) ? parsed.partnerPolicy : [];
         fghlabState.invites = Array.isArray(parsed.invites) ? parsed.invites : [];
+        fghlabState.coLinks = Array.isArray(parsed.coLinks) ? parsed.coLinks : [];
         fghlabState.academieFormations = Array.isArray(parsed.academieFormations) ? parsed.academieFormations : [];
         fghlabState.academieRegistrations = Array.isArray(parsed.academieRegistrations) ? parsed.academieRegistrations : [];
         fghlabState.academieSeeded = !!parsed.academieSeeded;
@@ -19537,6 +19538,7 @@
         '<input type="text" id="coproject-client-input" maxlength="100" placeholder="Nom du client" style="flex:1; min-width:160px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
         '<select id="coproject-status-input" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' + statusOptions + '</select>' +
         '<button type="button" class="btn primary" id="coproject-add-btn" style="white-space:nowrap;">Ajouter le projet</button>' +
+        '<button type="button" class="btn" id="coproject-genlink-btn" style="white-space:nowrap;">🔗 Générer un lien public</button>' +
         '<button type="button" class="btn" id="coproject-cancel-edit-btn" style="white-space:nowrap; display:none;">Annuler la modification</button>' +
       '</div>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;">' +
@@ -19550,13 +19552,15 @@
           '<input type="date" id="coproject-echeance-input" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
         '</label>' +
       '</div>' +
+      fghlabCoprojectFormExtraHtml() +
       '<div id="coproject-list"></div>' +
-      '<p class="hint" style="margin-top:10px;">Données enregistrées localement sur cet appareil (fghlabState.coprojects) — pas encore de synchronisation serveur.</p>' +
+      '<p class="hint" style="margin-top:10px;">Données enregistrées sur cet appareil ; avec une session serveur ouverte (propriétaire ou membre autorisé), elles sont synchronisées, y compris les demandes reçues par le lien public.</p>' +
     '</div>';
   }
   function renderFghlabCoprojectList(){
     var listEl = document.getElementById('coproject-list');
     if(!listEl) return;
+    cpNormalize();
     if(!fghlabState.coprojects.length){
       listEl.innerHTML = '<p class="hint" style="margin:0; font-size:12px;">Aucun projet client enregistré pour l\'instant.</p>';
       return;
@@ -19621,7 +19625,7 @@
       if(p.bailleur) metaParts.push('Bailleur : '+escapeHtml(p.bailleur));
       if(p.budgetEstime || p.budgetEstime === 0) metaParts.push('Budget : '+coprojectMoney(p.budgetEstime));
       metaParts.push(escapeHtml(fmtFghlabShortDate(p.createdOn)));
-      return '<div style="border:1px solid var(--line); border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:10px;">' +
+      return '<div data-cp-card="'+escapeHtml(p.id)+'" style="border:1px solid var(--line); border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:10px;">' +
         '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
           '<div>' +
             '<div style="font-weight:700; font-size:13.5px;">'+escapeHtml(p.title)+'</div>' +
@@ -19635,6 +19639,7 @@
             '<button type="button" class="btn danger" data-coproject-delete="'+escapeHtml(p.id)+'" style="padding:3px 9px; font-size:12px;">Supprimer</button>' +
           '</div>' +
         '</div>' +
+        fghlabCoprojectExtraHtml(p) +
         '<div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-top:10px;">' +
           scoresHtml +
           '<div style="font-size:12.5px;">Évaluation : '+avgHtml+avgLegendInline+'</div>' +
@@ -19651,6 +19656,321 @@
   }
   /* Réinitialise le formulaire « Ajouter le projet » en mode ajout (quitte le mode modification —
      voir fghlabCoprojectEnterEditMode() ci-dessous). Même idiome que resetFghlabTeamForm(). */
+  /* ================= COPROJECT — accueil des clients (lien public, téléphone, bureau), numéros, lien sécurisé ================= */
+  var CP_ID_TYPES = ['Passeport', 'Carte nationale d’identité', 'Permis de conduire', 'Carte de résident / séjour', 'Autre pièce officielle'];
+  var CP_CHANNELS = ['Téléphone', 'En personne', 'Autre'];
+  var CP_REQ_ITEMS = ['Pièce d’identité', 'Preuve d’adresse', 'Statuts / immatriculation', 'Plan d’affaires', 'États financiers', 'Lettre d’appui / mandat', 'Exigences du bailleur ou de la banque'];
+  var cpOpen = {}, cpDocsCache = {}, cpMsg = {};
+  function cpIsTrue(v){ return v === true || v === 'true'; }
+  function cpSbOk(){ return typeof fghlabSyncActive === 'function' && fghlabSyncActive() && fghlabSb; }
+  function cpDigits(n){ var s = ''; for(var i = 0; i < n; i++) s += Math.floor(Math.random() * 10); return s; }
+  function cpUsed(field){
+    var u = {};
+    (fghlabState.coprojects || []).forEach(function(p){ if(p && p[field]) u[p[field]] = true; });
+    (fghlabState.partners || []).forEach(function(p){ if(p && p[field]) u[p[field]] = true; });
+    (fghlabState.fgbankProjects || []).forEach(function(p){ if(p && p[field]) u[p[field]] = true; });
+    return u;
+  }
+  /* Numéros : N° client (9 chiffres, stable par client), N° partenaire (10 chiffres, stable par client),
+     N° projet CO-PROJ-BDF-YYYY-JJMM-<N° client>-NN, N° dossier FG-COP-BDF-MM-YYYY-NNNNNNN. */
+  function cpMakeNumbers(client, email){
+    var d = new Date(), yyyy = String(d.getFullYear()), mm = String(d.getMonth() + 1).padStart(2, '0'), jj = String(d.getDate()).padStart(2, '0');
+    var em = (email || '').trim().toLowerCase(), prev = null;
+    (fghlabState.coprojects || []).forEach(function(p){
+      if(prev || !p || !p.clientNumber) return;
+      if((em && p.contact && (p.contact.email || '').toLowerCase() === em) || (p.client || '').trim().toLowerCase() === (client || '').trim().toLowerCase()) prev = p;
+    });
+    var cn = prev ? prev.clientNumber : fghlabGetOrCreateClientNumber(client);
+    var pn = prev && prev.partnerNumber ? prev.partnerNumber : null;
+    if(!pn){ var used = cpUsed('partnerNumber'); do{ pn = String(1 + Math.floor(Math.random() * 9)) + cpDigits(9); }while(used[pn]); }
+    var seq = (fghlabState.coprojects || []).filter(function(p){ return p && p.clientNumber === cn; }).length + 1;
+    var pj = 'CO-PROJ-BDF-' + yyyy + '-' + jj + mm + '-' + cn + '-' + String(seq).padStart(2, '0');
+    var usedD = cpUsed('dealNumber'), dn;
+    do{ dn = 'FG-COP-BDF-' + mm + '-' + yyyy + '-' + cpDigits(7); }while(usedD[dn]);
+    return { clientNumber: cn, partnerNumber: pn, projectNumber: pj, dealNumber: dn };
+  }
+  function cpInputStyle(){ return 'border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px; flex:1; min-width:140px;'; }
+  function fghlabCoprojectFormExtraHtml(){
+    var s = cpInputStyle();
+    return '<details class="collapsible" id="cpf-details" open style="margin:0 0 12px;">' +
+      '<summary style="cursor:pointer; font-size:13px; font-weight:600;">👤 Coordonnées du client, pièce d’identité et documents</summary>' +
+      '<p class="hint" style="margin:6px 0 8px; font-size:11.5px;">Le client peut remplir ces informations en ligne (lien public), par téléphone avec notre équipe ou en personne au bureau. Indiquez ici le canal utilisé.</p>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
+        '<select id="cpf-channel" style="'+s+'">' + CP_CHANNELS.map(function(c){ return '<option>'+escapeHtml(c)+'</option>'; }).join('') + '</select>' +
+        '<input type="email" id="cpf-email" maxlength="140" placeholder="Courriel" style="'+s+'">' +
+        '<input type="tel" id="cpf-phone" maxlength="40" placeholder="Téléphone" style="'+s+'">' +
+      '</div>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
+        '<input type="text" id="cpf-nrue" maxlength="20" placeholder="N° de rue" style="'+s+' max-width:110px;">' +
+        '<input type="text" id="cpf-rue" maxlength="120" placeholder="Nom de la rue" style="'+s+' flex:3; min-width:180px;">' +
+        '<input type="text" id="cpf-bp" maxlength="30" placeholder="Boîte postale" style="'+s+'">' +
+        '<input type="text" id="cpf-cp" maxlength="20" placeholder="Code postal" style="'+s+'">' +
+      '</div>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
+        '<input type="text" id="cpf-ville" maxlength="80" placeholder="Ville de résidence" style="'+s+'">' +
+        '<input type="text" id="cpf-pays" maxlength="80" placeholder="Pays de résidence" style="'+s+'">' +
+        '<select id="cpf-idtype" style="'+s+'"><option value="">— Pièce d’identité —</option>' + CP_ID_TYPES.map(function(c){ return '<option>'+escapeHtml(c)+'</option>'; }).join('') + '</select>' +
+        '<input type="text" id="cpf-idnum" maxlength="60" autocomplete="off" placeholder="N° de la pièce d’identité" style="'+s+'">' +
+      '</div>' +
+      '<label style="display:flex; flex-direction:column; gap:3px; font-size:11px; color:var(--muted);">Documents du client (facultatif à l’inscription — 3 fichiers maximum, PDF/JPEG/PNG, 1,5 Mo chacun)' +
+        '<input type="file" id="cpf-files" multiple accept="application/pdf,image/jpeg,image/png"></label>' +
+      '<p class="hint" style="margin:4px 0 0; font-size:11px;">Les documents sont enregistrés sur le serveur (session connectée requise). Vous pourrez en demander d’autres plus tard avec un lien sécurisé.</p>' +
+    '</details>' +
+    '<details class="collapsible" id="cp-links-details" style="margin:0 0 12px;">' +
+      '<summary style="cursor:pointer; font-size:13px; font-weight:600;">🔗 Liens publics COPROJECT (à envoyer au public, aux entreprises, aux États…)</summary>' +
+      '<p class="hint" style="margin:6px 0 8px; font-size:11.5px;">Un lien public ouvre le formulaire COPROJECT en ligne : le client reçoit ses numéros par courriel, et sa demande arrive ici (alerte dans FG &amp; Bank Partnership). Un lien peut être désactivé à tout moment.</p>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
+        '<input type="text" id="cp-link-label" maxlength="80" placeholder="Nom du lien (ex. Campagne Afrique de l’Ouest)" style="'+cpInputStyle()+'">' +
+        '<button type="button" class="btn primary" id="cp-link-gen">🔗 Générer un lien public</button>' +
+      '</div><div id="cp-links-list"></div></details>';
+  }
+  function cpRenderLinks(){
+    var el = document.getElementById('cp-links-list'); if(!el) return;
+    var links = (fghlabState.coLinks || []).slice().reverse();
+    if(!links.length){ el.innerHTML = '<p class="hint" style="margin:0; font-size:12px;">Aucun lien public pour l’instant.</p>'; return; }
+    el.innerHTML = links.map(function(l){
+      var on = l.active !== false && l.active !== 'false';
+      return '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:6px 0; border-top:1px solid var(--line); font-size:12.5px;'+(on ? '' : ' opacity:.6;')+'">' +
+        '<span><strong>'+escapeHtml(l.label || 'Lien public')+'</strong> <span class="hint" style="margin:0;">· '+(on ? 'actif' : 'désactivé')+' · '+(l.usedCount || 0)+' demande(s) · '+escapeHtml(fmtFghlabShortDate(l.createdOn))+'</span></span>' +
+        '<span style="display:flex; gap:6px; flex-wrap:wrap;">' +
+          '<button type="button" class="btn" data-cp-link-copy="'+escapeHtml(l.id)+'" style="padding:3px 9px; font-size:12px;">Copier le lien</button>' +
+          '<button type="button" class="btn" data-cp-link-toggle="'+escapeHtml(l.id)+'" style="padding:3px 9px; font-size:12px;">'+(on ? 'Désactiver' : 'Réactiver')+'</button>' +
+          '<button type="button" class="btn danger" data-cp-link-del="'+escapeHtml(l.id)+'" style="padding:3px 9px; font-size:12px;">Supprimer</button>' +
+        '</span></div>';
+    }).join('');
+  }
+  function cpGenLink(label){
+    if(!Array.isArray(fghlabState.coLinks)) fghlabState.coLinks = [];
+    var l = { id: 'fghcl-' + Date.now().toString(36) + l6Rand(5), token: l6Rand(24), label: (label || '').trim() || 'Lien public COPROJECT', createdOn: new Date().toISOString(), createdBy: fghlabActor(), active: true, usedCount: 0 };
+    fghlabState.coLinks.push(l); persistFghlabState(); cpRenderLinks();
+    l6Copy(fghlabPublicUrl('coproject', l.token), 'Lien public copié ✓ (actif après synchronisation)');
+    return l;
+  }
+  function cpBindLinks(){
+    var gen = document.getElementById('cp-link-gen'), top = document.getElementById('coproject-genlink-btn'), el = document.getElementById('cp-links-list');
+    if(gen && !gen.getAttribute('data-bound')){
+      gen.setAttribute('data-bound', '1');
+      gen.addEventListener('click', function(){ var i = document.getElementById('cp-link-label'); cpGenLink(i ? i.value : ''); if(i) i.value = ''; });
+    }
+    if(top && !top.getAttribute('data-bound')){
+      top.setAttribute('data-bound', '1');
+      top.addEventListener('click', function(){
+        cpGenLink(''); var d = document.getElementById('cp-links-details'); if(d){ d.open = true; if(d.scrollIntoView) d.scrollIntoView({ behavior:'smooth', block:'center' }); }
+      });
+    }
+    if(el && !el.getAttribute('data-bound')){
+      el.setAttribute('data-bound', '1');
+      el.addEventListener('click', function(e){
+        var b;
+        function find(id){ var f = null; (fghlabState.coLinks || []).forEach(function(x){ if(x.id === id) f = x; }); return f; }
+        if((b = e.target.closest('[data-cp-link-copy]'))){ var l = find(b.getAttribute('data-cp-link-copy')); if(l) l6Copy(fghlabPublicUrl('coproject', l.token), 'Lien copié ✓'); return; }
+        if((b = e.target.closest('[data-cp-link-toggle]'))){ var l2 = find(b.getAttribute('data-cp-link-toggle')); if(l2){ l2.active = (l2.active === false || l2.active === 'false'); persistFghlabState(); cpRenderLinks(); } return; }
+        if((b = e.target.closest('[data-cp-link-del]'))){
+          if(!window.confirm('Supprimer ce lien ? Il cessera de fonctionner.')) return;
+          var id = b.getAttribute('data-cp-link-del'); fghlabState.coLinks = (fghlabState.coLinks || []).filter(function(x){ return x.id !== id; }); persistFghlabState(); cpRenderLinks(); return;
+        }
+      });
+    }
+    cpRenderLinks();
+  }
+  function cpReadForm(){
+    function v(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+    return { channel: v('cpf-channel') || 'Téléphone', contact: { email: v('cpf-email'), phone: v('cpf-phone'), nRue: v('cpf-nrue'), rue: v('cpf-rue'), bp: v('cpf-bp'), cp: v('cpf-cp'), ville: v('cpf-ville'), pays: v('cpf-pays'), idType: v('cpf-idtype'), idNumber: v('cpf-idnum') } };
+  }
+  function cpFillForm(p){
+    function set(id, val){ var e = document.getElementById(id); if(e) e.value = val || ''; }
+    var c = p.contact || {};
+    (function(){ var sel = document.getElementById('cpf-channel'), v = p.intake || 'Téléphone'; if(sel && !Array.prototype.some.call(sel.options, function(o){ return o.value === v; })){ var o = document.createElement('option'); o.textContent = v; sel.appendChild(o); } })();
+    set('cpf-channel', p.intake || 'Téléphone'); set('cpf-email', c.email); set('cpf-phone', c.phone); set('cpf-nrue', c.nRue); set('cpf-rue', c.rue); set('cpf-bp', c.bp); set('cpf-cp', c.cp);
+    set('cpf-ville', c.ville); set('cpf-pays', c.pays); set('cpf-idtype', c.idType); set('cpf-idnum', c.idNumber);
+    var f = document.getElementById('cpf-files'); if(f) f.value = '';
+  }
+  function cpClearForm(){
+    ['cpf-email','cpf-phone','cpf-nrue','cpf-rue','cpf-bp','cpf-cp','cpf-ville','cpf-pays','cpf-idtype','cpf-idnum','cpf-files'].forEach(function(id){ var e = document.getElementById(id); if(e) e.value = ''; });
+    var ch = document.getElementById('cpf-channel'); if(ch) ch.value = 'Téléphone';
+  }
+  function cpFileToData(f){
+    return new Promise(function(res, rej){
+      if(['application/pdf', 'image/jpeg', 'image/png'].indexOf(f.type) === -1) return rej(new Error('Formats acceptés : PDF, JPEG ou PNG.'));
+      if(f.size > 1500000) return rej(new Error('« ' + f.name + ' » dépasse 1,5 Mo.'));
+      var fr = new FileReader(); fr.onload = function(){ res(fr.result); }; fr.onerror = function(){ rej(new Error('Lecture impossible.')); }; fr.readAsDataURL(f);
+    });
+  }
+  function cpUploadTeamDoc(pid, kind, name, mime, data, tries){
+    if(!cpSbOk()) return Promise.reject(new Error('Session serveur requise (connexion de l’équipe).'));
+    var did = 'fghcd-' + Date.now().toString(36) + l6Rand(6);
+    return fghlabSb.rpc('fgh_coproject_doc_put', { p_doc: did, p_id: pid, p_kind: kind, p_name: name, p_mime: mime, p_data: data }).then(function(r){
+      if(r && r.error){
+        if((tries || 0) < 4) return new Promise(function(ok){ setTimeout(ok, 2500); }).then(function(){ return cpUploadTeamDoc(pid, kind, name, mime, data, (tries || 0) + 1); });
+        throw new Error('Téléversement impossible.');
+      }
+    });
+  }
+  function cpQueueFormFiles(pid, files){
+    if(!files || !files.length) return;
+    if(!cpSbOk()){ l6Toast('Projet ajouté. Les documents n’ont pas été enregistrés : connectez-vous (équipe) puis ajoutez-les dans la carte « lien sécurisé ».'); return; }
+    var chain = Promise.resolve(), n = 0;
+    files.forEach(function(f){
+      chain = chain.then(function(){ return cpFileToData(f).then(function(d){ return cpUploadTeamDoc(pid, 'Document remis à l’inscription', f.name, f.type, d, 0); }).then(function(){ n++; }).catch(function(e){ l6Toast(e.message); }); });
+    });
+    chain.then(function(){ if(n) l6Toast(n + ' document(s) enregistré(s) ✓'); cpLoadDocs(pid); });
+  }
+  function cpLoadDocs(pid){
+    if(!cpSbOk()){ cpDocsCache[pid] = { err: 'Session serveur requise pour voir les documents.' }; renderFghlabCoprojectList(); return; }
+    cpDocsCache[pid] = { loading: true }; renderFghlabCoprojectList();
+    fghlabSb.rpc('fgh_coproject_doc_list', { p_id: pid }).then(function(r){
+      cpDocsCache[pid] = (r && r.error) ? { err: 'Documents inaccessibles (droits ou serveur).' } : { docs: r.data || [] };
+      renderFghlabCoprojectList();
+    }).catch(function(){ cpDocsCache[pid] = { err: 'Documents inaccessibles.' }; renderFghlabCoprojectList(); });
+  }
+  function cpFmtSize(n){ n = Number(n) || 0; return n > 1048576 ? (n / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' Ko'; }
+  function cpDetails(p, key, title, body){
+    var k = p.id + ':' + key;
+    return '<details class="collapsible" data-cp-det="'+escapeHtml(k)+'"'+(cpOpen[k] ? ' open' : '')+' style="margin:8px 0 0;"><summary style="cursor:pointer; font-size:12.5px; font-weight:600;">'+title+'</summary><div style="margin-top:8px;">'+body+'</div></details>';
+  }
+  function fghlabCoprojectExtraHtml(p){
+    var h = '', c = p.contact || {}, id = escapeHtml(p.id);
+    if(cpIsTrue(p.needsEval)){
+      h += '<div style="margin-top:8px; border:1px solid #C89B3C; background:var(--surface); border-radius:9px; padding:7px 10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between; font-size:12.5px;">' +
+        '<span>🆕 <strong>Nouvelle demande à évaluer</strong> — reçue par ' + escapeHtml(p.intake || 'canal inconnu') + ' le ' + escapeHtml(fmtFghlabShortDate(p.createdOn)) + '. Renseignez l’évaluation ci-dessous.</span>' +
+        '<button type="button" class="btn primary" data-cp-take="'+id+'" style="padding:3px 10px; font-size:12px;">Prendre en charge</button></div>';
+    }
+    if(p.clientNumber){
+      h += '<div style="margin-top:8px; font-size:12px; line-height:1.7;">' +
+        '<span class="ctb-stub-badge">N° client</span> <code>'+escapeHtml(p.clientNumber)+'</code> &nbsp; <span class="ctb-stub-badge">N° partenaire</span> <code>'+escapeHtml(p.partnerNumber || '—')+'</code><br>' +
+        '<span class="ctb-stub-badge">N° projet</span> <code>'+escapeHtml(p.projectNumber || '—')+'</code> &nbsp; <span class="ctb-stub-badge">N° dossier</span> <code>'+escapeHtml(p.dealNumber || '—')+'</code></div>';
+    }
+    var addr = [[c.nRue, c.rue].filter(Boolean).join(' '), c.bp ? 'BP ' + c.bp : '', c.cp, c.ville, c.pays].filter(Boolean).join(', ');
+    var cLines = [];
+    if(c.email) cLines.push('✉️ ' + escapeHtml(c.email));
+    if(c.phone) cLines.push('📞 ' + escapeHtml(c.phone));
+    if(addr) cLines.push('📍 ' + escapeHtml(addr));
+    if(c.idType || c.idNumber) cLines.push('🪪 ' + escapeHtml(c.idType || 'Pièce') + ' — ' + escapeHtml(c.idNumber || '—'));
+    if(p.description) cLines.push('📝 ' + escapeHtml(p.description));
+    if(p.intake) cLines.push('Canal : ' + escapeHtml(p.intake) + (p.linkLabel ? ' (' + escapeHtml(p.linkLabel) + ')' : ''));
+    if(cLines.length) h += cpDetails(p, 'contact', '👤 Coordonnées du client', '<div style="font-size:12.5px; line-height:1.7;">' + cLines.join('<br>') + '</div><p class="hint" style="font-size:11px; margin:6px 0 0;">Informations d’identité : accès réservé à l’équipe autorisée. Ne les copiez pas dans des messages non sécurisés.</p>');
+    /* Carte « demande / réponse par lien sécurisé » */
+    var req = p.docRequest && p.docRequest.items && p.docRequest.items.length ? p.docRequest : null;
+    var chosen = req ? req.items : [];
+    var itemsHtml = CP_REQ_ITEMS.concat(chosen.filter(function(x){ return CP_REQ_ITEMS.indexOf(x) === -1; })).map(function(it){
+      return '<label style="display:flex; gap:6px; align-items:center; font-size:12.5px; margin:2px 0;"><input type="checkbox" data-cp-req-item="'+id+'" value="'+escapeHtml(it)+'"'+(chosen.indexOf(it) !== -1 ? ' checked' : '')+'> '+escapeHtml(it)+'</label>';
+    }).join('');
+    var cache = cpDocsCache[p.id], docsHtml;
+    if(!cache) docsHtml = '<button type="button" class="btn" data-cp-docs-refresh="'+id+'" style="padding:3px 9px; font-size:12px;">📂 Voir les documents reçus' + (p.docsCount ? ' ('+p.docsCount+')' : '') + '</button>';
+    else if(cache.loading) docsHtml = '<span class="hint">Chargement…</span>';
+    else if(cache.err) docsHtml = '<span class="hint" style="color:var(--bad);">'+escapeHtml(cache.err)+'</span> <button type="button" class="btn" data-cp-docs-refresh="'+id+'" style="padding:3px 9px; font-size:12px;">Réessayer</button>';
+    else docsHtml = (cache.docs.length ? cache.docs.map(function(d){
+        return '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:4px 0; border-top:1px solid var(--line); font-size:12.5px;"><span>'+escapeHtml(d.name)+' <span class="hint" style="margin:0;">· '+escapeHtml(d.kind)+' · '+cpFmtSize(d.size)+' · '+(d.source === 'client' ? 'reçu du client' : 'équipe')+'</span></span>' +
+          '<span><button type="button" class="btn" data-cp-doc-view="'+escapeHtml(d.id)+'" style="padding:2px 8px; font-size:12px;">Voir</button> <button type="button" class="btn danger" data-cp-doc-del="'+escapeHtml(d.id)+'" data-cp-pid="'+id+'" style="padding:2px 8px; font-size:12px;">✕</button></span></div>';
+      }).join('') : '<span class="hint">Aucun document pour l’instant.</span>') + ' <button type="button" class="btn" data-cp-docs-refresh="'+id+'" style="padding:2px 8px; font-size:12px;">↻ Actualiser</button>';
+    var msg = cpMsg[p.id] ? '<div class="hint" style="margin:6px 0 0; color:var(--accent);">'+escapeHtml(cpMsg[p.id])+'</div>' : '';
+    var secBody = '<p class="hint" style="margin:0 0 6px; font-size:11.5px;">Un manque d’information ou de document ? Cochez ce qu’il faut, envoyez au client (ou au partenaire) un <strong>lien sécurisé personnel</strong> : il dépose ses documents directement dans ce dossier, sans connexion. Le lien est lié au nom du client et aux numéros de projet et de dossier.</p>' +
+      itemsHtml +
+      '<input type="text" data-cp-req-custom="'+id+'" maxlength="120" placeholder="Autre document ou information demandée…" style="'+cpInputStyle()+' width:100%; margin:6px 0;">' +
+      '<textarea data-cp-req-note="'+id+'" rows="2" maxlength="500" placeholder="Message pour le client (facultatif)" style="'+cpInputStyle()+' width:100%;">'+escapeHtml(req ? (req.note || '') : '')+'</textarea>' +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' +
+        '<button type="button" class="btn primary" data-cp-req-save="'+id+'" style="padding:4px 10px; font-size:12px;">Enregistrer la demande</button>' +
+        '<button type="button" class="btn" data-cp-link-secure="'+id+'" style="padding:4px 10px; font-size:12px;">🔗 Copier le lien sécurisé</button>' +
+        '<button type="button" class="btn" data-cp-req-mail="'+id+'" style="padding:4px 10px; font-size:12px;">✉️ Envoyer par courriel</button>' +
+        (req ? '<button type="button" class="btn" data-cp-req-clear="'+id+'" style="padding:4px 10px; font-size:12px;">Retirer la demande</button>' : '') +
+      '</div>' + msg +
+      (req ? '<p class="hint" style="margin:6px 0 0; font-size:11.5px;">Demande active depuis le '+escapeHtml(fmtFghlabShortDate(req.on))+' : '+escapeHtml(req.items.join(', '))+'</p>' : '') +
+      '<div style="margin-top:10px;"><strong style="font-size:12.5px;">Documents du dossier</strong><div style="margin-top:4px;">'+docsHtml+'</div>' +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px;"><input type="file" data-cp-team-file="'+id+'" accept="application/pdf,image/jpeg,image/png" style="font-size:12px;"><button type="button" class="btn" data-cp-team-upload="'+id+'" style="padding:3px 9px; font-size:12px;">Ajouter un document</button></div></div>';
+    h += cpDetails(p, 'sec', '🔐 Demande / réponse par lien sécurisé' + (p.docsCount ? ' · ' + p.docsCount + ' doc.' : '') + (req ? ' · demande active' : ''), secBody);
+    return h;
+  }
+  /* Projets reçus du serveur : complète les champs que l'interface locale attend */
+  function cpNormalize(){
+    var changed = false;
+    (fghlabState.coprojects || []).forEach(function(p){
+      if(!p) return;
+      if(!Array.isArray(p.documentsRequis)){ p.documentsRequis = fghlabCoprojectDefaultDocuments(); changed = true; }
+      if(!Array.isArray(p.parties)){ p.parties = []; changed = true; }
+      if(!Array.isArray(p.risques)){ p.risques = []; changed = true; }
+      if(!Array.isArray(p.jalons)){ p.jalons = []; changed = true; }
+      if(!p.scores){ p.scores = { viabilite: null, structuration: null, risque: null }; changed = true; }
+      if(!p.jalons.length && p.typeProjet){ try{ fghlabCoprojectEnsureAutoJalon(p); changed = true; }catch(e){} }
+    });
+    if(changed) persistFghlabState();
+  }
+  function cpPushAlert(p){
+    if(!Array.isArray(fghlabState.alerts)) fghlabState.alerts = [];
+    fghlabState.alerts.push({ id: 'fghal-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kind: 'coproject_new', coprojectId: p.id,
+      text: 'Nouvelle demande COPROJECT à évaluer : ' + p.client + ' — ' + p.title + ' (' + (p.projectNumber || '') + ')', createdOn: new Date().toISOString(), createdBy: fghlabActor(), read: false });
+  }
+  function cpBindCards(listEl){
+    if(listEl.getAttribute('data-cp-bound')) return;
+    listEl.setAttribute('data-cp-bound', '1');
+    listEl.addEventListener('toggle', function(e){ var d = e.target; if(d && d.getAttribute && d.getAttribute('data-cp-det')) cpOpen[d.getAttribute('data-cp-det')] = d.open; }, true);
+    function find(pid){ var f = null; (fghlabState.coprojects || []).forEach(function(p){ if(p.id === pid) f = p; }); return f; }
+    function q(sel, pid){ return listEl.querySelector('[' + sel + '="' + pid + '"]'); }
+    function collect(pid){
+      var items = []; Array.prototype.forEach.call(listEl.querySelectorAll('[data-cp-req-item="' + pid + '"]'), function(c){ if(c.checked) items.push(c.value); });
+      var cu = q('data-cp-req-custom', pid); if(cu && cu.value.trim()) items.push(cu.value.trim());
+      var nt = q('data-cp-req-note', pid);
+      return { items: items, note: nt ? nt.value.trim() : '' };
+    }
+    function saveReq(p){
+      var c = collect(p.id);
+      if(!c.items.length){ cpMsg[p.id] = 'Cochez au moins un document ou une information à demander.'; renderFghlabCoprojectList(); return false; }
+      if(!p.docToken) p.docToken = l6Rand(32);
+      p.docRequest = { on: new Date().toISOString(), items: c.items, note: c.note, by: fghlabActor() };
+      persistFghlabState(); cpMsg[p.id] = 'Demande enregistrée ✓'; cpOpen[p.id + ':sec'] = true; renderFghlabCoprojectList(); return true;
+    }
+    listEl.addEventListener('click', function(e){
+      var b, t = e.target; if(!t.closest) return;
+      if((b = t.closest('[data-cp-take]'))){ var p0 = find(b.getAttribute('data-cp-take')); if(p0){ p0.needsEval = 'false'; p0.takenBy = fghlabActor(); persistFghlabState(); renderFghlabCoprojectList(); } return; }
+      if((b = t.closest('[data-cp-req-save]'))){ var p1 = find(b.getAttribute('data-cp-req-save')); if(p1) saveReq(p1); return; }
+      if((b = t.closest('[data-cp-req-clear]'))){ var p2 = find(b.getAttribute('data-cp-req-clear')); if(p2){ p2.docRequest = null; persistFghlabState(); cpMsg[p2.id] = 'Demande retirée.'; renderFghlabCoprojectList(); } return; }
+      if((b = t.closest('[data-cp-link-secure]'))){
+        var p3 = find(b.getAttribute('data-cp-link-secure')); if(!p3) return;
+        if(!p3.docToken){ p3.docToken = l6Rand(32); persistFghlabState(); }
+        l6Copy(fghlabPublicUrl('complement', p3.docToken), 'Lien sécurisé copié ✓ (actif après synchronisation)'); return;
+      }
+      if((b = t.closest('[data-cp-req-mail]'))){
+        var p4 = find(b.getAttribute('data-cp-req-mail')); if(!p4) return;
+        if(!(p4.contact && p4.contact.email)){ cpMsg[p4.id] = 'Aucun courriel au dossier : ajoutez-le (Modifier) ou copiez le lien.'; renderFghlabCoprojectList(); return; }
+        if(!cpSbOk()){ cpMsg[p4.id] = 'Envoi par courriel : connexion équipe requise. Copiez le lien et envoyez-le vous-même.'; renderFghlabCoprojectList(); return; }
+        if(!saveReq(p4)) return;
+        var url = fghlabPublicUrl('complement', p4.docToken);
+        var body = 'Bonjour ' + p4.client + ',' + '\n\n' + 'Pour poursuivre le traitement de votre dossier « ' + p4.title + ' » (N° de projet ' + (p4.projectNumber || '—') + ' · N° de dossier ' + (p4.dealNumber || '—') + '), nous avons besoin de :\n\n' +
+          p4.docRequest.items.map(function(x){ return '• ' + x; }).join('\n') + (p4.docRequest.note ? '\n\n' + p4.docRequest.note : '') + '\n\nDéposez-les en toute sécurité avec votre lien personnel (PDF, JPEG ou PNG, 2 Mo maximum par fichier) :\n' + url + '\n\nNe transmettez ce lien à personne.\n\nFINECIA GROUPE';
+        cpMsg[p4.id] = 'Envoi en cours…'; renderFghlabCoprojectList();
+        setTimeout(function(){
+          fghlabSb.rpc('fgh_coproject_mail', { p_id: p4.id, p_subject: 'FINECIA GROUPE — documents à compléter pour votre dossier', p_body: body }).then(function(r){
+            var d = r && r.data;
+            if((r && r.error) || !d || d.ok !== true){ cpMsg[p4.id] = (d && d.error === 'no_email') ? 'Le dossier n’est pas encore synchronisé avec le serveur ou n’a pas de courriel. Réessayez dans un instant.' : 'Envoi impossible pour le moment.'; renderFghlabCoprojectList(); return; }
+            cpMsg[p4.id] = 'Courriel mis en file ✓ (envoyé si le service d’envoi est configuré).'; renderFghlabCoprojectList(); l9FlushMail(true);
+          }).catch(function(){ cpMsg[p4.id] = 'Envoi impossible pour le moment.'; renderFghlabCoprojectList(); });
+        }, 1200);
+        return;
+      }
+      if((b = t.closest('[data-cp-docs-refresh]'))){ cpOpen[b.getAttribute('data-cp-docs-refresh') + ':sec'] = true; cpLoadDocs(b.getAttribute('data-cp-docs-refresh')); return; }
+      if((b = t.closest('[data-cp-doc-view]'))){
+        if(!cpSbOk()) return;
+        var win = window.open('', '_blank');
+        fghlabSb.rpc('fgh_coproject_doc_get', { p_doc: b.getAttribute('data-cp-doc-view') }).then(function(r){
+          var d = r && r.data; if(!d || !d.data){ if(win) win.close(); l6Toast('Document introuvable.'); return; }
+          fetch(d.data).then(function(x){ return x.blob(); }).then(function(bl){ var u = URL.createObjectURL(bl); if(win) win.location.href = u; else window.open(u, '_blank'); setTimeout(function(){ URL.revokeObjectURL(u); }, 60000); });
+        }).catch(function(){ if(win) win.close(); l6Toast('Lecture impossible.'); });
+        return;
+      }
+      if((b = t.closest('[data-cp-doc-del]'))){
+        if(!cpSbOk() || !window.confirm('Supprimer ce document du dossier ?')) return;
+        var pidd = b.getAttribute('data-cp-pid');
+        fghlabSb.rpc('fgh_coproject_doc_delete', { p_doc: b.getAttribute('data-cp-doc-del') }).then(function(){ cpLoadDocs(pidd); });
+        return;
+      }
+      if((b = t.closest('[data-cp-team-upload]'))){
+        var pidu = b.getAttribute('data-cp-team-upload'), fi = q('data-cp-team-file', pidu), f = fi && fi.files && fi.files[0];
+        if(!f){ l6Toast('Choisissez un fichier.'); return; }
+        cpFileToData(f).then(function(d){ return cpUploadTeamDoc(pidu, 'Ajouté par l’équipe', f.name, f.type, d, 0); }).then(function(){ l6Toast('Document ajouté ✓'); cpLoadDocs(pidu); }).catch(function(er){ l6Toast(er.message); });
+        return;
+      }
+    });
+  }
+
   function resetFghlabCoprojectForm(){
     fghlabEditingCoprojectId = null;
     var titleInput = document.getElementById('coproject-title-input');
@@ -19673,6 +19993,7 @@
     if(echeanceInput) echeanceInput.value = '';
     if(addBtn) addBtn.textContent = 'Ajouter le projet';
     if(cancelBtn) cancelBtn.style.display = 'none';
+    cpClearForm();
   }
   /* Bascule le formulaire « Ajouter le projet » en mode modification, pré-rempli avec les valeurs
      actuelles du projet p — voir le bouton « Modifier » rendu dans renderFghlabCoprojectList(). */
@@ -19701,6 +20022,7 @@
     if(echeanceInput) echeanceInput.value = p.echeanceSoumission || '';
     if(addBtn) addBtn.textContent = 'Enregistrer les modifications';
     if(cancelBtn) cancelBtn.style.display = '';
+    cpFillForm(p);
     if(titleInput && titleInput.scrollIntoView) titleInput.scrollIntoView({ behavior:'smooth', block:'start' });
   }
   function bindFghlabCoprojectPanel(){
@@ -19718,6 +20040,7 @@
       });
     }
     renderFghlabCoprojectList();
+    cpBindLinks();
     var addBtn = document.getElementById('coproject-add-btn');
     var titleInput = document.getElementById('coproject-title-input');
     var clientInput = document.getElementById('coproject-client-input');
@@ -19738,6 +20061,10 @@
         var title = titleInput ? titleInput.value.trim() : '';
         if(!title) return;
         var client = clientInput ? clientInput.value.trim() : '';
+        if(!client){ l6Toast('Indiquez le nom du client : il sert à créer son N° de client.'); if(clientInput) clientInput.focus(); return; }
+        var cpForm = cpReadForm();
+        var cpFiles = Array.prototype.slice.call((document.getElementById('cpf-files') || {}).files || []);
+        if(cpFiles.length > 3){ l6Toast('3 documents au maximum à l’inscription.'); return; }
         var status = (statusInput && statusInput.value) || 'prospection';
         var typeProjet = typeInput ? typeInput.value : '';
         var typeProjetAutre = (typeAutreInput && typeProjet === 'Autre (à préciser)') ? typeAutreInput.value.trim() : '';
@@ -19756,6 +20083,8 @@
             existingProj.bailleur = bailleur;
             existingProj.budgetEstime = budgetEstime;
             existingProj.echeanceSoumission = echeanceSoumission;
+            existingProj.contact = cpForm.contact;
+            existingProj.intake = cpForm.channel;
             /* Round D15b : si le type a changé et qu'aucun jalon n'existe encore, on insère le
                jalon auto-généré ; on rafraîchit aussi le libellé du risque auto-généré (facteur
                propre au type de projet) si une évaluation est déjà complète. */
@@ -19778,13 +20107,27 @@
             documentsRequis: fghlabCoprojectDefaultDocuments(),
             parties: [],
             risques: [],
-            jalons: []
+            jalons: [],
+            contact: cpForm.contact,
+            intake: cpForm.channel,
+            needsEval: 'true',
+            docToken: l6Rand(32),
+            docsCount: 0
           };
+          var cpNums = cpMakeNumbers(client, cpForm.contact.email);
+          newCoproject.clientNumber = cpNums.clientNumber; newCoproject.partnerNumber = cpNums.partnerNumber;
+          newCoproject.projectNumber = cpNums.projectNumber; newCoproject.dealNumber = cpNums.dealNumber;
           /* Round D15b : jalon auto-généré dès la création (titre + échéance selon typeProjet) ;
              le risque auto-généré n'apparaîtra qu'une fois l'évaluation complétée (voir
              fghlabCoprojectSyncAutoRisk(), appelé au changement de score ci-dessous). */
           fghlabCoprojectEnsureAutoJalon(newCoproject);
           fghlabState.coprojects.push(newCoproject);
+          cpPushAlert(newCoproject);
+          cpOpen[newCoproject.id + ':contact'] = true;
+          cpMsg[newCoproject.id] = '';
+          l6Toast('Projet ajouté — N° client ' + newCoproject.clientNumber + ' · ' + newCoproject.projectNumber);
+          setTimeout(function(){ cpQueueFormFiles(newCoproject.id, cpFiles); }, 2500);
+          try{ renderFghlabBankAlerts(); }catch(e){}
         }
         persistFghlabState();
         resetFghlabCoprojectForm();
@@ -19797,6 +20140,7 @@
     }
     var listEl = document.getElementById('coproject-list');
     if(listEl){
+      cpBindCards(listEl);
       listEl.addEventListener('change', function(e){
         var scoreSel = e.target.closest ? e.target.closest('[data-coproject-score]') : null;
         var statusSel = e.target.closest ? e.target.closest('[data-coproject-status]') : null;
@@ -22353,7 +22697,7 @@
      première fois et absente du serveur est envoyée (reprise des données déjà saisies sur cet appareil) ;
      (4) une collection en lecture seule pour la session est remplacée par la version du serveur.
      Sans session serveur, tout reste local comme avant. */
-  var FGHLAB_SYNC_COLLECTIONS = ['partners', 'vehicleListings', 'vehicleLeads', 'invites', 'fgbankProjects', 'alerts', 'touttestSessions', 'academieFormations', 'academieRegistrations', 'rdvSlots', 'partnerPolicy'];
+  var FGHLAB_SYNC_COLLECTIONS = ['partners', 'vehicleListings', 'vehicleLeads', 'invites', 'fgbankProjects', 'alerts', 'touttestSessions', 'academieFormations', 'academieRegistrations', 'rdvSlots', 'partnerPolicy', 'coprojects', 'coLinks'];
   var fghlabSyncRedraw = { academie: null, rdv: null };
   function fghlabSyncActive(){ return !!(fghlabSb && fghlabCloudRole); }
   function fghlabCanon(v){
@@ -22405,6 +22749,7 @@
     try{ renderFghlabPartnerList(); }catch(e){}
     try{ renderFghlabBankProjectList(); renderFghlabRevenueDashboard(); }catch(e){}
     try{ renderFghlabBankAlerts(); }catch(e){}
+    try{ renderFghlabCoprojectList(); cpRenderLinks(); }catch(e){}
     try{ if(typeof renderFghlabTouttestList === 'function') renderFghlabTouttestList(); }catch(e){}
     try{ renderPartnerInviteOut(); }catch(e){}
     try{ l6RenderPartnerDoss(); l6RenderPolicyCard(); }catch(e){}
@@ -22732,7 +23077,7 @@
     var unread = all.filter(function(a){ return !a.read; }).length;
     if(!all.length){ el.innerHTML = ''; return; }
     el.innerHTML = '<div style="border:1px solid #C89B3C; border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:12px;">' +
-      '<div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">🔔 Alertes Partner Market' + (unread ? ' <span class="ctb-stub-badge" style="background:#C89B3C; color:#fff;">'+unread+' nouvelle'+(unread > 1 ? 's' : '')+'</span>' : '') + '</div>' +
+      '<div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">🔔 Alertes (Partner Market, COPROJECT…)' + (unread ? ' <span class="ctb-stub-badge" style="background:#C89B3C; color:#fff;">'+unread+' nouvelle'+(unread > 1 ? 's' : '')+'</span>' : '') + '</div>' +
       alerts.map(function(a){
         var done = a.kind === 'vehicle_completed', l9k = L9_ALERT_KINDS[a.kind];
         return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:5px 0; border-top:1px solid var(--line); font-size:12.5px;'+(a.read && !(done && !a.classifiedOn) ? ' opacity:.65;' : '')+'" data-alert-row="'+escapeHtml(a.id)+'">' +
@@ -22749,6 +23094,18 @@
     a.read = true;
     persistFghlabState();
     renderFghlabBankAlerts();
+    if(a.kind === 'coproject_new' || a.kind === 'coproject_docs'){
+      if(getFghlabVisibleTools().indexOf('coproject') === -1){ window.alert('Ce dossier se trouve dans COPROJECT, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.'); return; }
+      if(a.kind === 'coproject_docs'){ cpOpen[a.coprojectId + ':sec'] = true; cpDocsCache[a.coprojectId] = null; }
+      selectFghlabTool('coproject', { noClose: true });
+      renderFghlabCoprojectList();
+      setTimeout(function(){
+        var card = document.querySelector('[data-cp-card="' + a.coprojectId + '"]');
+        if(card){ if(card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.style.outline = '3px solid #C89B3C'; setTimeout(function(){ card.style.outline = ''; }, 3500); }
+        if(a.kind === 'coproject_docs') cpLoadDocs(a.coprojectId);
+      }, 250);
+      return;
+    }
     if(L9_ALERT_KINDS[a.kind]){
       if(getFghlabVisibleTools().indexOf('fgbankpartnership') === -1 && getFghlabVisibleTools().indexOf('partnermarket') === -1){ window.alert('Le dossier du partenaire se trouve dans PartnerDoss (FG & Bank Partnership), un outil non autorisé pour votre compte.'); return; }
       selectFghlabTool('fgbankpartnership', { noClose: true });
@@ -36808,7 +37165,13 @@
 #hnd-drawer{ position:fixed; top:0; left:0; bottom:0; width:min(330px, 86vw); background:var(--bg); color:var(--ink); z-index:9600; transform:translateX(-102%); transition:transform .24s ease; display:none; flex-direction:column; box-shadow:6px 0 30px rgba(0,0,0,.25); border-radius:0 18px 18px 0; padding-top:max(14px, env(safe-area-inset-top,0px)); }
 body.hnd-open #hnd-backdrop{ opacity:1; pointer-events:auto; }
 body.hnd-open #hnd-drawer{ transform:none; }
-body.hnd-open{ overflow:hidden; }
+body.hnd-open, body.hnd-dragging{ overflow:hidden; }
+body.hnd-dragging #hnd-drawer{ display:flex; }
+@media (max-width: 860px){
+  .main, .sidebar, .mobile-nav{ transition:transform .24s ease; }
+  body.hnd-open .main, body.hnd-open .sidebar, body.hnd-open .mobile-nav{ transform:translateX(var(--hnd-w, 300px)); }
+  body.hnd-dragging .main, body.hnd-dragging .sidebar, body.hnd-dragging .mobile-nav{ transition:none; }
+}
 @media (max-width: 860px){ #hnd-drawer{ display:flex; } }
 @media (min-width: 861px){ #hnd-backdrop, #hnd-drawer{ display:none !important; } }
 .hnd-top{ display:flex; align-items:center; gap:8px; padding:6px 14px 10px; }
@@ -36832,7 +37195,7 @@ body.hnd-open{ overflow:hidden; }
 .hnd-label button{ margin-left:auto; border:0; background:transparent; color:var(--accent-ink); font-size:12px; cursor:pointer; }
 .hnd-empty{ margin:2px 10px 6px; font-size:12.5px; color:var(--muted); }
 .hnd-foot{ display:flex; align-items:center; gap:10px; padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px)); position:relative; }
-.hnd-avatar{ width:42px; height:42px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:var(--ink); }
+.hnd-avatar{ cursor:pointer; overflow:hidden; padding:0; width:42px; height:42px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:var(--ink); }
 .hnd-newsession{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:999px; border:0; background:var(--ink); color:var(--bg); font-size:14.5px; font-weight:600; cursor:pointer; }
 .hnd-sessmenu{ position:absolute; left:14px; right:14px; bottom:calc(66px + env(safe-area-inset-bottom,0px)); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:6px; }
 .hnd-sessmenu[hidden]{ display:none; }
@@ -36911,14 +37274,14 @@ body.hnd-open{ overflow:hidden; }
       '<button type="button" class="hnd-ic" data-hnd="search" aria-label="Rechercher">' + ICON.search + '</button>' +
       '<button type="button" class="hnd-ic" data-hnd="close" aria-label="Fermer">✕</button></div>' +
       '<div class="hnd-scroll" id="hnd-scroll"></div>' +
-      '<div class="hnd-foot"><div class="hnd-sessmenu" id="hnd-sessmenu" hidden></div><span class="hnd-avatar" id="hnd-avatar">H</span>' +
+      '<div class="hnd-foot"><div class="hnd-sessmenu" id="hnd-sessmenu" hidden></div><button type="button" class="hnd-avatar" id="hnd-avatar" data-hnd="avatar" aria-label="Photo de profil"><span id="hnd-avatar-in">H</span></button><div class="hnd-sessmenu" id="hnd-avmenu" hidden></div><input type="file" id="hnd-avfile" accept="image/*" hidden>' +
       '<button type="button" class="hnd-newsession" data-hnd="newsession">' + ICON.pen + ' Nouvelle session</button></div>';
     document.body.appendChild(backdrop); document.body.appendChild(drawer);
     backdrop.addEventListener('click', close);
     drawer.addEventListener('click', onClick);
   }
   function open(){ if(!drawer) build(); renderDrawer(); document.body.classList.add('hnd-open'); drawer.setAttribute('aria-hidden', 'false'); }
-  function close(){ document.body.classList.remove('hnd-open'); if(drawer) drawer.setAttribute('aria-hidden', 'true'); var m = $('hnd-sessmenu'); if(m) m.hidden = true; }
+  function close(){ if(typeof clearInline === 'function') clearInline(); document.body.classList.remove('hnd-open'); if(drawer) drawer.setAttribute('aria-hidden', 'true'); var m = $('hnd-sessmenu'); if(m) m.hidden = true; }
   function isOpen(){ return document.body.classList.contains('hnd-open'); }
   window.__hnDrawer = { open: open, close: close, isOpen: isOpen };
 
@@ -36953,6 +37316,7 @@ body.hnd-open{ overflow:hidden; }
     h += shown.length ? shown.map(function(r, i){ return '<button type="button" class="hnd-sub" data-hnd-rec="' + rec.indexOf(r) + '"><span>' + esc(r.label) + '</span><small>' + new Date(r.ts).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' }) + '</small></button>'; }).join('') : '<div class="hnd-empty">Votre activité récente apparaîtra ici.</div>';
     if(rec.length > 5) h += '<button type="button" class="hnd-sub" data-hnd="allrec" style="color:var(--muted);">' + (recentAll ? 'Réduire' : 'Afficher tous') + ' ›</button>';
     sc.innerHTML = h;
+    renderAvatar();
     var f = $('hnd-folder'), sel = $('folder-select');
     if(f) f.textContent = sel && sel.options[sel.selectedIndex] ? 'Dossier : ' + sel.options[sel.selectedIndex].text : '';
   }
@@ -36975,6 +37339,31 @@ body.hnd-open{ overflow:hidden; }
     return a.slice(0, 15).map(function(n){ return '<button type="button" class="hnd-sub" data-hnd-notif="' + esc(n.id) + '" style="align-items:flex-start;' + (n.read ? 'opacity:.65;' : 'font-weight:600;') + '"><span>' + esc(n.text) + '</span></button>'; }).join('') +
       '<button type="button" class="hnd-sub" data-hnd="readall" style="color:var(--muted);">Tout marquer comme lu</button>';
   }
+  function avPhoto(){ try{ return localStorage.getItem('helpnaud_user_photo') || ''; }catch(e){ return ''; } }
+  function renderAvatar(){
+    var el = $('hnd-avatar-in'); if(!el) return; var u = avPhoto();
+    if(u){ el.innerHTML = '<img alt="" src="' + u + '" style="width:100%;height:100%;object-fit:cover;display:block;">'; el.style.cssText = 'width:100%;height:100%;display:block;'; }
+    else { el.textContent = 'H'; el.style.cssText = ''; }
+  }
+  document.addEventListener('change', function(e){
+    if(!e.target || e.target.id !== 'hnd-avfile') return;
+    var f = e.target.files && e.target.files[0]; e.target.value = ''; if(!f) return;
+    if(!/^image\//.test(f.type)){ toast('Choisissez un fichier image.'); return; }
+    var fr = new FileReader();
+    fr.onload = function(ev){
+      var img = new Image();
+      img.onload = function(){
+        var c = document.createElement('canvas'); c.width = c.height = 160; var x = c.getContext('2d');
+        var w = img.naturalWidth || 160, h = img.naturalHeight || 160, k = Math.max(160 / w, 160 / h);
+        x.imageSmoothingQuality = 'high'; x.drawImage(img, (160 - w * k) / 2, (160 - h * k) / 2, w * k, h * k);
+        try{ localStorage.setItem('helpnaud_user_photo', c.toDataURL('image/jpeg', 0.85)); }catch(err){ toast('Stockage impossible sur cet appareil.'); return; }
+        renderAvatar(); var am = $('hnd-avmenu'); if(am) am.hidden = true; toast('Photo de profil mise à jour ✓');
+      };
+      img.onerror = function(){ toast('Image illisible.'); };
+      img.src = ev.target.result;
+    };
+    fr.readAsDataURL(f);
+  });
   function toggle(key){ openPanels[key] = !openPanels[key]; if(key === 'notif' && !openPanels[key]) {} renderDrawer(); }
   function onClick(e){
     var t = e.target.closest('[data-hnd],[data-hnd-view],[data-hnd-folder],[data-hnd-pin],[data-hnd-unpin],[data-hnd-rec],[data-hnd-notif],[data-hnd-sess]');
@@ -36999,6 +37388,9 @@ body.hnd-open{ overflow:hidden; }
       case 'pinhere': var v2 = curView(), pins = J(PK, []); if(!pins.some(function(x){ return x.ref === v2 && x.kind === 'view'; })){ pins.unshift({ id: uid(), kind: 'view', ref: v2, label: viewLabel(v2) }); S(PK, pins.slice(0, 20)); toast('Page épinglée ✓'); } else toast('Déjà épinglée.'); renderDrawer(); break;
       case 'allrec': recentAll = !recentAll; renderDrawer(); break;
       case 'readall': var all = notifs(); all.forEach(function(n){ n.read = true; }); S(NK, all); renderDrawer(); break;
+      case 'avatar': var am = $('hnd-avmenu'); if(am){ var has = !!avPhoto(); am.innerHTML = '<button type="button" class="hnd-sub" data-hnd="avpick">📷 <span>' + (has ? 'Changer la photo de profil' : 'Ajouter une photo de profil') + '</span></button>' + (has ? '<button type="button" class="hnd-sub" data-hnd="avrm">🗑️ <span>Retirer la photo</span></button>' : ''); am.hidden = !am.hidden; var sm0 = $('hnd-sessmenu'); if(sm0) sm0.hidden = true; } break;
+      case 'avpick': var af = $('hnd-avfile'); if(af) af.click(); break;
+      case 'avrm': try{ localStorage.removeItem('helpnaud_user_photo'); }catch(x){} renderAvatar(); var am2 = $('hnd-avmenu'); if(am2) am2.hidden = true; toast('Photo retirée.'); break;
       case 'newsession': var m = $('hnd-sessmenu'); if(m){ m.innerHTML = '<button type="button" class="hnd-sub" data-hnd-sess="assistant">💬 <span>Assistant (chat)</span></button><button type="button" class="hnd-sub" data-hnd-sess="cowork">🫂 <span>Co-work (discussion)</span></button><button type="button" class="hnd-sub" data-hnd-sess="hstat">📈 <span>H-Start (clavardage)</span></button>'; m.hidden = !m.hidden; } break;
     }
   }
@@ -37030,9 +37422,27 @@ body.hnd-open{ overflow:hidden; }
     isOpen() ? close() : open();
   }, true);
 
-  /* Gestes : droite = ouvrir le tiroir ; gauche = fermer, sinon aller à la saisie (iPhone et Android) */
+  /* Gestes : le tiroir et l'écran suivent le doigt en direct (iPhone et Android).
+     Droite = ouvre ; gauche = ferme ; gauche tiroir fermé = va à la saisie. */
+  var MOVE_SEL = '.main, .sidebar, .mobile-nav';
+  function moveEls(){ return document.querySelectorAll(MOVE_SEL); }
+  function applyProgress(p, anim){
+    if(!drawer) build();
+    var W = drawer.offsetWidth || 300;
+    document.documentElement.style.setProperty('--hnd-w', W + 'px');
+    var tr = anim ? '' : 'none';
+    drawer.style.transition = tr; backdrop.style.transition = tr;
+    drawer.style.transform = 'translateX(' + Math.round(p * W - W) + 'px)';
+    backdrop.style.opacity = String(p); backdrop.style.pointerEvents = p > 0 ? 'auto' : 'none';
+    Array.prototype.forEach.call(moveEls(), function(el){ el.style.transition = tr; el.style.transform = p > 0 ? 'translateX(' + Math.round(p * W) + 'px)' : ''; });
+  }
+  function clearInline(){
+    [drawer, backdrop].forEach(function(el){ if(el){ el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; el.style.pointerEvents = ''; } });
+    Array.prototype.forEach.call(moveEls(), function(el){ el.style.transition = ''; el.style.transform = ''; });
+    document.body.classList.remove('hnd-dragging');
+  }
   (function(){
-    var sx = 0, sy = 0, st = 0, ok = false;
+    var sx = 0, sy = 0, st = 0, ok = false, mode = null, wasOpen = false, W = 300, lastX = 0, lastT = 0, vel = 0, p = 0;
     function blocked(t){
       while(t && t.nodeType === 1 && t !== document.body){
         if(/^(INPUT|TEXTAREA|SELECT|TABLE|PRE|CANVAS|IFRAME)$/.test(t.tagName) || t.isContentEditable) return true;
@@ -37043,25 +37453,59 @@ body.hnd-open{ overflow:hidden; }
       return false;
     }
     document.addEventListener('touchstart', function(e){
+      mode = null; vel = 0;
       if(!mobile() || e.touches.length !== 1){ ok = false; return; }
       var t = e.touches[0], vw = document.documentElement.clientWidth;
-      sx = t.clientX; sy = t.clientY; st = Date.now();
+      sx = t.clientX; sy = t.clientY; st = Date.now(); lastX = sx; lastT = st; wasOpen = isOpen();
+      if(!drawer) build();
+      W = drawer.offsetWidth || 300;
       // Marge de 24 px : ne gêne pas les gestes système (retour iPhone / Android)
-      ok = (sx > 24 && sx < vw - 24) && (isOpen() || !blocked(e.target));
+      ok = (sx > 24 && sx < vw - 24) && (wasOpen || !blocked(e.target));
     }, { passive: true });
-    document.addEventListener('touchend', function(e){
+    document.addEventListener('touchmove', function(e){
+      if(!ok) return;
+      var t = e.touches[0], dx = t.clientX - sx, dy = t.clientY - sy, now = Date.now();
+      if(now > lastT){ vel = (t.clientX - lastX) / (now - lastT); lastX = t.clientX; lastT = now; }
+      if(mode === null){
+        if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if(Math.abs(dx) < Math.abs(dy) * 1.2){ mode = 'v'; ok = false; return; }
+        if(!wasOpen && dx > 0) mode = 'drag';
+        else if(wasOpen && dx < 0) mode = 'drag';
+        else if(!wasOpen && dx < 0) mode = 'left';
+        else { mode = 'none'; ok = false; return; }
+        if(mode === 'drag') document.body.classList.add('hnd-dragging');
+      }
+      if(mode === 'drag'){
+        if(e.cancelable) e.preventDefault();
+        p = wasOpen ? 1 + dx / W : dx / W;
+        p = Math.max(0, Math.min(1, p));
+        applyProgress(p, false);
+      }
+    }, { passive: false });
+    function finish(e){
       if(!ok) return; ok = false;
-      var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
-      if(Date.now() - st > 800 || Math.abs(dx) < 70 || Math.abs(dy) > 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      if(dx > 0){ if(!isOpen()) open(); }
-      else{
-        if(isOpen()){ close(); return; }
+      var t = (e.changedTouches && e.changedTouches[0]) || { clientX: lastX, clientY: sy };
+      var dx = t.clientX - sx, dy = t.clientY - sy;
+      if(mode === 'drag'){
+        var wantOpen = Math.abs(vel) > 0.45 ? vel > 0 : p > 0.5;
+        applyProgress(wantOpen ? 1 : 0, true);
+        setTimeout(function(){
+          clearInline();
+          if(wantOpen){ document.body.classList.add('hnd-open'); drawer.setAttribute('aria-hidden', 'false'); document.documentElement.style.setProperty('--hnd-w', (drawer.offsetWidth || 300) + 'px'); }
+          else { document.body.classList.remove('hnd-open'); drawer.setAttribute('aria-hidden', 'true'); }
+        }, 260);
+        mode = null; return;
+      }
+      if(mode === 'left' && Date.now() - st < 800 && dx < -70 && Math.abs(dy) < 60){
         var v = document.querySelector('.view:not([hidden])'); if(!v) return;
         var f = v.querySelector('#chat-input, #cowork-discuss-input, #hstat-input');
         if(!f || f.offsetParent === null){ var c = v.querySelectorAll('textarea'); f = null; for(var i = 0; i < c.length; i++){ if(c[i].offsetParent !== null){ f = c[i]; break; } } }
         if(f){ try{ f.scrollIntoView({ block: 'center' }); }catch(x){} f.focus(); }
       }
-    }, { passive: true });
+      mode = null;
+    }
+    document.addEventListener('touchend', finish, { passive: true });
+    document.addEventListener('touchcancel', function(e){ if(mode === 'drag'){ applyProgress(wasOpen ? 1 : 0, true); setTimeout(function(){ clearInline(); }, 260); } ok = false; mode = null; }, { passive: true });
   })();
 
   /* ---------- Interface Help ---------- */
@@ -37229,4 +37673,272 @@ body.hnd-open{ overflow:hidden; }
   })();
 })();
 </script>
+<style>
+#hn-sa{ position:fixed; right:10px; bottom:calc(92px + env(safe-area-inset-bottom,0px)); z-index:8000; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
+@media (min-width: 861px){ #hn-sa{ bottom:24px; right:22px; } }
+.hn-sa-btn{ position:relative; width:46px; height:46px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--ink); box-shadow:0 4px 14px rgba(0,0,0,.18); display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transform:scale(.8); transition:opacity .2s, transform .2s; pointer-events:none; padding:0; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.hn-sa-btn.on{ opacity:.96; transform:none; pointer-events:auto; }
+.hn-sa-btn svg.ring{ position:absolute; inset:-2px; width:50px; height:50px; transform:rotate(-90deg); pointer-events:none; }
+.hn-sa-btn svg.ring circle{ fill:none; stroke-width:3; }
+.hn-sa-btn svg.ring .bg{ stroke:var(--line); opacity:.7; }
+.hn-sa-btn svg.ring .fg{ stroke:var(--gold,#C89B3C); stroke-linecap:round; transition:stroke-dashoffset .12s linear; }
+.hn-sa-btn svg.ico{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.hn-sa-tip{ position:absolute; right:54px; top:50%; transform:translateY(-50%); background:var(--ink); color:var(--surface); font-size:12px; padding:5px 9px; border-radius:8px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s; }
+.hn-sa-btn.tip .hn-sa-tip{ opacity:1; }
+body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
+</style>
+<script>
+/* Flèches intelligentes haut / bas : progression de défilement, cible adaptée (page ou conversation),
+   appui court = haut/bas, appui long = section ou message précédent/suivant. */
+(function(){
+  'use strict';
+  var R = 22, C = 2 * Math.PI * R;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var wrap = document.createElement('div'); wrap.id = 'hn-sa'; wrap.setAttribute('aria-label', 'Navigation intelligente');
+  function mk(dir){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'hn-sa-btn'; b.setAttribute('data-sa', dir);
+    b.setAttribute('aria-label', dir === 'up' ? 'Remonter (appui long : section précédente)' : 'Descendre (appui long : section suivante)');
+    b.innerHTML = '<svg class="ring" viewBox="0 0 50 50"><circle class="bg" cx="25" cy="25" r="' + R + '"/><circle class="fg" cx="25" cy="25" r="' + R + '" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + C.toFixed(1) + '"/></svg>' +
+      '<svg class="ico" viewBox="0 0 24 24">' + (dir === 'up' ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>') + '</svg><span class="hn-sa-tip"></span>';
+    return b;
+  }
+  var up = mk('up'), down = mk('down');
+  wrap.appendChild(up); wrap.appendChild(down);
+  function boot(){ document.body.appendChild(wrap); update(); }
+  if(document.body) boot(); else document.addEventListener('DOMContentLoaded', boot);
+
+  function pageEl(){ return document.scrollingElement || document.documentElement; }
+  function curView(){ return document.querySelector('.view:not([hidden])'); }
+  function chatLog(){
+    var v = curView(); if(!v) return null;
+    var logs = v.querySelectorAll('.chat-log');
+    for(var i = 0; i < logs.length; i++){
+      var l = logs[i]; if(l.offsetParent === null) continue;
+      var r = l.getBoundingClientRect();
+      if(l.scrollHeight > l.clientHeight + 60 && r.bottom > 80 && r.top < window.innerHeight - 80) return l;
+    }
+    return null;
+  }
+  function target(){
+    var l = chatLog();
+    if(l){
+      // si la page elle-même est scrollable et que la conversation est à sa limite, on laisse la page
+      return { el: l, chat: true, top: l.scrollTop, max: l.scrollHeight - l.clientHeight };
+    }
+    var p = pageEl();
+    return { el: p, chat: false, top: p.scrollTop, max: p.scrollHeight - window.innerHeight };
+  }
+  function setRing(btn, frac){ var fg = btn.querySelector('.fg'); fg.style.strokeDashoffset = String(C * (1 - Math.max(0, Math.min(1, frac)))); }
+  var idleT = null, lastShow = 0;
+  function update(){
+    var t = target(), max = Math.max(1, t.max), frac = t.top / max;
+    var canUp = t.top > 160, canDown = (t.max - t.top) > 160;
+    up.classList.toggle('on', canUp && visibleNow); down.classList.toggle('on', canDown && visibleNow);
+    setRing(up, frac); setRing(down, 1 - frac);
+    up.querySelector('.hn-sa-tip').textContent = Math.round(frac * 100) + ' % · ' + (t.chat ? 'premier message' : 'haut de page');
+    down.querySelector('.hn-sa-tip').textContent = Math.round((1 - frac) * 100) + ' % restant · ' + (t.chat ? 'dernier message' : 'bas de page');
+  }
+  var visibleNow = false;
+  function poke(){
+    visibleNow = true; update();
+    clearTimeout(idleT); idleT = setTimeout(function(){ visibleNow = false; update(); }, 3200);
+  }
+  window.addEventListener('scroll', poke, { passive: true });
+  document.addEventListener('scroll', function(e){ if(e.target && e.target.classList && e.target.classList.contains('chat-log')) poke(); }, true);
+  window.addEventListener('resize', update);
+  document.addEventListener('touchstart', function(){ if(wrap.querySelector('.on')) poke(); }, { passive: true });
+  wrap.addEventListener('pointerenter', function(){ poke(); });
+
+  function scrollTo(t, y){
+    var behavior = reduce ? 'auto' : 'smooth';
+    if(t.chat) t.el.scrollTo({ top: y, behavior: behavior });
+    else window.scrollTo({ top: y, behavior: behavior });
+  }
+  function anchors(t){
+    // messages d'une conversation, ou titres de sections de la vue active
+    if(t.chat) return Array.prototype.slice.call(t.el.children).filter(function(c){ return c.offsetParent !== null; });
+    var v = curView(); if(!v) return [];
+    return Array.prototype.slice.call(v.querySelectorAll('h1, h2, h3')).filter(function(h){ return h.offsetParent !== null && h.getBoundingClientRect().height > 0; });
+  }
+  function jump(dir){
+    var t = target(), list = anchors(t), headerH = (!t.chat && window.matchMedia('(max-width: 860px)').matches) ? 100 : 12;
+    var ref = t.chat ? t.el.getBoundingClientRect().top : headerH;
+    var best = null;
+    if(dir === 'down'){ for(var i = 0; i < list.length; i++){ if(list[i].getBoundingClientRect().top > ref + 24){ best = list[i]; break; } } }
+    else { for(var j = list.length - 1; j >= 0; j--){ if(list[j].getBoundingClientRect().top < ref - 24){ best = list[j]; break; } } }
+    if(!best){ scrollTo(t, dir === 'down' ? t.max : 0); return; }
+    var y = (t.chat ? t.el.scrollTop : window.pageYOffset) + best.getBoundingClientRect().top - ref;
+    scrollTo(t, Math.max(0, y));
+  }
+  function bind(btn, dir){
+    var timer = null, long = false;
+    function start(e){ long = false; clearTimeout(timer); timer = setTimeout(function(){ long = true; if(navigator.vibrate) try{ navigator.vibrate(12); }catch(x){} jump(dir); poke(); }, 450); }
+    function end(e){
+      clearTimeout(timer);
+      if(long){ e.preventDefault(); return; }
+      var t = target();
+      scrollTo(t, dir === 'up' ? 0 : t.max); poke();
+    }
+    btn.addEventListener('pointerdown', start);
+    btn.addEventListener('pointerup', end);
+    btn.addEventListener('pointerleave', function(){ clearTimeout(timer); });
+    btn.addEventListener('pointercancel', function(){ clearTimeout(timer); });
+    btn.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    btn.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); var t = target(); scrollTo(t, dir === 'up' ? 0 : t.max); } });
+  }
+  bind(up, 'up'); bind(down, 'down');
+  // Raccourcis clavier (ordinateur) : Alt + ↑ / ↓ (hors saisie)
+  document.addEventListener('keydown', function(e){
+    if(!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    var a = document.activeElement; if(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    e.preventDefault(); jump(e.key === 'ArrowUp' ? 'up' : 'down'); poke();
+  });
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+  var KC='helpnaud_caisse', KO='helpnaud_opfin';
+  function ld(k,d){ try{ var v=JSON.parse(localStorage.getItem(k)||'null'); return v||d; }catch(e){ return d; } }
+  function sv(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function money(n){ return (Math.round(n*100)/100).toLocaleString('fr-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function today(){ return new Date().toISOString().slice(0,10); }
+  function csv(name, rows){
+    var t=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(';');}).join('\n');
+    var b=new Blob(['﻿'+t],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
+    a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+  }
+  var css='.hn-cpt-bar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}'+
+  '.hn-cpt{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer}'+
+  '.hn-cpt.on{background:var(--accent,#2563eb);color:#fff;border-color:transparent}'+
+  '.hn-cp-sec[hidden]{display:none}.hn-cp-sec input,.hn-cp-sec select,.hn-cp-sec textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--surface);color:var(--ink);font-size:13px;min-width:0}'+
+  '.hn-cp-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:flex-end}.hn-cp-row label{display:flex;flex-direction:column;gap:2px;font-size:10.5px;color:var(--muted)}'+
+  '.hn-cp-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.hn-cp-kpi div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface-2)}.hn-cp-kpi b{display:block;font-size:16px}.hn-cp-kpi span{font-size:11px;color:var(--muted)}'+
+  '.hn-cp-tbl{width:100%;border-collapse:collapse;font-size:12.5px}.hn-cp-tbl th,.hn-cp-tbl td{border-bottom:1px solid var(--line);padding:6px 5px;text-align:left}.hn-cp-wrap{overflow-x:auto}'+
+  '.hn-neg{color:#dc2626}.hn-pos{color:#16a34a}';
+  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+
+  function caisseHtml(){
+    return '<h3 style="margin:0 0 4px;">💵 Caisse — tenue et gestion de caisse</h3>'+
+    '<p class="hint" style="margin:0 0 10px;">Journal de caisse de l’entreprise : entrées, sorties, solde théorique et comptage physique (écart). Données conservées sur cet appareil.</p>'+
+    '<div class="hn-cp-row"><label>Fonds de caisse initial<input type="number" step="0.01" id="hn-c-open" style="width:150px"></label>'+
+    '<label>Devise<input type="text" id="hn-c-cur" maxlength="5" style="width:70px"></label></div>'+
+    '<form id="hn-c-form" class="hn-cp-row"><label>Date<input type="date" id="hn-c-date" required></label>'+
+    '<label>Type<select id="hn-c-type"><option value="in">Entrée</option><option value="out">Sortie</option></select></label>'+
+    '<label>Libellé<input type="text" id="hn-c-lib" required maxlength="120" style="min-width:180px"></label>'+
+    '<label>Pièce / réf.<input type="text" id="hn-c-ref" maxlength="40" style="width:120px"></label>'+
+    '<label>Montant<input type="number" step="0.01" min="0.01" id="hn-c-amt" required style="width:120px"></label>'+
+    '<label>Responsable<input type="text" id="hn-c-who" maxlength="60" style="width:140px"></label>'+
+    '<button class="btn primary" type="submit">Ajouter</button></form>'+
+    '<div class="hn-cp-kpi" id="hn-c-kpi"></div>'+
+    '<div class="hn-cp-row"><label>Comptage physique (espèces comptées)<input type="number" step="0.01" id="hn-c-count" style="width:200px"></label>'+
+    '<button class="btn" id="hn-c-close" type="button">Arrêter la caisse du jour</button>'+
+    '<button class="btn" id="hn-c-exp" type="button">⬇️ Exporter CSV</button></div>'+
+    '<div id="hn-c-gap" class="hint"></div><div class="hn-cp-wrap" id="hn-c-list"></div>'+
+    '<p class="hint" style="font-size:11.5px">Bonnes pratiques : une pièce justificative par mouvement, séparation des tâches (celui qui encaisse ne compte pas seul), dépôt bancaire régulier, plafond d’encaisse défini.</p>';
+  }
+  function opHtml(){
+    return '<h3 style="margin:0 0 4px;">🏦 Service des opérations financières</h3>'+
+    '<p class="hint" style="margin:0 0 10px;">Registre des opérations financières (paiements, virements, encaissements, rapprochements) avec circuit de validation : demandé → approuvé → exécuté. Données conservées sur cet appareil.</p>'+
+    '<form id="hn-o-form" class="hn-cp-row"><label>Date<input type="date" id="hn-o-date" required></label>'+
+    '<label>Opération<select id="hn-o-type"><option>Paiement fournisseur</option><option>Virement</option><option>Encaissement client</option><option>Remboursement</option><option>Paie / salaires</option><option>Taxes / impôts</option><option>Rapprochement bancaire</option><option>Autre</option></select></label>'+
+    '<label>Tiers / bénéficiaire<input type="text" id="hn-o-who" required maxlength="100" style="min-width:160px"></label>'+
+    '<label>Compte / banque<input type="text" id="hn-o-acc" maxlength="60" style="width:140px"></label>'+
+    '<label>Montant<input type="number" step="0.01" min="0.01" id="hn-o-amt" required style="width:120px"></label>'+
+    '<label>Demandeur<input type="text" id="hn-o-req" maxlength="60" style="width:130px"></label>'+
+    '<button class="btn primary" type="submit">Enregistrer la demande</button></form>'+
+    '<div class="hn-cp-kpi" id="hn-o-kpi"></div>'+
+    '<div class="hn-cp-row"><select id="hn-o-filter"><option value="">Tous les statuts</option><option value="demande">Demandé</option><option value="approuve">Approuvé</option><option value="execute">Exécuté</option><option value="rejete">Rejeté</option></select>'+
+    '<button class="btn" id="hn-o-exp" type="button">⬇️ Exporter CSV</button></div>'+
+    '<div class="hn-cp-wrap" id="hn-o-list"></div>'+
+    '<p class="hint" style="font-size:11.5px">Principe des quatre yeux : la personne qui demande n’est pas celle qui approuve ni celle qui exécute. Ce registre est un outil de suivi — il n’exécute aucun paiement réel.</p>';
+  }
+
+  function setup(panel){
+    if(panel.getAttribute('data-hn-cp')) return; panel.setAttribute('data-hn-cp','1');
+    var kids=Array.prototype.slice.call(panel.children);
+    var main=document.createElement('div'); main.className='hn-cp-sec'; main.id='hn-cp-main';
+    var head=kids.slice(0,2); // h2 + hint
+    kids.slice(2).forEach(function(k){ main.appendChild(k); });
+    var bar=document.createElement('div'); bar.className='hn-cpt-bar'; bar.setAttribute('role','tablist');
+    bar.innerHTML='<button type="button" class="hn-cpt on" data-t="main">🧮 Contrôle et audit</button><button type="button" class="hn-cpt" data-t="caisse">💵 Caisse</button><button type="button" class="hn-cpt" data-t="opfin">🏦 Service des opérations financières</button>';
+    var sc=document.createElement('div'); sc.className='hn-cp-sec'; sc.id='hn-cp-caisse'; sc.hidden=true; sc.innerHTML=caisseHtml();
+    var so=document.createElement('div'); so.className='hn-cp-sec'; so.id='hn-cp-opfin'; so.hidden=true; so.innerHTML=opHtml();
+    panel.appendChild(bar); panel.appendChild(main); panel.appendChild(sc); panel.appendChild(so);
+    bar.addEventListener('click',function(e){
+      var b=e.target.closest('.hn-cpt'); if(!b) return;
+      Array.prototype.forEach.call(bar.children,function(x){ x.classList.toggle('on',x===b); });
+      main.hidden=b.dataset.t!=='main'; sc.hidden=b.dataset.t!=='caisse'; so.hidden=b.dataset.t!=='opfin';
+      if(b.dataset.t==='caisse') rc(); if(b.dataset.t==='opfin') ro();
+    });
+    // ---- Caisse
+    var C=ld(KC,{open:0,cur:'$',rows:[],closes:[]});
+    var $=function(id){return sc.querySelector('#'+id);};
+    $('hn-c-date').value=today(); $('hn-c-open').value=C.open||''; $('hn-c-cur').value=C.cur||'$';
+    function theo(){ var t=+C.open||0; C.rows.forEach(function(r){ t+= r.type==='in'?r.amt:-r.amt; }); return t; }
+    function rc(){
+      var inn=0,out=0; C.rows.forEach(function(r){ if(r.type==='in') inn+=r.amt; else out+=r.amt; });
+      var cur=esc(C.cur||'$');
+      $('hn-c-kpi').innerHTML='<div><b>'+money(+C.open||0)+' '+cur+'</b><span>Fonds initial</span></div><div><b class="hn-pos">'+money(inn)+' '+cur+'</b><span>Entrées</span></div><div><b class="hn-neg">'+money(out)+' '+cur+'</b><span>Sorties</span></div><div><b>'+money(theo())+' '+cur+'</b><span>Solde théorique</span></div>';
+      var h='<table class="hn-cp-tbl"><tr><th>Date</th><th>Libellé</th><th>Pièce</th><th>Resp.</th><th>Entrée</th><th>Sortie</th><th></th></tr>';
+      C.rows.slice().sort(function(a,b){return a.date<b.date?1:-1;}).forEach(function(r){
+        h+='<tr><td>'+esc(r.date)+'</td><td>'+esc(r.lib)+'</td><td>'+esc(r.ref)+'</td><td>'+esc(r.who)+'</td><td class="hn-pos">'+(r.type==='in'?money(r.amt):'')+'</td><td class="hn-neg">'+(r.type==='out'?money(r.amt):'')+'</td><td><button class="btn" type="button" data-del="'+r.id+'" style="padding:2px 8px">✕</button></td></tr>'; });
+      if(!C.rows.length) h+='<tr><td colspan="7" class="hint">Aucun mouvement pour l’instant.</td></tr>';
+      $('hn-c-list').innerHTML=h+'</table>';
+      var g=''; if(C.closes.length){ var l=C.closes[C.closes.length-1]; g='Dernier arrêté : '+esc(l.date)+' — théorique '+money(l.theo)+', compté '+money(l.cnt)+', écart <b class="'+(Math.abs(l.gap)<0.005?'hn-pos':'hn-neg')+'">'+money(l.gap)+'</b>'; }
+      $('hn-c-gap').innerHTML=g;
+    }
+    $('hn-c-open').addEventListener('change',function(){ C.open=parseFloat(this.value)||0; sv(KC,C); rc(); });
+    $('hn-c-cur').addEventListener('change',function(){ C.cur=this.value||'$'; sv(KC,C); rc(); });
+    $('hn-c-form').addEventListener('submit',function(e){ e.preventDefault();
+      var a=parseFloat($('hn-c-amt').value); if(!(a>0)) return;
+      C.rows.push({id:Date.now()+''+Math.floor(Math.random()*99),date:$('hn-c-date').value,type:$('hn-c-type').value,lib:$('hn-c-lib').value.trim(),ref:$('hn-c-ref').value.trim(),who:$('hn-c-who').value.trim(),amt:a});
+      sv(KC,C); this.reset(); $('hn-c-date').value=today(); rc(); });
+    $('hn-c-list').addEventListener('click',function(e){ var b=e.target.closest('[data-del]'); if(!b) return;
+      if(!confirm('Supprimer ce mouvement ?')) return; C.rows=C.rows.filter(function(r){return r.id!==b.dataset.del;}); sv(KC,C); rc(); });
+    $('hn-c-close').addEventListener('click',function(){ var v=parseFloat($('hn-c-count').value);
+      if(isNaN(v)){ $('hn-c-gap').textContent='Saisissez d’abord le montant compté.'; return; }
+      var t=theo(); C.closes.push({date:today(),theo:t,cnt:v,gap:Math.round((v-t)*100)/100}); sv(KC,C); rc(); });
+    $('hn-c-exp').addEventListener('click',function(){
+      var rows=[['Date','Type','Libellé','Pièce','Responsable','Montant']]; C.rows.forEach(function(r){ rows.push([r.date,r.type==='in'?'Entrée':'Sortie',r.lib,r.ref,r.who,r.amt]); });
+      csv('caisse-'+today()+'.csv',rows); });
+    // ---- Opérations financières
+    var O=ld(KO,{rows:[]}); var $o=function(id){return so.querySelector('#'+id);};
+    $o('hn-o-date').value=today();
+    var LBL={demande:'Demandé',approuve:'Approuvé',execute:'Exécuté',rejete:'Rejeté'};
+    function ro(){
+      var f=$o('hn-o-filter').value, tot={demande:0,approuve:0,execute:0};
+      O.rows.forEach(function(r){ if(tot[r.st]!=null) tot[r.st]+=r.amt; });
+      $o('hn-o-kpi').innerHTML='<div><b>'+O.rows.length+'</b><span>Opérations</span></div><div><b>'+money(tot.demande)+'</b><span>À approuver</span></div><div><b>'+money(tot.approuve)+'</b><span>À exécuter</span></div><div><b>'+money(tot.execute)+'</b><span>Exécuté</span></div>';
+      var h='<table class="hn-cp-tbl"><tr><th>Date</th><th>Opération</th><th>Tiers</th><th>Compte</th><th>Montant</th><th>Statut</th><th>Actions</th></tr>';
+      var n=0; O.rows.slice().reverse().forEach(function(r){ if(f&&r.st!==f) return; n++;
+        var a=''; if(r.st==='demande') a='<button class="btn" data-a="approuve" data-id="'+r.id+'" style="padding:2px 8px">Approuver</button> <button class="btn" data-a="rejete" data-id="'+r.id+'" style="padding:2px 8px">Rejeter</button>';
+        else if(r.st==='approuve') a='<button class="btn" data-a="execute" data-id="'+r.id+'" style="padding:2px 8px">Marquer exécuté</button>';
+        a+=' <button class="btn" data-a="del" data-id="'+r.id+'" style="padding:2px 8px">✕</button>';
+        h+='<tr><td>'+esc(r.date)+'</td><td>'+esc(r.type)+'</td><td>'+esc(r.who)+(r.req?'<br><span class="hint">dem. '+esc(r.req)+'</span>':'')+'</td><td>'+esc(r.acc)+'</td><td>'+money(r.amt)+'</td><td>'+LBL[r.st]+'</td><td>'+a+'</td></tr>'; });
+      if(!n) h+='<tr><td colspan="7" class="hint">Aucune opération.</td></tr>';
+      $o('hn-o-list').innerHTML=h+'</table>';
+    }
+    $o('hn-o-filter').addEventListener('change',ro);
+    $o('hn-o-form').addEventListener('submit',function(e){ e.preventDefault(); var a=parseFloat($o('hn-o-amt').value); if(!(a>0)) return;
+      O.rows.push({id:Date.now()+''+Math.floor(Math.random()*99),date:$o('hn-o-date').value,type:$o('hn-o-type').value,who:$o('hn-o-who').value.trim(),acc:$o('hn-o-acc').value.trim(),req:$o('hn-o-req').value.trim(),amt:a,st:'demande'});
+      sv(KO,O); this.reset(); $o('hn-o-date').value=today(); ro(); });
+    $o('hn-o-list').addEventListener('click',function(e){ var b=e.target.closest('[data-a]'); if(!b) return;
+      var id=b.dataset.id, a=b.dataset.a;
+      if(a==='del'){ if(!confirm('Supprimer cette opération ?')) return; O.rows=O.rows.filter(function(r){return r.id!==id;}); }
+      else O.rows.forEach(function(r){ if(r.id===id) r.st=a; });
+      sv(KO,O); ro(); });
+    $o('hn-o-exp').addEventListener('click',function(){
+      var rows=[['Date','Opération','Tiers','Compte','Demandeur','Montant','Statut']]; O.rows.forEach(function(r){ rows.push([r.date,r.type,r.who,r.acc,r.req,r.amt,LBL[r.st]]); });
+      csv('operations-financieres-'+today()+'.csv',rows); });
+    rc(); ro();
+  }
+  function scan(){ var p=document.getElementById('fghlab-panel-compta'); if(p && p.children.length>2) setup(p); }
+  function init(){ scan(); if(!document.getElementById('fghlab-panel-compta')||!document.getElementById('fghlab-panel-compta').getAttribute('data-hn-cp')){ var mo=new MutationObserver(function(){ scan(); var p=document.getElementById('fghlab-panel-compta'); if(p&&p.getAttribute('data-hn-cp')) mo.disconnect(); }); mo.observe(document.body,{childList:true,subtree:true}); } }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
 </body></html>

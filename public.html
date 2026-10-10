@@ -134,6 +134,100 @@
   }
 
 
+  /* ---------- COPROJECT : formulaire public (lien envoyé par FINECIA GROUPE) ---------- */
+  var CP_TYPES = ['Infrastructure','Énergie','Agriculture et agro-industrie','Santé','Éducation et formation','Habitation et immobilier','Commerce et PME','Industrie et transformation','Technologies et numérique','Partenariat institutionnel / État','Autre (à préciser)'];
+  var ID_TYPES = ['Passeport','Carte nationale d’identité','Permis de conduire','Carte de résident / séjour','Autre pièce officielle'];
+  function readFile(f){
+    return new Promise(function(res, rej){
+      if(['application/pdf','image/jpeg','image/png'].indexOf(f.type) === -1) return rej(new Error('« ' + f.name + ' » : formats acceptés PDF, JPEG ou PNG.'));
+      if(f.size > 2000000) return rej(new Error('« ' + f.name + ' » : 2 Mo maximum par fichier.'));
+      var fr = new FileReader(); fr.onload = function(){ res(fr.result); }; fr.onerror = function(){ rej(new Error('Lecture du fichier impossible.')); }; fr.readAsDataURL(f);
+    });
+  }
+  function viewCoproject(token){
+    call({ action:'coproject-info', token: token }).then(function(r){
+      if(!r.ok){ app.innerHTML = '<div class="card"><h1>Lien non valide</h1><p class="hint">Ce lien n’est plus valide. Demandez un nouveau lien à FINECIA GROUPE.</p></div>'; return; }
+      var typeOpts = '<option value="">— Type de projet —</option>' + CP_TYPES.map(function(t){ return '<option>' + esc(t) + '</option>'; }).join('');
+      var idOpts = '<option value="">— Type de pièce —</option>' + ID_TYPES.map(function(t){ return '<option>' + esc(t) + '</option>'; }).join('');
+      app.innerHTML = '<div class="card"><h1>Présenter mon projet — COPROJECT</h1><p class="hint">FINECIA GROUPE accompagne les entreprises, les porteurs de projets et les États dans la recherche de financement et de partenariat. Remplissez ce formulaire : notre équipe examinera votre demande et vous contactera. Vous pouvez aussi nous joindre par téléphone ou vous présenter à notre bureau.</p></div>' +
+        '<div class="card"><strong>1. Vous</strong>' +
+        '<label for="c-client">Nom de l’organisation, de l’État ou de la personne</label><input id="c-client" maxlength="100">' +
+        '<label for="c-email">Courriel</label><input id="c-email" type="email" maxlength="140">' +
+        '<label for="c-phone">Téléphone</label><input id="c-phone" maxlength="40">' +
+        '<div class="row" style="gap:10px; align-items:flex-start;"><div style="flex:1; min-width:90px;"><label for="c-nrue">N° de rue</label><input id="c-nrue" maxlength="20"></div><div style="flex:3; min-width:180px;"><label for="c-rue">Nom de la rue</label><input id="c-rue" maxlength="120"></div></div>' +
+        '<div class="row" style="gap:10px; align-items:flex-start;"><div style="flex:1; min-width:120px;"><label for="c-bp">Boîte postale</label><input id="c-bp" maxlength="30"></div><div style="flex:1; min-width:120px;"><label for="c-cp">Code postal</label><input id="c-cp" maxlength="20"></div></div>' +
+        '<div class="row" style="gap:10px; align-items:flex-start;"><div style="flex:1; min-width:150px;"><label for="c-ville">Ville de résidence</label><input id="c-ville" maxlength="80"></div><div style="flex:1; min-width:150px;"><label for="c-pays">Pays de résidence</label><input id="c-pays" maxlength="80"></div></div>' +
+        '<div class="row" style="gap:10px; align-items:flex-start;"><div style="flex:1; min-width:150px;"><label for="c-idtype">Pièce d’identité</label><select id="c-idtype">' + idOpts + '</select></div><div style="flex:1; min-width:150px;"><label for="c-idnum">N° de la pièce d’identité</label><input id="c-idnum" maxlength="60" autocomplete="off"></div></div></div>' +
+        '<div class="card"><strong>2. Votre projet</strong>' +
+        '<label for="c-title">Titre du projet</label><input id="c-title" maxlength="100">' +
+        '<label for="c-type">Type de projet</label><select id="c-type">' + typeOpts + '</select>' +
+        '<input id="c-typeautre" maxlength="100" placeholder="Précisez le type de projet" style="display:none; margin-top:8px;">' +
+        '<label for="c-bailleur">Bailleur de fonds / autorité contractante (si connu)</label><input id="c-bailleur" maxlength="140">' +
+        '<div class="row" style="gap:10px; align-items:flex-start;"><div style="flex:1; min-width:150px;"><label for="c-budget">Budget estimé</label><input id="c-budget" inputmode="decimal" maxlength="20"></div><div style="flex:1; min-width:150px;"><label for="c-echeance">Échéance visée</label><input id="c-echeance" type="date"></div></div>' +
+        '<label for="c-desc">Décrivez brièvement votre projet et le besoin de financement ou de partenariat</label><textarea id="c-desc" rows="4" maxlength="1500"></textarea></div>' +
+        '<div class="card"><strong>3. Documents (facultatif)</strong><p class="hint">Vous pouvez joindre dès maintenant jusqu’à 3 documents (pièce d’identité, statuts, plan d’affaires…). PDF, JPEG ou PNG, 2 Mo maximum chacun. FINECIA GROUPE pourra aussi vous demander d’autres documents plus tard, selon les exigences d’un bailleur, d’une banque ou d’une administration.</p>' +
+        '<input id="c-files" type="file" multiple accept="application/pdf,image/jpeg,image/png">' + HONEY +
+        '<label style="display:flex; gap:8px; align-items:flex-start; color:var(--ink); margin-top:14px;"><input id="c-consent" type="checkbox" style="width:auto; margin-top:4px;"><span>J’accepte que FINECIA GROUPE utilise ces informations pour examiner ma demande et me contacter. Mes données sont confidentielles et ne sont consultées que par l’équipe autorisée.</span></label>' +
+        '<button id="c-send">Envoyer ma demande</button><div id="c-out" class="msg"></div></div>';
+      document.getElementById('c-type').addEventListener('change', function(){ document.getElementById('c-typeautre').style.display = this.value === 'Autre (à préciser)' ? '' : 'none'; });
+      document.getElementById('c-send').addEventListener('click', function(){
+        var b = this, out = document.getElementById('c-out'); out.className = 'msg'; out.textContent = '';
+        var files = Array.prototype.slice.call(document.getElementById('c-files').files || []);
+        if(!val('c-client') || val('c-client').length < 2){ out.className = 'msg err'; out.textContent = 'Indiquez votre nom ou celui de votre organisation.'; return; }
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val('c-email'))){ out.className = 'msg err'; out.textContent = 'Courriel invalide.'; return; }
+        if(val('c-title').length < 3){ out.className = 'msg err'; out.textContent = 'Indiquez le titre de votre projet.'; return; }
+        if(!document.getElementById('c-consent').checked){ out.className = 'msg err'; out.textContent = 'Veuillez accepter l’utilisation de vos informations pour envoyer la demande.'; return; }
+        if(files.length > 3){ out.className = 'msg err'; out.textContent = '3 documents au maximum à l’inscription.'; return; }
+        b.disabled = true;
+        Promise.all(files.map(readFile)).then(function(datas){
+          return call({ action:'coproject-register', token: token, client: val('c-client'), email: val('c-email'), phone: val('c-phone'), nRue: val('c-nrue'), rue: val('c-rue'), bp: val('c-bp'), cp: val('c-cp'), ville: val('c-ville'), pays: val('c-pays'),
+            idType: val('c-idtype'), idNumber: val('c-idnum'), title: val('c-title'), typeProjet: val('c-type'), typeProjetAutre: val('c-typeautre'), bailleur: val('c-bailleur'), budget: val('c-budget'), echeance: val('c-echeance'), description: val('c-desc'), consent: true, website: hv() })
+          .then(function(res){
+            var chain = Promise.resolve(), failed = 0;
+            if(res.docToken) files.forEach(function(f, i){ chain = chain.then(function(){ return call({ action:'coproject-doc-put', token: res.docToken, kind: 'Document joint à la demande', name: f.name, mime: f.type, data: datas[i], website: hv() }).catch(function(){ failed++; }); }); });
+            return chain.then(function(){ return { res: res, failed: failed }; });
+          });
+        }).then(function(x){
+          var res = x.res;
+          if(res.duplicate){ app.innerHTML = '<div class="card"><h1>Demande déjà reçue</h1><p class="hint">Une demande identique a déjà été reçue. FINECIA GROUPE vous contactera.</p></div>'; return; }
+          var link = res.docToken ? location.origin + location.pathname + '?complement=' + encodeURIComponent(res.docToken) : '';
+          app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre demande est bien reçue.</p><p class="hint">FINECIA GROUPE examinera votre projet et vous contactera. Un courriel de confirmation vous a été envoyé.' + (x.failed ? ' ' + x.failed + ' document(s) n’ont pas pu être joints : vous pourrez les ajouter avec le lien ci-dessous.' : '') + '</p></div>' +
+            '<div class="card" style="border-color:var(--gold);"><strong>Vos références — conservez-les</strong>' +
+            '<p style="margin:8px 0 2px;">N° de client : <b>' + esc(res.clientNumber) + '</b></p><p style="margin:2px 0;">N° de partenaire : <b>' + esc(res.partnerNumber) + '</b></p>' +
+            '<p style="margin:2px 0;">N° de projet : <b>' + esc(res.projectNumber) + '</b></p><p style="margin:2px 0;">N° de dossier : <b>' + esc(res.dealNumber) + '</b></p><p class="hint">Ne communiquez pas ces numéros à des tiers.</p></div>' +
+            (link ? '<div class="card" style="background:var(--bg);"><strong>Ajouter des documents plus tard</strong><p class="hint">Gardez ce lien personnel pour compléter votre dossier :</p><p style="word-break:break-all;"><a href="' + esc(link) + '">' + esc(link) + '</a></p></div>' : '');
+        }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+      });
+    }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
+  }
+  /* ---------- COPROJECT : lien sécurisé « compléter mon dossier » ---------- */
+  function viewComplement(token){
+    function draw(msg){
+      call({ action:'coproject-doc-info', token: token }).then(function(r){
+        if(!r.ok){ app.innerHTML = '<div class="card"><h1>Lien non valide</h1><p class="hint">Ce lien n’est plus valide. Contactez FINECIA GROUPE.</p></div>'; return; }
+        var req = r.request && r.request.items && r.request.items.length ? '<div class="card" style="background:var(--bg); border-color:var(--gold);"><strong>FINECIA GROUPE vous demande :</strong><ul>' + r.request.items.map(function(i){ return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>' + (r.request.note ? '<p class="hint">' + esc(r.request.note) + '</p>' : '') + '</div>' : '';
+        var list = (r.docs || []).map(function(d){ return '<div class="row" style="padding:6px 0; border-top:1px solid var(--line);"><span>' + esc(d.name) + ' <span class="hint">· ' + esc(d.kind) + ' · ' + fmtSize(d.size) + '</span></span>' + (d.source === 'client' ? '<button class="light" data-del="' + esc(d.id) + '">Retirer</button>' : '<span class="hint">FINECIA</span>') + '</div>'; }).join('') || '<p class="hint">Aucun document pour l’instant.</p>';
+        var kinds = ['Pièce d’identité','Preuve d’adresse','Statuts / immatriculation','Plan d’affaires','États financiers','Lettre d’appui / mandat','Document demandé par FINECIA','Autre'];
+        app.innerHTML = '<div class="card"><h1>Compléter mon dossier</h1><p class="hint">' + esc(r.name) + ' — « ' + esc(r.title) + ' »<br>N° de projet : ' + esc(r.projectNumber || '') + ' · N° de dossier : ' + esc(r.dealNumber || '') + '</p>' +
+          '<p class="hint">Espace confidentiel : seuls les membres autorisés de FINECIA GROUPE consultent vos documents. PDF, JPEG ou PNG, 2 Mo maximum par fichier.</p></div>' + req +
+          '<div class="card"><strong>Vos documents</strong><div id="d-list">' + list + '</div>' +
+          '<label for="d-kind">Type de document</label><select id="d-kind">' + kinds.map(function(k){ return '<option>' + esc(k) + '</option>'; }).join('') + '</select><label for="d-file">Fichier</label><input id="d-file" type="file" accept="application/pdf,image/jpeg,image/png">' + HONEY +
+          '<button id="d-send">Téléverser</button><div id="d-out" class="msg ' + (msg ? 'ok' : '') + '">' + esc(msg || '') + '</div></div>';
+        document.getElementById('d-send').addEventListener('click', function(){
+          var out = document.getElementById('d-out'), f = document.getElementById('d-file').files[0], b = this; out.className = 'msg'; out.textContent = '';
+          if(!f){ out.className = 'msg err'; out.textContent = 'Choisissez un fichier.'; return; }
+          b.disabled = true;
+          readFile(f).then(function(data){ return call({ action:'coproject-doc-put', token: token, kind: document.getElementById('d-kind').value, name: f.name, mime: f.type, data: data, website: hv() }); })
+            .then(function(){ draw('Document reçu ✓ — merci.'); }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+        });
+        Array.prototype.forEach.call(app.querySelectorAll('[data-del]'), function(b){
+          b.addEventListener('click', function(){ call({ action:'coproject-doc-delete', token: token, id: b.getAttribute('data-del') }).then(function(){ draw(); }); });
+        });
+      }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
+    }
+    draw();
+  }
+
   /* ---------- Espace partenaire : identification par numéro à 10 chiffres ---------- */
   var ESP = { token: null, view: null, number: null };
   function viewEspace(){
@@ -416,7 +510,9 @@
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
   }
 
-  if(Q.get('espace')) viewEspace();
+  if(Q.get('coproject')) viewCoproject(Q.get('coproject'));
+  else if(Q.get('complement')) viewComplement(Q.get('complement'));
+  else if(Q.get('espace')) viewEspace();
   else if(Q.get('academie')) viewAcademie();
   else if(Q.get('invitation')) viewInvitation(Q.get('invitation'));
   else if(Q.get('catalogue')) viewCatalogue(Q.get('catalogue'));
