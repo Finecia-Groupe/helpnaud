@@ -19977,6 +19977,13 @@
     fgbank: { coll: 'fgbankProjects', label: 'dossier de financement', items: ['Pièce d’identité', 'Preuve d’adresse', 'États financiers', 'Plan d’affaires', 'Relevés bancaires', 'Garanties / sûretés', 'Exigences de la banque ou de la microfinance'],
       list: function(){ return fghlabState.fgbankProjects; }, name: function(r){ return r.client; }, title: function(r){ return r.title; }, num: function(r){ return r.projectNumber; }, deal: function(r){ return r.referenceId; }, email: function(r){ return r.contactEmail; },
       redraw: function(){ try{ renderFghlabBankProjectList(); }catch(e){} }, tool: 'fgbankpartnership' },
+    vlead: { coll: 'vehicleLeads', label: 'dossier d’achat de véhicule', items: ['Pièce d’identité', 'Permis de conduire', 'Preuve d’adresse', 'Preuve de revenu', 'Relevés bancaires', 'Preuve d’assurance'],
+      list: function(){ return fghlabState.vehicleLeads; }, name: function(r){ return r.clientName; }, title: function(){ return 'Opportunité véhicule'; }, num: function(r){ return r.projectNumber; }, deal: function(r){ return r.dealNumber; },
+      email: function(r){ return r.contactEmail || (/@/.test(r.clientContact || '') ? String(r.clientContact).trim() : ''); },
+      redraw: function(){ try{ renderFghlabVehicleLeadList(); }catch(e){} }, tool: 'partnermarket' },
+    ttest: { coll: 'touttestSessions', label: 'test d’évaluation', items: ['Pièce d’identité', 'CV', 'Diplôme ou attestation', 'Lettre de recommandation', 'Preuve d’expérience'],
+      list: function(){ return fghlabState.touttestSessions; }, name: function(r){ return r.candidateName; }, title: function(r){ return r.jobLevel || 'Test'; }, num: function(){ return ''; }, deal: function(){ return ''; }, email: function(r){ return r.contactEmail; },
+      redraw: function(){ try{ renderFghlabTouttestList(); }catch(e){} }, tool: 'touttest' },
     acad: { coll: 'academieRegistrations', label: 'inscription', items: ['Pièce d’identité', 'Preuve d’adresse', 'Diplôme ou relevé de notes', 'CV', 'Lettre de motivation', 'Preuve de paiement'],
       list: function(){ return fghlabState.academieRegistrations; }, name: function(r){ return r.name; }, title: function(r){ return r.formationTitle; }, num: function(){ return ''; }, deal: function(){ return ''; }, email: function(r){ return r.email; },
       redraw: function(){ try{ if(fghlabSyncRedraw.academie) fghlabSyncRedraw.academie(); }catch(e){} }, tool: 'academie' }
@@ -22069,6 +22076,7 @@
         '<span class="ctb-stub-badge" style="background:'+statusColor+'; color:#fff;">'+escapeHtml(lead.status)+'</span>' +
       '</div>' +
       '<div style="margin-top:8px;">' + actions + l6LeadHtml(lead, isOwnerSession) + '</div>' +
+      scCardHtml('vlead', lead) +
     '</div>';
   }
   function renderFghlabVehicleLeadList(){
@@ -24203,6 +24211,7 @@
           '</div>' +
         '</div>' +
         quizHtml +
+        scCardHtml('ttest', s) +
       '</div>';
     }).join('');
   }
