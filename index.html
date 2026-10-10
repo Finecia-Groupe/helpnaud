@@ -19971,6 +19971,131 @@
     });
   }
 
+  /* ================= Lien sécurisé « demande / réponse de documents » — FG & Bank Partnership, FINECIA ACADÉMIE, Partner Market ================= */
+  var scOpen = {}, scDocs = {}, scMsg = {};
+  var SC_KINDS = {
+    fgbank: { coll: 'fgbankProjects', label: 'dossier de financement', items: ['Pièce d’identité', 'Preuve d’adresse', 'États financiers', 'Plan d’affaires', 'Relevés bancaires', 'Garanties / sûretés', 'Exigences de la banque ou de la microfinance'],
+      list: function(){ return fghlabState.fgbankProjects; }, name: function(r){ return r.client; }, title: function(r){ return r.title; }, num: function(r){ return r.projectNumber; }, deal: function(r){ return r.referenceId; }, email: function(r){ return r.contactEmail; },
+      redraw: function(){ try{ renderFghlabBankProjectList(); }catch(e){} }, tool: 'fgbankpartnership' },
+    acad: { coll: 'academieRegistrations', label: 'inscription', items: ['Pièce d’identité', 'Preuve d’adresse', 'Diplôme ou relevé de notes', 'CV', 'Lettre de motivation', 'Preuve de paiement'],
+      list: function(){ return fghlabState.academieRegistrations; }, name: function(r){ return r.name; }, title: function(r){ return r.formationTitle; }, num: function(){ return ''; }, deal: function(){ return ''; }, email: function(r){ return r.email; },
+      redraw: function(){ try{ if(fghlabSyncRedraw.academie) fghlabSyncRedraw.academie(); }catch(e){} }, tool: 'academie' }
+  };
+  function scKindOfColl(c){ var k = null; Object.keys(SC_KINDS).forEach(function(x){ if(SC_KINDS[x].coll === c) k = x; }); return k; }
+  function scFind(kind, id){ var f = null; (SC_KINDS[kind].list() || []).forEach(function(r){ if(r.id === id) f = r; }); return f; }
+  function scCardHtml(kind, r){
+    var K = SC_KINDS[kind], id = escapeHtml(r.id), req = r.docRequest && r.docRequest.items && r.docRequest.items.length ? r.docRequest : null, chosen = req ? req.items : [];
+    var key = r.id, open = scOpen[key];
+    var items = K.items.concat(chosen.filter(function(x){ return K.items.indexOf(x) === -1; })).map(function(it){
+      return '<label style="display:flex; gap:6px; align-items:center; font-size:12.5px; margin:2px 0;"><input type="checkbox" data-sc-item="'+id+'" value="'+escapeHtml(it)+'"'+(chosen.indexOf(it) !== -1 ? ' checked' : '')+'> '+escapeHtml(it)+'</label>';
+    }).join('');
+    var cache = scDocs[key], docsHtml;
+    if(!cache) docsHtml = '<button type="button" class="btn" data-sc-refresh="'+id+'" data-sc-kind="'+kind+'" style="padding:3px 9px; font-size:12px;">📂 Voir les documents reçus'+(r.docsCount ? ' ('+r.docsCount+')' : '')+'</button>';
+    else if(cache.loading) docsHtml = '<span class="hint">Chargement…</span>';
+    else if(cache.err) docsHtml = '<span class="hint" style="color:var(--bad);">'+escapeHtml(cache.err)+'</span> <button type="button" class="btn" data-sc-refresh="'+id+'" data-sc-kind="'+kind+'" style="padding:3px 9px; font-size:12px;">Réessayer</button>';
+    else docsHtml = (cache.docs.length ? cache.docs.map(function(d){
+        return '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:4px 0; border-top:1px solid var(--line); font-size:12.5px;"><span>'+escapeHtml(d.name)+' <span class="hint" style="margin:0;">· '+escapeHtml(d.kind)+' · '+cpFmtSize(d.size)+' · '+(d.source === 'client' ? 'reçu' : 'équipe')+'</span></span><span>' +
+          '<button type="button" class="btn" data-sc-view="'+escapeHtml(d.id)+'" style="padding:2px 8px; font-size:12px;">Voir</button> <button type="button" class="btn danger" data-sc-del="'+escapeHtml(d.id)+'" data-sc-pid="'+id+'" data-sc-kind="'+kind+'" style="padding:2px 8px; font-size:12px;">✕</button></span></div>';
+      }).join('') : '<span class="hint">Aucun document pour l’instant.</span>') + ' <button type="button" class="btn" data-sc-refresh="'+id+'" data-sc-kind="'+kind+'" style="padding:2px 8px; font-size:12px;">↻ Actualiser</button>';
+    var mailField = K.email(r) ? '' : '<input type="email" data-sc-email="'+id+'" maxlength="140" placeholder="Courriel du client (pour l’envoi)" style="'+cpInputStyle()+' width:100%; margin:6px 0;">';
+    var body = '<p class="hint" style="margin:0 0 6px; font-size:11.5px;">Il manque une information ou un document ? Cochez ce qu’il faut et envoyez au client un <strong>lien sécurisé personnel</strong> : il dépose ses fichiers directement dans ce dossier, sans connexion. Le lien est lié à son nom et à son dossier.</p>' + items +
+      '<input type="text" data-sc-custom="'+id+'" maxlength="120" placeholder="Autre document ou information demandée…" style="'+cpInputStyle()+' width:100%; margin:6px 0;">' +
+      '<textarea data-sc-note="'+id+'" rows="2" maxlength="500" placeholder="Message pour le client (facultatif)" style="'+cpInputStyle()+' width:100%;">'+escapeHtml(req ? (req.note || '') : '')+'</textarea>' + mailField +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' +
+        '<button type="button" class="btn primary" data-sc-save="'+id+'" data-sc-kind="'+kind+'" style="padding:4px 10px; font-size:12px;">Enregistrer la demande</button>' +
+        '<button type="button" class="btn" data-sc-link="'+id+'" data-sc-kind="'+kind+'" style="padding:4px 10px; font-size:12px;">🔗 Copier le lien sécurisé</button>' +
+        '<button type="button" class="btn" data-sc-mail="'+id+'" data-sc-kind="'+kind+'" style="padding:4px 10px; font-size:12px;">✉️ Envoyer par courriel</button>' +
+        (req ? '<button type="button" class="btn" data-sc-clear="'+id+'" data-sc-kind="'+kind+'" style="padding:4px 10px; font-size:12px;">Retirer la demande</button>' : '') + '</div>' +
+      (scMsg[key] ? '<div class="hint" style="margin:6px 0 0; color:var(--accent);">'+escapeHtml(scMsg[key])+'</div>' : '') +
+      (req ? '<p class="hint" style="margin:6px 0 0; font-size:11.5px;">Demande active depuis le '+escapeHtml(fmtFghlabShortDate(req.on))+' : '+escapeHtml(req.items.join(', '))+'</p>' : '') +
+      '<div style="margin-top:10px;"><strong style="font-size:12.5px;">Documents du dossier</strong><div style="margin-top:4px;">'+docsHtml+'</div>' +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px;"><input type="file" data-sc-file="'+id+'" accept="application/pdf,image/jpeg,image/png" style="font-size:12px;"><button type="button" class="btn" data-sc-upload="'+id+'" data-sc-kind="'+kind+'" style="padding:3px 9px; font-size:12px;">Ajouter un document</button></div></div>';
+    return '<details class="collapsible" data-sc-card="'+id+'" data-sc-open="'+id+'"'+(open ? ' open' : '')+' style="margin:8px 0 0;"><summary style="cursor:pointer; font-size:12.5px; font-weight:600;">🔐 Demande / réponse par lien sécurisé'+(r.docsCount ? ' · '+r.docsCount+' doc.' : '')+(req ? ' · demande active' : '')+'</summary><div style="margin-top:8px;">'+body+'</div></details>';
+  }
+  function scLoadDocs(kind, id){
+    var K = SC_KINDS[kind];
+    if(!cpSbOk()){ scDocs[id] = { err: 'Session serveur requise pour voir les documents.' }; K.redraw(); return; }
+    scDocs[id] = { loading: true }; K.redraw();
+    fghlabSb.rpc('fgh_secure_doc_list', { p_collection: K.coll, p_id: id }).then(function(r){
+      scDocs[id] = (r && r.error) ? { err: 'Documents inaccessibles (droits, ou mise à jour « phase 3i » manquante).' } : { docs: r.data || [] }; K.redraw();
+    }).catch(function(){ scDocs[id] = { err: 'Documents inaccessibles.' }; K.redraw(); });
+  }
+  function scUpload(kind, id, f){
+    var K = SC_KINDS[kind];
+    return cpFileToData(f).then(function(d){
+      if(!cpSbOk()) throw new Error('Session serveur requise (connexion de l’équipe).');
+      return fghlabSb.rpc('fgh_secure_doc_put', { p_doc: 'fghcd-' + Date.now().toString(36) + l6Rand(6), p_collection: K.coll, p_id: id, p_kind: 'Ajouté par l’équipe', p_name: f.name, p_mime: f.type, p_data: d }).then(function(r){ if(r && r.error) throw new Error('Téléversement impossible (le dossier est-il synchronisé ?).'); });
+    });
+  }
+  function scOnClick(e){
+    var t = e.target; if(!t || !t.closest) return;
+    var b = t.closest('[data-sc-save],[data-sc-link],[data-sc-mail],[data-sc-clear],[data-sc-refresh],[data-sc-view],[data-sc-del],[data-sc-upload]');
+    if(!b) return;
+    var kind = b.getAttribute('data-sc-kind'), K = kind && SC_KINDS[kind];
+    var id = b.getAttribute('data-sc-save') || b.getAttribute('data-sc-link') || b.getAttribute('data-sc-mail') || b.getAttribute('data-sc-clear') || b.getAttribute('data-sc-refresh') || b.getAttribute('data-sc-upload') || b.getAttribute('data-sc-pid');
+    function q(a){ return document.querySelector('[' + a + '="' + id + '"]'); }
+    if(b.hasAttribute('data-sc-view')){
+      if(!cpSbOk()) return;
+      var win = window.open('', '_blank');
+      fghlabSb.rpc('fgh_secure_doc_get', { p_doc: b.getAttribute('data-sc-view') }).then(function(r){
+        var d = r && r.data; if(!d || !d.data){ if(win) win.close(); l6Toast('Document introuvable.'); return; }
+        fetch(d.data).then(function(x){ return x.blob(); }).then(function(bl){ var u = URL.createObjectURL(bl); if(win) win.location.href = u; else window.open(u, '_blank'); setTimeout(function(){ URL.revokeObjectURL(u); }, 60000); });
+      }).catch(function(){ if(win) win.close(); l6Toast('Lecture impossible.'); });
+      return;
+    }
+    if(!K) return;
+    var r = id ? scFind(kind, id) : null;
+    if(b.hasAttribute('data-sc-refresh')){ scOpen[id] = true; scLoadDocs(kind, id); return; }
+    if(b.hasAttribute('data-sc-del')){
+      if(!cpSbOk() || !window.confirm('Supprimer ce document du dossier ?')) return;
+      fghlabSb.rpc('fgh_secure_doc_delete', { p_doc: b.getAttribute('data-sc-del') }).then(function(){ scLoadDocs(kind, id); }); return;
+    }
+    if(b.hasAttribute('data-sc-upload')){
+      var fi = q('data-sc-file'), f = fi && fi.files && fi.files[0];
+      if(!f){ l6Toast('Choisissez un fichier.'); return; }
+      scUpload(kind, id, f).then(function(){ l6Toast('Document ajouté ✓'); scLoadDocs(kind, id); }).catch(function(er){ l6Toast(er.message); }); return;
+    }
+    if(!r) return;
+    function collect(){
+      var items = []; Array.prototype.forEach.call(document.querySelectorAll('[data-sc-item="' + id + '"]'), function(c){ if(c.checked) items.push(c.value); });
+      var cu = q('data-sc-custom'); if(cu && cu.value.trim()) items.push(cu.value.trim());
+      var nt = q('data-sc-note'); return { items: items, note: nt ? nt.value.trim() : '' };
+    }
+    function save(){
+      var c = collect();
+      if(!c.items.length){ scMsg[id] = 'Cochez au moins un document ou une information à demander.'; K.redraw(); return false; }
+      if(!r.docToken) r.docToken = l6Rand(32);
+      r.docRequest = { on: new Date().toISOString(), items: c.items, note: c.note, by: fghlabActor() };
+      persistFghlabState(); scMsg[id] = 'Demande enregistrée ✓'; scOpen[id] = true; K.redraw(); return true;
+    }
+    if(b.hasAttribute('data-sc-save')){ save(); return; }
+    if(b.hasAttribute('data-sc-clear')){ r.docRequest = null; persistFghlabState(); scMsg[id] = 'Demande retirée.'; K.redraw(); return; }
+    if(b.hasAttribute('data-sc-link')){
+      if(!r.docToken){ r.docToken = l6Rand(32); persistFghlabState(); }
+      l6Copy(fghlabPublicUrl('complement', r.docToken), 'Lien sécurisé copié ✓ (actif après synchronisation)'); return;
+    }
+    if(b.hasAttribute('data-sc-mail')){
+      var em = K.email(r), ei = q('data-sc-email');
+      if(!em && ei && ei.value.trim()){ em = ei.value.trim(); r.contactEmail = em; }
+      if(!em){ scMsg[id] = 'Indiquez le courriel du client, ou copiez le lien.'; scOpen[id] = true; K.redraw(); return; }
+      if(!cpSbOk()){ scMsg[id] = 'Envoi par courriel : connexion équipe requise. Copiez le lien et envoyez-le vous-même.'; K.redraw(); return; }
+      if(!save()) return;
+      var url = fghlabPublicUrl('complement', r.docToken);
+      var body = 'Bonjour ' + (K.name(r) || '') + ',\n\nPour poursuivre le traitement de votre ' + K.label + ' « ' + (K.title(r) || '') + ' »' + (K.deal(r) ? ' (N° de dossier ' + K.deal(r) + ')' : '') + ', nous avons besoin de :\n\n' +
+        r.docRequest.items.map(function(x){ return '• ' + x; }).join('\n') + (r.docRequest.note ? '\n\n' + r.docRequest.note : '') + '\n\nDéposez-les en toute sécurité avec votre lien personnel (PDF, JPEG ou PNG, 2 Mo maximum par fichier) :\n' + url + '\n\nNe transmettez ce lien à personne.\n\nFINECIA GROUPE';
+      scMsg[id] = 'Envoi en cours…'; K.redraw();
+      setTimeout(function(){
+        fghlabSb.rpc('fgh_secure_mail', { p_collection: K.coll, p_id: id, p_to: em, p_subject: 'FINECIA GROUPE — documents à compléter pour votre dossier', p_body: body }).then(function(res){
+          var d = res && res.data;
+          if((res && res.error) || !d || d.ok !== true){ scMsg[id] = (d && d.error === 'no_email') ? 'Courriel invalide ou dossier pas encore synchronisé. Réessayez dans un instant.' : 'Envoi impossible (mise à jour « phase 3i » faite ?).'; K.redraw(); return; }
+          scMsg[id] = 'Courriel mis en file ✓ (envoyé si le service d’envoi est configuré).'; K.redraw(); l9FlushMail(true);
+        }).catch(function(){ scMsg[id] = 'Envoi impossible pour le moment.'; K.redraw(); });
+      }, 1200);
+    }
+  }
+  document.addEventListener('click', scOnClick);
+  document.addEventListener('toggle', function(e){ var d = e.target; if(d && d.getAttribute && d.getAttribute('data-sc-open')) scOpen[d.getAttribute('data-sc-open')] = d.open; }, true);
+
   function resetFghlabCoprojectForm(){
     fghlabEditingCoprojectId = null;
     var titleInput = document.getElementById('coproject-title-input');
@@ -20610,7 +20735,8 @@
         '<div style="display:flex; gap:10px; flex-wrap:wrap; margin:4px 0; font-size:12px;">' + kinds.map(function(k){ return '<label style="display:flex; gap:4px; align-items:center;"><input type="checkbox" data-l6-req-item="'+l6Esc(p.id)+'" value="'+l6Esc(k)+'">' + l6Esc(k) + '</label>'; }).join('') + '</div>' +
         '<div style="display:flex; gap:6px; flex-wrap:wrap;"><input type="text" maxlength="200" data-l6-req-note="'+l6Esc(p.id)+'" placeholder="Message au partenaire (facultatif)" style="flex:1; min-width:160px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
         '<button type="button" class="btn" data-l6-req-send="'+l6Esc(p.id)+'" style="padding:3px 9px; font-size:12px;">Enregistrer la demande</button>' +
-        '<button type="button" class="btn" data-l6-doc-link="'+l6Esc(p.id)+'" style="padding:3px 9px; font-size:12px;">Copier le lien de dépôt du partenaire</button></div>' +
+        '<button type="button" class="btn" data-l6-doc-link="'+l6Esc(p.id)+'" style="padding:3px 9px; font-size:12px;">Copier le lien de dépôt du partenaire</button>' +
+        '<button type="button" class="btn" data-l6-doc-mail="'+l6Esc(p.id)+'" style="padding:3px 9px; font-size:12px;">✉️ Envoyer la demande par courriel</button></div>' +
         '<div style="font-size:12px; font-weight:600; margin-top:8px;">Ajouter un document pour ce partenaire</div>' +
         '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:4px;"><select data-l6-doc-kind="'+l6Esc(p.id)+'" style="border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' + kinds.map(function(k){ return '<option>' + l6Esc(k) + '</option>'; }).join('') + '</select>' +
         '<input type="file" accept="application/pdf,image/jpeg,image/png" data-l6-doc-file="'+l6Esc(p.id)+'" style="font-size:12px;">' +
@@ -20951,6 +21077,23 @@
     if((b = t.closest('[data-l6-req-clear]'))){
       pid = b.getAttribute('data-l6-req-clear'); p = fghlabFindPartner(pid); if(!p) return;
       p.docRequest = null; persistFghlabState(); l6FillDocs(pid); return;
+    }
+    if((b = t.closest('[data-l6-doc-mail]'))){
+      p = fghlabFindPartner(b.getAttribute('data-l6-doc-mail')); if(!p) return;
+      if(!p.email){ l6Toast('Aucun courriel au dossier du partenaire.'); return; }
+      if(!fghlabSyncActive()){ l6Toast('Envoi par courriel : connexion équipe requise. Copiez le lien et envoyez-le vous-même.'); return; }
+      var rq = p.docRequest && p.docRequest.items && p.docRequest.items.length ? p.docRequest : null;
+      if(!rq){ l6Toast('Cochez les documents puis « Enregistrer la demande » d’abord.'); return; }
+      if(!p.docToken){ p.docToken = l6Rand(32); persistFghlabState(); }
+      var pbody = 'Bonjour ' + (p.contact || p.name) + ',\n\nPour compléter le dossier de ' + p.name + ' chez FINECIA GROUPE, nous avons besoin de :\n\n' + rq.items.map(function(x){ return '• ' + x; }).join('\n') + (rq.note ? '\n\n' + rq.note : '') + '\n\nDéposez-les en toute sécurité avec votre lien personnel (PDF, JPEG ou PNG, 2 Mo maximum par fichier) :\n' + fghlabPublicUrl('doc', p.docToken) + '\n\nNe transmettez ce lien à personne.\n\nFINECIA GROUPE';
+      var pidm = p.id;
+      setTimeout(function(){
+        fghlabSb.rpc('fgh_partner_doc_mail', { p_partner_id: pidm, p_subject: 'FINECIA GROUPE — documents à compléter pour votre dossier', p_body: pbody }).then(function(r){
+          if((r && r.error) || !r.data || r.data.ok !== true){ l6Toast('Envoi impossible (dossier non synchronisé, ou mise à jour « phase 3i » manquante).'); return; }
+          l6Toast('Courriel mis en file ✓'); l9FlushMail(true);
+        }).catch(function(){ l6Toast('Envoi impossible pour le moment.'); });
+      }, 800);
+      return;
     }
     if((b = t.closest('[data-l6-doc-link]'))){
       p = fghlabFindPartner(b.getAttribute('data-l6-doc-link')); if(!p) return;
@@ -22493,6 +22636,7 @@
         acceptedInfo +
         offersHtml +
         offerFormHtml + ((isOwnerSession && proj.status !== 'accepte') ? offerHelpHtml : '') +
+        scCardHtml('fgbank', proj) +
       '</div>';
     }).join('');
   }
@@ -23094,6 +23238,19 @@
     a.read = true;
     persistFghlabState();
     renderFghlabBankAlerts();
+    if(a.kind === 'secure_docs'){
+      var sk = scKindOfColl(a.collection), SK = sk && SC_KINDS[sk];
+      if(!SK){ return; }
+      if(getFghlabVisibleTools().indexOf(SK.tool) === -1){ window.alert('Ce dossier se trouve dans un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.'); return; }
+      scOpen[a.recordId] = true; scDocs[a.recordId] = null;
+      selectFghlabTool(SK.tool, { noClose: true }); SK.redraw();
+      setTimeout(function(){
+        var c = document.querySelector('[data-sc-card="' + a.recordId + '"]');
+        if(c){ if(c.scrollIntoView) c.scrollIntoView({ behavior: 'smooth', block: 'center' }); c.style.outline = '3px solid #C89B3C'; setTimeout(function(){ c.style.outline = ''; }, 3500); }
+        scLoadDocs(sk, a.recordId);
+      }, 250);
+      return;
+    }
     if(a.kind === 'coproject_new' || a.kind === 'coproject_docs'){
       if(getFghlabVisibleTools().indexOf('coproject') === -1){ window.alert('Ce dossier se trouve dans COPROJECT, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.'); return; }
       if(a.kind === 'coproject_docs'){ cpOpen[a.coprojectId + ':sec'] = true; cpDocsCache[a.coprojectId] = null; }
@@ -23373,7 +23530,8 @@
         var opts = ACADEMIE_REG_STATUS.map(function(s){ return '<option'+(s === r.status ? ' selected' : '')+'>'+s+'</option>'; }).join('');
         return '<div style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; margin-top:6px; background:var(--surface); font-size:12.5px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
           '<div><strong>'+escapeHtml(r.name)+'</strong> — '+escapeHtml(r.formationTitle)+'<div class="hint" style="margin:2px 0 0;">'+escapeHtml([r.city, r.province, r.country, r.region].filter(Boolean).join(', ') || 'Lieu non précisé')+(r.organisation ? ' · '+escapeHtml(r.organisation) : '')+'</div><div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.format)+' · '+escapeHtml(r.duration)+' · '+escapeHtml(r.email || '—')+' · '+escapeHtml(r.phone || '—')+' · '+escapeHtml(fmtFghlabShortDate(r.createdOn))+(r.priceText ? ' · '+escapeHtml(r.priceText) : '')+(r.source === 'public' ? ' · 🌐 via le lien public' : '')+'</div>'+(r.message ? '<div class="hint" style="margin:2px 0 0;">'+escapeHtml(r.message)+'</div>' : '')+'</div>' +
-          '<select data-acad-regstatus="'+escapeHtml(r.id)+'" style="border:1px solid var(--line); border-radius:7px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">'+opts+'</select></div>';
+          '<select data-acad-regstatus="'+escapeHtml(r.id)+'" style="border:1px solid var(--line); border-radius:7px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">'+opts+'</select>' +
+          '<div style="flex-basis:100%;">'+scCardHtml('acad', r)+'</div></div>';
       }).join('');
     }
     function toggleOther(selId, inputId){
