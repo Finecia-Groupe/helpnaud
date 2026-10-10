@@ -71,8 +71,8 @@ exports.handler = async function(event){
   const h = event.headers || {};
   const ip = String(h['x-nf-client-connection-ip'] || h['x-forwarded-for'] || 'unknown').split(',')[0].trim();
   const action = str(p.action, 40);
-  const writes = ['invite-signup', 'book', 'interest', 'academie-register'];
-  const docWrites = ['partner-doc-put', 'partner-doc-delete'];
+  const writes = ['invite-signup', 'book', 'interest', 'academie-register', 'coproject-register'];
+  const docWrites = ['partner-doc-put', 'partner-doc-delete', 'coproject-doc-put', 'coproject-doc-delete'];
   const espaceActions = ['espace-enter', 'espace-exit', 'espace-update', 'espace-support', 'espace-notices'];
   if (action === 'espace-enter') {
     if (limited(ip + ':e', 12, 10 * 60 * 1000)) return out(429, { error: 'Trop de tentatives. Réessayez dans quelques minutes.' });
@@ -121,6 +121,49 @@ exports.handler = async function(event){
       const token = str(p.token, 40), id = str(p.id, 80);
       if (!okToken(token) || token.length < 16 || !okId(id)) return out(400, { error: 'Demande invalide.' });
       return out(200, await svcRpc('svc_partner_doc_delete', { p_token: token, p_id: id }));
+    }
+    if (action === 'coproject-info') {
+      const token = str(p.token, 40);
+      if (!okToken(token)) return out(200, { ok: false });
+      return out(200, await svcRpc('svc_coproject_link_info', { p_token: token }));
+    }
+    if (action === 'coproject-register') {
+      const token = str(p.token, 40), client = str(p.client, 100), email = str(p.email, 140).toLowerCase(), title = str(p.title, 100);
+      if (!okToken(token)) return out(400, { error: 'Lien invalide.' });
+      if (client.length < 2) return out(400, { error: 'Indiquez votre nom ou celui de votre organisation.' });
+      if (!isEmail(email)) return out(400, { error: 'Courriel invalide.' });
+      if (title.length < 3) return out(400, { error: 'Indiquez le titre de votre projet.' });
+      if (p.consent !== true) return out(400, { error: 'Veuillez accepter l’utilisation de vos informations pour envoyer la demande.' });
+      const budget = str(String(p.budget == null ? '' : p.budget), 20).replace(/\s+/g, '').replace(',', '.');
+      const r = await svcRpc('svc_coproject_register', { p_token: token, p: { client, email, title, consent: 'true',
+        phone: str(p.phone, 40), nRue: str(p.nRue, 20), rue: str(p.rue, 120), bp: str(p.bp, 30), cp: str(p.cp, 20), ville: str(p.ville, 80), pays: str(p.pays, 80),
+        idType: str(p.idType, 60), idNumber: str(p.idNumber, 60), typeProjet: str(p.typeProjet, 100), typeProjetAutre: str(p.typeProjetAutre, 100),
+        bailleur: str(p.bailleur, 140), budget, echeance: str(p.echeance, 10), description: str(p.description, 1500) } });
+      if (!r || r.ok !== true) return out(400, { error: r && r.error === 'invalid' ? 'Ce lien n’est plus valide.' : (r && r.error === 'busy' ? 'Trop de demandes en attente, réessayez plus tard.' : 'Vérifiez les informations saisies.') });
+      await sendQueued(r.mailId);
+      return out(200, { ok: true, duplicate: !!r.duplicate, docToken: (r.docToken && okToken(r.docToken)) ? r.docToken : null,
+        clientNumber: r.clientNumber || null, partnerNumber: r.partnerNumber || null, projectNumber: r.projectNumber || null, dealNumber: r.dealNumber || null });
+    }
+    if (action === 'coproject-doc-info') {
+      const token = str(p.token, 40);
+      if (!okToken(token) || token.length < 16) return out(200, { ok: false });
+      return out(200, await svcRpc('svc_coproject_doc_info', { p_token: token }));
+    }
+    if (action === 'coproject-doc-put') {
+      const token = str(p.token, 40), name = str(p.name, 200), kind = str(p.kind, 80), mime = str(p.mime, 40), data = typeof p.data === 'string' ? p.data : '';
+      if (!okToken(token) || token.length < 16) return out(400, { error: 'Lien invalide.' });
+      if (!name) return out(400, { error: 'Nom du fichier manquant.' });
+      if (!['application/pdf', 'image/jpeg', 'image/png'].includes(mime)) return out(400, { error: 'Formats acceptés : PDF, JPEG ou PNG.' });
+      if (data.length < 100 || data.length > 3000000) return out(400, { error: 'Fichier trop volumineux (2 Mo maximum).' });
+      if (!/^data:(application\/pdf|image\/jpeg|image\/png);base64,[A-Za-z0-9+\/=]+$/.test(data)) return out(400, { error: 'Fichier invalide.' });
+      const r = await svcRpc('svc_coproject_doc_put', { p_token: token, p_kind: kind || 'Autre', p_name: name, p_mime: mime, p_data: data });
+      if (!r || r.ok !== true) return out(400, { error: r && r.error === 'limit' ? 'Nombre maximal de documents atteint (25).' : 'Téléversement impossible.' });
+      return out(200, { ok: true });
+    }
+    if (action === 'coproject-doc-delete') {
+      const token = str(p.token, 40), id = str(p.id, 80);
+      if (!okToken(token) || token.length < 16 || !okId(id)) return out(400, { error: 'Demande invalide.' });
+      return out(200, await svcRpc('svc_coproject_doc_delete', { p_token: token, p_doc: id }));
     }
     if (action === 'espace-enter') {
       const num = str(p.number, 20).replace(/\s+/g, '');
