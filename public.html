@@ -510,7 +510,148 @@
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
   }
 
-  if(Q.get('coproject')) viewCoproject(Q.get('coproject'));
+  /* ---------- ECOREP : espace de consultation des relevés de paie ---------- */
+  function viewEcorep(){
+    var EFN = '/.netlify/functions/ecorep', S = { token: null, me: null, tab: 'paie', timer: null };
+    function ecall(body){
+      var h = { 'Content-Type':'application/json' }; if(S.token) h.Authorization = 'Bearer ' + S.token;
+      return fetch(EFN, { method:'POST', headers:h, body: JSON.stringify(body) }).then(function(r){
+        return r.text().then(function(t){ var j = null; try{ j = JSON.parse(t); }catch(e){}
+          if(r.status === 401 && S.token){ logout('Session expirée. Reconnectez-vous.'); throw new Error('Session expirée.'); }
+          if(!r.ok) throw new Error((j && j.error) || 'Service momentanément indisponible.'); return j || {}; });
+      });
+    }
+    function logout(msg){ S.token = null; S.me = null; clearTimeout(S.timer); login(msg); }
+    function fm(n, cur){ var v = Number(n || 0); try{ return v.toLocaleString('fr-CA', { style:'currency', currency: cur || 'CAD' }); }catch(e){ return v.toFixed(2) + ' ' + (cur || ''); } }
+    function fd(s){ return s ? String(s).slice(0, 10) : ''; }
+    var STATUS = { soumis:'En attente du gestionnaire', correction_gestionnaire:'Correction demandée par le gestionnaire', rejete_gestionnaire:'Refusées par le gestionnaire',
+      approuve_gestionnaire:'Approuvées — en attente des RH', valide_rh:'Validées par les RH', rejete_rh:'Refusées par les RH', correction_rh:'Correction demandée par les RH', impute:'Imputées à votre paie' };
+
+    function payslipHtml(p){
+      var s = p.data || {}, cur = s.currency || 'CAD', e = s.employee || {}, per = s.period || {}, h = s.hours || {}, b = s.bank || {}, y = s.ytd || {}, v = s.vacation || {};
+      var rows = function(arr, cols){ return (arr || []).map(function(x){ return '<tr>' + cols.map(function(c){ return '<td' + (c.r ? ' class="r"' : '') + '>' + (c.m ? fm(x[c.k], cur) : esc(x[c.k] == null ? '' : x[c.k])) + '</td>'; }).join('') + '</tr>'; }).join(''); };
+      return '<div class="slip"><div class="row"><div><h2 style="margin:0;">Relevé de paie</h2><div class="hint">FINECIA GROUPE' + (s.employerAddress ? ' · ' + esc(s.employerAddress) : '') + '</div></div><div class="hint" style="text-align:right;">Date d’émission : ' + esc(fd(s.printDate || p.payDate)) + '<br>Date de paie : ' + esc(fd(p.payDate || s.payDate)) + '</div></div>' +
+        '<table class="kv"><tr><td>Employé</td><td><strong>' + esc(e.name || '') + '</strong></td><td>N° de membre</td><td>' + esc(e.number || '') + '</td></tr>' +
+        '<tr><td>Poste</td><td>' + esc(e.position || '') + '</td><td>Date d’embauche</td><td>' + esc(fd(e.hireDate)) + '</td></tr>' +
+        '<tr><td>Période</td><td>' + esc(fd(per.start || p.start)) + ' au ' + esc(fd(per.end || p.end)) + '</td><td>Fréquence</td><td>' + esc({ weekly:'Hebdomadaire', biweekly:'Aux deux semaines', monthly:'Mensuelle' }[s.frequency] || s.frequency || '') + '</td></tr>' +
+        '<tr><td>Taux horaire</td><td>' + (h.rate != null ? fm(h.rate, cur) : '') + '</td><td>Heures (rég. / suppl.)</td><td>' + esc(h.regular != null ? h.regular : '') + ' / ' + esc(h.overtime != null ? h.overtime : 0) + '</td></tr></table>' +
+        '<h3>Gains</h3><table class="t"><thead><tr><th>Description</th><th class="r">Heures / Qté</th><th class="r">Taux</th><th class="r">Montant</th></tr></thead><tbody>' + rows(s.earnings, [{k:'label'},{k:'qty',r:1},{k:'rate',r:1,m:1},{k:'amount',r:1,m:1}]) + '</tbody><tfoot><tr><td colspan="3"><strong>Salaire brut</strong></td><td class="r"><strong>' + fm(s.gross, cur) + '</strong></td></tr></tfoot></table>' +
+        '<h3>Retenues</h3><table class="t"><thead><tr><th>Description</th><th class="r">Base</th><th class="r">Montant</th></tr></thead><tbody>' + rows(s.deductions, [{k:'label'},{k:'base',r:1,m:1},{k:'amount',r:1,m:1}]) + '</tbody><tfoot><tr><td colspan="2"><strong>Total des retenues</strong></td><td class="r"><strong>' + fm(s.totalDeductions, cur) + '</strong></td></tr></tfoot></table>' +
+        '<div class="net row"><strong>Salaire net</strong><strong>' + fm(s.net != null ? s.net : p.net, cur) + '</strong></div>' +
+        '<table class="kv"><tr><td>Cumul annuel brut</td><td>' + fm(y.gross, cur) + '</td><td>Cumul annuel net</td><td>' + fm(y.net, cur) + '</td></tr>' +
+        '<tr><td>Congés annuels — solde</td><td>' + esc(v.balance != null ? v.balance : '') + ' ' + esc(v.unit || '') + '</td><td>Maladie — solde</td><td>' + esc(v.sickBalance != null ? v.sickBalance : '') + ' ' + esc(v.unit || '') + '</td></tr>' +
+        '<tr><td>Dépôt</td><td colspan="3">' + esc(b.institution || '') + (b.accountMasked ? ' · compte ' + esc(b.accountMasked) : '') + '</td></tr></table>' +
+        (s.note ? '<p class="hint">' + esc(s.note) + '</p>' : '') + '<p class="hint">Document confidentiel destiné à l’employé nommé ci-dessus.</p></div>';
+    }
+    var SLIP_CSS = '.slip{font:13px/1.45 system-ui,sans-serif;color:#16304A} .slip h2,.slip h3{margin:10px 0 4px} .slip table{width:100%;border-collapse:collapse;margin:6px 0} .slip td,.slip th{padding:5px 6px;border-bottom:1px solid #D9D4C7;text-align:left} .slip .r{text-align:right} .slip .kv td:nth-child(odd){color:#5B6B7B} .slip .net{font-size:17px;padding:10px;background:#F6F4EF;border-radius:8px;margin:8px 0} .slip .hint{color:#5B6B7B;font-size:12px} .slip .row{display:flex;justify-content:space-between;gap:10px}';
+    var pcss = document.createElement('style');
+    pcss.textContent = '@media print{ body *{ visibility:hidden !important; } #ec-slip, #ec-slip *{ visibility:visible !important; } #ec-slip{ position:absolute; left:0; top:0; width:100%; } .noprint{ display:none !important; } }';
+    document.head.appendChild(pcss);
+
+    function login(msg){
+      app.innerHTML = '<div class="card"><h1>ECOREP</h1><p class="hint">Espace de consultation des relevés de paie — FINECIA GROUPE. Chaque membre voit uniquement ses propres données.</p>' +
+        '<form id="ec-form" autocomplete="on"><label for="ec-id">Courriel ou numéro de membre (8 chiffres)</label><input id="ec-id" autocomplete="username" inputmode="email">' +
+        '<label for="ec-pw">Mot de passe</label><input id="ec-pw" type="password" autocomplete="current-password">' +
+        '<button id="ec-go" type="submit">Se connecter</button><div id="ec-out" class="msg ' + (msg ? 'err' : '') + '">' + esc(msg || '') + '</div></form>' +
+        '<p class="hint">Mot de passe oublié ? Demandez une réinitialisation au service des ressources humaines.</p></div>';
+      document.getElementById('ec-form').addEventListener('submit', function(ev){
+        ev.preventDefault();
+        var out = document.getElementById('ec-out'), b = document.getElementById('ec-go'); out.className = 'msg'; out.textContent = ''; b.disabled = true;
+        ecall({ action:'login', id: document.getElementById('ec-id').value.trim(), password: document.getElementById('ec-pw').value }).then(function(r){
+          S.token = r.token; S.me = r.me; S.tab = 'paie';
+          S.timer = setTimeout(function(){ logout('Session expirée par sécurité. Reconnectez-vous.'); }, Math.max(60, (r.expiresIn || 3600) - 30) * 1000);
+          shell();
+        }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+      });
+    }
+
+    function shell(){
+      var m = S.me, tabs = [['paie','Mes relevés de paie'],['hs','Heures supplémentaires']]; if(m.isManager) tabs.push(['equipe','Approbations (équipe)']);
+      app.innerHTML = '<div class="card noprint"><div class="row"><div><h1 style="font-size:20px;">ECOREP</h1><div class="hint">' + esc(m.name) + ' · N° ' + esc(m.number) + (m.position ? ' · ' + esc(m.position) : '') + '</div></div><button class="light" id="ec-out-btn">Se déconnecter</button></div>' +
+        '<div class="row" style="justify-content:flex-start; margin-top:10px;">' + tabs.map(function(t){ return '<button class="light" data-tab="' + t[0] + '" style="' + (t[0] === S.tab ? 'background:var(--ink);color:var(--surface);' : '') + '">' + t[1] + '</button>'; }).join('') + '</div></div><div id="ec-body"></div>';
+      document.getElementById('ec-out-btn').addEventListener('click', function(){ logout('Vous êtes déconnecté.'); });
+      Array.prototype.forEach.call(app.querySelectorAll('[data-tab]'), function(b){ b.addEventListener('click', function(){ S.tab = b.getAttribute('data-tab'); shell(); }); });
+      if(S.tab === 'paie') tabPaie(); else if(S.tab === 'hs') tabHs(); else tabEquipe();
+    }
+    var body = function(){ return document.getElementById('ec-body'); };
+    function fail(e){ body().innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; }
+
+    function tabPaie(){
+      ecall({ action:'payslips' }).then(function(r){
+        var list = r.list || [];
+        body().innerHTML = '<div class="card noprint"><strong>Mes relevés de paie</strong>' + (list.length ? list.map(function(p){
+          return '<div class="row" style="padding:8px 0; border-top:1px solid var(--line);"><span>' + esc(fd(p.start)) + ' → ' + esc(fd(p.end)) + ' <span class="hint">· paie du ' + esc(fd(p.payDate)) + ' · net ' + esc(fm(p.net, p.currency)) + '</span></span><button class="light" data-open="' + esc(p.id) + '">Ouvrir</button></div>';
+        }).join('') : '<p class="hint">Aucun relevé publié pour l’instant.</p>') + '</div><div id="ec-slipbox"></div>';
+        Array.prototype.forEach.call(app.querySelectorAll('[data-open]'), function(b){ b.addEventListener('click', function(){
+          ecall({ action:'payslip', id: b.getAttribute('data-open') }).then(function(x){
+            if(!x.ok){ document.getElementById('ec-slipbox').innerHTML = '<div class="card"><p class="err">Relevé introuvable.</p></div>'; return; }
+            var p = x, html = payslipHtml(p);
+            document.getElementById('ec-slipbox').innerHTML = '<div class="card"><div class="row noprint" style="margin-bottom:10px;"><button class="light" id="ec-print">🖨 Imprimer / enregistrer en PDF</button><button class="light" id="ec-dl">⬇ Télécharger</button></div><div id="ec-slip">' + html + '</div></div>';
+            document.getElementById('ec-print').addEventListener('click', function(){ window.print(); });
+            document.getElementById('ec-dl').addEventListener('click', function(){
+              var doc = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Relevé de paie ' + esc(fd(p.end)) + '</title><style>body{margin:24px;font-family:system-ui,sans-serif} ' + SLIP_CSS + '</style></head><body>' + html + '</body></html>';
+              var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([doc], { type:'text/html;charset=utf-8' })); a.download = 'releve-de-paie-' + fd(p.end) + '.html';
+              document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+            });
+            document.getElementById('ec-slipbox').scrollIntoView({ behavior:'smooth' });
+          }).catch(function(e){ document.getElementById('ec-slipbox').innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
+        }); });
+      }).catch(fail);
+      var st = document.getElementById('ec-css'); if(!st){ st = document.createElement('style'); st.id = 'ec-css'; st.textContent = SLIP_CSS; document.head.appendChild(st); }
+    }
+
+    function hsForm(prefill, id){
+      var p = prefill || {};
+      return '<label>Date travaillée</label><input id="hs-date" type="date" value="' + esc(p.date || '') + '"><div class="row" style="gap:10px;"><div style="flex:1"><label>Début</label><input id="hs-start" type="time" value="' + esc(p.start || '') + '"></div><div style="flex:1"><label>Fin</label><input id="hs-end" type="time" value="' + esc(p.end || '') + '"></div></div>' +
+        '<label>Motif / tâche effectuée</label><textarea id="hs-reason" rows="2" maxlength="300">' + esc(p.reason || '') + '</textarea><button id="hs-send" data-id="' + esc(id || '') + '">' + (id ? 'Renvoyer corrigé' : 'Soumettre au gestionnaire') + '</button><div id="hs-out" class="msg"></div>';
+    }
+    var ERR = { no_manager:'Aucun gestionnaire n’est assigné à votre fiche. Contactez les RH.', bad_input:'Vérifiez la date, les heures (fin après début) et le motif (3 caractères minimum).', overlap:'Ces heures chevauchent une autre demande.', limit:'Limite de demandes atteinte.', state:'Cette demande ne peut plus être modifiée.', comment:'Un commentaire est requis.', auth:'Session invalide.' };
+    function tabHs(prefill, editId){
+      ecall({ action:'ot-list' }).then(function(r){
+        var list = r.list || [];
+        body().innerHTML = '<div class="card"><strong>' + (editId ? 'Corriger ma demande' : 'Nouvelle demande d’heures supplémentaires') + '</strong>' + hsForm(prefill, editId) + '</div>' +
+          '<div class="card"><strong>Mes demandes</strong>' + (list.length ? list.map(function(o){
+            var last = (o.history || []).slice(-1)[0], note = last && last.comment && /correction|rejete/.test(o.status) ? '<div class="hint">Message : ' + esc(last.comment) + '</div>' : '';
+            var actions = o.status === 'soumis' ? '<button class="light" data-cancel="' + esc(o.id) + '">Annuler</button>' : (/^correction_/.test(o.status) ? '<button class="light" data-fix="' + esc(o.id) + '">Corriger</button>' : '');
+            return '<div style="padding:8px 0; border-top:1px solid var(--line);" class="row"><div>' + esc(fd(o.date)) + ' · ' + esc(o.start) + '–' + esc(o.end) + ' · <strong>' + esc(o.hours) + ' h</strong><div class="hint">' + esc(STATUS[o.status] || o.status) + ' — ' + esc(o.reason) + '</div>' + note + '</div><div>' + actions + '</div></div>';
+          }).join('') : '<p class="hint">Aucune demande.</p>') + '</div>';
+        window.__ecList = list;
+        document.getElementById('hs-send').addEventListener('click', function(){
+          var b = this, out = document.getElementById('hs-out'), id = b.getAttribute('data-id'); out.className = 'msg'; out.textContent = ''; b.disabled = true;
+          ecall({ action: id ? 'ot-resubmit' : 'ot-submit', id: id, date: val('hs-date'), start: val('hs-start'), end: val('hs-end'), reason: val('hs-reason') }).then(function(x){
+            if(!x.ok){ out.className = 'msg err'; out.textContent = ERR[x.error] || 'Demande refusée.'; b.disabled = false; return; }
+            tabHs();
+          }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+        });
+        Array.prototype.forEach.call(app.querySelectorAll('[data-cancel]'), function(b){ b.addEventListener('click', function(){ ecall({ action:'ot-cancel', id: b.getAttribute('data-cancel') }).then(function(){ tabHs(); }).catch(fail); }); });
+        Array.prototype.forEach.call(app.querySelectorAll('[data-fix]'), function(b){ b.addEventListener('click', function(){
+          var o = list.filter(function(x){ return x.id === b.getAttribute('data-fix'); })[0]; if(o) tabHs({ date: fd(o.date), start: o.start, end: o.end, reason: o.reason }, o.id);
+        }); });
+      }).catch(fail);
+    }
+
+    function tabEquipe(){
+      ecall({ action:'mgr-list' }).then(function(r){
+        var list = r.list || [];
+        body().innerHTML = '<div class="card"><strong>Heures supplémentaires de mon équipe</strong><p class="hint">Approuvez, refusez ou demandez une correction (date, plage horaire inexacte…). Après votre approbation, les RH valident avant l’imputation à la paie.</p>' +
+          (list.length ? list.map(function(o){
+            var pend = o.status === 'soumis';
+            return '<div style="padding:10px 0; border-top:1px solid var(--line);"><div><strong>' + esc(o.name || o.member) + '</strong> · ' + esc(fd(o.date)) + ' · ' + esc(o.start) + '–' + esc(o.end) + ' · ' + esc(o.hours) + ' h<div class="hint">' + esc(o.reason) + ' — ' + esc(STATUS[o.status] || o.status) + '</div></div>' +
+              (pend ? '<input data-cm="' + esc(o.id) + '" placeholder="Commentaire (obligatoire pour refuser ou demander une correction)" maxlength="300"><div class="row" style="justify-content:flex-start; gap:8px; margin-top:8px;"><button class="light" data-dec="approuve" data-id="' + esc(o.id) + '">✓ Approuver</button><button class="light" data-dec="correction" data-id="' + esc(o.id) + '">✎ Demander une correction</button><button class="light" data-dec="rejete" data-id="' + esc(o.id) + '">✕ Refuser</button></div>' : '') + '</div>';
+          }).join('') : '<p class="hint">Aucune demande.</p>') + '<div id="eq-out" class="msg"></div></div>';
+        Array.prototype.forEach.call(app.querySelectorAll('[data-dec]'), function(b){ b.addEventListener('click', function(){
+          var id = b.getAttribute('data-id'), cm = app.querySelector('[data-cm="' + id + '"]'), out = document.getElementById('eq-out'); b.disabled = true;
+          ecall({ action:'mgr-decide', id: id, decision: b.getAttribute('data-dec'), comment: cm ? cm.value : '' }).then(function(x){
+            if(!x.ok){ out.className = 'msg err'; out.textContent = ERR[x.error] || 'Action refusée.'; b.disabled = false; return; } tabEquipe();
+          }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+        }); });
+      }).catch(fail);
+    }
+    login();
+  }
+
+  if(Q.get('ecorep')) viewEcorep();
+  else if(Q.get('coproject')) viewCoproject(Q.get('coproject'));
   else if(Q.get('complement')) viewComplement(Q.get('complement'));
   else if(Q.get('espace')) viewEspace();
   else if(Q.get('academie')) viewAcademie();

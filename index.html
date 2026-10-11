@@ -14754,7 +14754,7 @@
      correctement, visuellement cohérents (même grille/cartes que Outils HelpNaud), et que le
      gating d'accès soit correct. Grille et panneaux générés dynamiquement à partir de
      FGHLAB_TOOLS/FGHLAB_INFO pour éviter toute duplication d'ids entre 34 entrées. */
-  var FGHLAB_TOOLS = ['etudes','bizplan','conseiller','compta','montage','pme','briefing','redaction','rh','formation','etat','expert','dossiers','rdv','mission','admin','fiscalite','importexport','mobilisation','perforg','perffin','analysepol','banquesmicrofinance','dossierscredit','dossiersfinancement','etatsentreprise','etatsconsolides','etatssociete','etatsorgint','etatsongassoc','comptaconsolidee','comptaconsolideepublic','etatscommercants','coproject','partnermarket','fgbankpartnership','touttest','pese','academie','documentation','feuillecalcul','hstatis','calculateurs'];
+  var FGHLAB_TOOLS = ['etudes','bizplan','conseiller','compta','montage','pme','briefing','redaction','rh','pgr','formation','etat','expert','dossiers','rdv','mission','admin','fiscalite','importexport','mobilisation','perforg','perffin','analysepol','banquesmicrofinance','dossierscredit','dossiersfinancement','etatsentreprise','etatsconsolides','etatssociete','etatsorgint','etatsongassoc','comptaconsolidee','comptaconsolideepublic','etatscommercants','coproject','partnermarket','fgbankpartnership','touttest','pese','academie','documentation','feuillecalcul','hstatis','calculateurs'];
   var FGHLAB_INFO = {
     etudes:{ icon:'🔍', title:'Études', desc:"Enquêtes, statistiques et recherches sur mesure pour vos dossiers et mandats." },
     calculateurs:{ icon:'🧮', title:'Calculateurs', desc:"Prêt et amortissement, intérêts composés, VAN/TRI, seuil de rentabilité, marges, taxes, endettement et devises." },
@@ -14766,6 +14766,7 @@
     briefing:{ icon:'📰', title:'Briefing FINECIA', desc:"Résumés et briefings internes préparés pour l'équipe FINECIA GROUPE." },
     redaction:{ icon:'✍️', title:"Rédaction de plan d'affaires", desc:"Rédaction assistée d'un plan d'affaires complet, prêt à présenter." },
     rh:{ icon:'👥', title:'Outils recrutement et RH', desc:"Recrutement, gestion RH et suivi du personnel pour les mandats et l'interne." },
+    pgr:{ icon:'💼', title:'PGR - Paie et Gestion des Rémunérations', desc:"Fiche RH intégrée, calcul de la paie, relevés de paie, heures supplémentaires validées et espace employé ECOREP." },
     formation:{ icon:'🎓', title:'Outils de formation', desc:"Modules et supports de formation pour l'équipe et pour les clients." },
     etat:{ icon:'🏛️', title:"Outil d'accompagnement des États, municipalités et administrations", desc:"Accompagnement spécialisé pour les États, municipalités et administrations publiques." },
     expert:{ icon:'🧭', title:"Outil d'analyse niveau expert du cabinet", desc:"Analyses approfondies, niveau expert, pour les mandats du cabinet." },
@@ -14825,7 +14826,7 @@
       tools:['etudes','conseiller','expert','analysepol','hstatis'] },
     { key:'finance', label:'Finance, comptabilité & fiscalité',
       icon:'<ellipse cx="10" cy="15" rx="7" ry="3" fill="none" stroke="#C89B3C" stroke-width="2"/><ellipse cx="10" cy="10.5" rx="7" ry="3" fill="none" stroke="#16304A" stroke-width="2"/><ellipse cx="10" cy="6" rx="7" ry="3" fill="none" stroke="#2D9C93" stroke-width="2"/>',
-      tools:['calculateurs','feuillecalcul','compta','fiscalite','perffin','banquesmicrofinance','dossierscredit','dossiersfinancement','partnermarket','fgbankpartnership'] },
+      tools:['calculateurs','feuillecalcul','compta','pgr','fiscalite','perffin','banquesmicrofinance','dossierscredit','dossiersfinancement','partnermarket','fgbankpartnership'] },
     { key:'projets', label:'Projets & entreprises',
       icon:'<rect x="2" y="7" width="16" height="10" rx="2" fill="none" stroke="#16304A" stroke-width="2"/><path d="M7 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" fill="none" stroke="#C89B3C" stroke-width="2"/><line x1="2" y1="12" x2="18" y2="12" stroke="#2D9C93" stroke-width="2"/>',
       tools:['bizplan','montage','pme','redaction','perforg','mobilisation','coproject'] },
@@ -14837,7 +14838,7 @@
       tools:['etat'] },
     { key:'rh', label:'Ressources humaines & formation',
       icon:'<circle cx="7" cy="7" r="3" fill="none" stroke="#16304A" stroke-width="2"/><path d="M2 18c0-3 2.2-5 5-5s5 2 5 5" fill="none" stroke="#16304A" stroke-width="2"/><circle cx="15" cy="6" r="2.4" fill="none" stroke="#2D9C93" stroke-width="2"/><path d="M11.5 18c.3-2.6 2-4.4 4.2-4.4s3.6 1.6 3.9 4" fill="none" stroke="#2D9C93" stroke-width="2"/>',
-      tools:['rh','formation','academie','touttest','pese'] },
+      tools:['rh','pgr','formation','academie','touttest','pese'] },
     { key:'operations', label:'Relation client, gouvernance & opérations',
       icon:'<rect x="4" y="3" width="12" height="15" rx="2" fill="none" stroke="#16304A" stroke-width="2"/><rect x="7" y="1.5" width="6" height="3" rx="1" fill="none" stroke="#C89B3C" stroke-width="2"/><path d="M7 11l2 2 4-4" fill="none" stroke="#2D9C93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
       tools:['briefing','dossiers','rdv','mission','admin','documentation'] },
@@ -17589,10 +17590,12 @@
         '<div class="download-menu" id="'+menuId+'" hidden>'+btnsHtml+'</div>' +
       '</div>';
   }
+  function fghlabCurCode(k){ try{ return (window.__hnFghCur && window.__hnFghCur(k)) || 'CAD'; }catch(e){ return 'CAD'; } }
   function fghlabTrackerExportText(key, info, cfg){
     var lines = [];
     lines.push(info.title);
     lines.push('Généré le ' + new Date().toLocaleDateString('fr-CA', {year:'numeric',month:'long',day:'numeric'}));
+    lines.push('Devise : ' + fghlabCurCode(key));
     lines.push('');
     var items = fghlabTrackerItems(key);
     if(!items.length){
@@ -18026,10 +18029,10 @@
     var tbExportBtn = document.getElementById('fghlab-tb-export-xlsx-'+key);
     if(tbExportBtn) tbExportBtn.addEventListener('click', function(){
       try{
-        var header = ['Titre','Statut','Échéance','Responsable','Notes','Créé le'];
+        var header = ['Titre','Statut','Échéance','Responsable','Notes','Créé le','Devise'];
         var rows = fghlabTrackerItems(key).map(function(it){
           var st = fghlabTrackerStatusInfo(cfg, it.statut);
-          return [it.titre||'', st.label, it.echeance||'', it.responsable||'', it.notes||'', it.createdOn||''];
+          return [it.titre||'', st.label, it.echeance||'', it.responsable||'', it.notes||'', it.createdOn||'', fghlabCurCode(key)];
         });
         var aoa = [header].concat(rows);
         var ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -18266,6 +18269,7 @@
     var lines = [];
     lines.push(info.title);
     lines.push('Généré le ' + new Date().toLocaleDateString('fr-CA', {year:'numeric',month:'long',day:'numeric'}));
+    lines.push('Devise : ' + fghlabCurCode(key));
     lines.push('');
     var entries = fghlabStatementEntries(key);
     if(!entries.length){
@@ -18683,6 +18687,7 @@
     var title = 'Feuille de calcul FGH-Colab (FINECIA GROUPE)';
     lines.push(title);
     lines.push('Généré le ' + new Date().toLocaleDateString('fr-CA', {year:'numeric',month:'long',day:'numeric'}));
+    lines.push('Devise : ' + fghlabCurCode('feuillecalcul'));
     lines.push('');
     FGHLAB_SHEET_CALC_KEYS.forEach(function(calcKey){
       var calc = FGHLAB_TRACKER_CONFIG[calcKey].calculator;
@@ -19453,6 +19458,7 @@
     var lines = [];
     lines.push('Dossier d\'appel d\'offres — ' + p.title);
     lines.push('Généré le ' + new Date().toLocaleDateString('fr-CA', {year:'numeric',month:'long',day:'numeric'}));
+    lines.push('Devise : ' + fghlabCurCode('coproject'));
     lines.push('');
     lines.push('Client : ' + (p.client || '—'));
     lines.push('Type de projet : ' + (fghlabCoprojectTypeLabel(p) || '—'));
@@ -22852,6 +22858,7 @@
   var FGHLAB_SYNC_COLLECTIONS = ['partners', 'vehicleListings', 'vehicleLeads', 'invites', 'fgbankProjects', 'alerts', 'touttestSessions', 'academieFormations', 'academieRegistrations', 'rdvSlots', 'partnerPolicy', 'coprojects', 'coLinks'];
   var fghlabSyncRedraw = { academie: null, rdv: null };
   function fghlabSyncActive(){ return !!(fghlabSb && fghlabCloudRole); }
+  window.__hnFgh = { sb: function(){ return fghlabSb; }, active: fghlabSyncActive, toast: function(t){ l6Toast(t); }, flushMail: function(q){ return l9FlushMail(q); }, actor: function(){ return fghlabActor(); } };
   function fghlabCanon(v){
     if(v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
     if(Array.isArray(v)) return '[' + v.map(fghlabCanon).join(',') + ']';
@@ -27682,12 +27689,13 @@
     etudes: "Études sert à cadrer une enquête ou une recherche sur mesure pour un dossier ou un mandat : définir la question, la méthode et les sources, puis en tirer des constats exploitables par l'équipe. Le panneau contient des outils d'échantillonnage (Cochran, moyenne, marge d'erreur), des tests statistiques (intervalles, Welch, deux proportions, khi-deux, corrélation), un générateur de formulaire de collecte avancé (modules harmonisés, export XLSForm et codebook) et un volet qualité et éthique (taux de réponse AAPOR, listes de contrôle).",
     bizplan: "Business plan accompagne la rédaction d'un plan d'affaires section par section. Choisissez un modèle selon le secteur (commerce, restauration, agroalimentaire, e-commerce, technologie, transport, OBNL, véhicules, immobilier), suivez l'avancement par section, chargez un projet fictif pour vous exercer, puis assemblez le document complet.",
     conseiller: "Conseiller en finance et économie répond à des questions ponctuelles de finance ou d'économie avec des repères adaptés au contexte d'un mandat FINECIA GROUPE — un point d'entrée structuré par niveau (PME, Entreprises, Société, Local, Municipal, Pays, International) avec questions de cadrage, calculateurs d'indicateurs avec seuils d'alerte, références et livrables types.",
-    compta: "Comptabilité, contrôle et audit vise des vérifications comptables et des contrôles internes de niveau cabinet : cohérence des écritures, pistes d'audit, repères de conformité. Stub « Bientôt disponible » — pas encore de checklist ou de calcul automatisé derrière la carte.",
+    compta: "Comptabilité, contrôle et audit regroupe les contrôles internes (suivi des vérifications) et des modules de travail : Caisse, Service des opérations financières, journal comptable et balance de vérification, rapprochement bancaire, comptes clients et fournisseurs (balance âgée), immobilisations et amortissement, taxes de vente (TPS/TVQ/TVA) et clôture mensuelle. Les données de ces modules sont conservées sur l'appareil ; la devise se choisit en haut de la carte et figure dans les exportations CSV. Outil d'aide : il n'exécute aucun paiement et ne remplace pas un comptable.",
     montage: "Montage de projets appuie la structuration financière d'un projet étape par étape (besoins, sources de financement, montage juridique et financier). Le panneau propose un cadre par niveau, un parcours pour le porteur d'une idée de projet (canevas, grille Go/No-go), la viabilité financière (VAN, TRI, délais, sensibilité, DSCR), la structure de financement (WACC, garanties), un registre des risques et la liste des pièces du dossier de financement. Distinct de COPROJECT qui gère le suivi et l'évaluation des projets déjà en portefeuille.",
     pme: "Accompagnement des entreprises et PME regroupe le suivi des entreprises et PME clientes de FINECIA GROUPE — un espace pensé pour centraliser leur accompagnement dans la durée. Stub « Bientôt disponible » pour l'instant.",
     briefing: "Briefing FINECIA prépare des résumés et briefings internes pour tenir l'équipe informée (dossiers en cours, décisions, priorités). Stub « Bientôt disponible » — pas encore de génération ni d'archivage de briefings.",
     redaction: "Rédaction de plan d'affaires produit un document livrable selon le destinataire : demande de prêt bancaire, investisseurs, bailleur de fonds, résumé exécutif, plan opérationnel interne ou reprise d'entreprise. Chaque modèle contient la structure et une liste de vérifications avant livraison ; des projets fictifs permettent de s'exercer.",
-    rh: "Outils recrutement et RH couvre le recrutement et le suivi du personnel, autant pour les mandats clients que pour l'équipe interne de FINECIA GROUPE. Stub « Bientôt disponible » — pas encore de suivi de candidatures ou de dossiers employés.",
+    rh: "Outils recrutement et RH couvre le suivi des candidatures et dossiers RH, la dotation, les affectations temporaires et de longue durée, les périodes d'essai, les nominations (postes professionnels, de responsabilité ou de gestion), les contrats CDD/CDI/PERMANENT et un tableau de bord d'échéances. Les données RH sont stockées sur le serveur et réservées aux membres autorisés sur l'outil.",
+    pgr: "PGR - Paie et Gestion des Rémunérations réunit la fiche RH intégrée (dates d'embauche, d'ancienneté et de retraite projetée, heures cumulées, coordonnées bancaires), le calcul de la paie (taux horaire ou salaire, heures, primes, avantages, impôt, cotisations, assurances, congés et maladie), les relevés de paie publiés dans l'espace employé ECOREP, la validation RH des heures supplémentaires et des barèmes configurables. Les barèmes d'exemple (Canada/Québec) sont indicatifs et doivent être vérifiés chaque année auprès des sources officielles. Données sensibles stockées sur le serveur.",
     formation: "Outils de formation rassemble des modules et supports de formation destinés à l'équipe et aux clients de FINECIA GROUPE. Stub « Bientôt disponible » pour l'instant.",
     etat: "L'outil d'accompagnement des États, municipalités et administrations offre un appui spécialisé pour ce type de clients publics, aux enjeux différents des entreprises privées (reddition de comptes, cadre réglementaire, budgets publics). Stub « Bientôt disponible ».",
     expert: "L'outil d'analyse niveau expert du cabinet est pensé pour des analyses plus poussées, réservées aux dossiers qui exigent un niveau d'expertise supérieur à l'analyse courante. Il contient les documents CabDocs (14 documents de référence rédigés par Claude), les grilles de notation pays et financière, l'évaluation (DCF, multiples), l'analyse de rapports (Altman, Piotroski, Beneish) et des listes de revue par les pairs.",
@@ -28918,6 +28926,7 @@
     MAD:0.10, DZD:0.0074, TND:0.32, INR:0.012, AUD:0.66, MXN:0.059, BRL:0.20,
     JPY:0.0066, CNY:0.14
   };
+  window.__hnFxBase = QC_FX_RATES_TO_USD;
   var qcFxFrom = document.getElementById('qc-fx-from');
   var qcFxTo = document.getElementById('qc-fx-to');
   if(qcFxFrom && qcFxTo){
@@ -38069,7 +38078,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       if(isNaN(v)){ $('hn-c-gap').textContent='Saisissez d’abord le montant compté.'; return; }
       var t=theo(); C.closes.push({date:today(),theo:t,cnt:v,gap:Math.round((v-t)*100)/100}); sv(KC,C); rc(); });
     $('hn-c-exp').addEventListener('click',function(){
-      var rows=[['Date','Type','Libellé','Pièce','Responsable','Montant']]; C.rows.forEach(function(r){ rows.push([r.date,r.type==='in'?'Entrée':'Sortie',r.lib,r.ref,r.who,r.amt]); });
+      var rows=[['Date','Type','Libellé','Pièce','Responsable','Montant','Devise']]; C.rows.forEach(function(r){ rows.push([r.date,r.type==='in'?'Entrée':'Sortie',r.lib,r.ref,r.who,r.amt,C.cur||'CAD']); });
       csv('caisse-'+today()+'.csv',rows); });
     // ---- Opérations financières
     var O=ld(KO,{rows:[]}); var $o=function(id){return so.querySelector('#'+id);};
@@ -38098,7 +38107,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       else O.rows.forEach(function(r){ if(r.id===id) r.st=a; });
       sv(KO,O); ro(); });
     $o('hn-o-exp').addEventListener('click',function(){
-      var rows=[['Date','Opération','Tiers','Compte','Demandeur','Montant','Statut']]; O.rows.forEach(function(r){ rows.push([r.date,r.type,r.who,r.acc,r.req,r.amt,LBL[r.st]]); });
+      var rows=[['Date','Opération','Tiers','Compte','Demandeur','Montant','Devise','Statut']]; O.rows.forEach(function(r){ rows.push([r.date,r.type,r.who,r.acc,r.req,r.amt,C.cur||'CAD',LBL[r.st]]); });
       csv('operations-financieres-'+today()+'.csv',rows); });
     rc(); ro();
   }
@@ -38170,6 +38179,768 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
   }
   var pend=false;
   function init(){ sync(); new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; sync(); },250); }).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+<script>
+/* Noyau RH / paie partagé (PGR, Outils RH) : appels serveur (RPC Supabase), outils de dates, CSV, onglets, relevé de paie imprimable. */
+(function(){
+  "use strict";
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function today(){ return new Date().toISOString().slice(0,10); }
+  function pd(s){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||''); return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])):null; }
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function addDays(s,n){ var d=pd(s); if(!d) return ''; d.setUTCDate(d.getUTCDate()+n); return iso(d); }
+  function addMonths(s,n){ var d=pd(s); if(!d) return ''; var day=d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()+n); var last=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate(); d.setUTCDate(Math.min(day,last)); return iso(d); }
+  function diffDays(a,b){ var x=pd(a),y=pd(b); return (x&&y)?Math.round((y-x)/86400000):null; }
+  function yearsBetween(a,b){ var x=pd(a),y=pd(b||today()); if(!x||!y) return null; var m=(y.getUTCFullYear()-x.getUTCFullYear())*12+(y.getUTCMonth()-x.getUTCMonth())-(y.getUTCDate()<x.getUTCDate()?1:0); return Math.max(0,m)/12; }
+  function r2(n){ return Math.round((+n||0)*100)/100; }
+  function money(n,cur){ var v=+n||0; try{ return v.toLocaleString('fr-CA',{style:'currency',currency:cur||'CAD'}); }catch(e){ return v.toFixed(2)+' '+(cur||''); } }
+  function rid(p){ return p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function curOf(tool){ try{ return (window.__hnFghCur&&window.__hnFghCur(tool))||'CAD'; }catch(e){ return 'CAD'; } }
+  function csv(name,rows){
+    var t=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(';');}).join('\n');
+    var b=new Blob(['﻿'+t],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
+    a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+  }
+  function toast(t){ try{ if(window.__hnFgh) window.__hnFgh.toast(t); else alert(t); }catch(e){} }
+  var ERRS={forbidden:'Accès refusé : votre compte n’a pas l’autorisation sur cet outil.',member_required:'Le numéro de membre à 8 chiffres est obligatoire.',duplicate_member:'Ce numéro de membre est déjà utilisé par une autre fiche.',bad_input:'Données invalides.',bad_dates:'Dates invalides.',state:'Cette demande n’est plus dans l’état attendu.',comment:'Un commentaire est requis.'};
+  function errMsg(e){ var m=(e&&(e.message||e.error))||String(e||''); if(/42501|forbidden|permission/i.test(m+(e&&e.code))) return ERRS.forbidden; return ERRS[m]||('Erreur : '+m); }
+  /* RPC : jamais d'accès direct aux tables ; les droits sont vérifiés par la base. */
+  function rpc(fn,args){
+    if(window.__hnHrMock) return Promise.resolve().then(function(){ return window.__hnHrMock(fn,args||{}); });
+    var sb=window.__hnFgh&&window.__hnFgh.sb&&window.__hnFgh.sb();
+    if(!sb||!window.__hnFgh.active()) return Promise.reject(new Error('Connexion au serveur requise : ouvrez une session FGH-Colab (propriétaire ou membre autorisé) pour utiliser ces données sensibles.'));
+    return sb.rpc(fn,args||{}).then(function(r){ if(r.error){ var e=new Error(r.error.message||'rpc'); e.code=r.error.code; throw e; } return r.data; });
+  }
+  function flush(){ try{ if(window.__hnFgh) window.__hnFgh.flushMail(true); }catch(e){} }
+
+  /* Rangées éditables génériques : cols=[{k,l,t:'text'|'number'|'select',o:[...],w}] */
+  function rowsEditor(host,cols,rows,onChange,addLabel){
+    function draw(){
+      host.innerHTML='<div style="overflow-x:auto"><table class="hn-cp-tbl"><tr>'+cols.map(function(c){return '<th>'+esc(c.l)+'</th>';}).join('')+'<th></th></tr>'+
+        rows.map(function(r,i){ return '<tr>'+cols.map(function(c){
+          var v=r[c.k]==null?'':r[c.k];
+          if(c.t==='select') return '<td><select data-i="'+i+'" data-k="'+c.k+'">'+c.o.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(o[0])===String(v)?' selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select></td>';
+          return '<td><input data-i="'+i+'" data-k="'+c.k+'" type="'+(c.t==='number'?'number" step="any':'text')+'" value="'+esc(v)+'" style="width:'+(c.w||110)+'px"></td>'; }).join('')+'<td><button type="button" class="btn" data-del="'+i+'" style="padding:1px 7px">✕</button></td></tr>'; }).join('')+'</table></div>'+
+        '<button type="button" class="btn" data-add="1" style="margin-top:6px;padding:4px 10px;font-size:12px">+ '+esc(addLabel||'Ajouter une ligne')+'</button>';
+    }
+    draw();
+    host.addEventListener('input',function(e){ var t=e.target; if(t.dataset.i==null) return; var c=cols.filter(function(x){return x.k===t.dataset.k;})[0]; rows[+t.dataset.i][t.dataset.k]=c&&c.t==='number'?(t.value===''?'':parseFloat(t.value)):t.value; onChange&&onChange(rows); });
+    host.addEventListener('click',function(e){ var b=e.target.closest('[data-del],[data-add]'); if(!b) return;
+      if(b.dataset.add){ var n={}; cols.forEach(function(c){ n[c.k]=c.d!=null?c.d:''; }); rows.push(n); } else rows.splice(+b.dataset.del,1);
+      draw(); onChange&&onChange(rows); });
+    return { redraw:draw };
+  }
+
+  /* Relevé de paie : même mise en page que dans ECOREP */
+  var SLIP_CSS='.slip{font:13px/1.45 system-ui,sans-serif;color:#16304A}.slip h2,.slip h3{margin:10px 0 4px}.slip table{width:100%;border-collapse:collapse;margin:6px 0}.slip td,.slip th{padding:5px 6px;border-bottom:1px solid #D9D4C7;text-align:left}.slip .r{text-align:right}.slip .kv td:nth-child(odd){color:#5B6B7B}.slip .net{font-size:17px;padding:10px;background:#F6F4EF;border-radius:8px;margin:8px 0}.slip .hint{color:#5B6B7B;font-size:12px}.slip .row{display:flex;justify-content:space-between;gap:10px}';
+  function fd(s){ return s?String(s).slice(0,10):''; }
+  function payslipHtml(p){
+    var s=p.data||{}, cur=s.currency||'CAD', e=s.employee||{}, per=s.period||{}, h=s.hours||{}, b=s.bank||{}, y=s.ytd||{}, v=s.vacation||{};
+    function rows(arr,cols){ return (arr||[]).map(function(x){ return '<tr>'+cols.map(function(c){ return '<td'+(c.r?' class="r"':'')+'>'+(c.m?(x[c.k]===''||x[c.k]==null?'':money(x[c.k],cur)):esc(x[c.k]==null?'':x[c.k]))+'</td>'; }).join('')+'</tr>'; }).join(''); }
+    return '<div class="slip"><div class="row"><div><h2 style="margin:0">Relevé de paie</h2><div class="hint">'+esc(s.employerName||'FINECIA GROUPE')+(s.employerAddress?' · '+esc(s.employerAddress):'')+'</div></div><div class="hint" style="text-align:right">Date d’impression : '+esc(fd(s.printDate||today()))+'<br>Date de paie : '+esc(fd(p.payDate||s.payDate))+'</div></div>'+
+    '<table class="kv"><tr><td>Employé</td><td><strong>'+esc(e.name||'')+'</strong></td><td>N° de membre</td><td>'+esc(e.number||'')+'</td></tr>'+
+    '<tr><td>Poste</td><td>'+esc(e.position||'')+'</td><td>Date d’embauche</td><td>'+esc(fd(e.hireDate))+'</td></tr>'+
+    '<tr><td>Période</td><td>'+esc(fd(per.start||p.start))+' au '+esc(fd(per.end||p.end))+'</td><td>Fréquence</td><td>'+esc({weekly:'Hebdomadaire',biweekly:'Aux deux semaines',monthly:'Mensuelle'}[s.frequency]||s.frequency||'')+'</td></tr>'+
+    '<tr><td>Taux horaire</td><td>'+(h.rate!=null&&h.rate!==''?money(h.rate,cur):'')+'</td><td>Heures (rég. / suppl.)</td><td>'+esc(h.regular!=null?h.regular:'')+' / '+esc(h.overtime!=null?h.overtime:0)+'</td></tr></table>'+
+    '<h3>Gains</h3><table class="t"><thead><tr><th>Description</th><th class="r">Heures / Qté</th><th class="r">Taux</th><th class="r">Montant</th></tr></thead><tbody>'+rows(s.earnings,[{k:'label'},{k:'qty',r:1},{k:'rate',r:1,m:1},{k:'amount',r:1,m:1}])+'</tbody><tfoot><tr><td colspan="3"><strong>Salaire brut</strong></td><td class="r"><strong>'+money(s.gross,cur)+'</strong></td></tr></tfoot></table>'+
+    '<h3>Retenues</h3><table class="t"><thead><tr><th>Description</th><th class="r">Base</th><th class="r">Montant</th></tr></thead><tbody>'+rows(s.deductions,[{k:'label'},{k:'base',r:1,m:1},{k:'amount',r:1,m:1}])+'</tbody><tfoot><tr><td colspan="2"><strong>Total des retenues</strong></td><td class="r"><strong>'+money(s.totalDeductions,cur)+'</strong></td></tr></tfoot></table>'+
+    '<div class="net row"><strong>Salaire net</strong><strong>'+money(s.net,cur)+'</strong></div>'+
+    '<table class="kv"><tr><td>Cumul annuel brut</td><td>'+money(y.gross,cur)+'</td><td>Cumul annuel net</td><td>'+money(y.net,cur)+'</td></tr>'+
+    '<tr><td>Congés annuels — solde</td><td>'+esc(v.balance!=null?v.balance:'')+' '+esc(v.unit||'')+'</td><td>Maladie — solde</td><td>'+esc(v.sickBalance!=null?v.sickBalance:'')+' '+esc(v.unit||'')+'</td></tr>'+
+    '<tr><td>Dépôt</td><td colspan="3">'+esc(b.institution||'')+(b.accountMasked?' · compte '+esc(b.accountMasked):'')+'</td></tr></table>'+
+    (s.note?'<p class="hint">'+esc(s.note)+'</p>':'')+'<p class="hint">Document confidentiel destiné à l’employé nommé ci-dessus.</p></div>';
+  }
+  function printHtml(html,title){
+    var f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(f);
+    var d=f.contentWindow.document; d.open(); d.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+esc(title||'Relevé')+'</title><style>body{margin:20px;font-family:system-ui,sans-serif}'+SLIP_CSS+'</style></head><body>'+html+'</body></html>'); d.close();
+    setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){} setTimeout(function(){ f.remove(); },2000); },300);
+  }
+
+  /* Onglets : ajoute des onglets à un panneau ; `keep` conserve le contenu existant comme premier onglet. */
+  function tabs(panel,mark,keepLabel,defs,headHtml){
+    if(panel.getAttribute(mark)) return; panel.setAttribute(mark,'1');
+    var kids=Array.prototype.slice.call(panel.children), main=null;
+    var bar=document.createElement('div'); bar.className='hn-cpt-bar'; bar.setAttribute('role','tablist');
+    var secs={};
+    if(keepLabel){ main=document.createElement('div'); main.className='hn-cp-sec'; kids.slice(2).forEach(function(k){ if(k.classList&&(k.classList.contains('hn-fcur')||k.classList.contains('hn-fx'))) return; main.appendChild(k); });
+      bar.innerHTML='<button type="button" class="hn-cpt on" data-t="main">'+esc(keepLabel)+'</button>'; }
+    else { panel.innerHTML=headHtml||''; }
+    defs.forEach(function(d,i){ var b=document.createElement('button'); b.type='button'; b.className='hn-cpt'+(!keepLabel&&i===0?' on':''); b.dataset.t=d.id; b.textContent=d.label; bar.appendChild(b);
+      var sc=document.createElement('div'); sc.className='hn-cp-sec'; sc.hidden=keepLabel||i>0; sc.innerHTML=d.html; secs[d.id]=sc; });
+    panel.appendChild(bar); if(main) panel.appendChild(main); defs.forEach(function(d){ panel.appendChild(secs[d.id]); });
+    var inited={};
+    function show(t){
+      Array.prototype.forEach.call(bar.children,function(x){ x.classList.toggle('on',x.dataset.t===t); });
+      if(main) main.hidden=t!=='main'; defs.forEach(function(d){ secs[d.id].hidden=d.id!==t; });
+      defs.forEach(function(d){ if(d.id===t){ if(!inited[t]){ inited[t]=1; d.init&&d.init(secs[t],panel); } d.show&&d.show(secs[t],panel); } });
+    }
+    bar.addEventListener('click',function(e){ var b=e.target.closest('.hn-cpt'); if(b) show(b.dataset.t); });
+    if(!keepLabel) show(defs[0].id);
+    return { show:show, secs:secs, bar:bar };
+  }
+  window.__hnHr={esc:esc,today:today,pd:pd,addDays:addDays,addMonths:addMonths,diffDays:diffDays,yearsBetween:yearsBetween,r2:r2,money:money,rid:rid,curOf:curOf,csv:csv,toast:toast,errMsg:errMsg,rpc:rpc,flush:flush,rowsEditor:rowsEditor,payslipHtml:payslipHtml,printHtml:printHtml,tabs:tabs,SLIP_CSS:SLIP_CSS,fd:fd};
+})();
+</script>
+
+<script>
+/* Taux de change et conversion — commun à tous les outils FGH-Colab.
+   Taux : (1) « Taux saisis par vous » (tableau daté, conservé sur cet appareil), sinon (2) taux indicatifs du convertisseur existant. */
+(function(){
+  "use strict";
+  var K='helpnaud_fx_rates';
+  function ld(){ try{ return JSON.parse(localStorage.getItem(K)||'[]')||[]; }catch(e){ return []; } }
+  function sv(v){ try{ localStorage.setItem(K,JSON.stringify(v)); }catch(e){} }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function today(){ return new Date().toISOString().slice(0,10); }
+  var CODES=['CAD','USD','EUR','GBP','CHF','XOF','XAF','MAD','DZD','TND','INR','AUD','MXN','BRL','JPY','CNY'];
+  /* Taux direct from→to : saisi (le plus récent à la date voulue, sens direct ou inverse) sinon indicatif (via USD). */
+  function rate(from,to,date){
+    if(from===to) return {r:1,src:'identité',date:null};
+    date=date||today();
+    var best=null;
+    ld().forEach(function(x){
+      if(x.date>date) return;
+      var r=null; if(x.from===from&&x.to===to) r=+x.rate; else if(x.from===to&&x.to===from&&+x.rate>0) r=1/+x.rate;
+      if(r&&r>0&&(!best||x.date>best.date)) best={r:r,src:'saisi',date:x.date};
+    });
+    if(best) return best;
+    var B=window.__hnFxBase||{};
+    if(B[from]&&B[to]) return {r:B[from]/B[to],src:'indicatif',date:null};
+    return null;
+  }
+  function convert(amount,from,to,date){ var q=rate(from,to,date); return q?{amount:(+amount||0)*q.r,rate:q.r,src:q.src,date:q.date}:null; }
+  window.__hnFx={rate:rate,convert:convert,codes:CODES,list:ld};
+
+  var css='.hn-fx{border:1px dashed var(--line);border-radius:10px;padding:10px;margin:0 0 12px;background:var(--surface-2,transparent)}.hn-fx[hidden]{display:none}'+
+  '.hn-fx .r{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}.hn-fx label{display:flex;flex-direction:column;font-size:10.5px;color:var(--muted);gap:2px}'+
+  '.hn-fx input,.hn-fx select{border:1px solid var(--line);border-radius:9px;padding:6px 8px;background:var(--surface);color:var(--ink);font-size:13px}'+
+  '.hn-fx table{width:100%;border-collapse:collapse;font-size:12px}.hn-fx td,.hn-fx th{border-bottom:1px solid var(--line);padding:4px;text-align:left}';
+  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+  function opts(sel){ return CODES.map(function(c){return '<option'+(c===sel?' selected':'')+'>'+c+'</option>';}).join(''); }
+  function build(bar){
+    if(bar.getAttribute('data-fx')) return; bar.setAttribute('data-fx','1');
+    var tool=bar.getAttribute('data-tool')||'';
+    var btn=document.createElement('button'); btn.type='button'; btn.className='btn'; btn.style.cssText='padding:4px 10px;font-size:12px'; btn.textContent='💱 Conversion et taux de change';
+    bar.appendChild(btn);
+    var box=document.createElement('div'); box.className='hn-fx'; box.hidden=true;
+    box.innerHTML='<div class="r"><label>Montant<input type="number" step="any" class="a" value="100" style="width:110px"></label><label>De<select class="f">'+opts('CAD')+'</select></label><label>Vers<select class="t">'+opts('USD')+'</select></label><label>Date du taux<input type="date" class="d" value="'+today()+'"></label><b class="res" style="align-self:center"></b></div>'+
+      '<div class="hint src" style="margin:0 0 8px"></div>'+
+      '<details><summary style="cursor:pointer;font-size:12.5px;font-weight:600">Taux saisis par vous (prioritaires sur les taux indicatifs)</summary>'+
+      '<form class="r" style="margin-top:8px"><label>Date<input type="date" class="nd" value="'+today()+'" required></label><label>De<select class="nf">'+opts('USD')+'</select></label><label>Vers<select class="nt">'+opts('CAD')+'</select></label><label>Taux (1 De = x Vers)<input type="number" step="any" min="0.0000001" class="nr" required style="width:120px"></label><button class="btn" type="submit" style="padding:5px 10px">Ajouter</button></form><div class="tb"></div></details>';
+    bar.parentNode.insertBefore(box,bar.nextSibling);
+    var $=function(c){return box.querySelector(c);};
+    var tot=$('.t'); var cur=window.__hnFghCur?window.__hnFghCur(tool):'CAD'; $('.f').value=cur==='CAD'?'CAD':cur; $('.t').value=cur==='USD'?'CAD':'USD';
+    function calc(){
+      var q=convert($('.a').value,$('.f').value,$('.t').value,$('.d').value);
+      $('.res').textContent=q?(Math.round(q.amount*100)/100).toLocaleString('fr-CA')+' '+$('.t').value:'Taux indisponible';
+      $('.src').textContent=q?('Taux '+q.rate.toPrecision(6)+' — '+(q.src==='saisi'?'saisi par vous (date '+q.date+')':q.src==='indicatif'?'indicatif du convertisseur (approximatif, à confirmer avant tout usage officiel)':'identique')):'Saisissez un taux ci-dessous pour cette paire.';
+    }
+    function table(){
+      var L=ld().sort(function(a,b){return a.date<b.date?1:-1;});
+      $('.tb').innerHTML=L.length?'<table><tr><th>Date</th><th>Paire</th><th></th></tr>'+L.map(function(x,i){return '<tr><td>'+esc(x.date)+'</td><td>1 '+esc(x.from)+' = '+esc(x.rate)+' '+esc(x.to)+'</td><td><button class="btn" type="button" data-i="'+esc(x.id)+'" style="padding:1px 7px">✕</button></td></tr>';}).join('')+'</table>':'<p class="hint">Aucun taux saisi — les taux indicatifs du convertisseur sont utilisés.</p>';
+    }
+    btn.addEventListener('click',function(){ box.hidden=!box.hidden; if(!box.hidden){ calc(); table(); } });
+    ['.a','.f','.t','.d'].forEach(function(c){ $(c).addEventListener('input',calc); });
+    $('form').addEventListener('submit',function(e){ e.preventDefault(); var r=parseFloat($('.nr').value); if(!(r>0)) return;
+      var L=ld(); L.push({id:Date.now()+''+Math.floor(Math.random()*99),date:$('.nd').value,from:$('.nf').value,to:$('.nt').value,rate:r}); sv(L); $('.nr').value=''; table(); calc(); try{ window.dispatchEvent(new CustomEvent('hn-fx-rates')); }catch(x){} });
+    $('.tb').addEventListener('click',function(e){ var b=e.target.closest('[data-i]'); if(!b) return; sv(ld().filter(function(x){return x.id!==b.getAttribute('data-i');})); table(); calc(); try{ window.dispatchEvent(new CustomEvent('hn-fx-rates')); }catch(x){} });
+  }
+  function scan(){ Array.prototype.forEach.call(document.querySelectorAll('.hn-fcur[data-tool]'),build); }
+  var pend=false;
+  function init(){ scan(); new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; scan(); },300); }).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+<script>
+/* PGR — Paie et Gestion des Rémunérations : fiche RH, calcul de paie, relevés, heures supplémentaires, barèmes.
+   Données sensibles : stockées sur le serveur (Supabase), jamais dans le navigateur ; droits vérifiés par la base (outil « pgr »). */
+(function(){
+  "use strict";
+  var H=window.__hnHr; if(!H) return;
+  var esc=H.esc, $m=H.money, r2=H.r2;
+  var FREQ={weekly:['Hebdomadaire',52,7],biweekly:['Aux deux semaines',26,14],monthly:['Mensuelle',12,0]};
+  var S={emps:null,settings:null,ots:null};
+  function defSettings(){ return {taxes:[],brackets:[],contribs:[],insurances:[],vacationTiers:[],otMultiplier:1.5,sickDays:0,retireAge:65,employerName:'FINECIA GROUPE',employerAddress:'',preset:''}; }
+  function preset(){
+    return {preset:'QC-2026',employerName:'FINECIA GROUPE',employerAddress:'',otMultiplier:1.5,sickDays:2,retireAge:65,
+      taxes:[{name:'Impôt fédéral (ARC)',profile:'QC',credit:16452,creditRate:14,abatement:16.5},{name:'Impôt du Québec',profile:'QC',credit:18952,creditRate:14,abatement:0}],
+      brackets:[{tax:'Impôt fédéral (ARC)',upTo:58523,rate:14},{tax:'Impôt fédéral (ARC)',upTo:117045,rate:20.5},{tax:'Impôt fédéral (ARC)',upTo:181440,rate:26},{tax:'Impôt fédéral (ARC)',upTo:258482,rate:29},{tax:'Impôt fédéral (ARC)',upTo:'',rate:33},
+        {tax:'Impôt du Québec',upTo:54345,rate:14},{tax:'Impôt du Québec',upTo:108680,rate:19},{tax:'Impôt du Québec',upTo:132245,rate:24},{tax:'Impôt du Québec',upTo:'',rate:25.75}],
+      contribs:[{label:'RRQ — cotisation de base et supplémentaire 1',profile:'QC',rate:6.3,floor:3500,max:74600},{label:'RRQ — cotisation supplémentaire 2',profile:'QC',rate:4,floor:74600,max:85000},{label:'RQAP — assurance parentale',profile:'QC',rate:0.43,floor:0,max:103000},{label:'Assurance-emploi (Québec)',profile:'QC',rate:1.3,floor:0,max:68900}],
+      insurances:[],vacationTiers:[{fromYears:0,days:10,pct:4},{fromYears:3,days:15,pct:6}]};
+  }
+  function loadSettings(){ return H.rpc('hr_settings_get',{p_key:'pgr_params'}).then(function(v){ S.settings=Object.assign(defSettings(),(v&&typeof v==='object')?v:{}); return S.settings; }); }
+  function loadEmps(force){ if(S.emps&&!force) return Promise.resolve(S.emps); return H.rpc('hr_item_list',{p_kind:'employee'}).then(function(l){ S.emps=(l||[]).map(function(x){ return Object.assign({_id:x.id,member:x.member},x.data||{}); }); return S.emps; }); }
+  function empName(e){ return e.name||((e.first||'')+' '+(e.last||'')).trim()||e.member; }
+  function selEmp(id,emps,v){ return '<select id="'+id+'"><option value="">— Choisir un employé —</option>'+emps.map(function(e){return '<option value="'+esc(e.member)+'"'+(e.member===v?' selected':'')+'>'+esc(empName(e))+' ('+esc(e.member)+')</option>';}).join('')+'</select>'; }
+  function msg(sec,t,bad){ var m=sec.querySelector('.hn-msg'); if(m){ m.textContent=t||''; m.style.color=bad?'#dc2626':'#16a34a'; } }
+
+  /* ====== Calculs ====== */
+  function annualTax(t,brackets,income){
+    var br=brackets.filter(function(b){return b.tax===t.name;}).map(function(b){return {up:b.upTo===''||b.upTo==null?Infinity:+b.upTo,rate:(+b.rate||0)/100};}).sort(function(a,b){return a.up-b.up;});
+    var prev=0,tax=0; for(var i=0;i<br.length;i++){ if(income>prev){ tax+=(Math.min(income,br[i].up)-prev)*br[i].rate; } prev=br[i].up; if(income<=prev) break; }
+    tax-= (+t.credit||0)*((+t.creditRate||0)/100);
+    tax=Math.max(0,tax)*(1-(+t.abatement||0)/100);
+    return tax;
+  }
+  function sameProfile(item,emp){ return !item.profile||item.profile===(emp.taxProfile||''); }
+  function vacTier(P,years){ var best=null; (P.vacationTiers||[]).forEach(function(t){ if(years>=(+t.fromYears||0)&&(!best||(+t.fromYears||0)>=(+best.fromYears||0))) best=t; }); return best; }
+
+  /* in = {emp, P, start, end, payDate, hours:{regular,overtime}, otIds, vacDays, sickDays, unpaidDays, extras[], extraDed[], prior:{gross,net,bases{label:sum},vac,sick}, cur, fx} */
+  function compute(i){
+    var e=i.emp,P=i.P,freq=e.frequency||'biweekly',N=FREQ[freq][1],cur=i.cur,E=[],D=[];
+    var conv=function(x){ if(!e.payCurrency||e.payCurrency===cur) return +x||0; var q=window.__hnFx&&window.__hnFx.convert(x,e.payCurrency,cur,i.payDate); return q?q.amount:(+x||0); };
+    var rate=e.payType==='hourly'?conv(e.rate):(e.payType==='salary'?(conv(e.annual)/ (52*(+e.hoursWeek||40))):0);
+    var annual=e.payType==='salary'?conv(e.annual):rate*(+e.hoursWeek||40)*52;
+    var hd=+e.hoursDay||8;
+    if(e.payType==='hourly'){
+      E.push({label:'Salaire régulier',qty:r2(i.hours.regular),rate:r2(rate),amount:r2(i.hours.regular*rate),taxable:1});
+    } else {
+      E.push({label:'Salaire de base',qty:'',rate:'',amount:r2(annual/N),taxable:1});
+      var dailyRate=annual/260, unpaid=(+i.unpaidDays||0);
+      if(unpaid>0) E.push({label:'Absence non rémunérée ('+unpaid+' j)',qty:-unpaid,rate:r2(dailyRate),amount:-r2(unpaid*dailyRate),taxable:1});
+    }
+    if(i.hours.overtime>0){ var ot=rate*(+P.otMultiplier||1.5); E.push({label:'Heures supplémentaires (×'+(+P.otMultiplier||1.5)+')',qty:r2(i.hours.overtime),rate:r2(ot),amount:r2(i.hours.overtime*ot),taxable:1}); }
+    if(i.vacDays>0&&e.payType==='hourly') E.push({label:'Congé annuel payé ('+i.vacDays+' j)',qty:r2(i.vacDays*hd),rate:r2(rate),amount:r2(i.vacDays*hd*rate),taxable:1});
+    var sickPaidDays=Math.min(i.sickDays||0,Math.max(0,i.sickLeft));
+    if(sickPaidDays>0&&e.payType==='hourly') E.push({label:'Congé de maladie payé ('+sickPaidDays+' j)',qty:r2(sickPaidDays*hd),rate:r2(rate),amount:r2(sickPaidDays*hd*rate),taxable:1});
+    var sickUnpaid=Math.max(0,(i.sickDays||0)-sickPaidDays);
+    if(sickUnpaid>0&&e.payType==='salary') E.push({label:'Maladie non rémunérée ('+sickUnpaid+' j)',qty:-sickUnpaid,rate:r2(annual/260),amount:-r2(sickUnpaid*annual/260),taxable:1});
+    (i.extras||[]).forEach(function(x){ if(+x.amount) E.push({label:(x.type?x.type+' — ':'')+(x.label||'Autre gain'),qty:'',rate:'',amount:r2(x.amount),taxable:x.taxable===false||x.taxable==='0'?0:1}); });
+    var gross=r2(E.reduce(function(a,x){return a+x.amount;},0));
+    var taxableGross=r2(E.reduce(function(a,x){return a+(x.taxable?x.amount:0);},0));
+    // retenues
+    if(e.taxMode==='flat'){ var fp=(+e.flatPct||0); if(fp>0) D.push({label:'Retenue à la source ('+fp+' %)',base:taxableGross,amount:r2(taxableGross*fp/100),kind:'tax'}); }
+    else (P.taxes||[]).filter(function(t){return sameProfile(t,e);}).forEach(function(t){ var a=r2(annualTax(t,P.brackets||[],Math.max(0,taxableGross)*N)/N); if(a>0) D.push({label:t.name,base:taxableGross,amount:a,kind:'tax'}); });
+    (P.contribs||[]).filter(function(c){return sameProfile(c,e);}).forEach(function(c){
+      var before=i.prior.gross, after=before+taxableGross, fl=+c.floor||0, mx=(c.max===''||c.max==null)?Infinity:+c.max;
+      var base=Math.max(0,Math.min(after,mx)-Math.max(before,fl)); if(base>0){ var a=r2(base*(+c.rate||0)/100); if(a>0) D.push({label:c.label,base:r2(base),amount:a,kind:'contrib'}); } });
+    (P.insurances||[]).filter(function(c){return sameProfile(c,e);}).forEach(function(c){ var a=c.type==='pct'?r2(gross*(+c.value||0)/100):r2(c.value); if(a>0) D.push({label:c.label,base:c.type==='pct'?gross:'',amount:a,kind:'ins'}); });
+    if(+e.insurance>0) D.push({label:'Assurance collective (employé)',base:'',amount:r2(e.insurance),kind:'ins'});
+    (i.extraDed||[]).forEach(function(x){ if(+x.amount) D.push({label:x.label||'Autre retenue',base:'',amount:r2(x.amount),kind:'other'}); });
+    var totalD=r2(D.reduce(function(a,x){return a+x.amount;},0)), net=r2(gross-totalD);
+    var years=H.yearsBetween(e.seniorityDate||e.startDate||e.hireDate,i.payDate)||0, tier=vacTier(P,years);
+    var vacEnt=tier?(+tier.days||0):0, vacBal=r2(vacEnt-(i.prior.vac||0)-(i.vacDays||0)), sickBal=r2(Math.max(0,(+P.sickDays||0)-(i.prior.sick||0)-(i.sickDays||0)));
+    var bank=e.bank||{}, acc=String(bank.account||''); 
+    return {currency:cur,frequency:freq,employerName:P.employerName,employerAddress:P.employerAddress,printDate:H.today(),payDate:i.payDate,
+      employee:{name:empName(e),number:e.member,position:e.position||'',hireDate:e.hireDate||''},period:{start:i.start,end:i.end},
+      hours:{rate:r2(rate),regular:r2(i.hours.regular),overtime:r2(i.hours.overtime||0),perDay:hd,perWeek:+e.hoursWeek||0},
+      earnings:E,gross:gross,deductions:D,totalDeductions:totalD,net:net,
+      ytd:{gross:r2(i.prior.gross+gross),net:r2(i.prior.net+net)},
+      vacation:{balance:vacBal,sickBalance:sickBal,unit:'jours',accruedPct:tier?+tier.pct:0,accrued:tier?r2(gross*(+tier.pct||0)/100):0},
+      leave:{vacationDays:i.vacDays||0,sickDays:(i.sickDays||0),unpaidDays:i.unpaidDays||0},
+      bank:{institution:bank.institution||'',accountMasked:acc?('••••'+acc.slice(-4)):''},
+      fx:(e.payCurrency&&e.payCurrency!==cur)?{from:e.payCurrency,to:cur}:null,otIds:i.otIds||[],
+      note:i.note||'Estimation de paie calculée à partir des barèmes configurés dans PGR ; à valider avant versement.'};
+  }
+
+  /* ====== Onglets ====== */
+  function ficheTab(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">👤 Fiche RH intégrée</h3><p class="hint" style="margin:0 0 10px">Une fiche par employé, enregistrée sur le serveur. Le numéro de membre à 8 chiffres relie la fiche à son compte ECOREP.</p><div class="hn-msg msg" style="min-height:18px"></div><div class="hn-cp-row"><button class="btn primary" id="fh-new" type="button">+ Nouvelle fiche</button><button class="btn" id="fh-exp" type="button">⬇️ Exporter CSV</button></div><div id="fh-list" class="hn-cp-wrap"></div><div id="fh-form"></div>';
+    var list=sec.querySelector('#fh-list'), formHost=sec.querySelector('#fh-form');
+    function draw(){
+      loadEmps(true).then(function(emps){
+        var T=H.today();
+        list.innerHTML='<table class="hn-cp-tbl"><tr><th>N°</th><th>Nom</th><th>Poste</th><th>Contrat</th><th>Embauche</th><th>Ancienneté</th><th>Retraite projetée</th><th></th></tr>'+(emps.length?emps.map(function(e){
+          var y=H.yearsBetween(e.seniorityDate||e.startDate||e.hireDate,T);
+          return '<tr><td>'+esc(e.member)+'</td><td>'+esc(empName(e))+'</td><td>'+esc(e.position||'')+'</td><td>'+esc(e.contractType||'')+'</td><td>'+esc(e.hireDate||'')+'</td><td>'+(y==null?'':y.toFixed(1)+' an(s)')+'</td><td>'+esc(retire(e))+'</td><td><button class="btn" type="button" data-e="'+esc(e._id)+'" style="padding:2px 8px">Ouvrir</button></td></tr>';
+        }).join(''):'<tr><td colspan="8" class="hint">Aucune fiche.</td></tr>')+'</table>';
+      }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    }
+    function retire(e){ if(!e.birth) return ''; var P=S.settings||defSettings(); var a=+e.retireAge||+P.retireAge||65; return H.addMonths(e.birth,a*12); }
+    sec.querySelector('#fh-new').addEventListener('click',function(){ loadSettings().then(function(){ form({}); }); });
+    list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-e]'); if(!b) return; var e=S.emps.filter(function(x){return x._id===b.dataset.e;})[0]; if(e) loadSettings().then(function(){ form(e); }); });
+    sec.querySelector('#fh-exp').addEventListener('click',function(){ var rows=[['N° membre','Nom','Poste','Département','Contrat','Embauche','Entrée en fonction','Ancienneté (date)','Naissance','Retraite projetée','Gestionnaire','Fréquence','Type de paie','Taux horaire','Salaire annuel','Devise de paie','Heures/jour','Heures/semaine']];
+      (S.emps||[]).forEach(function(e){ rows.push([e.member,empName(e),e.position,e.department,e.contractType,e.hireDate,e.startDate,e.seniorityDate,e.birth,retire(e),e.managerNumber,FREQ[e.frequency]?FREQ[e.frequency][0]:'',e.payType==='salary'?'Salarié':'Horaire',e.rate,e.annual,e.payCurrency||H.curOf('pgr'),e.hoursDay,e.hoursWeek]); }); H.csv('fiches-rh-'+H.today()+'.csv',rows); });
+    function form(e){
+      var isNew=!e._id, P=S.settings||defSettings(), f=function(id,l,v,t,extra){ return '<label>'+l+'<input id="fe-'+id+'" type="'+(t||'text')+'" value="'+esc(v==null?'':v)+'" '+(extra||'')+'></label>'; };
+      var b=e.bank||{};
+      var sel=function(id,l,v,opts){ return '<label>'+l+'<select id="fe-'+id+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===v?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>'; };
+      formHost.innerHTML='<div class="card" style="margin-top:12px"><h3 style="margin:0 0 8px">'+(isNew?'Nouvelle fiche':'Fiche de '+esc(empName(e)))+'</h3>'+
+        '<div class="hn-cp-row">'+f('first','Prénom',e.first)+f('last','Nom',e.last)+f('member','N° de membre (8 chiffres)',e.member,'text','maxlength="8" inputmode="numeric" style="width:130px"')+f('position','Poste / fonction',e.position)+f('department','Département',e.department)+sel('contractType','Type de contrat',e.contractType||'CDI',[['CDI','CDI'],['CDD','CDD'],['PERMANENT','PERMANENT']])+f('managerNumber','N° du gestionnaire (8 chiffres)',e.managerNumber,'text','maxlength="8" style="width:130px"')+'</div>'+
+        '<div class="hn-cp-row">'+f('birth','Date de naissance',e.birth,'date')+f('hireDate','Date de recrutement',e.hireDate,'date')+f('startDate','Date d’entrée en fonction',e.startDate,'date')+f('seniorityDate','Date d’ancienneté',e.seniorityDate,'date')+f('retireAge','Âge de retraite (par défaut '+(+P.retireAge||65)+')',e.retireAge,'number','style="width:120px"')+'</div>'+
+        '<div class="hn-cp-row">'+sel('payType','Type de rémunération',e.payType||'hourly',[['hourly','Taux horaire'],['salary','Salaire annuel']])+f('rate','Taux horaire',e.rate,'number','step="0.01" style="width:110px"')+f('annual','Salaire annuel brut',e.annual,'number','step="0.01" style="width:140px"')+sel('payCurrency','Devise de rémunération',e.payCurrency||H.curOf('pgr'),(window.__hnFx?window.__hnFx.codes:['CAD']).map(function(c){return [c,c];}))+f('hoursDay','Heures par jour',e.hoursDay||8,'number','step="0.25" style="width:90px"')+f('hoursWeek','Heures par semaine',e.hoursWeek||40,'number','step="0.25" style="width:90px"')+sel('frequency','Période de paie',e.frequency||'biweekly',[['weekly','Hebdomadaire'],['biweekly','Aux deux semaines'],['monthly','Mensuelle']])+'</div>'+
+        '<div class="hn-cp-row">'+sel('taxMode','Impôt',e.taxMode||'brackets',[['brackets','Barème (tranches)'],['flat','Retenue à la source (taux fixe)']])+f('flatPct','Taux de retenue à la source (%)',e.flatPct,'number','step="0.01" style="width:130px"')+f('taxProfile','Profil d’impôt/cotisations (ex. QC)',e.taxProfile,'text','style="width:140px"')+f('insurance','Assurance collective / période',e.insurance,'number','step="0.01" style="width:140px"')+'</div>'+
+        '<div class="hn-cp-row">'+f('bHolder','Titulaire du compte',b.holder)+f('bInst','Institution financière',b.institution)+f('bTransit','Transit / succursale',b.transit,'text','style="width:110px"')+f('bAcc','N° de compte',b.account,'text','style="width:150px"')+'</div>'+
+        '<div id="fe-calc" class="hn-cp-kpi"></div><div id="fe-hist"></div>'+
+        '<div class="hn-cp-row"><button class="btn primary" id="fe-save" type="button">Enregistrer la fiche</button>'+(isNew?'':'<button class="btn" id="fe-del" type="button">Supprimer</button>')+'<button class="btn" id="fe-close" type="button">Fermer</button></div><div class="hn-msg msg" id="fe-msg"></div></div>';
+      var g=function(id){return formHost.querySelector('#fe-'+id);};
+      function calc(){
+        var d=read(); var T=H.today(), y=H.yearsBetween(d.seniorityDate||d.startDate||d.hireDate,T), ret=retire(d), hw=+d.hoursWeek||0, st=d.startDate||d.hireDate;
+        var wk=st?Math.max(0,H.diffDays(st,T)/7):0, jan=T.slice(0,4)+'-01-01', wy=st?Math.max(0,H.diffDays(st>jan?st:jan,T)/7):0;
+        var K=function(v,l){return '<div><b>'+v+'</b><span>'+l+'</span></div>';};
+        g('calc').innerHTML=K(y==null?'—':y.toFixed(2)+' an(s)','Années de service cumulées')+K(ret||'—','Retraite projetée')+K(r2(hw)+' h','Heures / semaine')+K(r2(hw*52/12)+' h','Heures / mois (moyenne)')+K(r2(hw*wy)+' h','Heures de l’année en cours (contrat)')+K(r2(hw*wk)+' h','Heures cumulées depuis l’entrée en fonction (contrat)');
+      }
+      function read(){ var d=Object.assign({},e); ['first','last','position','department','contractType','managerNumber','birth','hireDate','startDate','seniorityDate','retireAge','payType','rate','annual','payCurrency','hoursDay','hoursWeek','frequency','taxMode','flatPct','taxProfile','insurance'].forEach(function(k){ var v=g(k).value; d[k]=(['retireAge','rate','annual','hoursDay','hoursWeek','flatPct','insurance'].indexOf(k)>=0)?(v===''?'':parseFloat(v)):v; });
+        d.member=g('member').value.trim(); d.name=((d.first||'')+' '+(d.last||'')).trim(); d.bank={holder:g('bHolder').value,institution:g('bInst').value,transit:g('bTransit').value,account:g('bAcc').value}; return d; }
+      formHost.querySelectorAll('input,select').forEach(function(x){ x.addEventListener('input',calc); }); calc();
+      if(!isNew){ H.rpc('hr_payslip_list',{p_member:e.member,p_year:null}).then(function(l){ var tot=0,yr=0,Y=H.today().slice(0,4); (l||[]).forEach(function(p){ var h=(p.data&&p.data.hours)||{}; var n=(+h.regular||0)+(+h.overtime||0); tot+=n; if(String(p.end).slice(0,4)===Y) yr+=n; }); g('hist').innerHTML='<p class="hint">Heures payées (relevés enregistrés) : <b>'+r2(yr)+' h</b> cette année · <b>'+r2(tot)+' h</b> au total — '+(l||[]).length+' relevé(s).</p>'; }).catch(function(){}); }
+      g('close').addEventListener('click',function(){ formHost.innerHTML=''; });
+      g('save').addEventListener('click',function(){
+        var d=read(), m=g('msg'); m.style.color='#dc2626';
+        if(!/^\d{8}$/.test(d.member)){ m.textContent='Le numéro de membre doit comporter 8 chiffres.'; return; }
+        if(!d.name){ m.textContent='Indiquez le prénom et le nom.'; return; }
+        if(d.managerNumber&&!/^\d{8}$/.test(d.managerNumber)){ m.textContent='Le numéro du gestionnaire doit comporter 8 chiffres.'; return; }
+        var id=e._id||H.rid('emp'), data=Object.assign({},d); delete data._id; delete data.member;
+        H.rpc('hr_item_upsert',{p_kind:'employee',p_id:id,p_member:d.member,p_data:data}).then(function(r){
+          if(r&&r.ok===false){ m.textContent=H.errMsg({message:r.error}); return; } H.toast('Fiche enregistrée ✓'); formHost.innerHTML=''; draw();
+        }).catch(function(x){ m.textContent=H.errMsg(x); });
+      });
+      var del=g('del'); if(del) del.addEventListener('click',function(){ if(!confirm('Supprimer cette fiche RH ? Les relevés déjà enregistrés sont conservés.')) return; H.rpc('hr_item_delete',{p_kind:'employee',p_id:e._id}).then(function(){ formHost.innerHTML=''; draw(); }).catch(function(x){ g('msg').textContent=H.errMsg(x); }); });
+      formHost.scrollIntoView({behavior:'smooth'});
+    }
+    draw();
+  }
+
+  function paieTab(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">🧾 Calcul de la paie et relevé</h3><p class="hint" style="margin:0 0 10px">Sélectionnez l’employé et la période : le brut, les retenues (impôt, cotisations, assurances) et le net sont calculés avec vos barèmes (onglet « Barèmes »). Estimation à valider avant tout versement.</p><div class="hn-msg msg" style="min-height:18px"></div><div id="pa-body"></div>';
+    var body=sec.querySelector('#pa-body'), cur=null, emp=null, extras=[], extraDed=[], otList=[], prior=null, last=null;
+    Promise.all([loadEmps(true),loadSettings()]).then(function(){ start(); }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    function start(){
+      body.innerHTML='<div class="hn-cp-row"><label>Employé'+selEmp('pa-emp',S.emps,'')+'</label></div><div id="pa-form"></div><div id="pa-out"></div>';
+      body.querySelector('#pa-emp').addEventListener('change',function(){ emp=S.emps.filter(function(x){return x.member===this.value;}.bind(this))[0]||null; extras=[]; extraDed=[]; if(emp) form(); else body.querySelector('#pa-form').innerHTML=''; body.querySelector('#pa-out').innerHTML=''; });
+    }
+    function defPeriod(f,from){
+      var T=from||H.today(), end, st;
+      if(f==='monthly'){ st=T.slice(0,8)+'01'; end=H.addDays(H.addMonths(st,1),-1); }
+      else { var n=FREQ[f][2]; end=T; st=H.addDays(end,-(n-1)); }
+      return {start:st,end:end};
+    }
+    function form(){
+      var f=emp.frequency||'biweekly', pr=defPeriod(f), P=S.settings, hw=(+emp.hoursWeek||40), reg=r2(hw*(f==='weekly'?1:f==='biweekly'?2:52/12));
+      var pf=body.querySelector('#pa-form');
+      pf.innerHTML='<div class="hn-cp-row"><label>Début de période<input type="date" id="pa-start" value="'+pr.start+'"></label><label>Fin de période<input type="date" id="pa-end" value="'+pr.end+'"></label><label>Date de paie<input type="date" id="pa-pay" value="'+H.addDays(pr.end,f==='monthly'?1:5)+'"></label>'+
+        '<label>Heures régulières'+(emp.payType==='salary'?' (info)':'')+'<input type="number" step="0.25" id="pa-reg" value="'+reg+'" style="width:110px"></label><label>Heures supp. (validées RH)<input type="number" step="0.25" id="pa-ot" value="0" style="width:110px" readonly></label></div>'+
+        '<div id="pa-otbox"></div>'+
+        '<div class="hn-cp-row"><label>Congé annuel pris (jours)<input type="number" step="0.5" id="pa-vac" value="0" style="width:110px"></label><label>Congé maladie (jours)<input type="number" step="0.5" id="pa-sick" value="0" style="width:110px"></label><label>Absence non payée (jours)<input type="number" step="0.5" id="pa-unp" value="0" style="width:110px"></label></div>'+
+        '<strong style="font-size:13px">Primes, avantages et indemnités</strong><div id="pa-ex"></div><strong style="font-size:13px">Autres retenues</strong><div id="pa-ed"></div>'+
+        '<div class="hn-cp-row" style="margin-top:10px"><button class="btn primary" id="pa-calc" type="button">Calculer</button></div>';
+      var T={prime:'Prime',avantage:'Avantage imposable',indemnite:'Indemnité',remb:'Remboursement'};
+      H.rowsEditor(pf.querySelector('#pa-ex'),[{k:'type',l:'Type',t:'select',o:[['Prime','Prime'],['Bonus','Bonus'],['Avantage','Avantage'],['Indemnité','Indemnité'],['Remboursement','Remboursement (non imposable)']],d:'Prime'},{k:'label',l:'Description',w:200},{k:'amount',l:'Montant',t:'number',w:110},{k:'taxable',l:'Imposable',t:'select',o:[['1','Oui'],['0','Non']],d:'1'}],extras,null,'Ajouter une prime / un avantage');
+      H.rowsEditor(pf.querySelector('#pa-ed'),[{k:'label',l:'Description',w:220},{k:'amount',l:'Montant',t:'number',w:110}],extraDed,null,'Ajouter une retenue');
+      var st=pf.querySelector('#pa-start'), en=pf.querySelector('#pa-end');
+      function reperiod(){ var s=st.value; if(!s) return; var e2=f==='monthly'?H.addDays(H.addMonths(s.slice(0,8)+'01',1),-1):H.addDays(s,FREQ[f][2]-1); en.value=e2; pf.querySelector('#pa-pay').value=H.addDays(e2,f==='monthly'?1:5); loadOt(); }
+      st.addEventListener('change',reperiod); en.addEventListener('change',loadOt);
+      function loadOt(){
+        H.rpc('hr_ot_list',{p_status:'valide_rh'}).then(function(l){
+          otList=(l||[]).filter(function(o){ return o.member===emp.member&&o.date>=st.value&&o.date<=en.value; });
+          pf.querySelector('#pa-otbox').innerHTML=otList.length?'<div class="card" style="padding:8px 10px;margin-bottom:8px"><strong style="font-size:12.5px">Heures supplémentaires validées par les RH dans la période</strong>'+otList.map(function(o){return '<label style="display:flex;gap:6px;align-items:center;font-size:12.5px;margin:3px 0"><input type="checkbox" class="pa-otc" data-id="'+esc(o.id)+'" data-h="'+esc(o.hours)+'" checked style="width:auto"> '+esc(o.date)+' · '+esc(o.start)+'–'+esc(o.end)+' · '+esc(o.hours)+' h — '+esc(o.reason)+'</label>';}).join('')+'</div>':'<p class="hint">Aucune heure supplémentaire validée dans cette période.</p>';
+          Array.prototype.forEach.call(pf.querySelectorAll('.pa-otc'),function(c){ c.addEventListener('change',sumOt); }); sumOt();
+        }).catch(function(){ pf.querySelector('#pa-otbox').innerHTML=''; });
+      }
+      function sumOt(){ var t=0; Array.prototype.forEach.call(pf.querySelectorAll('.pa-otc'),function(c){ if(c.checked) t+=parseFloat(c.dataset.h)||0; }); pf.querySelector('#pa-ot').value=r2(t); }
+      loadOt();
+      pf.querySelector('#pa-calc').addEventListener('click',function(){ run(); });
+    }
+    function run(){
+      var pf=body.querySelector('#pa-form'), g=function(id){return pf.querySelector('#'+id);}, m=sec.querySelector('.hn-msg');
+      var start=g('pa-start').value, end=g('pa-end').value, pay=g('pa-pay').value;
+      if(!start||!end||end<start||!pay){ msg(sec,'Vérifiez les dates de la période et de paie.',1); return; } msg(sec,'');
+      H.rpc('hr_payslip_list',{p_member:emp.member,p_year:+end.slice(0,4)}).then(function(l){
+        var pr={gross:0,net:0,vac:0,sick:0,bases:{}}; (l||[]).forEach(function(p){ if(p.start===start&&p.end===end) return; var d=p.data||{}; pr.gross+=+d.gross||0; pr.net+=+d.net||0; pr.vac+=+(d.leave&&d.leave.vacationDays)||0; pr.sick+=+(d.leave&&d.leave.sickDays)||0; });
+        var ids=[]; Array.prototype.forEach.call(pf.querySelectorAll('.pa-otc'),function(c){ if(c.checked) ids.push(c.dataset.id); });
+        var P=S.settings, cur=H.curOf('pgr'), sickLeft=(+P.sickDays||0)-pr.sick;
+        last={start:start,end:end,payDate:pay,data:compute({emp:emp,P:P,start:start,end:end,payDate:pay,hours:{regular:parseFloat(g('pa-reg').value)||0,overtime:parseFloat(g('pa-ot').value)||0},otIds:ids,vacDays:parseFloat(g('pa-vac').value)||0,sickDays:parseFloat(g('pa-sick').value)||0,sickLeft:sickLeft,unpaidDays:parseFloat(g('pa-unp').value)||0,extras:extras.map(function(x){return Object.assign({},x,{taxable:x.taxable!=='0'&&x.taxable!==0});}),extraDed:extraDed,prior:pr,cur:cur})};
+        render();
+      }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    }
+    function render(){
+      var out=body.querySelector('#pa-out');
+      out.innerHTML='<div class="card" style="margin-top:12px"><div class="hn-cp-row noprint"><button class="btn primary" id="pa-pub" type="button">💾 Enregistrer et publier dans ECOREP</button><button class="btn" id="pa-draft" type="button">Enregistrer en brouillon (non visible)</button><button class="btn" id="pa-print" type="button">🖨 Imprimer</button></div><div id="pa-slip">'+H.payslipHtml({start:last.start,end:last.end,payDate:last.payDate,data:last.data})+'</div></div>';
+      var st=document.getElementById('hn-slipcss'); if(!st){ st=document.createElement('style'); st.id='hn-slipcss'; st.textContent=H.SLIP_CSS; document.head.appendChild(st); }
+      function save(pub){
+        H.rpc('hr_payslip_save',{p:{member:emp.member,start:last.start,end:last.end,payDate:last.payDate,data:last.data,published:pub}}).then(function(r){
+          if(!r||!r.ok){ msg(sec,H.errMsg({message:r&&r.error}),1); return; }
+          var ids=last.data.otIds||[]; var p=ids.length?H.rpc('hr_ot_mark_imputed',{p_ids:ids,p_payslip:r.id}):Promise.resolve();
+          return p.then(function(){ msg(sec,pub?'Relevé enregistré et publié : l’employé le voit dans ECOREP ✓':'Brouillon enregistré ✓ (non visible dans ECOREP).'); });
+        }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+      }
+      out.querySelector('#pa-pub').addEventListener('click',function(){ if(confirm('Publier ce relevé ? L’employé pourra le consulter, l’imprimer et le télécharger dans ECOREP.')) save(true); });
+      out.querySelector('#pa-draft').addEventListener('click',function(){ save(false); });
+      out.querySelector('#pa-print').addEventListener('click',function(){ H.printHtml(H.payslipHtml({start:last.start,end:last.end,payDate:last.payDate,data:last.data}),'Relevé de paie'); });
+      out.scrollIntoView({behavior:'smooth'});
+    }
+  }
+
+  function relevesTab(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">📚 Relevés enregistrés</h3><p class="hint" style="margin:0 0 10px">Historique de paie de chaque employé. « Publié » = visible dans ECOREP.</p><div class="hn-msg msg" style="min-height:18px"></div><div class="hn-cp-row"><label>Employé<select id="rv-emp"><option value="">Tous</option></select></label><label>Année<input type="number" id="rv-year" value="'+H.today().slice(0,4)+'" style="width:100px"></label><button class="btn" id="rv-go" type="button">Afficher</button><button class="btn" id="rv-exp" type="button">⬇️ Exporter CSV</button></div><div id="rv-list" class="hn-cp-wrap"></div><div id="rv-view"></div>';
+    var list=sec.querySelector('#rv-list'), cache=[];
+    loadEmps().then(function(emps){ sec.querySelector('#rv-emp').innerHTML='<option value="">Tous</option>'+emps.map(function(e){return '<option value="'+esc(e.member)+'">'+esc(empName(e))+' ('+esc(e.member)+')</option>';}).join(''); }).catch(function(){});
+    function go(){
+      H.rpc('hr_payslip_list',{p_member:sec.querySelector('#rv-emp').value||null,p_year:+sec.querySelector('#rv-year').value||null}).then(function(l){ cache=l||[];
+        list.innerHTML='<table class="hn-cp-tbl"><tr><th>Employé</th><th>Période</th><th>Paie</th><th>Brut</th><th>Net</th><th>Devise</th><th>ECOREP</th><th></th></tr>'+(cache.length?cache.map(function(p){ var d=p.data||{}; return '<tr><td>'+esc((d.employee&&d.employee.name)||p.member)+'<br><span class="hint">'+esc(p.member)+'</span></td><td>'+esc(p.start)+' → '+esc(p.end)+'</td><td>'+esc(p.payDate||'')+'</td><td>'+H.money(d.gross,d.currency)+'</td><td>'+H.money(d.net,d.currency)+'</td><td>'+esc(d.currency||'')+'</td><td>'+(p.published?'<span class="hn-pos">Publié</span>':'Brouillon')+'</td><td><button class="btn" data-a="v" data-id="'+esc(p.id)+'" style="padding:2px 7px">Voir</button> <button class="btn" data-a="p" data-id="'+esc(p.id)+'" style="padding:2px 7px">'+(p.published?'Retirer':'Publier')+'</button> <button class="btn" data-a="d" data-id="'+esc(p.id)+'" style="padding:2px 7px">✕</button></td></tr>'; }).join(''):'<tr><td colspan="8" class="hint">Aucun relevé.</td></tr>')+'</table>';
+      }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    }
+    sec.querySelector('#rv-go').addEventListener('click',go);
+    sec.querySelector('#rv-exp').addEventListener('click',function(){ var rows=[['N° membre','Employé','Début','Fin','Date de paie','Brut','Retenues','Net','Devise','Publié']]; cache.forEach(function(p){ var d=p.data||{}; rows.push([p.member,(d.employee&&d.employee.name)||'',p.start,p.end,p.payDate,d.gross,d.totalDeductions,d.net,d.currency,p.published?'Oui':'Non']); }); H.csv('releves-paie-'+H.today()+'.csv',rows); });
+    list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-a]'); if(!b) return; var p=cache.filter(function(x){return x.id===b.dataset.id;})[0]; if(!p) return;
+      if(b.dataset.a==='v'){ var v=sec.querySelector('#rv-view'); v.innerHTML='<div class="card" style="margin-top:12px"><div class="hn-cp-row"><button class="btn" id="rv-pr" type="button">🖨 Imprimer</button></div>'+H.payslipHtml(p)+'</div>'; v.querySelector('#rv-pr').addEventListener('click',function(){ H.printHtml(H.payslipHtml(p),'Relevé de paie'); }); var st=document.getElementById('hn-slipcss'); if(!st){ st=document.createElement('style'); st.id='hn-slipcss'; st.textContent=H.SLIP_CSS; document.head.appendChild(st); } }
+      else if(b.dataset.a==='p'){ H.rpc('hr_payslip_save',{p:{id:p.id,member:p.member,start:p.start,end:p.end,payDate:p.payDate,data:p.data,published:!p.published}}).then(go).catch(function(e){ msg(sec,H.errMsg(e),1); }); }
+      else if(b.dataset.a==='d'){ if(confirm('Supprimer ce relevé définitivement ?')) H.rpc('hr_payslip_delete',{p_id:p.id}).then(go).catch(function(e){ msg(sec,H.errMsg(e),1); }); } });
+    go();
+  }
+
+  var OTS={soumis:'Chez le gestionnaire',correction_gestionnaire:'Correction (gestionnaire)',rejete_gestionnaire:'Refusées (gestionnaire)',approuve_gestionnaire:'À valider par les RH',valide_rh:'Validées — à imputer',rejete_rh:'Refusées (RH)',correction_rh:'Correction (RH)',impute:'Imputées à la paie',annule:'Annulées'};
+  function hsTab(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">⏱ Heures supplémentaires — validation RH</h3><p class="hint" style="margin:0 0 10px">Les heures soumises dans ECOREP passent d’abord par le gestionnaire. Une fois approuvées, validez, refusez ou demandez une correction avant l’imputation à la paie.</p><div class="hn-msg msg" style="min-height:18px"></div><div class="hn-cp-row"><label>Statut<select id="hs-st"><option value="approuve_gestionnaire">À valider par les RH</option><option value="">Tous</option>'+Object.keys(OTS).map(function(k){return '<option value="'+k+'">'+OTS[k]+'</option>';}).join('')+'</select></label></div><div id="hs-list" class="hn-cp-wrap"></div>';
+    var list=sec.querySelector('#hs-list'), names={};
+    function go(){
+      loadEmps().then(function(em){ em.forEach(function(e){names[e.member]=empName(e);}); }).catch(function(){}).then(function(){ return H.rpc('hr_ot_list',{p_status:sec.querySelector('#hs-st').value}); }).then(function(l){
+        list.innerHTML='<table class="hn-cp-tbl"><tr><th>Employé</th><th>Date</th><th>Plage</th><th>Heures</th><th>Motif</th><th>Statut</th><th>Décision RH</th></tr>'+((l||[]).length?l.map(function(o){
+          var pend=o.status==='approuve_gestionnaire'; var last=(o.history||[]).slice(-1)[0];
+          return '<tr><td>'+esc(names[o.member]||o.member)+'<br><span class="hint">'+esc(o.member)+'</span></td><td>'+esc(o.date)+'</td><td>'+esc(o.start)+'–'+esc(o.end)+'</td><td>'+esc(o.hours)+'</td><td>'+esc(o.reason)+(last&&last.comment?'<br><span class="hint">'+esc(last.role)+' : '+esc(last.comment)+'</span>':'')+'</td><td>'+esc(OTS[o.status]||o.status)+'</td><td>'+(pend?'<input data-c="'+esc(o.id)+'" placeholder="Commentaire" maxlength="300" style="width:150px"><br><button class="btn" data-d="valide" data-id="'+esc(o.id)+'" style="padding:2px 7px">✓ Valider</button> <button class="btn" data-d="correction" data-id="'+esc(o.id)+'" style="padding:2px 7px">✎ Correction</button> <button class="btn" data-d="rejete" data-id="'+esc(o.id)+'" style="padding:2px 7px">✕ Refuser</button>':'')+'</td></tr>'; }).join(''):'<tr><td colspan="7" class="hint">Aucune demande.</td></tr>')+'</table>';
+      }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    }
+    sec.querySelector('#hs-st').addEventListener('change',go);
+    list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-d]'); if(!b) return; var c=list.querySelector('[data-c="'+b.dataset.id+'"]');
+      H.rpc('hr_ot_hr_decide',{p_id:b.dataset.id,p_decision:b.dataset.d,p_comment:c?c.value:''}).then(function(r){ if(r&&r.ok===false){ msg(sec,H.errMsg({message:r.error}),1); return; } H.flush(); msg(sec,'Décision enregistrée ✓ (l’employé est avisé par courriel).'); go(); }).catch(function(e){ msg(sec,H.errMsg(e),1); }); });
+    go();
+  }
+
+  function baremesTab(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">⚙️ Barèmes et paramètres de paie</h3>'+
+      '<div class="card" style="border-color:#C89B3C;margin-bottom:10px"><strong>Important.</strong> Les taux d’impôt et de cotisations changent chaque année et selon le pays ou la province. Les tableaux ci-dessous sont <b>configurables et vides par défaut</b> ; l’exemple Canada/Québec est <b>indicatif</b> (sources : Revenu Québec, ARC, CFIB — consultées en 2026) et doit être vérifié chaque année avec les sources officielles. FINECIA GROUPE reste responsable de l’exactitude des retenues.</div>'+
+      '<div class="hn-msg msg" style="min-height:18px"></div><div class="hn-cp-row"><button class="btn" id="bp-ex" type="button">Charger l’exemple Canada/Québec 2026 (indicatif)</button><button class="btn" id="bp-clear" type="button">Vider les tableaux</button><button class="btn primary" id="bp-save" type="button">💾 Enregistrer sur le serveur</button></div><div id="bp-body"></div>';
+    var host=sec.querySelector('#bp-body');
+    function draw(){
+      var P=S.settings;
+      host.innerHTML='<div class="hn-cp-row"><label>Employeur (relevé)<input id="bp-emp" value="'+esc(P.employerName)+'" style="width:200px"></label><label>Adresse<input id="bp-adr" value="'+esc(P.employerAddress)+'" style="width:260px"></label><label>Multiplicateur heures supp.<input id="bp-ot" type="number" step="0.05" value="'+esc(P.otMultiplier)+'" style="width:100px"></label><label>Jours de maladie payés / an<input id="bp-sick" type="number" step="0.5" value="'+esc(P.sickDays)+'" style="width:100px"></label><label>Âge de retraite par défaut<input id="bp-ret" type="number" value="'+esc(P.retireAge)+'" style="width:100px"></label></div>'+
+        '<strong style="font-size:13px">Impôts (crédit de base, abattement)</strong><div id="bp-t"></div><strong style="font-size:13px">Tranches d’imposition annuelles (laisser « Jusqu’à » vide pour la dernière tranche)</strong><div id="bp-b"></div>'+
+        '<strong style="font-size:13px">Cotisations (sur la tranche de gains annuels entre « Seuil » et « Plafond »)</strong><div id="bp-c"></div><strong style="font-size:13px">Assurances (retenues)</strong><div id="bp-i"></div><strong style="font-size:13px">Congés annuels selon l’ancienneté</strong><div id="bp-v"></div>';
+      var tnames=function(){ return (P.taxes||[]).map(function(t){return [t.name,t.name];}); };
+      H.rowsEditor(host.querySelector('#bp-t'),[{k:'name',l:'Nom de l’impôt',w:190},{k:'profile',l:'Profil (ex. QC)',w:80},{k:'credit',l:'Montant personnel de base',t:'number',w:120},{k:'creditRate',l:'Taux du crédit (%)',t:'number',w:90},{k:'abatement',l:'Abattement (%)',t:'number',w:90}],P.taxes,function(){ },'Ajouter un impôt');
+      H.rowsEditor(host.querySelector('#bp-b'),[{k:'tax',l:'Impôt (nom exact)',w:190},{k:'upTo',l:'Jusqu’à (revenu annuel)',t:'number',w:130},{k:'rate',l:'Taux (%)',t:'number',w:90}],P.brackets,null,'Ajouter une tranche');
+      H.rowsEditor(host.querySelector('#bp-c'),[{k:'label',l:'Cotisation',w:230},{k:'profile',l:'Profil',w:70},{k:'rate',l:'Taux (%)',t:'number',w:80},{k:'floor',l:'Seuil annuel',t:'number',w:100},{k:'max',l:'Plafond annuel',t:'number',w:110}],P.contribs,null,'Ajouter une cotisation');
+      H.rowsEditor(host.querySelector('#bp-i'),[{k:'label',l:'Assurance',w:200},{k:'profile',l:'Profil',w:70},{k:'type',l:'Type',t:'select',o:[['fixed','Montant fixe / période'],['pct','% du brut']],d:'fixed'},{k:'value',l:'Valeur',t:'number',w:90}],P.insurances,null,'Ajouter une assurance');
+      H.rowsEditor(host.querySelector('#bp-v'),[{k:'fromYears',l:'À partir de (années)',t:'number',w:110},{k:'days',l:'Jours / an',t:'number',w:90},{k:'pct',l:'Indemnité (% du brut)',t:'number',w:110}],P.vacationTiers,null,'Ajouter un palier');
+    }
+    function readTop(){ var P=S.settings,g=function(id){return host.querySelector(id);}; if(!g('#bp-emp')) return; P.employerName=g('#bp-emp').value; P.employerAddress=g('#bp-adr').value; P.otMultiplier=parseFloat(g('#bp-ot').value)||1.5; P.sickDays=parseFloat(g('#bp-sick').value)||0; P.retireAge=parseFloat(g('#bp-ret').value)||65; }
+    loadSettings().then(draw).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    sec.querySelector('#bp-ex').addEventListener('click',function(){ if(!S.settings) return; if(!confirm('Remplacer les tableaux actuels par l’exemple Canada/Québec 2026 ? (indicatif, à vérifier)')) return; S.settings=preset(); draw(); msg(sec,'Exemple chargé — vérifiez-le puis enregistrez.'); });
+    sec.querySelector('#bp-clear').addEventListener('click',function(){ if(!confirm('Vider tous les tableaux ?')) return; S.settings=defSettings(); draw(); });
+    sec.querySelector('#bp-save').addEventListener('click',function(){ readTop(); S.settings.updatedOn=H.today(); H.rpc('hr_settings_set',{p_key:'pgr_params',p_value:S.settings}).then(function(){ msg(sec,'Barèmes enregistrés ✓'); }).catch(function(e){ msg(sec,H.errMsg(e),1); }); });
+  }
+
+  function ecorepTab(sec){
+    var url=location.origin+location.pathname.replace(/[^\/]*$/,'')+'public.html?ecorep=1';
+    sec.innerHTML='<h3 style="margin:0 0 4px">🔐 ECOREP — espace employé</h3><p class="hint">Chaque employé consulte uniquement ses propres relevés de paie (imprimer, télécharger), soumet ses heures supplémentaires à son gestionnaire, puis les RH valident avant l’imputation à la paie.</p>'+
+      '<div class="card"><strong>Lien d’accès à communiquer aux employés</strong><div class="hn-cp-row" style="margin-top:6px"><input id="ec-url" readonly value="'+esc(url)+'" style="min-width:280px;flex:1"><button class="btn" id="ec-copy" type="button">Copier</button></div></div>'+
+      '<div class="card"><strong>Connexion</strong><p class="hint">Courriel <b>ou</b> numéro de membre à 8 chiffres, avec le mot de passe du compte d’équipe. Un employé doit avoir un compte membre actif (Réglages → équipe) <b>et</b> une fiche RH avec le même numéro de membre.</p><strong>Circuit des heures supplémentaires</strong><p class="hint">1) L’employé soumet (date, plage horaire, motif) → 2) le gestionnaire (numéro indiqué dans la fiche) approuve, refuse ou demande une correction → 3) les RH valident, refusent ou demandent une correction (onglet « Heures supp. ») → 4) imputation au calcul de la paie.</p></div>';
+    sec.querySelector('#ec-copy').addEventListener('click',function(){ try{ navigator.clipboard.writeText(url); H.toast('Lien copié ✓'); }catch(e){ sec.querySelector('#ec-url').select(); } });
+  }
+
+  var done=false;
+  function setup(panel){
+    H.tabs(panel,'data-hn-pgr',null,[
+      {id:'fiche',label:'👤 Fiches RH',html:'',init:ficheTab},
+      {id:'paie',label:'🧾 Paie',html:'',init:paieTab},
+      {id:'releves',label:'📚 Relevés',html:'',init:relevesTab},
+      {id:'hs',label:'⏱ Heures supp.',html:'',init:hsTab},
+      {id:'bareme',label:'⚙️ Barèmes',html:'',init:baremesTab},
+      {id:'ecorep',label:'🔐 ECOREP',html:'',init:ecorepTab}
+    ],'<h2 style="margin:0 0 4px">💼 PGR - Paie et Gestion des Rémunérations</h2><p class="hint" style="margin:0 0 10px">Paie, avantages, primes, impôt, congés, relevés de paie et fiches RH. Données sensibles conservées sur le serveur, accessibles seulement aux membres autorisés sur l’outil PGR.</p>');
+    S.emps=null; S.settings=null;
+    window.addEventListener('hn-fgh-currency',function(e){ if(e.detail&&e.detail.tool==='pgr'){ /* la devise s'applique au prochain calcul */ } });
+  }
+  function scan(){ var p=document.getElementById('fghlab-panel-pgr'); if(p&&!p.getAttribute('data-hn-pgr')) setup(p); }
+  var pend=false;
+  function init(){ scan(); new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; scan(); },150); }).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+  window.__hnPgr={compute:compute,annualTax:annualTax,preset:preset};
+})();
+</script>
+
+<script>
+/* Outils recrutement et RH — onglets additionnels : dotation, affectations, période d'essai, nominations, contrats CDD/CDI/PERMANENT, tableau de bord.
+   Données stockées sur le serveur (hr_items) ; droits vérifiés par la base (outil « rh » ou « pgr »). */
+(function(){
+  "use strict";
+  var H=window.__hnHr; if(!H) return;
+  var esc=H.esc, EMP=null;
+  function loadEmp(){ if(EMP) return Promise.resolve(EMP); return H.rpc('hr_item_list',{p_kind:'employee'}).then(function(l){ EMP=(l||[]).map(function(x){return Object.assign({_id:x.id,member:x.member},x.data||{});}); return EMP; }).catch(function(){ EMP=[]; return EMP; }); }
+  function nm(e){ return e.name||((e.first||'')+' '+(e.last||'')).trim()||e.member; }
+  function msg(sec,t,bad){ var m=sec.querySelector('.hn-msg'); if(m){ m.textContent=t||''; m.style.color=bad?'#dc2626':'#16a34a'; } }
+  var CT=[['CDI','CDI'],['CDD','CDD'],['PERMANENT','PERMANENT']];
+  var KINDS={
+    posting:{title:'📋 Dotation (besoins en personnel)',hint:'Postes à pourvoir, effectifs requis et actuels, budget et état de la dotation.',add:'Nouveau poste',
+      fields:[{k:'position',l:'Poste',req:1,w:200},{k:'department',l:'Département',w:150},{k:'required',l:'Effectif requis',t:'number',w:90},{k:'current',l:'Effectif actuel',t:'number',w:90},{k:'contractType',l:'Contrat visé',t:'select',o:CT},{k:'openDate',l:'Date d’ouverture',t:'date'},{k:'budget',l:'Budget salarial annuel',t:'number',w:130,money:1},{k:'status',l:'État',t:'select',o:[['ouvert','Ouvert'],['pourvu','Pourvu'],['gele','Gelé'],['ferme','Fermé']]},{k:'notes',l:'Notes',w:240}],
+      cols:['position','department','required','current','contractType','openDate','status'],gap:function(r){ return (+r.required||0)-(+r.current||0); }},
+    tempo:{kind:'assignment',filter:{atype:'temporaire'},title:'🔄 Affectations temporaires',hint:'Mandats de remplacement ou de renfort à durée limitée.',add:'Nouvelle affectation temporaire',
+      fields:'ASSIGN'},
+    longue:{kind:'assignment',filter:{atype:'longue'},title:'📌 Affectations de longue durée',hint:'Affectations prolongées vers un autre poste, département ou site.',add:'Nouvelle affectation longue durée',fields:'ASSIGN'},
+    probation:{title:'🧪 Période d’essai',hint:'Suivi des périodes d’essai, évaluations et décisions de confirmation.',add:'Nouvelle période d’essai',
+      fields:[{k:'member',l:'N° de membre',t:'emp',req:1},{k:'name',l:'Nom',w:170},{k:'start',l:'Début',t:'date',req:1},{k:'months',l:'Durée (mois)',t:'number',w:90,d:3},{k:'end',l:'Fin (auto)',t:'date',auto:'probEnd'},{k:'evaluator',l:'Évaluateur',w:150},{k:'evaluation',l:'Évaluation',w:260},{k:'decision',l:'Décision',t:'select',o:[['encours','En cours'],['confirme','Confirmé'],['prolonge','Prolongé'],['nonconfirme','Non confirmé']]}],
+      cols:['member','name','start','end','evaluator','decision']},
+    appointment:{title:'🏅 Nominations (postes professionnels et de responsabilité)',hint:'Nominations à un poste professionnel, de responsabilité ou de gestion.',add:'Nouvelle nomination',
+      fields:[{k:'member',l:'N° de membre',t:'emp',req:1},{k:'name',l:'Nom',w:170},{k:'post',l:'Poste de nomination',req:1,w:220},{k:'atype',l:'Catégorie',t:'select',o:[['professionnel','Poste professionnel'],['responsabilite','Poste de responsabilité'],['gestion','Poste de gestion']]},{k:'effective',l:'Date d’effet',t:'date',req:1},{k:'authority',l:'Autorité de nomination',w:170},{k:'ref',l:'Réf. / résolution',w:130},{k:'status',l:'État',t:'select',o:[['propose','Proposée'],['envigueur','En vigueur'],['terminee','Terminée']]}],
+      cols:['member','name','post','atype','effective','status']},
+    contract:{title:'📄 Contrats (CDD, CDI, PERMANENT)',hint:'Contrats de travail, échéances, renouvellements. Un CDD exige une date de fin.',add:'Nouveau contrat',
+      fields:[{k:'member',l:'N° de membre',t:'emp',req:1},{k:'name',l:'Nom',w:170},{k:'ctype',l:'Type de contrat',t:'select',o:CT},{k:'start',l:'Début',t:'date',req:1},{k:'end',l:'Fin (CDD)',t:'date'},{k:'hoursWeek',l:'Heures / semaine',t:'number',w:90},{k:'salary',l:'Rémunération (par période convenue)',t:'number',w:130,money:1},{k:'signed',l:'Date de signature',t:'date'},{k:'renewals',l:'Renouvellements',t:'number',w:90},{k:'status',l:'État',t:'select',o:[['brouillon','Brouillon'],['signe','Signé'],['encours','En cours'],['termine','Terminé'],['resilie','Résilié']]}],
+      cols:['member','name','ctype','start','end','status'],validate:function(d){ if(d.ctype==='CDD'&&!d.end) return 'Un CDD doit avoir une date de fin.'; if(d.end&&d.end<d.start) return 'La date de fin précède le début.'; }}
+  };
+  var ASSIGN=[{k:'member',l:'N° de membre',t:'emp',req:1},{k:'name',l:'Nom',w:170},{k:'hostPosition',l:'Poste d’accueil',w:190},{k:'hostDept',l:'Département / site',w:150},{k:'from',l:'Début',t:'date',req:1},{k:'to',l:'Fin prévue',t:'date'},{k:'reason',l:'Motif',w:220},{k:'status',l:'État',t:'select',o:[['planifiee','Planifiée'],['encours','En cours'],['terminee','Terminée'],['annulee','Annulée']]}];
+  KINDS.tempo.fields=ASSIGN; KINDS.longue.fields=ASSIGN;
+  KINDS.tempo.cols=KINDS.longue.cols=['member','name','hostPosition','hostDept','from','to','status'];
+
+  function crud(sec,key){
+    var cfg=KINDS[key], kind=cfg.kind||key, F=cfg.fields;
+    sec.innerHTML='<h3 style="margin:0 0 4px">'+cfg.title+'</h3><p class="hint" style="margin:0 0 10px">'+cfg.hint+'</p><div class="hn-msg msg" style="min-height:18px"></div><div class="hn-cp-row"><button class="btn primary" data-new="1" type="button">+ '+cfg.add+'</button><button class="btn" data-exp="1" type="button">⬇️ Exporter CSV</button></div><div class="hn-cp-wrap" data-list="1"></div><div data-form="1"></div>';
+    var list=sec.querySelector('[data-list]'), fh=sec.querySelector('[data-form]'), rows=[];
+    function label(f,v){ if(f.t==='select'){ var o=f.o.filter(function(x){return x[0]===v;})[0]; return o?o[1]:(v||''); } return v==null?'':v; }
+    function load(){
+      loadEmp().then(function(){ return H.rpc('hr_item_list',{p_kind:kind}); }).then(function(l){
+        rows=(l||[]).map(function(x){return {_id:x.id,member:x.member,d:x.data||{}};}).filter(function(r){ return !cfg.filter||Object.keys(cfg.filter).every(function(k){return r.d[k]===cfg.filter[k];}); });
+        var cols=cfg.cols.map(function(k){return F.filter(function(f){return f.k===k;})[0];});
+        list.innerHTML='<table class="hn-cp-tbl"><tr>'+cols.map(function(c){return '<th>'+esc(c.l)+'</th>';}).join('')+(cfg.gap?'<th>Écart</th>':'')+'<th></th></tr>'+(rows.length?rows.map(function(r){ var dd=Object.assign({member:r.member},r.d);
+          return '<tr>'+cols.map(function(c){return '<td>'+esc(label(c,dd[c.k]))+'</td>';}).join('')+(cfg.gap?'<td>'+cfg.gap(dd)+'</td>':'')+'<td><button class="btn" data-open="'+esc(r._id)+'" style="padding:2px 8px">Ouvrir</button></td></tr>'; }).join(''):'<tr><td colspan="'+(cols.length+2)+'" class="hint">Aucun élément.</td></tr>')+'</table>';
+      }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    }
+    function form(r){
+      var d=r?Object.assign({member:r.member},r.d):{}, isNew=!r, cur=H.curOf('rh');
+      fh.innerHTML='<div class="card" style="margin-top:12px"><h3 style="margin:0 0 8px">'+(isNew?cfg.add:'Modifier')+'</h3><datalist id="rh-emp-'+key+'">'+(EMP||[]).map(function(e){return '<option value="'+esc(e.member)+'">'+esc(nm(e))+'</option>';}).join('')+'</datalist><div class="hn-cp-row" style="flex-wrap:wrap">'+F.map(function(f){
+        var v=d[f.k]!=null?d[f.k]:(f.d!=null?f.d:''), lab='<label>'+esc(f.l)+(f.money?' ('+esc(cur)+')':'')+(f.req?' *':'');
+        if(f.t==='select') return lab+'<select data-k="'+f.k+'">'+f.o.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===v?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
+        if(f.t==='emp') return lab+'<input data-k="'+f.k+'" list="rh-emp-'+key+'" maxlength="8" value="'+esc(v)+'" style="width:120px" inputmode="numeric"></label>';
+        return lab+'<input data-k="'+f.k+'" type="'+(f.t||'text')+'"'+(f.t==='number'?' step="any"':'')+' value="'+esc(v)+'" style="width:'+(f.w||140)+'px"'+(f.auto?' readonly':'')+'></label>'; }).join('')+'</div>'+
+        '<div class="hn-cp-row"><button class="btn primary" data-save="1" type="button">Enregistrer</button>'+(isNew?'':'<button class="btn" data-del="1" type="button">Supprimer</button>')+'<button class="btn" data-close="1" type="button">Fermer</button></div><div class="hn-msg msg" data-fm="1"></div></div>';
+      var q=function(k){return fh.querySelector('[data-k="'+k+'"]');};
+      function auto(){ if(q('end')&&q('end').readOnly&&q('start')&&q('months')) q('end').value=q('start').value?H.addMonths(q('start').value,parseFloat(q('months').value)||0):''; }
+      fh.addEventListener('input',function(e){ if(e.target.dataset.k==='member'&&q('name')){ var m=(EMP||[]).filter(function(x){return x.member===e.target.value;})[0]; if(m) q('name').value=nm(m); } auto(); });
+      auto();
+      fh.querySelector('[data-close]').addEventListener('click',function(){ fh.innerHTML=''; });
+      fh.querySelector('[data-save]').addEventListener('click',function(){
+        var data={}, bad=''; F.forEach(function(f){ var v=q(f.k).value; data[f.k]=f.t==='number'?(v===''?'':parseFloat(v)):v; if(f.req&&!v) bad=bad||('Champ obligatoire : '+f.l); });
+        var fm=fh.querySelector('[data-fm]'); fm.style.color='#dc2626';
+        if(!bad&&F.some(function(f){return f.t==='emp';})&&!/^\d{8}$/.test(data.member||'')) bad='Le numéro de membre doit comporter 8 chiffres.';
+        if(!bad&&cfg.validate) bad=cfg.validate(data)||'';
+        if(bad){ fm.textContent=bad; return; }
+        if(cfg.filter) Object.keys(cfg.filter).forEach(function(k){ data[k]=cfg.filter[k]; });
+        var member=data.member; delete data.member; if(!F.some(function(f){return f.t==='emp';})) member='';
+        data.currency=H.curOf('rh');
+        H.rpc('hr_item_upsert',{p_kind:kind,p_id:r?r._id:H.rid(kind.slice(0,4)),p_member:member||'',p_data:data}).then(function(x){ if(x&&x.ok===false){ fm.textContent=H.errMsg({message:x.error}); return; } fh.innerHTML=''; H.toast('Enregistré ✓'); load(); }).catch(function(e){ fm.textContent=H.errMsg(e); });
+      });
+      var del=fh.querySelector('[data-del]'); if(del) del.addEventListener('click',function(){ if(confirm('Supprimer cet élément ?')) H.rpc('hr_item_delete',{p_kind:kind,p_id:r._id}).then(function(){ fh.innerHTML=''; load(); }).catch(function(e){ fh.querySelector('[data-fm]').textContent=H.errMsg(e); }); });
+      fh.scrollIntoView({behavior:'smooth'});
+    }
+    sec.querySelector('[data-new]').addEventListener('click',function(){ loadEmp().then(function(){ form(null); }); });
+    list.addEventListener('click',function(e){ var b=e.target.closest('[data-open]'); if(!b) return; var r=rows.filter(function(x){return x._id===b.dataset.open;})[0]; if(r) loadEmp().then(function(){ form(r); }); });
+    sec.querySelector('[data-exp]').addEventListener('click',function(){ var cur=H.curOf('rh'); var out=[F.map(function(f){return f.l;}).concat(['Devise'])]; rows.forEach(function(r){ var dd=Object.assign({member:r.member},r.d); out.push(F.map(function(f){return label(f,dd[f.k]);}).concat([cur])); }); H.csv(key+'-'+H.today()+'.csv',out); });
+    load();
+  }
+
+  function dashboard(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">📊 Tableau de bord RH</h3><p class="hint" style="margin:0 0 10px">Échéances et alertes issues des contrats, périodes d’essai, affectations et fiches RH.</p><div class="hn-msg msg" style="min-height:18px"></div><div class="hn-cp-kpi" data-k="1"></div><div data-a="1"></div>';
+    var T=H.today();
+    Promise.all(['posting','assignment','probation','appointment','contract'].map(function(k){ return H.rpc('hr_item_list',{p_kind:k}).catch(function(){ return []; }); })).then(function(R){
+      return loadEmp().then(function(emps){
+        var P=R[0].map(function(x){return x.data;}), A=R[1].map(function(x){return Object.assign({member:x.member},x.data);}), PR=R[2].map(function(x){return Object.assign({member:x.member},x.data);}), AP=R[3], C=R[4].map(function(x){return Object.assign({member:x.member},x.data);});
+        var al=[];
+        C.forEach(function(c){ if(c.ctype==='CDD'&&c.end&&c.status!=='termine'&&c.status!=='resilie'){ var n=H.diffDays(T,c.end); if(n!=null&&n<=30) al.push([n,'📄 CDD de '+(c.name||c.member)+(n<0?' échu depuis '+(-n)+' j':' se termine dans '+n+' j')+' ('+c.end+')']); } });
+        PR.forEach(function(p){ if(p.decision==='encours'&&p.end){ var n=H.diffDays(T,p.end); if(n!=null&&n<=14) al.push([n,'🧪 Période d’essai de '+(p.name||p.member)+(n<0?' dépassée de '+(-n)+' j — décision requise':' se termine dans '+n+' j')]); } });
+        A.forEach(function(a){ if(a.status==='encours'&&a.to){ var n=H.diffDays(T,a.to); if(n!=null&&n<=30) al.push([n,'🔄 Affectation de '+(a.name||a.member)+(n<0?' échue depuis '+(-n)+' j':' se termine dans '+n+' j')]); } });
+        var retire=0; emps.forEach(function(e){ if(e.birth){ var r=H.addMonths(e.birth,(+e.retireAge||65)*12), n=H.diffDays(T,r); if(n!=null&&n>=0&&n<=365){ retire++; al.push([n,'🎓 Retraite projetée de '+nm(e)+' le '+r]); } } });
+        al.sort(function(a,b){return a[0]-b[0];});
+        var open=P.filter(function(p){return p.status==='ouvert';}).length, need=P.reduce(function(a,p){return a+Math.max(0,(+p.required||0)-(+p.current||0));},0);
+        var K=function(v,l){return '<div><b>'+v+'</b><span>'+l+'</span></div>';};
+        sec.querySelector('[data-k]').innerHTML=K(open,'Postes ouverts')+K(need,'Personnes à recruter')+K(C.filter(function(c){return c.status==='encours'||c.status==='signe';}).length,'Contrats actifs')+K(PR.filter(function(p){return p.decision==='encours';}).length,'Périodes d’essai en cours')+K(A.filter(function(a){return a.status==='encours';}).length,'Affectations en cours')+K(AP.filter(function(a){return a.data&&a.data.status==='envigueur';}).length,'Nominations en vigueur')+K(emps.length||'—','Fiches RH (si accès PGR)')+K(retire||0,'Retraites dans 12 mois');
+        sec.querySelector('[data-a]').innerHTML='<div class="card"><strong>Alertes et échéances</strong>'+(al.length?'<ul style="margin:6px 0 0 18px">'+al.map(function(a){return '<li>'+esc(a[1])+'</li>';}).join('')+'</ul>':'<p class="hint">Rien à signaler.</p>')+'</div>';
+      });
+    }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+  }
+
+  function setup(panel){
+    if(panel.children.length<3) return;
+    H.tabs(panel,'data-hn-rh2','👥 Candidatures et dossiers',[
+      {id:'dash',label:'📊 Tableau de bord',html:'',init:dashboard,show:function(s){ dashboard(s); }},
+      {id:'posting',label:'📋 Dotation',html:'',init:function(s){crud(s,'posting');}},
+      {id:'tempo',label:'🔄 Affectations temporaires',html:'',init:function(s){crud(s,'tempo');}},
+      {id:'longue',label:'📌 Affectations longue durée',html:'',init:function(s){crud(s,'longue');}},
+      {id:'probation',label:'🧪 Période d’essai',html:'',init:function(s){crud(s,'probation');}},
+      {id:'appointment',label:'🏅 Nominations',html:'',init:function(s){crud(s,'appointment');}},
+      {id:'contract',label:'📄 Contrats',html:'',init:function(s){crud(s,'contract');}}
+    ]);
+  }
+  function scan(){ var p=document.getElementById('fghlab-panel-rh'); if(p&&!p.getAttribute('data-hn-rh2')) setup(p); }
+  var pend=false;
+  function init(){ scan(); new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; scan(); },150); }).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+<script>
+/* Comptabilité, contrôle et audit — onglets supplémentaires : journal et balance, rapprochement bancaire, clients/fournisseurs (balance âgée),
+   immobilisations et amortissement, taxes (TPS/TVQ/TVA…), clôture mensuelle. Données conservées sur cet appareil ; devise = sélecteur de l'outil. */
+(function(){
+  "use strict";
+  var H=window.__hnHr; if(!H) return;
+  var esc=H.esc, K='helpnaud_cpt2';
+  function ld(){ try{ return JSON.parse(localStorage.getItem(K)||'{}')||{}; }catch(e){ return {}; } }
+  var D=ld();
+  function sv(){ try{ localStorage.setItem(K,JSON.stringify(D)); }catch(e){} }
+  function cur(){ return H.curOf('compta'); }
+  function m2(n){ return (Math.round((+n||0)*100)/100).toLocaleString('fr-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  var ACC=[['1010','Encaisse / Banque','actif'],['1100','Comptes clients','actif'],['1500','Immobilisations','actif'],['1590','Amortissement cumulé','actif'],['2010','Comptes fournisseurs','passif'],['2100','Taxes à payer','passif'],['3000','Capital et résultats non répartis','capitaux'],['4000','Ventes / Produits','produit'],['5000','Achats / Charges d’exploitation','charge'],['5900','Dotation à l’amortissement','charge']];
+  function accounts(){ if(!D.accounts||!D.accounts.length){ D.accounts=ACC.map(function(a){return {num:a[0],name:a[1],type:a[2]};}); sv(); } return D.accounts; }
+  function row(a,b){ return '<div class="hn-cp-row">'+a+'</div>'; }
+  var R=[]; // re-render hooks
+  window.addEventListener('hn-fgh-currency',function(e){ if(e.detail&&e.detail.tool==='compta') R.forEach(function(f){ try{ f(); }catch(x){} }); });
+
+  /* ---- Journal ---- */
+  function journal(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">📒 Journal comptable et balance de vérification</h3><p class="hint" style="margin:0 0 10px">Écritures en partie double : chaque écriture doit être équilibrée (débits = crédits) avant d’être enregistrée.</p>'+
+      '<details><summary style="cursor:pointer;font-weight:600;font-size:13px">Plan comptable (modifiable)</summary><div id="j-plan"></div></details>'+
+      '<form id="j-form" style="margin-top:10px"><div class="hn-cp-row"><label>Date<input type="date" id="j-date" required value="'+H.today()+'"></label><label>Pièce<input id="j-ref" maxlength="40" style="width:110px"></label><label>Libellé<input id="j-lib" maxlength="120" required style="min-width:220px"></label></div><div id="j-lines"></div><div id="j-bal" class="hint" style="margin:6px 0"></div><button class="btn primary" type="submit">Enregistrer l’écriture</button> <span class="hn-msg msg"></span></form>'+
+      '<div class="hn-cp-row" style="margin-top:12px"><button class="btn" id="j-exp" type="button">⬇️ Journal CSV</button><button class="btn" id="j-expb" type="button">⬇️ Balance CSV</button></div><div class="hn-cp-wrap" id="j-list"></div><h4 style="margin:12px 0 4px">Balance de vérification</h4><div class="hn-cp-wrap" id="j-bal2"></div>';
+    var lines=[{acc:'',d:'',c:''},{acc:'',d:'',c:''}], $=function(i){return sec.querySelector(i);};
+    function accSel(){ return accounts().map(function(a){return [a.num,a.num+' — '+a.name];}); }
+    var plan=H.rowsEditor($('#j-plan'),[{k:'num',l:'N°',w:70},{k:'name',l:'Compte',w:260},{k:'type',l:'Type',t:'select',o:[['actif','Actif'],['passif','Passif'],['capitaux','Capitaux propres'],['produit','Produit'],['charge','Charge']],d:'actif'}],accounts(),function(){ sv(); drawLines(); render(); },'Ajouter un compte');
+    var le;
+    function drawLines(){ le=H.rowsEditor($('#j-lines'),[{k:'acc',l:'Compte',t:'select',o:[['','—']].concat(accSel())},{k:'d',l:'Débit',t:'number',w:110},{k:'c',l:'Crédit',t:'number',w:110}],lines,bal,'Ajouter une ligne'); bal(); }
+    function bal(){ var d=0,c=0; lines.forEach(function(l){ d+=+l.d||0; c+=+l.c||0; }); $('#j-bal').innerHTML='Débits '+m2(d)+' · Crédits '+m2(c)+' — '+(Math.abs(d-c)<0.005&&d>0?'<b class="hn-pos">équilibrée ✓</b>':'<b class="hn-neg">écart '+m2(d-c)+'</b>'); }
+    function render(){
+      D.journal=D.journal||[]; var nameOf={}; accounts().forEach(function(a){nameOf[a.num]=a.name;});
+      var h='<table class="hn-cp-tbl"><tr><th>Date</th><th>Pièce</th><th>Libellé</th><th>Compte</th><th>Débit ('+esc(cur())+')</th><th>Crédit</th><th></th></tr>';
+      D.journal.slice().sort(function(a,b){return a.date<b.date?1:-1;}).forEach(function(e){ e.lines.forEach(function(l,i){ h+='<tr><td>'+(i?'':esc(e.date))+'</td><td>'+(i?'':esc(e.ref))+'</td><td>'+(i?'':esc(e.lib))+'</td><td>'+esc(l.acc)+' '+esc(nameOf[l.acc]||'')+'</td><td>'+(l.d?m2(l.d):'')+'</td><td>'+(l.c?m2(l.c):'')+'</td><td>'+(i?'':'<button class="btn" data-x="'+esc(e.id)+'" style="padding:1px 7px">✕</button>')+'</td></tr>'; }); });
+      if(!D.journal.length) h+='<tr><td colspan="7" class="hint">Aucune écriture.</td></tr>'; $('#j-list').innerHTML=h+'</table>';
+      var T={}; D.journal.forEach(function(e){ e.lines.forEach(function(l){ var t=T[l.acc]=T[l.acc]||{d:0,c:0}; t.d+=+l.d||0; t.c+=+l.c||0; }); });
+      var td=0,tc=0,b='<table class="hn-cp-tbl"><tr><th>Compte</th><th>Débit</th><th>Crédit</th><th>Solde</th></tr>'; Object.keys(T).sort().forEach(function(k){ td+=T[k].d; tc+=T[k].c; var s=T[k].d-T[k].c; b+='<tr><td>'+esc(k)+' '+esc(nameOf[k]||'')+'</td><td>'+m2(T[k].d)+'</td><td>'+m2(T[k].c)+'</td><td class="'+(s<0?'hn-neg':'')+'">'+m2(s)+'</td></tr>'; });
+      b+='<tr><th>Total</th><th>'+m2(td)+'</th><th>'+m2(tc)+'</th><th class="'+(Math.abs(td-tc)<0.005?'hn-pos':'hn-neg')+'">'+(Math.abs(td-tc)<0.005?'Équilibrée ✓':'Écart '+m2(td-tc))+'</th></tr>'; $('#j-bal2').innerHTML=b+'</table>';
+    }
+    R.push(render);
+    $('#j-form').addEventListener('submit',function(e){ e.preventDefault(); var d=0,c=0,ok=lines.filter(function(l){return l.acc&&((+l.d||0)||(+l.c||0));}); ok.forEach(function(l){d+=+l.d||0;c+=+l.c||0;}); var m=$('.hn-msg'); m.style.color='#dc2626';
+      if(ok.length<2||Math.abs(d-c)>=0.005||d<=0){ m.textContent='L’écriture doit avoir au moins deux lignes et être équilibrée.'; return; }
+      (D.journal=D.journal||[]).push({id:H.rid('je'),date:$('#j-date').value,ref:$('#j-ref').value,lib:$('#j-lib').value,lines:ok.map(function(l){return {acc:l.acc,d:+l.d||0,c:+l.c||0};})}); sv();
+      lines.length=0; lines.push({acc:'',d:'',c:''},{acc:'',d:'',c:''}); $('#j-ref').value=''; $('#j-lib').value=''; m.style.color='#16a34a'; m.textContent='Écriture enregistrée ✓'; drawLines(); render(); });
+    $('#j-list').addEventListener('click',function(e){ var b=e.target.closest('[data-x]'); if(!b||!confirm('Supprimer cette écriture ?')) return; D.journal=D.journal.filter(function(x){return x.id!==b.dataset.x;}); sv(); render(); });
+    $('#j-exp').addEventListener('click',function(){ var r=[['Date','Pièce','Libellé','Compte','Débit','Crédit','Devise']]; (D.journal||[]).forEach(function(e){ e.lines.forEach(function(l){ r.push([e.date,e.ref,e.lib,l.acc,l.d,l.c,cur()]); }); }); H.csv('journal-'+H.today()+'.csv',r); });
+    $('#j-expb').addEventListener('click',function(){ var T={}; (D.journal||[]).forEach(function(e){ e.lines.forEach(function(l){ var t=T[l.acc]=T[l.acc]||{d:0,c:0}; t.d+=+l.d||0; t.c+=+l.c||0; }); }); var r=[['Compte','Débit','Crédit','Solde','Devise']]; Object.keys(T).sort().forEach(function(k){ r.push([k,T[k].d,T[k].c,T[k].d-T[k].c,cur()]); }); H.csv('balance-verification-'+H.today()+'.csv',r); });
+    drawLines(); render();
+  }
+
+  /* ---- Rapprochement bancaire ---- */
+  function recon(sec){
+    D.recon=D.recon||{bank:'',book:'',rows:[]}; var Rc=D.recon;
+    sec.innerHTML='<h3 style="margin:0 0 4px">🏛 Rapprochement bancaire</h3><p class="hint" style="margin:0 0 10px">Comparez le solde du relevé bancaire au solde des livres, après éléments en suspens.</p><div class="hn-cp-row"><label>Solde du relevé bancaire<input type="number" step="0.01" id="r-bank" style="width:160px"></label><label>Solde selon les livres<input type="number" step="0.01" id="r-book" style="width:160px"></label></div><div id="r-rows"></div><div class="hn-cp-kpi" id="r-kpi"></div><div class="hn-cp-row"><button class="btn" id="r-exp" type="button">⬇️ Exporter CSV</button></div>';
+    var $=function(i){return sec.querySelector(i);}; $('#r-bank').value=Rc.bank; $('#r-book').value=Rc.book;
+    var TY=[['cheque','Chèque en circulation (− banque)'],['depot','Dépôt en transit (+ banque)'],['frais','Frais bancaires non inscrits (− livres)'],['interet','Intérêts non inscrits (+ livres)'],['autre','Erreur / autre (± livres)']];
+    function calc(){ var b=+Rc.bank||0,k=+Rc.book||0; Rc.rows.forEach(function(r){ var a=+r.amt||0; if(r.type==='cheque') b-=a; else if(r.type==='depot') b+=a; else if(r.type==='frais') k-=a; else if(r.type==='interet') k+=a; else k+=a; });
+      var d=Math.round((b-k)*100)/100; $('#r-kpi').innerHTML='<div><b>'+m2(b)+' '+esc(cur())+'</b><span>Solde bancaire ajusté</span></div><div><b>'+m2(k)+' '+esc(cur())+'</b><span>Solde des livres ajusté</span></div><div><b class="'+(Math.abs(d)<0.005?'hn-pos':'hn-neg')+'">'+(Math.abs(d)<0.005?'Rapproché ✓':m2(d)+' '+esc(cur()))+'</b><span>Écart</span></div>'; return {b:b,k:k,d:d}; }
+    R.push(calc);
+    H.rowsEditor($('#r-rows'),[{k:'date',l:'Date'},{k:'type',l:'Élément en suspens',t:'select',o:TY,d:'cheque'},{k:'ref',l:'Réf.',w:90},{k:'desc',l:'Description',w:200},{k:'amt',l:'Montant',t:'number',w:110}],Rc.rows,function(){ sv(); calc(); },'Ajouter un élément en suspens');
+    ['bank','book'].forEach(function(k){ $('#r-'+k).addEventListener('input',function(){ Rc[k]=parseFloat(this.value)||0; sv(); calc(); }); });
+    $('#r-exp').addEventListener('click',function(){ var c=calc(), r=[['Solde relevé bancaire',Rc.bank,cur()],['Solde des livres',Rc.book,cur()],[],['Date','Type','Réf.','Description','Montant','Devise']]; Rc.rows.forEach(function(x){ r.push([x.date,x.type,x.ref,x.desc,x.amt,cur()]); }); r.push([],['Solde bancaire ajusté',c.b],['Solde livres ajusté',c.k],['Écart',c.d]); H.csv('rapprochement-'+H.today()+'.csv',r); });
+    calc();
+  }
+
+  /* ---- Clients / fournisseurs ---- */
+  function ledger(sec){
+    D.inv=D.inv||[];
+    sec.innerHTML='<h3 style="margin:0 0 4px">👥 Comptes clients et fournisseurs — balance âgée</h3><p class="hint" style="margin:0 0 10px">Factures à recevoir (clients) et à payer (fournisseurs), échéances et retards.</p><form id="l-form" class="hn-cp-row"><label>Type<select id="l-type"><option value="client">Client (à recevoir)</option><option value="fourn">Fournisseur (à payer)</option></select></label><label>Tiers<input id="l-who" required maxlength="100" style="min-width:150px"></label><label>N° facture<input id="l-no" maxlength="40" style="width:110px"></label><label>Date<input type="date" id="l-date" required value="'+H.today()+'"></label><label>Échéance<input type="date" id="l-due" required value="'+H.addDays(H.today(),30)+'"></label><label>Montant<input type="number" step="0.01" min="0.01" id="l-amt" required style="width:120px"></label><button class="btn primary" type="submit">Ajouter</button></form><div class="hn-cp-kpi" id="l-kpi"></div><div class="hn-cp-row"><button class="btn" id="l-exp" type="button">⬇️ Exporter CSV</button></div><div class="hn-cp-wrap" id="l-list"></div>';
+    var $=function(i){return sec.querySelector(i);};
+    function bucket(i){ var n=H.diffDays(i.due,H.today()); return n<=0?0:n<=30?1:n<=60?2:n<=90?3:4; }
+    function render(){
+      var B={client:[0,0,0,0,0],fourn:[0,0,0,0,0]};
+      D.inv.forEach(function(i){ var o=(+i.amt||0)-(+i.paid||0); if(o>0.004) B[i.type][bucket(i)]+=o; });
+      var L=['Courant','1–30 j','31–60 j','61–90 j','90 j +'];
+      $('#l-kpi').innerHTML=['client','fourn'].map(function(t){ var tot=B[t].reduce(function(a,b){return a+b;},0); return '<div><b>'+m2(tot)+' '+esc(cur())+'</b><span>'+(t==='client'?'À recevoir':'À payer')+'</span></div><div style="grid-column:span 2"><span>'+B[t].map(function(v,i){return L[i]+' : '+m2(v);}).join(' · ')+'</span></div>'; }).join('');
+      var h='<table class="hn-cp-tbl"><tr><th>Type</th><th>Tiers</th><th>N°</th><th>Échéance</th><th>Montant</th><th>Payé</th><th>Solde</th><th>Retard</th><th></th></tr>';
+      D.inv.slice().sort(function(a,b){return a.due<b.due?-1:1;}).forEach(function(i){ var o=(+i.amt||0)-(+i.paid||0), n=H.diffDays(i.due,H.today());
+        h+='<tr><td>'+(i.type==='client'?'Client':'Fournisseur')+'</td><td>'+esc(i.who)+'</td><td>'+esc(i.no)+'</td><td>'+esc(i.due)+'</td><td>'+m2(i.amt)+'</td><td>'+m2(i.paid)+'</td><td><b>'+m2(o)+'</b></td><td class="'+(o>0.004&&n>0?'hn-neg':'')+'">'+(o>0.004&&n>0?n+' j':'')+'</td><td>'+(o>0.004?'<button class="btn" data-p="'+esc(i.id)+'" style="padding:1px 7px">Paiement</button> ':'')+'<button class="btn" data-x="'+esc(i.id)+'" style="padding:1px 7px">✕</button></td></tr>'; });
+      if(!D.inv.length) h+='<tr><td colspan="9" class="hint">Aucune facture.</td></tr>'; $('#l-list').innerHTML=h+'</table>';
+    }
+    R.push(render);
+    $('#l-form').addEventListener('submit',function(e){ e.preventDefault(); D.inv.push({id:H.rid('inv'),type:$('#l-type').value,who:$('#l-who').value.trim(),no:$('#l-no').value.trim(),date:$('#l-date').value,due:$('#l-due').value,amt:parseFloat($('#l-amt').value)||0,paid:0}); sv(); this.reset(); $('#l-date').value=H.today(); $('#l-due').value=H.addDays(H.today(),30); render(); });
+    $('#l-list').addEventListener('click',function(e){ var b=e.target.closest('[data-p],[data-x]'); if(!b) return;
+      if(b.dataset.x){ if(confirm('Supprimer cette facture ?')){ D.inv=D.inv.filter(function(i){return i.id!==b.dataset.x;}); sv(); render(); } return; }
+      var i=D.inv.filter(function(x){return x.id===b.dataset.p;})[0]; var v=parseFloat(String(prompt('Montant du paiement ('+cur()+') — solde '+m2((+i.amt||0)-(+i.paid||0)),'')||'').replace(',','.')); if(v>0){ i.paid=Math.min(+i.amt,(+i.paid||0)+v); sv(); render(); } });
+    $('#l-exp').addEventListener('click',function(){ var r=[['Type','Tiers','N° facture','Date','Échéance','Montant','Payé','Solde','Devise']]; D.inv.forEach(function(i){ r.push([i.type==='client'?'Client':'Fournisseur',i.who,i.no,i.date,i.due,i.amt,i.paid,(+i.amt||0)-(+i.paid||0),cur()]); }); H.csv('clients-fournisseurs-'+H.today()+'.csv',r); });
+    render();
+  }
+
+  /* ---- Immobilisations ---- */
+  function assetsTab(sec){
+    D.assets=D.assets||[];
+    sec.innerHTML='<h3 style="margin:0 0 4px">🏗 Immobilisations et amortissement</h3><p class="hint" style="margin:0 0 10px">Registre des immobilisations, amortissement linéaire (au mois) ou dégressif (annuel), valeur nette comptable à ce jour.</p><form id="a-form" class="hn-cp-row"><label>Bien<input id="a-name" required maxlength="100" style="min-width:160px"></label><label>Date d’acquisition<input type="date" id="a-date" required value="'+H.today()+'"></label><label>Coût<input type="number" step="0.01" min="0" id="a-cost" required style="width:120px"></label><label>Valeur résiduelle<input type="number" step="0.01" min="0" id="a-res" value="0" style="width:110px"></label><label>Durée (années)<input type="number" step="0.5" min="0.5" id="a-life" required value="5" style="width:90px"></label><label>Méthode<select id="a-m"><option value="lin">Linéaire</option><option value="deg">Dégressif</option></select></label><label>Taux dégressif (%)<input type="number" step="0.1" id="a-rate" style="width:100px" placeholder="auto"></label><button class="btn primary" type="submit">Ajouter</button></form><div class="hn-cp-kpi" id="a-kpi"></div><div class="hn-cp-row"><button class="btn" id="a-exp" type="button">⬇️ Exporter CSV</button></div><div class="hn-cp-wrap" id="a-list"></div><div id="a-sch"></div>';
+    var $=function(i){return sec.querySelector(i);};
+    function yearsSched(a){ var cost=+a.cost||0,res=+a.res||0,life=+a.life||1,out=[],vnc=cost,y0=+a.date.slice(0,4);
+      if(a.m==='lin'){ var mo=(cost-res)/(life*12), left=Math.round(life*12), m0=+a.date.slice(5,7), y=y0, mm=m0; // dotation à partir du mois d'acquisition
+        while(left>0){ var n=Math.min(left,13-mm); var amt=Math.min(mo*n,vnc-res); vnc-=amt; out.push({y:y,amt:amt,vnc:vnc}); left-=n; y++; mm=1; } }
+      else { var rt=((+a.rate)||(200/life))/100; for(var i=0;i<Math.ceil(life)&&vnc>res+0.004;i++){ var d=Math.min(vnc*rt,vnc-res); if(i===Math.ceil(life)-1) d=vnc-res; vnc-=d; out.push({y:y0+i,amt:d,vnc:vnc}); } }
+      return out; }
+    function vncNow(a){ var sc=yearsSched(a), Y=+H.today().slice(0,4), acc=0; var cost=+a.cost||0;
+      if(a.m==='lin'){ var mo=(cost-(+a.res||0))/((+a.life||1)*12), el=Math.max(0,(Y-(+a.date.slice(0,4)))*12+(+H.today().slice(5,7))-(+a.date.slice(5,7))+1); acc=Math.min(cost-(+a.res||0),mo*el); }
+      else sc.forEach(function(s){ if(s.y<=Y) acc+=s.amt; });
+      return {acc:acc,vnc:cost-acc}; }
+    function render(){
+      var tc=0,tv=0; var h='<table class="hn-cp-tbl"><tr><th>Bien</th><th>Acquisition</th><th>Coût</th><th>Méthode</th><th>Durée</th><th>Amort. cumulé</th><th>VNC</th><th></th></tr>';
+      D.assets.forEach(function(a){ var v=vncNow(a); tc+=+a.cost; tv+=v.vnc; h+='<tr><td>'+esc(a.name)+'</td><td>'+esc(a.date)+'</td><td>'+m2(a.cost)+'</td><td>'+(a.m==='lin'?'Linéaire':'Dégressif')+'</td><td>'+esc(a.life)+' ans</td><td>'+m2(v.acc)+'</td><td><b>'+m2(v.vnc)+'</b></td><td><button class="btn" data-s="'+esc(a.id)+'" style="padding:1px 7px">Tableau</button> <button class="btn" data-x="'+esc(a.id)+'" style="padding:1px 7px">✕</button></td></tr>'; });
+      if(!D.assets.length) h+='<tr><td colspan="8" class="hint">Aucune immobilisation.</td></tr>';
+      $('#a-list').innerHTML=h+'</table>'; $('#a-kpi').innerHTML='<div><b>'+m2(tc)+' '+esc(cur())+'</b><span>Coût total</span></div><div><b>'+m2(tv)+' '+esc(cur())+'</b><span>Valeur nette comptable</span></div><div><b>'+D.assets.length+'</b><span>Biens</span></div>';
+    }
+    R.push(render);
+    $('#a-form').addEventListener('submit',function(e){ e.preventDefault(); D.assets.push({id:H.rid('as'),name:$('#a-name').value.trim(),date:$('#a-date').value,cost:parseFloat($('#a-cost').value)||0,res:parseFloat($('#a-res').value)||0,life:parseFloat($('#a-life').value)||1,m:$('#a-m').value,rate:parseFloat($('#a-rate').value)||0}); sv(); this.reset(); $('#a-date').value=H.today(); $('#a-life').value=5; $('#a-res').value=0; render(); });
+    $('#a-list').addEventListener('click',function(e){ var b=e.target.closest('[data-s],[data-x]'); if(!b) return;
+      if(b.dataset.x){ if(confirm('Supprimer ce bien ?')){ D.assets=D.assets.filter(function(a){return a.id!==b.dataset.x;}); sv(); $('#a-sch').innerHTML=''; render(); } return; }
+      var a=D.assets.filter(function(x){return x.id===b.dataset.s;})[0]; $('#a-sch').innerHTML='<h4 style="margin:12px 0 4px">Tableau d’amortissement — '+esc(a.name)+'</h4><table class="hn-cp-tbl"><tr><th>Année</th><th>Dotation ('+esc(cur())+')</th><th>VNC fin d’année</th></tr>'+yearsSched(a).map(function(s){return '<tr><td>'+s.y+'</td><td>'+m2(s.amt)+'</td><td>'+m2(s.vnc)+'</td></tr>';}).join('')+'</table>'; });
+    $('#a-exp').addEventListener('click',function(){ var r=[['Bien','Acquisition','Coût','Résiduelle','Durée','Méthode','Amort. cumulé','VNC','Devise']]; D.assets.forEach(function(a){ var v=vncNow(a); r.push([a.name,a.date,a.cost,a.res,a.life,a.m==='lin'?'Linéaire':'Dégressif',Math.round(v.acc*100)/100,Math.round(v.vnc*100)/100,cur()]); }); H.csv('immobilisations-'+H.today()+'.csv',r); });
+    render();
+  }
+
+  /* ---- Taxes ---- */
+  function taxes(sec){
+    D.tax=D.tax||{n1:'TPS',r1:5,n2:'TVQ',r2:9.975,rows:[]}; var T=D.tax;
+    sec.innerHTML='<h3 style="margin:0 0 4px">🧾 Taxes de vente (TPS/TVQ/TVA…)</h3><p class="hint" style="margin:0 0 10px">Les taux sont à saisir selon votre juridiction (valeurs ci-dessous = exemple canadien, à vérifier). Calcul de la taxe perçue sur les ventes et récupérable sur les achats.</p><div class="hn-cp-row"><label>Taxe 1<input id="t-n1" style="width:90px"></label><label>Taux 1 (%)<input type="number" step="0.001" id="t-r1" style="width:90px"></label><label>Taxe 2 (facultative)<input id="t-n2" style="width:90px"></label><label>Taux 2 (%)<input type="number" step="0.001" id="t-r2" style="width:90px"></label></div>'+
+      '<form id="t-form" class="hn-cp-row"><label>Date<input type="date" id="t-date" required value="'+H.today()+'"></label><label>Type<select id="t-type"><option value="v">Vente</option><option value="a">Achat</option></select></label><label>Libellé<input id="t-lib" maxlength="100" style="min-width:160px"></label><label>Montant avant taxes<input type="number" step="0.01" min="0.01" id="t-base" required style="width:130px"></label><button class="btn primary" type="submit">Ajouter</button></form><div class="hn-cp-kpi" id="t-kpi"></div><div class="hn-cp-row"><button class="btn" id="t-exp" type="button">⬇️ Exporter CSV</button></div><div class="hn-cp-wrap" id="t-list"></div>';
+    var $=function(i){return sec.querySelector(i);}; $('#t-n1').value=T.n1; $('#t-r1').value=T.r1; $('#t-n2').value=T.n2; $('#t-r2').value=T.r2;
+    ['n1','r1','n2','r2'].forEach(function(k){ $('#t-'+k).addEventListener('input',function(){ T[k]=k[0]==='r'?(parseFloat(this.value)||0):this.value; sv(); render(); }); });
+    function tx(b){ return [Math.round(b*T.r1)/100,Math.round(b*T.r2)/100]; }
+    function render(){ var s=[0,0],a=[0,0]; T.rows.forEach(function(r){ var t=tx(r.base); var x=r.type==='v'?s:a; x[0]+=t[0]; x[1]+=t[1]; });
+      $('#t-kpi').innerHTML=[0,1].map(function(i){ if(i&&!T.n2) return ''; return '<div><b>'+m2(s[i])+' '+esc(cur())+'</b><span>'+esc(i?T.n2:T.n1)+' perçue</span></div><div><b>'+m2(a[i])+'</b><span>'+esc(i?T.n2:T.n1)+' récupérable</span></div><div><b class="'+(s[i]-a[i]>=0?'hn-neg':'hn-pos')+'">'+m2(s[i]-a[i])+'</b><span>'+esc(i?T.n2:T.n1)+(s[i]-a[i]>=0?' à remettre':' à rembourser')+'</span></div>'; }).join('');
+      var h='<table class="hn-cp-tbl"><tr><th>Date</th><th>Type</th><th>Libellé</th><th>Base</th><th>'+esc(T.n1)+'</th><th>'+esc(T.n2||'—')+'</th><th></th></tr>'; T.rows.slice().reverse().forEach(function(r){ var t=tx(r.base); h+='<tr><td>'+esc(r.date)+'</td><td>'+(r.type==='v'?'Vente':'Achat')+'</td><td>'+esc(r.lib)+'</td><td>'+m2(r.base)+'</td><td>'+m2(t[0])+'</td><td>'+(T.n2?m2(t[1]):'')+'</td><td><button class="btn" data-x="'+esc(r.id)+'" style="padding:1px 7px">✕</button></td></tr>'; });
+      if(!T.rows.length) h+='<tr><td colspan="7" class="hint">Aucune opération.</td></tr>'; $('#t-list').innerHTML=h+'</table>'; }
+    R.push(render);
+    $('#t-form').addEventListener('submit',function(e){ e.preventDefault(); T.rows.push({id:H.rid('tx'),date:$('#t-date').value,type:$('#t-type').value,lib:$('#t-lib').value.trim(),base:parseFloat($('#t-base').value)||0}); sv(); $('#t-lib').value=''; $('#t-base').value=''; render(); });
+    $('#t-list').addEventListener('click',function(e){ var b=e.target.closest('[data-x]'); if(b){ T.rows=T.rows.filter(function(r){return r.id!==b.dataset.x;}); sv(); render(); } });
+    $('#t-exp').addEventListener('click',function(){ var r=[['Date','Type','Libellé','Base',T.n1,T.n2,'Devise']]; T.rows.forEach(function(x){ var t=tx(x.base); r.push([x.date,x.type==='v'?'Vente':'Achat',x.lib,x.base,t[0],t[1],cur()]); }); H.csv('taxes-'+H.today()+'.csv',r); });
+    render();
+  }
+
+  /* ---- Clôture mensuelle ---- */
+  function closing(sec){
+    D.close=D.close||{}; var ITEMS=['Rapprochement bancaire terminé','Caisse comptée et conciliée','Factures clients et fournisseurs saisies','Écritures de régularisation passées','Amortissements comptabilisés','Taxes de vente calculées','Paie du mois imputée','Balance de vérification équilibrée','Pièces justificatives classées','Revue par le responsable'];
+    sec.innerHTML='<h3 style="margin:0 0 4px">✅ Clôture mensuelle</h3><p class="hint" style="margin:0 0 10px">Liste de contrôle de fin de mois, avec signature de la clôture.</p><div class="hn-cp-row"><label>Mois<input type="month" id="c-m" value="'+H.today().slice(0,7)+'"></label></div><div id="c-body"></div>';
+    var $=function(i){return sec.querySelector(i);};
+    function render(){ var m=$('#c-m').value; var C=D.close[m]=D.close[m]||{done:{},extra:[],by:'',on:'',locked:false}; var all=ITEMS.concat(C.extra);
+      var n=all.filter(function(t){return C.done[t];}).length;
+      $('#c-body').innerHTML='<div class="hn-cp-kpi"><div><b>'+n+' / '+all.length+'</b><span>Contrôles faits</span></div><div><b class="'+(C.locked?'hn-pos':'')+'">'+(C.locked?'Clôturé ✓':'Ouvert')+'</b><span>'+(C.locked?esc(C.by)+' · '+esc(C.on):'État du mois')+'</span></div></div>'+
+        all.map(function(t){ return '<label style="flex-direction:row;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink);margin:4px 0"><input type="checkbox" style="width:auto" data-t="'+esc(t)+'"'+(C.done[t]?' checked':'')+(C.locked?' disabled':'')+'> '+esc(t)+'</label>'; }).join('')+
+        (C.locked?'<div class="hn-cp-row"><button class="btn" id="c-open" type="button">Rouvrir le mois</button></div>':'<div class="hn-cp-row"><input id="c-add" placeholder="Ajouter un contrôle" maxlength="100" style="min-width:200px"><button class="btn" id="c-addb" type="button">Ajouter</button></div><div class="hn-cp-row"><input id="c-by" placeholder="Responsable de la clôture" maxlength="60" value="'+esc(C.by)+'"><button class="btn primary" id="c-lock" type="button">Clôturer le mois</button></div><div class="hn-msg msg"></div>')+
+        '<div class="hn-cp-row"><button class="btn" id="c-exp" type="button">⬇️ Exporter CSV</button></div>';
+      Array.prototype.forEach.call($('#c-body').querySelectorAll('[data-t]'),function(c){ c.addEventListener('change',function(){ C.done[c.dataset.t]=c.checked; sv(); render(); }); });
+      var ab=$('#c-addb'); if(ab) ab.addEventListener('click',function(){ var v=$('#c-add').value.trim(); if(v){ C.extra.push(v); sv(); render(); } });
+      var lk=$('#c-lock'); if(lk) lk.addEventListener('click',function(){ var by=$('#c-by').value.trim(), msg=$('#c-body .hn-msg'); if(!by){ msg.style.color='#dc2626'; msg.textContent='Indiquez le responsable.'; return; } if(n<all.length&&!confirm('Tous les contrôles ne sont pas faits. Clôturer quand même ?')) return; C.locked=true; C.by=by; C.on=H.today(); sv(); render(); });
+      var op=$('#c-open'); if(op) op.addEventListener('click',function(){ if(confirm('Rouvrir ce mois ?')){ C.locked=false; sv(); render(); } });
+      $('#c-exp').addEventListener('click',function(){ var r=[['Mois','Contrôle','Fait','Clôturé par','Date']]; all.forEach(function(t){ r.push([m,t,C.done[t]?'Oui':'Non',C.by,C.on]); }); H.csv('cloture-'+m+'.csv',r); });
+    }
+    $('#c-m').addEventListener('change',render); render();
+  }
+
+  function attach(panel){
+    var bar=panel.querySelector('.hn-cpt-bar'); if(!bar||panel.getAttribute('data-hn-cp2')) return; panel.setAttribute('data-hn-cp2','1');
+    var defs=[['journal','📒 Journal et balance',journal],['recon','🏛 Rapprochement bancaire',recon],['ledger','👥 Clients / fournisseurs',ledger],['assets','🏗 Immobilisations',assetsTab],['taxes','🧾 Taxes',taxes],['closing','✅ Clôture mensuelle',closing]];
+    var secs={}, inited={};
+    defs.forEach(function(d){ var b=document.createElement('button'); b.type='button'; b.className='hn-cpt'; b.dataset.t='x-'+d[0]; b.textContent=d[1]; bar.appendChild(b);
+      var s=document.createElement('div'); s.className='hn-cp-sec'; s.hidden=true; s.dataset.x=d[0]; panel.appendChild(s); secs[d[0]]=s; });
+    bar.addEventListener('click',function(e){ var b=e.target.closest('.hn-cpt'); if(!b) return; var t=b.dataset.t||'';
+      defs.forEach(function(d){ var on=t==='x-'+d[0]; secs[d[0]].hidden=!on; if(on&&!inited[d[0]]){ inited[d[0]]=1; d[2](secs[d[0]]); } else if(on) R.forEach(function(f){ try{ f(); }catch(x){} }); }); });
+  }
+  function scan(){ var p=document.getElementById('fghlab-panel-compta'); if(p&&p.getAttribute('data-hn-cp')&&!p.getAttribute('data-hn-cp2')) attach(p); }
+  var pend=false;
+  function init(){ scan(); new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; scan(); },200); }).observe(document.body,{childList:true,subtree:true}); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
