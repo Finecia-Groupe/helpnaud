@@ -38102,8 +38102,9 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       csv('operations-financieres-'+today()+'.csv',rows); });
     rc(); ro();
   }
-  function scan(){ var p=document.getElementById('fghlab-panel-compta'); if(p && p.children.length>2) setup(p); }
-  function init(){ scan(); if(!document.getElementById('fghlab-panel-compta')||!document.getElementById('fghlab-panel-compta').getAttribute('data-hn-cp')){ var mo=new MutationObserver(function(){ scan(); var p=document.getElementById('fghlab-panel-compta'); if(p&&p.getAttribute('data-hn-cp')) mo.disconnect(); }); mo.observe(document.body,{childList:true,subtree:true}); } }
+  function scan(){ var p=document.getElementById('fghlab-panel-compta'); if(p && p.children.length>2 && !p.getAttribute('data-hn-cp')) setup(p); }
+  var pend=false;
+  function init(){ scan(); var mo=new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; scan(); },120); }); mo.observe(document.body,{childList:true,subtree:true}); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
