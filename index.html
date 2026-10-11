@@ -37991,7 +37991,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
     return '<h3 style="margin:0 0 4px;">💵 Caisse — tenue et gestion de caisse</h3>'+
     '<p class="hint" style="margin:0 0 10px;">Journal de caisse de l’entreprise : entrées, sorties, solde théorique et comptage physique (écart). Données conservées sur cet appareil.</p>'+
     '<div class="hn-cp-row"><label>Fonds de caisse initial<input type="number" step="0.01" id="hn-c-open" style="width:150px"></label>'+
-    '<label>Devise<input type="text" id="hn-c-cur" maxlength="5" style="width:70px"></label></div>'+
+    '<span class="hint" id="hn-c-curnote" style="margin:0;align-self:center"></span></div>'+
     '<form id="hn-c-form" class="hn-cp-row"><label>Date<input type="date" id="hn-c-date" required></label>'+
     '<label>Type<select id="hn-c-type"><option value="in">Entrée</option><option value="out">Sortie</option></select></label>'+
     '<label>Libellé<input type="text" id="hn-c-lib" required maxlength="120" style="min-width:180px"></label>'+
@@ -38043,11 +38043,11 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
     // ---- Caisse
     var C=ld(KC,{open:0,cur:'$',rows:[],closes:[]});
     var $=function(id){return sc.querySelector('#'+id);};
-    $('hn-c-date').value=today(); $('hn-c-open').value=C.open||''; $('hn-c-cur').value=C.cur||'$';
+    $('hn-c-date').value=today(); $('hn-c-open').value=C.open||''; C.cur=(window.__hnFghCur&&window.__hnFghCur('compta'))||C.cur||'CAD';
     function theo(){ var t=+C.open||0; C.rows.forEach(function(r){ t+= r.type==='in'?r.amt:-r.amt; }); return t; }
     function rc(){
       var inn=0,out=0; C.rows.forEach(function(r){ if(r.type==='in') inn+=r.amt; else out+=r.amt; });
-      var cur=esc(C.cur||'$');
+      var cur=esc(C.cur||'CAD'); $('hn-c-curnote').textContent='Devise : '+cur+' (changez-la en haut de la carte)';
       $('hn-c-kpi').innerHTML='<div><b>'+money(+C.open||0)+' '+cur+'</b><span>Fonds initial</span></div><div><b class="hn-pos">'+money(inn)+' '+cur+'</b><span>Entrées</span></div><div><b class="hn-neg">'+money(out)+' '+cur+'</b><span>Sorties</span></div><div><b>'+money(theo())+' '+cur+'</b><span>Solde théorique</span></div>';
       var h='<table class="hn-cp-tbl"><tr><th>Date</th><th>Libellé</th><th>Pièce</th><th>Resp.</th><th>Entrée</th><th>Sortie</th><th></th></tr>';
       C.rows.slice().sort(function(a,b){return a.date<b.date?1:-1;}).forEach(function(r){
@@ -38058,7 +38058,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       $('hn-c-gap').innerHTML=g;
     }
     $('hn-c-open').addEventListener('change',function(){ C.open=parseFloat(this.value)||0; sv(KC,C); rc(); });
-    $('hn-c-cur').addEventListener('change',function(){ C.cur=this.value||'$'; sv(KC,C); rc(); });
+    window.addEventListener('hn-fgh-currency',function(e){ if(e.detail.tool==='compta'){ C.cur=e.detail.code; sv(KC,C); rc(); ro(); } });
     $('hn-c-form').addEventListener('submit',function(e){ e.preventDefault();
       var a=parseFloat($('hn-c-amt').value); if(!(a>0)) return;
       C.rows.push({id:Date.now()+''+Math.floor(Math.random()*99),date:$('hn-c-date').value,type:$('hn-c-type').value,lib:$('hn-c-lib').value.trim(),ref:$('hn-c-ref').value.trim(),who:$('hn-c-who').value.trim(),amt:a});
@@ -38078,8 +38078,8 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
     function ro(){
       var f=$o('hn-o-filter').value, tot={demande:0,approuve:0,execute:0};
       O.rows.forEach(function(r){ if(tot[r.st]!=null) tot[r.st]+=r.amt; });
-      $o('hn-o-kpi').innerHTML='<div><b>'+O.rows.length+'</b><span>Opérations</span></div><div><b>'+money(tot.demande)+'</b><span>À approuver</span></div><div><b>'+money(tot.approuve)+'</b><span>À exécuter</span></div><div><b>'+money(tot.execute)+'</b><span>Exécuté</span></div>';
-      var h='<table class="hn-cp-tbl"><tr><th>Date</th><th>Opération</th><th>Tiers</th><th>Compte</th><th>Montant</th><th>Statut</th><th>Actions</th></tr>';
+      $o('hn-o-kpi').innerHTML='<div><b>'+O.rows.length+'</b><span>Opérations</span></div><div><b>'+money(tot.demande)+' '+esc(C.cur)+'</b><span>À approuver</span></div><div><b>'+money(tot.approuve)+' '+esc(C.cur)+'</b><span>À exécuter</span></div><div><b>'+money(tot.execute)+' '+esc(C.cur)+'</b><span>Exécuté</span></div>';
+      var h='<table class="hn-cp-tbl"><tr><th>Date</th><th>Opération</th><th>Tiers</th><th>Compte</th><th>Montant ('+esc(C.cur)+')</th><th>Statut</th><th>Actions</th></tr>';
       var n=0; O.rows.slice().reverse().forEach(function(r){ if(f&&r.st!==f) return; n++;
         var a=''; if(r.st==='demande') a='<button class="btn" data-a="approuve" data-id="'+r.id+'" style="padding:2px 8px">Approuver</button> <button class="btn" data-a="rejete" data-id="'+r.id+'" style="padding:2px 8px">Rejeter</button>';
         else if(r.st==='approuve') a='<button class="btn" data-a="execute" data-id="'+r.id+'" style="padding:2px 8px">Marquer exécuté</button>';
@@ -38105,6 +38105,71 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
   function scan(){ var p=document.getElementById('fghlab-panel-compta'); if(p && p.children.length>2 && !p.getAttribute('data-hn-cp')) setup(p); }
   var pend=false;
   function init(){ scan(); var mo=new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; scan(); },120); }); mo.observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+<script>
+(function(){
+  "use strict";
+  var K='helpnaud_fgh_cur';
+  var CUR=[['CAD','Dollar canadien (CAD)'],['USD','Dollar américain (USD)'],['EUR','Euro (EUR)'],['GBP','Livre sterling (GBP)'],['CHF','Franc suisse (CHF)'],['XOF','Franc CFA — UEMOA (XOF)'],['XAF','Franc CFA — CEMAC (XAF)'],['MAD','Dirham marocain (MAD)'],['DZD','Dinar algérien (DZD)'],['TND','Dinar tunisien (TND)'],['INR','Roupie indienne (INR)'],['AUD','Dollar australien (AUD)'],['MXN','Peso mexicain (MXN)'],['BRL','Real brésilien (BRL)'],['JPY','Yen japonais (JPY)'],['CNY','Yuan chinois (CNY)']];
+  var AMT=/montant|budget|prix|co[uû]t|capital|revenu|chiffre d.affaires|salaire|frais|dette|actif|passif|b[ée]n[ée]fice|dividende|loyer|valeur|investissement|solde|paiement|caisse/i;
+  function load(){ try{ return JSON.parse(localStorage.getItem(K)||'{}')||{}; }catch(e){ return {}; } }
+  function save(m){ try{ localStorage.setItem(K,JSON.stringify(m)); }catch(e){} }
+  function get(tool){ var m=load(); return m[tool]||m.__all||'CAD'; }
+  window.__hnFghCur=get;
+  var st=document.createElement('style');
+  st.textContent='.hn-fcur{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}.hn-fcur select{border:1px solid var(--line);border-radius:9px;padding:6px 9px;background:var(--surface);color:var(--ink);font-size:13px;max-width:100%}';
+  document.head.appendChild(st);
+  function relabel(panel,code){
+    Array.prototype.forEach.call(panel.querySelectorAll('input[type="number"],input[inputmode="decimal"]'),function(i){
+      if(i.closest('.hn-fcur')) return;
+      var lab=i.closest('label'), txt=(i.getAttribute('data-hn-ph0')!=null?i.getAttribute('data-hn-ph0'):i.placeholder)||'';
+      if(i.getAttribute('data-hn-ph0')==null) i.setAttribute('data-hn-ph0',i.placeholder||'');
+      var ctx=txt+' '+(lab?lab.textContent:'')+' '+(i.getAttribute('aria-label')||'');
+      if(!AMT.test(ctx)) return;
+      if(txt) i.placeholder=txt.replace(/\s*\([A-Z]{3}\)\s*$/,'')+' ('+code+')';
+      if(lab){ var n=lab.firstChild; while(n && !(n.nodeType===3 && n.nodeValue.trim())) n=n.nextSibling;
+        if(n){ if(n.__hn0==null) n.__hn0=n.nodeValue; n.nodeValue=n.__hn0.replace(/\s*\([A-Z]{3}\)\s*$/,'').replace(/\s+$/,'')+' ('+code+')'; } }
+    });
+  }
+  function inject(panel){
+    var tool=panel.id.replace('fghlab-panel-','');
+    var own=panel.querySelector('select[id$="-currency"]');
+    var bar=panel.querySelector('.hn-fcur');
+    if(!own && !bar){
+      bar=document.createElement('div'); bar.className='hn-fcur'; bar.setAttribute('data-tool',tool);
+      var sel=document.createElement('select'); sel.setAttribute('aria-label','Devise de cet outil');
+      sel.innerHTML=CUR.map(function(c){return '<option value="'+c[0]+'">'+c[1]+'</option>';}).join('');
+      sel.value=get(tool);
+      var lb=document.createElement('label'); lb.className='hint'; lb.style.margin='0'; lb.textContent='Devise de cet outil'; 
+      var all=document.createElement('label'); all.className='hint'; all.style.cssText='margin:0;display:flex;gap:4px;align-items:center';
+      var cb=document.createElement('input'); cb.type='checkbox'; cb.style.cssText='width:auto;flex:none;padding:0'; all.appendChild(cb); all.appendChild(document.createTextNode('Appliquer à tous les outils FGH-Colab'));
+      bar.appendChild(lb); bar.appendChild(sel); bar.appendChild(all);
+      var ref=panel.children[1] && panel.children[1].tagName==='P' ? panel.children[1] : panel.children[0];
+      if(ref && ref.nextSibling) panel.insertBefore(bar,ref.nextSibling); else panel.appendChild(bar);
+      sel.addEventListener('change',function(){
+        var m=load(); if(cb.checked){ m.__all=sel.value; CUR.length; Array.prototype.forEach.call(document.querySelectorAll('[id^="fghlab-panel-"]'),function(p){ delete m[p.id.replace('fghlab-panel-','')]; }); } else m[tool]=sel.value;
+        save(m); sync();
+      });
+    }
+    var code=own?own.value:get(tool);
+    panel.setAttribute('data-currency',code);
+    if(bar){ var s=bar.querySelector('select'); if(s && s.value!==code && document.activeElement!==s) s.value=code; }
+    relabel(panel,code);
+  }
+  var last={};
+  function sync(){
+    Array.prototype.forEach.call(document.querySelectorAll('[id^="fghlab-panel-"]'),function(p){
+      if(!p.classList.contains('hn-panel')) return;
+      inject(p);
+      var tool=p.id.replace('fghlab-panel-',''), c=p.getAttribute('data-currency');
+      if(last[tool]!==c){ last[tool]=c; try{ window.dispatchEvent(new CustomEvent('hn-fgh-currency',{detail:{tool:tool,code:c}})); }catch(e){} }
+    });
+  }
+  var pend=false;
+  function init(){ sync(); new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; sync(); },250); }).observe(document.body,{childList:true,subtree:true}); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
