@@ -8,6 +8,17 @@ const SB_PUB = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_5ZLQ6FIGJ
 const SB_SECRET = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const RESEND_KEY = process.env.RESEND_API_KEY || '';
 const MAIL_FROM = process.env.MAIL_FROM || '';
+// Les réponses des destinataires arrivent à l'assistance (l'expéditeur noreply@ n'a pas de boîte).
+/* Adresses FINECIA GROUPE (marque mère) : tous les courriels FGH-Colab y répondent. Surcharge possible : MAIL_REPLY_TO_FINECIA (Netlify). */
+const REPLY_DEFAULT = process.env.MAIL_REPLY_TO_FINECIA || 'contacts@fineciagroupe.com';
+function replyFor(m){
+  if (process.env.MAIL_REPLY_TO_FINECIA) return process.env.MAIL_REPLY_TO_FINECIA;
+  if (m && m.kind === 'support') return 'supportbusiness@fineciagroupe.com';
+  if (m && m.partner_id) return 'partnersinfo@fineciagroupe.com';
+  return 'contacts@fineciagroupe.com';
+}
+/* Expéditeur : MAIL_FROM_FINECIA si le domaine fineciagroupe.com est vérifié dans Resend, sinon MAIL_FROM (noreply@helpnaud.ai). */
+const FROM_ADDR = process.env.MAIL_FROM_FINECIA || process.env.MAIL_FROM || '';
 const H = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 const reply = (st, o) => ({ statusCode: st, headers: H, body: JSON.stringify(o) });
 async function rpc(fn, args, token){
@@ -28,7 +39,7 @@ exports.handler = async function(event){
   try {
     const items = await rpc('fgh_outbox_take', { p_limit: 10 }, token);
     if (!Array.isArray(items) || !items.length) return reply(200, { ok: true, sent: 0, queued: 0 });
-    if (!RESEND_KEY || !MAIL_FROM) {   // pas de service d'envoi : on remet en file
+    if (!RESEND_KEY || !FROM_ADDR) {   // pas de service d'envoi : on remet en file
       for (const m of items) await rpc('svc_outbox_requeue', { p_id: m.id }).catch(() => {});
       return reply(200, { ok: true, sent: 0, queued: items.length, configured: false });
     }
@@ -37,7 +48,7 @@ exports.handler = async function(event){
       let ok = false, err = null;
       try {
         const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RESEND_KEY },
-          body: JSON.stringify({ from: MAIL_FROM, to: [m.to_email], subject: m.subject, text: m.body }) });
+          body: JSON.stringify({ from: FROM_ADDR, reply_to: replyFor(m), to: [m.to_email], subject: m.subject, text: m.body }) });
         ok = r.ok; if (!ok) err = 'HTTP ' + r.status;
       } catch (e) { err = 'exception'; }
       await rpc('svc_outbox_mark', { p_id: m.id, p_ok: ok, p_error: err }).catch(() => {});
