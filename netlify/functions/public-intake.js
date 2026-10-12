@@ -45,15 +45,26 @@ async function svcRpc(fn, args){
    Netlify (RESEND_API_KEY + MAIL_FROM), il part tout de suite, sinon il reste « en attente » et l'équipe le voit. */
 const RESEND_KEY = process.env.RESEND_API_KEY || '';
 const MAIL_FROM = process.env.MAIL_FROM || '';
+// Les réponses des destinataires arrivent à l'assistance (l'expéditeur noreply@ n'a pas de boîte).
+/* Adresses FINECIA GROUPE (marque mère) : tous les courriels FGH-Colab y répondent. Surcharge possible : MAIL_REPLY_TO_FINECIA (Netlify). */
+const REPLY_DEFAULT = process.env.MAIL_REPLY_TO_FINECIA || 'contacts@fineciagroupe.com';
+function replyFor(m){
+  if (process.env.MAIL_REPLY_TO_FINECIA) return process.env.MAIL_REPLY_TO_FINECIA;
+  if (m && m.kind === 'support') return 'supportbusiness@fineciagroupe.com';
+  if (m && m.partner_id) return 'partnersinfo@fineciagroupe.com';
+  return 'contacts@fineciagroupe.com';
+}
+/* Expéditeur : MAIL_FROM_FINECIA si le domaine fineciagroupe.com est vérifié dans Resend, sinon MAIL_FROM (noreply@helpnaud.ai). */
+const FROM_ADDR = process.env.MAIL_FROM_FINECIA || process.env.MAIL_FROM || '';
 async function sendQueued(mailId){
   if (!mailId || !/^fghml-[a-f0-9]{14}$/.test(mailId)) return;
   try {
-    if (!RESEND_KEY || !MAIL_FROM) return;           // reste en file d'attente
+    if (!RESEND_KEY || !FROM_ADDR) return;           // reste en file d'attente
     const m = await svcRpc('svc_outbox_get', { p_id: mailId });
     if (!m || !m.to_email) return;
     const res = await fetch('https://api.resend.com/emails', { method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RESEND_KEY },
-      body: JSON.stringify({ from: MAIL_FROM, to: [m.to_email], subject: m.subject, text: m.body }) });
+      body: JSON.stringify({ from: FROM_ADDR, reply_to: replyFor(m), to: [m.to_email], subject: m.subject, text: m.body }) });
     await svcRpc('svc_outbox_mark', { p_id: mailId, p_ok: res.ok, p_error: res.ok ? null : ('HTTP ' + res.status) });
   } catch (e) { try { await svcRpc('svc_outbox_mark', { p_id: mailId, p_ok: false, p_error: 'exception' }); } catch (x) {} }
 }
