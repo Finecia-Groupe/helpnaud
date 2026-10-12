@@ -86,7 +86,7 @@ exports.handler = async function(event){
       if (/^[0-9]{8}$/.test(ident)) email = (await svcRpc('svc_ecorep_email_by_number', { p_number: ident })) || '';
       if (!isEmail(email)) return bad();
       const res = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: SB_PUB }, body: JSON.stringify({ email, password: pw }) });
+        headers: { 'Content-Type': 'application/json', apikey: SB_PUB }, body: JSON.stringify(Object.assign({ email, password: pw }, str(body.captchaToken, 4000) ? { gotrue_meta_security: { captcha_token: str(body.captchaToken, 4000) } } : {})) });
       if (!res.ok) return bad();
       const s = await res.json().catch(() => null);
       if (!s || !s.access_token || !s.user) return bad();
