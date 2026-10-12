@@ -5033,7 +5033,38 @@
         </div>
       </div>
 
-      <div class="card">
+            <div class="card" id="cust-admin-card" style="display:none;">
+        <h2>Clients HelpNaud <span class="hint" style="font-weight:400; font-size:12px;">(réservé au propriétaire)</span></h2>
+        <p class="hint" style="margin:0 0 10px;">Les clients sont les personnes qui se sont créé un compte HelpNaud (séparé de l'équipe FGH-Colab). Vous voyez leur forfait et leur consommation du mois, et vous pouvez changer un forfait, ajouter des crédits ou suspendre un compte.</p>
+        <p class="hint" id="cust-admin-msg" hidden role="status" style="margin:0 0 10px; font-weight:600;"></p>
+        <div id="cust-admin-list-screen">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+            <input type="search" id="cust-admin-q" placeholder="Rechercher (nom ou courriel)" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:240px;">
+            <button type="button" class="btn" id="cust-admin-refresh" style="padding:6px 12px; font-size:12.5px;">Actualiser</button>
+            <span class="hint" id="cust-admin-count" style="margin:0;"></span>
+          </div>
+          <div id="cust-admin-rows" style="display:grid; gap:8px;"></div>
+        </div>
+        <div id="cust-admin-edit-screen" style="display:none;">
+          <button type="button" class="btn" id="cust-admin-back" style="padding:6px 12px; font-size:12.5px; margin-bottom:10px;">← Retour à la liste</button>
+          <p style="margin:0 0 2px;"><b id="cust-admin-e-name"></b></p>
+          <p class="hint" id="cust-admin-e-info" style="margin:0 0 12px;"></p>
+          <div style="display:grid; gap:10px; max-width:420px;">
+            <label class="hint" style="margin:0;">Forfait
+              <select id="cust-admin-e-plan" style="width:100%; margin-top:4px;"></select></label>
+            <label class="hint" style="margin:0;">Ajouter des crédits IA (valables pour le mois en cours)
+              <input type="number" id="cust-admin-e-extra" min="0" max="100000" step="1" value="0" style="width:100%; margin-top:4px; border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink);"></label>
+            <label class="hint" style="margin:0;">Statut du compte
+              <select id="cust-admin-e-status" style="width:100%; margin-top:4px;"><option value="active">Actif</option><option value="suspended">Suspendu (n'a plus accès à l'IA)</option></select></label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn primary" id="cust-admin-e-save" style="padding:6px 14px; font-size:12.5px;">Enregistrer</button>
+              <button type="button" class="btn" id="cust-admin-e-cancel" style="padding:6px 14px; font-size:12.5px;">Annuler</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+<div class="card">
         <h2>Abonnements</h2>
         <p class="hint">Consultez les 5 forfaits prévus pour HelpNaud.ai (Pilote, Essentiel, Professionnel, Affaires, Institution) — à titre indicatif, aucun paiement n'est actif pendant la phase pilote.</p>
         <button class="btn primary" id="btn-abonnements" type="button">
@@ -5836,6 +5867,59 @@
     removeItem: function(k){ try{ sessionStorage.removeItem(k); }catch(e){} }
   };
   function fghlabOwnerEl(id){ return document.getElementById(id); }
+  /* ----- Anti-robots Cloudflare Turnstile -----
+     Clé PUBLIQUE du site (sans danger dans le code). La clé SECRÈTE se met uniquement dans Supabase (Authentication >
+     Attack Protection > CAPTCHA). Le jeton est demandé avant chaque connexion / inscription / réinitialisation : invisible
+     la plupart du temps, une case apparaît seulement si Cloudflare doute. Si le service est bloqué, la tentative part
+     quand même sans jeton (Supabase accepte ou refuse selon son réglage). */
+  var HN_TURNSTILE_KEY = '0x4AAAAAAFUoNo5GmOzgxJ-8';
+  var hnTs = { id: null, loading: null, wait: null };
+  function hnTsLoad(){
+    if(window.turnstile) return Promise.resolve(true);
+    if(hnTs.loading) return hnTs.loading;
+    hnTs.loading = new Promise(function(resolve){
+      try{
+        var sc = document.createElement('script');
+        sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        sc.async = true; sc.defer = true;
+        sc.onload = function(){ resolve(!!window.turnstile); };
+        sc.onerror = function(){ resolve(false); };
+        document.head.appendChild(sc);
+        setTimeout(function(){ resolve(!!window.turnstile); }, 8000);
+      }catch(e){ resolve(false); }
+    });
+    return hnTs.loading;
+  }
+  function hnCaptchaToken(){
+    if(typeof HN_SAFE_MAIN !== 'undefined' && HN_SAFE_MAIN) return Promise.resolve(undefined);
+    return hnTsLoad().then(function(ok){
+      if(!ok) return undefined;
+      return new Promise(function(resolve){
+        var done = false, host = document.getElementById('hn-turnstile');
+        function fin(t){ if(done) return; done = true; hnTs.wait = null; if(host) host.style.display = 'none'; resolve(t || undefined); }
+        try{
+          if(!host){
+            host = document.createElement('div'); host.id = 'hn-turnstile';
+            host.style.cssText = 'position:fixed; left:50%; bottom:90px; transform:translateX(-50%); z-index:99999; display:none; background:var(--surface,#fff); padding:6px; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.25);';
+            document.body.appendChild(host);
+          }
+          /* Le widget garde les fonctions de rappel de son premier rendu : elles passent par hnTs.wait (la demande en cours). */
+          hnTs.wait = fin;
+          if(hnTs.id === null){
+            hnTs.id = window.turnstile.render(host, {
+              sitekey: HN_TURNSTILE_KEY, appearance: 'interaction-only', language: 'fr',
+              callback: function(t){ if(hnTs.wait) hnTs.wait(t); },
+              'error-callback': function(){ if(hnTs.wait) hnTs.wait(null); },
+              'timeout-callback': function(){ if(hnTs.wait) hnTs.wait(null); },
+              'before-interactive-callback': function(){ host.style.display = 'block'; }
+            });
+          } else window.turnstile.reset(hnTs.id);
+          setTimeout(function(){ fin(null); }, 45000);
+        }catch(e){ fin(null); }
+      });
+    });
+  }
+  function hnCaptchaOpt(token){ return token ? { captchaToken: token } : undefined; }
   function fghlabOwnerSbInit(){
     if(fghlabSb) return fghlabSb;
     try{
@@ -5859,6 +5943,7 @@
     var status = error && error.status;
     if(error && error.hnFriendly) return error.message;
     if(msg.indexOf('auth session missing') >= 0) return "Le lien de réinitialisation a expiré ou a déjà été utilisé. Cliquez sur « Mot de passe oublié » pour en recevoir un nouveau, puis ouvrez-le une seule fois, dans ce même navigateur.";
+    if(code === 'captcha_failed' || msg.indexOf('captcha') >= 0) return 'Vérification anti-robot échouée. Réessayez (désactivez un éventuel bloqueur de contenu).';
     if(code === 'invalid_credentials' || msg.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
     if(code === 'email_not_confirmed' || msg.indexOf('email not confirmed') >= 0) return "Ce courriel n'est pas confirmé dans Supabase (cochez « Auto Confirm User » à la création du compte).";
     if(status === 429 || code.indexOf('rate_limit') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('too many') >= 0) return 'Trop de tentatives. Réessayez dans quelques minutes.';
@@ -5951,6 +6036,7 @@
     if(signedIn) signedIn.style.display = showSigned ? 'block' : 'none';
     if(pwForm) pwForm.style.display = showPw ? 'flex' : 'none';
     if(typeof fghlabCloudRenderTeamPanel === 'function') fghlabCloudRenderTeamPanel();
+    try{ if(typeof custAdminSync === 'function') custAdminSync(); }catch(e){}
     hnApplyTeamUi();
   }
   function fghlabOwnerVerify(session){
@@ -5993,7 +6079,7 @@
     var btn = fghlabOwnerEl('fghlab-ownercloud-login-btn');
     if(btn) btn.disabled = true;
     fghlabOwnerMsg('', '');
-    return sb.auth.signInWithPassword({ email: email, password: password }).then(function(res){
+    return hnCaptchaToken().then(function(ct){ return sb.auth.signInWithPassword({ email: email, password: password, options: hnCaptchaOpt(ct) }); }).then(function(res){
       if(res.error) throw res.error;
       return fghlabOwnerVerify(res.data && res.data.session).then(function(ok){
         if(ok){ fghlabOwnerMsg('ok', 'Connecté en tant que propriétaire.'); hnScrollTopAfterAuth(); }
@@ -6027,7 +6113,7 @@
     if(!email){ fghlabOwnerMsg('error', "Saisissez d'abord votre courriel dans le champ ci-dessus."); return; }
     if(!/^https?:$/.test(String(location.protocol || ''))){ fghlabOwnerMsg('error', 'La réinitialisation ne fonctionne que depuis le site publié (adresse https).'); return; }
     fghlabOwnerMsg('', '');
-    sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function(res){
+    hnCaptchaToken().then(function(ct){ return sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname, captchaToken: ct }); }).then(function(res){
       if(res.error) throw res.error;
       fghlabOwnerMsg('ok', 'Si ce courriel correspond à un compte, un lien de réinitialisation vient d’être envoyé. Ouvrez-le dans ce même navigateur.');
     }).catch(function(e){ fghlabOwnerMsg('error', fghlabOwnerErrText(e)); });
@@ -6422,10 +6508,11 @@
       fghlabOwnerCloud = null; fghlabOwnerRecovery = false; fghlabOwnerChangePwOpen = false;
       fghlabCloudRole = null;
       fghlabCloudClearMemberState();
-      return sb.auth.signInWithPassword({ email: email, password: password });
+      return hnCaptchaToken().then(function(ct){ return sb.auth.signInWithPassword({ email: email, password: password, options: hnCaptchaOpt(ct) }); });
     }).then(function(res){
       if(res.error){
         var st = res.error.status, code = String(res.error.code || '').toLowerCase(), m = String(res.error.message || '').toLowerCase();
+        if(code === 'captcha_failed' || m.indexOf('captcha') >= 0) throw fghlabCloudFail('Vérification anti-robot échouée. Réessayez.');
         if(st === 429 || code.indexOf('rate_limit') >= 0) throw fghlabCloudFail('Trop de tentatives. Réessayez dans quelques minutes.');
         if(m.indexOf('failed to fetch') >= 0 || m.indexOf('network') >= 0 || m.indexOf('load failed') >= 0) throw fghlabCloudFail('Connexion au serveur impossible. Vérifiez votre connexion Internet.');
         throw fghlabCloudFail(FGHLAB_LOGIN_GENERIC);
@@ -6518,7 +6605,7 @@
       probe = window.supabase.createClient(FGHLAB_SB_URL, FGHLAB_SB_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'helpnaud_sb_probe' } });
     }catch(e){ probe = null; }
     if(!probe) return Promise.reject(fghlabCloudFail('Service de connexion sécurisée indisponible.'));
-    return probe.auth.signInWithPassword({ email: member.email, password: current }).then(function(r){
+    return hnCaptchaToken().then(function(ct){ return probe.auth.signInWithPassword({ email: member.email, password: current, options: hnCaptchaOpt(ct) }); }).then(function(r){
       if(r.error) throw fghlabCloudFail('Mot de passe actuel incorrect.');
       return sb.auth.updateUser({ password: next });
     }).then(function(r){
@@ -12927,6 +13014,7 @@
   }
   function custErrText(e){
     var t = String((e && (e.message || e.error_description)) || '').toLowerCase();
+    if(t.indexOf('captcha') >= 0) return 'Vérification anti-robot échouée. Réessayez (désactivez un éventuel bloqueur de contenu).';
     if(t.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
     if(t.indexOf('email not confirmed') >= 0) return 'Confirmez d’abord votre courriel (lien reçu par courriel).';
     if(t.indexOf('already registered') >= 0 || t.indexOf('already been registered') >= 0) return 'Un compte existe déjà avec ce courriel : utilisez « Connexion » ou « Mot de passe oublié ».';
@@ -13001,7 +13089,7 @@
     var cs = custSbInit();
     if(!cs){ custMsg('error', 'Service de connexion indisponible.'); return; }
     if(custBusy) return; custBusy = true; custMsg('', '');
-    cs.auth.signInWithPassword({ email: String(email || '').trim(), password: pw }).then(function(res){
+    hnCaptchaToken().then(function(ct){ return cs.auth.signInWithPassword({ email: String(email || '').trim(), password: pw, options: hnCaptchaOpt(ct) }); }).then(function(res){
       if(res.error) throw res.error;
       custMsg('ok', 'Connecté.');
       return custRefreshSession();
@@ -13015,7 +13103,7 @@
     if(pw.length < 8){ custMsg('error', 'Mot de passe : 8 caractères minimum.'); return; }
     if(!terms){ custMsg('error', 'Acceptez les conditions pour créer votre compte.'); return; }
     if(custBusy) return; custBusy = true; custMsg('', '');
-    cs.auth.signUp({ email: email, password: pw, options: { data: { full_name: name, terms: true }, emailRedirectTo: location.origin + '/?account=confirmed' } }).then(function(res){
+    hnCaptchaToken().then(function(ct){ return cs.auth.signUp({ email: email, password: pw, options: { data: { full_name: name, terms: true }, emailRedirectTo: location.origin + '/?account=confirmed', captchaToken: ct } }); }).then(function(res){
       if(res.error) throw res.error;
       if(res.data && res.data.session){ custMsg('ok', 'Compte créé. Bienvenue !'); return custRefreshSession(); }
       /* Confirmation par courriel activée : le profil client sera créé à la première connexion. */
@@ -13027,7 +13115,7 @@
     var cs = custSbInit();
     email = String(email || '').trim();
     if(!cs || !email){ custMsg('error', 'Saisissez votre courriel puis cliquez sur « Mot de passe oublié ».'); return; }
-    cs.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?account=reset' }).then(function(res){
+    hnCaptchaToken().then(function(ct){ return cs.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?account=reset', captchaToken: ct }); }).then(function(res){
       if(res.error) throw res.error;
       custMsg('ok', 'Si un compte existe pour ce courriel, un lien de réinitialisation vient d’être envoyé.');
     }).catch(function(e){ custMsg('error', custErrText(e)); });
@@ -13039,6 +13127,103 @@
       aiServerToken().then(function(t){ if(!t && aiServerMode){ sampleCap = null; aiServerMode = false; try{ updateCoworkAiBanner(); }catch(e){} } });
     });
   }
+  /* ----- Écrans propriétaire : liste des clients + fiche (forfait, crédits, suspension) -----
+     Appelle customer_admin_list() et customer_admin_set() avec la session PROPRIÉTAIRE ; la base refuse tout autre compte. */
+  var custAdminState = { rows: [], loaded: false, busy: false, sel: null };
+  function custAdminMsg(kind, text){
+    var m = cEl('cust-admin-msg'); if(!m) return;
+    m.hidden = !text; m.textContent = text || '';
+    m.style.color = kind === 'error' ? 'var(--bad)' : (kind === 'ok' ? 'var(--ok, #2e7d32)' : 'var(--muted)');
+  }
+  function custAdminPlanName(id){ var n = id; AI_CREDIT_TIERS.forEach(function(t){ if(t.id === id) n = t.nom; }); return n; }
+  function custAdminDate(v){ try{ return new Date(v).toLocaleDateString('fr-CA'); }catch(e){ return ''; } }
+  function custAdminShow(screen){
+    var l = cEl('cust-admin-list-screen'), e = cEl('cust-admin-edit-screen');
+    if(l) l.style.display = screen === 'edit' ? 'none' : '';
+    if(e) e.style.display = screen === 'edit' ? '' : 'none';
+  }
+  function custAdminRender(){
+    var box = cEl('cust-admin-rows'); if(!box) return;
+    var q = String((cEl('cust-admin-q') || {}).value || '').trim().toLowerCase();
+    var rows = custAdminState.rows.filter(function(r){ return !q || (String(r.email || '') + ' ' + String(r.full_name || '')).toLowerCase().indexOf(q) >= 0; });
+    var cnt = cEl('cust-admin-count'); if(cnt) cnt.textContent = rows.length + ' client' + (rows.length > 1 ? 's' : '') + (q ? ' trouvé' + (rows.length > 1 ? 's' : '') : '');
+    if(!rows.length){ box.innerHTML = '<p class="hint" style="margin:0;">' + (custAdminState.loaded ? 'Aucun client pour le moment.' : 'Chargement…') + '</p>'; return; }
+    box.innerHTML = rows.map(function(r){
+      var susp = r.status === 'suspended';
+      return '<div style="border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--surface); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">' +
+        '<div style="flex:1; min-width:200px;"><b>' + escapeHtml(r.full_name || '(sans nom)') + '</b>' + (susp ? ' <span style="color:var(--bad); font-size:12px; font-weight:700;">SUSPENDU</span>' : '') +
+        '<div class="hint" style="margin:2px 0 0; word-break:break-all;">' + escapeHtml(r.email || '') + '</div>' +
+        '<div class="hint" style="margin:2px 0 0;">Forfait ' + escapeHtml(custAdminPlanName(r.plan)) + ' · ' + Number(r.used || 0) + ' crédits ce mois-ci · inscrit le ' + escapeHtml(custAdminDate(r.created_at)) + '</div></div>' +
+        '<button type="button" class="btn" data-cadm-edit="' + escapeHtml(r.email || '') + '" style="padding:6px 12px; font-size:12.5px;">Gérer</button></div>';
+    }).join('');
+  }
+  function custAdminLoad(keepMsg){
+    var sb = fghlabSb; if(!sb || !fghlabOwnerCloud || custAdminState.busy) return;
+    custAdminState.busy = true; if(!keepMsg) custAdminMsg('', '');
+    sb.rpc('customer_admin_list').then(function(r){
+      if(r.error) throw r.error;
+      custAdminState.rows = Array.isArray(r.data) ? r.data : []; custAdminState.loaded = true;
+      custAdminRender();
+    }).catch(function(){
+      custAdminState.loaded = true; custAdminRender();
+      custAdminMsg('error', 'Liste des clients indisponible. Vérifiez que le fichier SQL « phase 3n » est bien exécuté dans Supabase.');
+    }).then(function(){ custAdminState.busy = false; });
+  }
+  function custAdminSync(){
+    if(!custAdminState) return;
+    var card = cEl('cust-admin-card'); if(!card) return;
+    var on = !!fghlabOwnerCloud;
+    card.style.display = on ? '' : 'none';
+    if(on && !custAdminState.loaded && !custAdminState.busy) custAdminLoad();
+    if(!on){ custAdminState.rows = []; custAdminState.loaded = false; custAdminState.sel = null; custAdminShow('list'); }
+  }
+  function custAdminOpen(email){
+    var row = null; custAdminState.rows.forEach(function(r){ if(r.email === email) row = r; });
+    if(!row) return;
+    custAdminState.sel = row;
+    var ps = cEl('cust-admin-e-plan');
+    if(ps) ps.innerHTML = AI_CREDIT_TIERS.filter(function(t){ return t.id !== 'pilote'; }).map(function(t){
+      return '<option value="' + escapeHtml(t.id) + '">' + escapeHtml(t.nom) + (t.credits != null ? ' (' + t.credits + ' crédits/mois)' : ' (sur mesure)') + '</option>';
+    }).join('');
+    if(ps) ps.value = row.plan === 'pilote' ? 'gratuit' : row.plan;
+    cEl('cust-admin-e-name').textContent = row.full_name || '(sans nom)';
+    cEl('cust-admin-e-info').textContent = (row.email || '') + ' — ' + Number(row.used || 0) + ' crédits utilisés ce mois-ci — inscrit le ' + custAdminDate(row.created_at);
+    cEl('cust-admin-e-extra').value = '0';
+    cEl('cust-admin-e-status').value = row.status === 'suspended' ? 'suspended' : 'active';
+    custAdminMsg('', ''); custAdminShow('edit');
+  }
+  function custAdminSave(){
+    var row = custAdminState.sel, sb = fghlabSb; if(!row || !sb || !fghlabOwnerCloud || custAdminState.busy) return;
+    var plan = cEl('cust-admin-e-plan').value, status = cEl('cust-admin-e-status').value;
+    var extra = parseInt(cEl('cust-admin-e-extra').value, 10); if(!(extra > 0)) extra = 0; if(extra > 100000) extra = 100000;
+    var what = [];
+    if(plan !== row.plan) what.push('forfait ' + custAdminPlanName(plan));
+    if(extra > 0) what.push('+' + extra + ' crédits');
+    if(status !== row.status) what.push(status === 'suspended' ? 'SUSPENSION du compte' : 'réactivation du compte');
+    if(!what.length){ custAdminMsg('error', 'Aucun changement à enregistrer.'); return; }
+    if(!window.confirm('Appliquer à ' + (row.email || '') + ' : ' + what.join(', ') + ' ?')) return;
+    custAdminState.busy = true;
+    sb.rpc('customer_admin_set', { p_email: row.email, p_plan: plan, p_extra: extra, p_status: status }).then(function(r){
+      if(r.error) throw r.error;
+      if(!r.data || r.data.ok !== true) throw new Error('refus');
+      custAdminState.busy = false; custAdminState.loaded = false;
+      custAdminShow('list'); custAdminMsg('ok', 'Modifié : ' + (row.email || '') + ' — ' + what.join(', ') + '.');
+      custAdminLoad(true);
+    }).catch(function(){ custAdminState.busy = false; custAdminMsg('error', 'Modification refusée ou impossible. Réessayez.'); });
+  }
+  (function wireCustAdmin(){
+    var f;
+    if((f = cEl('cust-admin-refresh'))) f.addEventListener('click', function(){ custAdminState.loaded = false; custAdminLoad(); });
+    if((f = cEl('cust-admin-q'))) f.addEventListener('input', custAdminRender);
+    if((f = cEl('cust-admin-back'))) f.addEventListener('click', function(){ custAdminShow('list'); });
+    if((f = cEl('cust-admin-e-cancel'))) f.addEventListener('click', function(){ custAdminShow('list'); });
+    if((f = cEl('cust-admin-e-save'))) f.addEventListener('click', custAdminSave);
+    if((f = cEl('cust-admin-rows'))) f.addEventListener('click', function(ev){
+      var b = ev.target.closest ? ev.target.closest('[data-cadm-edit]') : null;
+      if(b) custAdminOpen(b.getAttribute('data-cadm-edit'));
+    });
+    custAdminSync();
+  })();
   (function wireCustomerAccount(){
     var f;
     if((f = cEl('cust-tab-login'))) f.addEventListener('click', function(){ custTab('login'); });
