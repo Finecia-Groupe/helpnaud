@@ -5873,7 +5873,7 @@
      la plupart du temps, une case apparaît seulement si Cloudflare doute. Si le service est bloqué, la tentative part
      quand même sans jeton (Supabase accepte ou refuse selon son réglage). */
   var HN_TURNSTILE_KEY = '0x4AAAAAAFUoNo5GmOzgxJ-8';
-  var hnTs = { id: null, loading: null, wait: null };
+  var hnTs = { id: null, loading: null, wait: null, err: '' };
   function hnTsLoad(){
     if(window.turnstile) return Promise.resolve(true);
     if(hnTs.loading) return hnTs.loading;
@@ -5883,24 +5883,35 @@
         sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
         sc.async = true; sc.defer = true;
         sc.onload = function(){ resolve(!!window.turnstile); };
-        sc.onerror = function(){ resolve(false); };
+        sc.onerror = function(){ hnTs.err = 'script-bloque'; resolve(false); };
         document.head.appendChild(sc);
-        setTimeout(function(){ resolve(!!window.turnstile); }, 8000);
-      }catch(e){ resolve(false); }
+        setTimeout(function(){ if(!window.turnstile) hnTs.err = hnTs.err || 'script-lent'; resolve(!!window.turnstile); }, 10000);
+      }catch(e){ hnTs.err = 'script-erreur'; resolve(false); }
     });
     return hnTs.loading;
   }
+  /* Indice affiché avec l'erreur « captcha » : dit pourquoi aucun jeton n'a pu être obtenu. */
+  function hnCaptchaHint(){
+    var e = String(hnTs.err || '');
+    if(!e) return '';
+    if(/^(script-)/.test(e)) return ' (Cloudflare Turnstile est bloqué ou injoignable : désactivez le bloqueur de contenu / VPN et réessayez.)';
+    if(e.indexOf('1102') === 0 || e.indexOf('1101') === 0 || e.indexOf('1100') === 0) return ' (Turnstile ' + e + ' : le domaine helpnaud.ai n’est pas autorisé dans le widget Cloudflare, ou la clé du site est invalide.)';
+    return ' (Turnstile : ' + e + ')';
+  }
   function hnCaptchaToken(){
     if(typeof HN_SAFE_MAIN !== 'undefined' && HN_SAFE_MAIN) return Promise.resolve(undefined);
+    hnTs.err = '';
     return hnTsLoad().then(function(ok){
       if(!ok) return undefined;
       return new Promise(function(resolve){
         var done = false, host = document.getElementById('hn-turnstile');
-        function fin(t){ if(done) return; done = true; hnTs.wait = null; if(host) host.style.display = 'none'; resolve(t || undefined); }
+        function show(on){ if(host){ host.style.opacity = on ? '1' : '0.01'; host.style.pointerEvents = on ? 'auto' : 'none'; } }
+        function fin(t){ if(done) return; done = true; hnTs.wait = null; show(false); resolve(t || undefined); }
         try{
           if(!host){
+            /* Jamais display:none (le défi ne s'exécuterait pas) : présent dans la page mais quasi transparent, sauf si Cloudflare demande une interaction. */
             host = document.createElement('div'); host.id = 'hn-turnstile';
-            host.style.cssText = 'position:fixed; left:50%; bottom:90px; transform:translateX(-50%); z-index:99999; display:none; background:var(--surface,#fff); padding:6px; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.25);';
+            host.style.cssText = 'position:fixed; left:50%; bottom:90px; transform:translateX(-50%); z-index:99999; min-width:300px; min-height:65px; opacity:0.01; pointer-events:none; background:var(--surface,#fff); padding:6px; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.25);';
             document.body.appendChild(host);
           }
           /* Le widget garde les fonctions de rappel de son premier rendu : elles passent par hnTs.wait (la demande en cours). */
@@ -5909,13 +5920,14 @@
             hnTs.id = window.turnstile.render(host, {
               sitekey: HN_TURNSTILE_KEY, appearance: 'interaction-only', language: 'fr',
               callback: function(t){ if(hnTs.wait) hnTs.wait(t); },
-              'error-callback': function(){ if(hnTs.wait) hnTs.wait(null); },
-              'timeout-callback': function(){ if(hnTs.wait) hnTs.wait(null); },
-              'before-interactive-callback': function(){ host.style.display = 'block'; }
+              'error-callback': function(code){ hnTs.err = String(code || 'erreur'); if(hnTs.wait) hnTs.wait(null); return true; },
+              'timeout-callback': function(){ hnTs.err = 'delai-depasse'; if(hnTs.wait) hnTs.wait(null); },
+              'before-interactive-callback': function(){ show(true); },
+              'after-interactive-callback': function(){ show(false); }
             });
           } else window.turnstile.reset(hnTs.id);
-          setTimeout(function(){ fin(null); }, 45000);
-        }catch(e){ fin(null); }
+          setTimeout(function(){ if(!done) hnTs.err = hnTs.err || 'delai-depasse'; fin(null); }, 45000);
+        }catch(e){ hnTs.err = 'erreur-script'; fin(null); }
       });
     });
   }
@@ -5943,7 +5955,7 @@
     var status = error && error.status;
     if(error && error.hnFriendly) return error.message;
     if(msg.indexOf('auth session missing') >= 0) return "Le lien de réinitialisation a expiré ou a déjà été utilisé. Cliquez sur « Mot de passe oublié » pour en recevoir un nouveau, puis ouvrez-le une seule fois, dans ce même navigateur.";
-    if(code === 'captcha_failed' || msg.indexOf('captcha') >= 0) return 'Vérification anti-robot échouée. Réessayez (désactivez un éventuel bloqueur de contenu).';
+    if(code === 'captcha_failed' || msg.indexOf('captcha') >= 0) return 'Vérification anti-robot échouée. Réessayez.' + hnCaptchaHint();
     if(code === 'invalid_credentials' || msg.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
     if(code === 'email_not_confirmed' || msg.indexOf('email not confirmed') >= 0) return "Ce courriel n'est pas confirmé dans Supabase (cochez « Auto Confirm User » à la création du compte).";
     if(status === 429 || code.indexOf('rate_limit') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('too many') >= 0) return 'Trop de tentatives. Réessayez dans quelques minutes.';
@@ -6512,7 +6524,7 @@
     }).then(function(res){
       if(res.error){
         var st = res.error.status, code = String(res.error.code || '').toLowerCase(), m = String(res.error.message || '').toLowerCase();
-        if(code === 'captcha_failed' || m.indexOf('captcha') >= 0) throw fghlabCloudFail('Vérification anti-robot échouée. Réessayez.');
+        if(code === 'captcha_failed' || m.indexOf('captcha') >= 0) throw fghlabCloudFail('Vérification anti-robot échouée. Réessayez.' + hnCaptchaHint());
         if(st === 429 || code.indexOf('rate_limit') >= 0) throw fghlabCloudFail('Trop de tentatives. Réessayez dans quelques minutes.');
         if(m.indexOf('failed to fetch') >= 0 || m.indexOf('network') >= 0 || m.indexOf('load failed') >= 0) throw fghlabCloudFail('Connexion au serveur impossible. Vérifiez votre connexion Internet.');
         throw fghlabCloudFail(FGHLAB_LOGIN_GENERIC);
@@ -13014,7 +13026,7 @@
   }
   function custErrText(e){
     var t = String((e && (e.message || e.error_description)) || '').toLowerCase();
-    if(t.indexOf('captcha') >= 0) return 'Vérification anti-robot échouée. Réessayez (désactivez un éventuel bloqueur de contenu).';
+    if(t.indexOf('captcha') >= 0) return 'Vérification anti-robot échouée. Réessayez.' + hnCaptchaHint();
     if(t.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
     if(t.indexOf('email not confirmed') >= 0) return 'Confirmez d’abord votre courriel (lien reçu par courriel).';
     if(t.indexOf('already registered') >= 0 || t.indexOf('already been registered') >= 0) return 'Un compte existe déjà avec ce courriel : utilisez « Connexion » ou « Mot de passe oublié ».';

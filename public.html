@@ -513,25 +513,27 @@
 
   /* ---------- ECOREP : espace de consultation des relevés de paie ---------- */
   /* Anti-robots Cloudflare Turnstile (clé PUBLIQUE ; la clé secrète reste dans Supabase). Invisible sauf si Cloudflare doute. */
-  var HN_TS_KEY = '0x4AAAAAAFUoNo5GmOzgxJ-8', hnTsId = null, hnTsLoad = null, hnTsWait = null;
+  var HN_TS_KEY = '0x4AAAAAAFUoNo5GmOzgxJ-8', hnTsId = null, hnTsLoad = null, hnTsWait = null, hnTsErr = '';
   function hnCaptchaToken(){
+    hnTsErr = '';
     if(!hnTsLoad) hnTsLoad = new Promise(function(res){
       if(window.turnstile) return res(true);
       var sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
-      sc.onload = function(){ res(!!window.turnstile); }; sc.onerror = function(){ res(false); }; document.head.appendChild(sc); setTimeout(function(){ res(!!window.turnstile); }, 8000);
+      sc.onload = function(){ res(!!window.turnstile); }; sc.onerror = function(){ hnTsErr = 'script-bloque'; res(false); }; document.head.appendChild(sc); setTimeout(function(){ res(!!window.turnstile); }, 10000);
     });
     return hnTsLoad.then(function(ok){
       if(!ok) return undefined;
       return new Promise(function(resolve){
         var done = false, host = document.getElementById('hn-turnstile');
-        function fin(t){ if(done) return; done = true; hnTsWait = null; if(host) host.style.display = 'none'; resolve(t || undefined); }
+        function show(on){ if(host){ host.style.opacity = on ? '1' : '0.01'; host.style.pointerEvents = on ? 'auto' : 'none'; } }
+        function fin(t){ if(done) return; done = true; hnTsWait = null; show(false); resolve(t || undefined); }
         try{
-          if(!host){ host = document.createElement('div'); host.id = 'hn-turnstile'; host.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:99999;display:none;background:#fff;padding:6px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.25);'; document.body.appendChild(host); }
+          if(!host){ host = document.createElement('div'); host.id = 'hn-turnstile'; host.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:99999;min-width:300px;min-height:65px;opacity:0.01;pointer-events:none;background:#fff;padding:6px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.25);'; document.body.appendChild(host); }
           hnTsWait = fin;
-          if(hnTsId === null) hnTsId = window.turnstile.render(host, { sitekey: HN_TS_KEY, appearance:'interaction-only', language:'fr', callback:function(t){ if(hnTsWait) hnTsWait(t); }, 'error-callback':function(){ if(hnTsWait) hnTsWait(null); }, 'timeout-callback':function(){ if(hnTsWait) hnTsWait(null); }, 'before-interactive-callback':function(){ host.style.display = 'block'; } });
+          if(hnTsId === null) hnTsId = window.turnstile.render(host, { sitekey: HN_TS_KEY, appearance:'interaction-only', language:'fr', callback:function(t){ if(hnTsWait) hnTsWait(t); }, 'error-callback':function(c){ hnTsErr = String(c || 'erreur'); if(hnTsWait) hnTsWait(null); return true; }, 'timeout-callback':function(){ hnTsErr = 'delai-depasse'; if(hnTsWait) hnTsWait(null); }, 'before-interactive-callback':function(){ show(true); }, 'after-interactive-callback':function(){ show(false); } });
           else window.turnstile.reset(hnTsId);
           setTimeout(function(){ fin(null); }, 45000);
-        }catch(e){ fin(null); }
+        }catch(e){ hnTsErr = 'erreur-script'; fin(null); }
       });
     });
   }
