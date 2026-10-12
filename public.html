@@ -512,6 +512,29 @@
   }
 
   /* ---------- ECOREP : espace de consultation des relevés de paie ---------- */
+  /* Anti-robots Cloudflare Turnstile (clé PUBLIQUE ; la clé secrète reste dans Supabase). Invisible sauf si Cloudflare doute. */
+  var HN_TS_KEY = '0x4AAAAAAFUoNo5GmOzgxJ-8', hnTsId = null, hnTsLoad = null, hnTsWait = null;
+  function hnCaptchaToken(){
+    if(!hnTsLoad) hnTsLoad = new Promise(function(res){
+      if(window.turnstile) return res(true);
+      var sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
+      sc.onload = function(){ res(!!window.turnstile); }; sc.onerror = function(){ res(false); }; document.head.appendChild(sc); setTimeout(function(){ res(!!window.turnstile); }, 8000);
+    });
+    return hnTsLoad.then(function(ok){
+      if(!ok) return undefined;
+      return new Promise(function(resolve){
+        var done = false, host = document.getElementById('hn-turnstile');
+        function fin(t){ if(done) return; done = true; hnTsWait = null; if(host) host.style.display = 'none'; resolve(t || undefined); }
+        try{
+          if(!host){ host = document.createElement('div'); host.id = 'hn-turnstile'; host.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:99999;display:none;background:#fff;padding:6px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.25);'; document.body.appendChild(host); }
+          hnTsWait = fin;
+          if(hnTsId === null) hnTsId = window.turnstile.render(host, { sitekey: HN_TS_KEY, appearance:'interaction-only', language:'fr', callback:function(t){ if(hnTsWait) hnTsWait(t); }, 'error-callback':function(){ if(hnTsWait) hnTsWait(null); }, 'timeout-callback':function(){ if(hnTsWait) hnTsWait(null); }, 'before-interactive-callback':function(){ host.style.display = 'block'; } });
+          else window.turnstile.reset(hnTsId);
+          setTimeout(function(){ fin(null); }, 45000);
+        }catch(e){ fin(null); }
+      });
+    });
+  }
   function viewEcorep(){
     var EFN = '/.netlify/functions/ecorep', S = { token: null, me: null, tab: 'paie', timer: null };
     function ecall(body){
@@ -558,7 +581,7 @@
       document.getElementById('ec-form').addEventListener('submit', function(ev){
         ev.preventDefault();
         var out = document.getElementById('ec-out'), b = document.getElementById('ec-go'); out.className = 'msg'; out.textContent = ''; b.disabled = true;
-        ecall({ action:'login', id: document.getElementById('ec-id').value.trim(), password: document.getElementById('ec-pw').value }).then(function(r){
+        hnCaptchaToken().then(function(ct){ return ecall({ action:'login', id: document.getElementById('ec-id').value.trim(), password: document.getElementById('ec-pw').value, captchaToken: ct }); }).then(function(r){
           S.token = r.token; S.me = r.me; S.tab = 'paie';
           S.timer = setTimeout(function(){ logout('Session expirée par sécurité. Reconnectez-vous.'); }, Math.max(60, (r.expiresIn || 3600) - 30) * 1000);
           shell();
