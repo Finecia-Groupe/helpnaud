@@ -37496,6 +37496,8 @@ body.hnd-open #hnd-backdrop{ opacity:1; pointer-events:auto; }
 body.hnd-open #hnd-drawer{ transform:none; }
 body.hnd-open, body.hnd-dragging{ overflow:hidden; }
 body.hnd-dragging #hnd-drawer{ display:flex; }
+body.hnd-prep .main, body.hnd-prep .sidebar, body.hnd-prep .mobile-nav, body.hnd-dragging .main, body.hnd-dragging .sidebar, body.hnd-dragging .mobile-nav, body.hnd-prep #hnd-drawer, body.hnd-dragging #hnd-drawer{ will-change:transform; backface-visibility:hidden; }
+body.hnd-prep #hnd-drawer{ display:flex; }
 @media (max-width: 860px){
   .main, .sidebar, .mobile-nav{ transition:transform .24s ease; }
   body.hnd-open .main, body.hnd-open .sidebar, body.hnd-open .mobile-nav{ transform:translateX(var(--hnd-w, 300px)); }
@@ -37755,22 +37757,29 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
      Droite = ouvre ; gauche = ferme ; gauche tiroir fermé = va à la saisie. */
   var MOVE_SEL = '.main, .sidebar, .mobile-nav';
   function moveEls(){ return document.querySelectorAll(MOVE_SEL); }
+  var dragW = 0;
   function applyProgress(p, anim){
     if(!drawer) build();
-    var W = drawer.offsetWidth || 300;
-    document.documentElement.style.setProperty('--hnd-w', W + 'px');
-    var tr = anim ? '' : 'none';
-    drawer.style.transition = tr; backdrop.style.transition = tr;
-    drawer.style.transform = 'translateX(' + Math.round(p * W - W) + 'px)';
+    var W = dragW || drawer.offsetWidth || 300;
+    var tr = anim ? 'transform .24s ease' : 'none';
+    var dt = 'translate3d(' + (p * W - W).toFixed(1) + 'px,0,0)';
+    var mt = p > 0 ? 'translate3d(' + (p * W).toFixed(1) + 'px,0,0)' : '';
+    if(anim){ document.documentElement.style.setProperty('--hnd-w', W + 'px'); backdrop.style.transition = 'opacity .24s ease'; }
+    else backdrop.style.transition = 'none';
+    drawer.style.transition = tr;
+    drawer.style.transform = dt;
     backdrop.style.opacity = String(p); backdrop.style.pointerEvents = p > 0 ? 'auto' : 'none';
-    Array.prototype.forEach.call(moveEls(), function(el){ el.style.transition = tr; el.style.transform = p > 0 ? 'translateX(' + Math.round(p * W) + 'px)' : ''; });
+    var els = moveEls();
+    for(var i = 0; i < els.length; i++){ els[i].style.transition = tr; els[i].style.transform = mt; }
   }
   function clearInline(){
     [drawer, backdrop].forEach(function(el){ if(el){ el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; el.style.pointerEvents = ''; } });
     Array.prototype.forEach.call(moveEls(), function(el){ el.style.transition = ''; el.style.transform = ''; });
-    document.body.classList.remove('hnd-dragging');
+    document.body.classList.remove('hnd-dragging'); document.body.classList.remove('hnd-prep');
   }
   (function(){
+    var raf = 0;
+    function schedule(){ if(raf) return; raf = requestAnimationFrame(function(){ raf = 0; if(mode === 'drag') applyProgress(p, false); }); }
     var sx = 0, sy = 0, st = 0, ok = false, mode = null, wasOpen = false, W = 300, lastX = 0, lastT = 0, vel = 0, p = 0;
     function blocked(t){
       while(t && t.nodeType === 1 && t !== document.body){
@@ -37787,9 +37796,12 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
       var t = e.touches[0], vw = document.documentElement.clientWidth;
       sx = t.clientX; sy = t.clientY; st = Date.now(); lastX = sx; lastT = st; wasOpen = isOpen();
       if(!drawer) build();
-      W = drawer.offsetWidth || 300;
+      W = drawer.offsetWidth || 300; dragW = W;
       // Marge de 24 px : ne gêne pas les gestes système (retour iPhone / Android)
       ok = (sx > 24 && sx < vw - 24) && (wasOpen || !blocked(e.target));
+      /* Préparation avant le premier mouvement : contenu du tiroir déjà dessiné et couches GPU déjà créées, donc
+         l'ouverture suit le doigt sans retard (la fermeture était déjà fluide pour cette raison). */
+      if(ok && !wasOpen){ try{ renderDrawer(); }catch(x){} document.body.classList.add('hnd-prep'); }
     }, { passive: true });
     document.addEventListener('touchmove', function(e){
       if(!ok) return;
@@ -37808,11 +37820,13 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
         if(e.cancelable) e.preventDefault();
         p = wasOpen ? 1 + dx / W : dx / W;
         p = Math.max(0, Math.min(1, p));
-        applyProgress(p, false);
+        schedule();
       }
     }, { passive: false });
     function finish(e){
       if(!ok) return; ok = false;
+      if(raf){ cancelAnimationFrame(raf); raf = 0; }
+      if(mode !== 'drag') document.body.classList.remove('hnd-prep');
       var t = (e.changedTouches && e.changedTouches[0]) || { clientX: lastX, clientY: sy };
       var dx = t.clientX - sx, dy = t.clientY - sy;
       if(mode === 'drag'){
@@ -37834,7 +37848,7 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
       mode = null;
     }
     document.addEventListener('touchend', finish, { passive: true });
-    document.addEventListener('touchcancel', function(e){ if(mode === 'drag'){ applyProgress(wasOpen ? 1 : 0, true); setTimeout(function(){ clearInline(); }, 260); } ok = false; mode = null; }, { passive: true });
+    document.addEventListener('touchcancel', function(e){ if(raf){ cancelAnimationFrame(raf); raf = 0; } document.body.classList.remove('hnd-prep'); if(mode === 'drag'){ applyProgress(wasOpen ? 1 : 0, true); setTimeout(function(){ clearInline(); }, 260); } ok = false; mode = null; }, { passive: true });
   })();
 
   /* ---------- Interface Help ---------- */
