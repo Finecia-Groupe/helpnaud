@@ -7755,6 +7755,7 @@
   // (creditCost) plus bas, qui fait varier ce coût selon le palier Hmodel choisi. Les appels existants
   // sans argument continuent de consommer exactement 1 crédit, comme avant.
   function incrementAiCredits(addNoticeFn, count){
+    if(typeof aiServerMode !== 'undefined' && aiServerMode) return; /* mode serveur : le compteur officiel vient du serveur */
     var n = (typeof count === 'number' && count > 0) ? count : 1;
     var before = aiCreditsUsed;
     aiCreditsUsed += n;
@@ -12769,6 +12770,75 @@
      promesse d'origine continue en arrière-plan et met à jour sampleCap si elle finit par
      aboutir, donc les actions suivantes en profitent automatiquement. */
   var sampleCap = null;
+  var aiServerMode = false;
+  var AI_SERVER_FN = '/.netlify/functions/ai';
+  /* ----- Assistant IA côté serveur (Netlify Function « ai ») -----
+     Quand la capacité d'aperçu window.claude 'sample' n'existe pas (site publié sur helpnaud.ai) mais qu'un membre
+     de l'équipe est connecté (session Supabase), sampleCap devient un appelable qui passe par le serveur : le serveur
+     vérifie la session, réserve les crédits, appelle l'IA avec une clé secrète et renvoie le compteur officiel. */
+  function aiServerToken(){
+    var sb = fghlabOwnerSbInit();
+    if(!sb) return Promise.resolve(null);
+    return sb.auth.getSession().then(function(r){
+      var ses = r && r.data && r.data.session;
+      return ses && ses.access_token ? ses.access_token : null;
+    }).catch(function(){ return null; });
+  }
+  function aiServerFile(file){
+    return new Promise(function(resolve, reject){
+      var fr = new FileReader();
+      fr.onload = function(){ var m = /^data:([^;]+);base64,(.*)$/.exec(String(fr.result || '')); m ? resolve({ type:m[1], data:m[2] }) : reject(Object.assign(new Error('image'), { code:'image_rejected' })); };
+      fr.onerror = function(){ reject(Object.assign(new Error('image'), { code:'image_rejected' })); };
+      fr.readAsDataURL(file);
+    });
+  }
+  function aiServerSync(c){
+    if(!c) return;
+    if(c.plan) setAiCreditsTierId(c.plan);
+    if(typeof c.used === 'number'){ aiCreditsUsed = c.used; saveAiCreditsUsage(c.used); }
+    renderAiCreditsIndicator();
+  }
+  function aiServerCall(input, opts, wantJson){
+    opts = opts || {};
+    var tier = (typeof opts.modelTier === 'string' && getHmodelTierDef(opts.modelTier)) ? opts.modelTier : 'mediane';
+    var imgP = (opts.images && typeof Blob !== 'undefined' && opts.images instanceof Blob) ? aiServerFile(opts.images) : Promise.resolve(null);
+    return Promise.all([aiServerToken(), imgP]).then(function(a){
+      if(!a[0]) throw Object.assign(new Error('auth'), { code:'auth' });
+      var body = { tier:tier, json:!!wantJson };
+      if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
+      if(a[1]) body.image = a[1];
+      return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) });
+    }).then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(j){
+        if(!res.ok){
+          if(j && j.credits) aiServerSync(j.credits);
+          var err = new Error((j && j.message) || 'ai'); err.code = (j && j.error) || 'upstream';
+          if(err.code === 'quota'){ try{ showAiCreditsLimitNotice(); }catch(e){} }
+          throw err;
+        }
+        aiServerSync(j.credits);
+        if(typeof opts.onText === 'function'){ try{ opts.onText({ text:j.text }); }catch(e){} }
+        return j;
+      });
+    });
+  }
+  function makeServerSampleCap(){
+    var cap = function(input, opts){ return aiServerCall(input, opts, false).then(function(j){ return { text:j.text }; }); };
+    cap.json = function(input, opts){ return aiServerCall(input, opts, true).then(function(j){ return j.data; }); };
+    cap.limits = function(){ return Promise.resolve({ images:true }); };
+    return cap;
+  }
+  function tryInstallServerAi(){
+    if(sampleCap) return Promise.resolve(false);
+    return aiServerToken().then(function(t){
+      if(!t || sampleCap) return false;
+      sampleCap = makeServerSampleCap(); aiServerMode = true;
+      /* Compteur officiel du compte, dès la connexion */
+      var sb = fghlabOwnerSbInit();
+      if(sb) sb.rpc('ai_my_status').then(function(r){ if(r && r.data && r.data.ok) aiServerSync({ plan:r.data.plan, used:r.data.used }); }, function(){});
+      return true;
+    });
+  }
   var sampleUsePromise = (function(){
     try{
       if(window.claude && typeof window.claude.use === 'function'){
@@ -12776,6 +12846,16 @@
       }
     }catch(e){}
     return Promise.resolve(null);
+  })().then(function(s){ return s || tryInstallServerAi().then(function(){ return sampleCap; }); });
+  (function watchServerAi(){
+    var sb = fghlabOwnerSbInit();
+    if(!sb) return;
+    sb.auth.onAuthStateChange(function(event){
+      setTimeout(function(){
+        if(event === 'SIGNED_OUT' && aiServerMode){ sampleCap = null; aiServerMode = false; try{ updateCoworkAiBanner(); }catch(e){} }
+        else if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && !sampleCap){ tryInstallServerAi().then(function(ok){ if(ok){ try{ updateCoworkAiBanner(); }catch(e){} try{ if(typeof refreshCoworkQueryImageAvailability === 'function') refreshCoworkQueryImageAvailability(); }catch(e){} } }); }
+      }, 0);
+    });
   })();
   var sampleReady = Promise.race([
     sampleUsePromise,
@@ -13622,14 +13702,19 @@
   // garde-fou partagé). Chaque bouton/texte de statut est mis à jour en même temps que les autres.
   var AI_RETRY_BTN_IDS = ['chat-ai-retry-btn', 'cowork-ai-retry-btn', 'cowork-discuss-ai-retry-btn'];
   var AI_STATUS_TEXT_IDS = ['chat-ai-status-text', 'cowork-ai-status-text', 'cowork-discuss-ai-status-text'];
+  var AI_OFFLINE_TEXT = "L'assistant IA est réservé aux membres de l'équipe : connectez-vous avec votre compte FGH-Colab (Réglages), puis cliquez sur « Vérifier la connexion ». En attendant, les réponses locales (finance, fichiers, graphiques) restent disponibles.";
+  function applyAiOfflineTexts(){
+    AI_STATUS_TEXT_IDS.forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = AI_OFFLINE_TEXT; });
+    AI_RETRY_BTN_IDS.forEach(function(id){ var el = document.getElementById(id); if(el) el.textContent = 'Vérifier la connexion'; });
+    ['chat-ai-copy-link-btn','cowork-ai-copy-link-btn','cowork-discuss-ai-copy-link-btn'].forEach(function(id){ var el = document.getElementById(id); if(el) el.hidden = true; });
+  }
   function retrySampleCapability(){
     if(coworkAiRetrying) return;
     coworkAiRetrying = true;
     var btns = AI_RETRY_BTN_IDS.map(function(id){ return document.getElementById(id); });
     var texts = AI_STATUS_TEXT_IDS.map(function(id){ return document.getElementById(id); });
-    var linkHtml = ' Ouvrez cette adresse directement dans Safari/Chrome : <code style="user-select:all">' + HELPNAUD_PUBLIC_URL + '</code>';
-    btns.forEach(function(btn){ if(btn) btn.disabled = true; });
-    texts.forEach(function(text){ if(text) text.innerHTML = "Nouvelle tentative de connexion à l'assistant IA…" + linkHtml; });
+        btns.forEach(function(btn){ if(btn) btn.disabled = true; });
+    texts.forEach(function(text){ if(text) text.innerHTML = "Vérification de la connexion à l'assistant IA…"; });
     var done = function(){
       coworkAiRetrying = false;
       btns.forEach(function(btn){ if(btn) btn.disabled = false; });
@@ -13637,14 +13722,14 @@
         updateCoworkAiBanner();
         if(typeof refreshCoworkQueryImageAvailability === 'function') refreshCoworkQueryImageAvailability();
       } else {
-        texts.forEach(function(text){ if(text) text.innerHTML = "Toujours indisponible dans cette vue. « Interroger un fichier » et « Créer un graphique » peuvent tout de même donner un résultat local limité ; les autres outils ont besoin de l'assistant IA." + linkHtml; });
+        texts.forEach(function(text){ if(text) text.innerHTML = AI_OFFLINE_TEXT; });
       }
     };
     try{
       if(window.claude && typeof window.claude.use === 'function'){
-        window.claude.use('sample').then(function(s){ sampleCap = s; done(); }).catch(done);
+        window.claude.use('sample').then(function(s){ sampleCap = s; done(); }).catch(function(){ tryInstallServerAi().then(done, done); });
       } else {
-        done();
+        tryInstallServerAi().then(done, done);
       }
     }catch(e){ done(); }
   }
@@ -13652,6 +13737,7 @@
     var btn = document.getElementById(id);
     if(btn) btn.addEventListener('click', retrySampleCapability);
   });
+  applyAiOfflineTexts();
   sampleReady.then(updateCoworkAiBanner);
 
   var coworkActiveTool = null;
