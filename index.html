@@ -12805,6 +12805,7 @@
      d'erreur). sampleReady se règle maintenant au plus tard après quelques secondes ; la
      promesse d'origine continue en arrière-plan et met à jour sampleCap si elle finit par
      aboutir, donc les actions suivantes en profitent automatiquement. */
+  var HN_SAFE_MAIN = /[?&]safe=1(&|$)/.test(location.search);
   var sampleCap = null;
   var aiServerMode = false;
   var AI_SERVER_FN = '/.netlify/functions/ai';
@@ -12871,7 +12872,7 @@
     return cap;
   }
   function tryInstallServerAi(){
-    if(sampleCap) return Promise.resolve(false);
+    if(sampleCap || HN_SAFE_MAIN) return Promise.resolve(false);
     return aiServerToken().then(function(t){
       if(!t || sampleCap) return false;
       sampleCap = makeServerSampleCap(); aiServerMode = true;
@@ -12892,7 +12893,7 @@
   })().then(function(s){ return s || tryInstallServerAi().then(function(){ return sampleCap; }); });
   (function watchServerAi(){
     var sb = fghlabOwnerSbInit();
-    if(!sb) return;
+    if(!sb || HN_SAFE_MAIN) return;
     sb.auth.onAuthStateChange(function(event){
       setTimeout(function(){
         if(event === 'SIGNED_OUT' && aiServerMode){ aiServerToken().then(function(t){ if(!t){ sampleCap = null; aiServerMode = false; try{ updateCoworkAiBanner(); }catch(e){} } }); }
@@ -12907,6 +12908,7 @@
   var custSb = null;
   function custSbInit(){
     if(custSb) return custSb;
+    if(HN_SAFE_MAIN) return null;
     try{
       if(window.supabase && typeof window.supabase.createClient === 'function'){
         custSb = window.supabase.createClient(FGHLAB_SB_URL, FGHLAB_SB_KEY, {
@@ -37713,6 +37715,8 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
   body.hnd-dragging .main, body.hnd-dragging .sidebar, body.hnd-dragging .mobile-nav{ transition:none; }
 }
 @media (max-width: 860px){ #hnd-drawer{ display:flex; } }
+/* iOS Safari zoome la page quand on touche un champ dont la police est < 16 px : la page reste agrandie, décalée et rognée à droite. */
+@media (max-width: 860px){ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]), select, textarea{ font-size:16px !important; } }
 @media (min-width: 861px){ #hnd-backdrop, #hnd-drawer{ display:none !important; } }
 .hnd-top{ display:flex; align-items:center; gap:8px; padding:6px 14px 10px; }
 .hnd-who{ flex:1; min-width:0; }
@@ -37957,13 +37961,14 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
   /* Bouton ☰ : ouvre le tiroir sur mobile (le menu déroulant reste dans « Menu ») */
   var hb = $('sidebar-quicklaunch-hamburger-btn');
   if(hb) hb.addEventListener('click', function(e){
-    if(!mobile()) return;
+    if(!mobile() || HN_SAFE) return;
     e.stopImmediatePropagation(); e.preventDefault();
     isOpen() ? close() : open();
   }, true);
 
   /* Gestes : le tiroir et l'écran suivent le doigt en direct (iPhone et Android).
      Droite = ouvre ; gauche = ferme ; gauche tiroir fermé = va à la saisie. */
+  var HN_SAFE = /[?&]safe=1(&|$)/.test(location.search); /* mode sans gestes : https://helpnaud.ai/?safe=1 */
   var MOVE_SEL = '.main, .sidebar, .mobile-nav';
   function moveEls(){ return document.querySelectorAll(MOVE_SEL); }
   var dragW = 0;
@@ -37987,7 +37992,7 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
     document.body.classList.remove('hnd-dragging');
   }
   (function(){
-    var raf = 0;
+    var raf = 0, lastRender = 0;
     function schedule(){ if(raf) return; raf = requestAnimationFrame(function(){ raf = 0; if(mode === 'drag') applyProgress(p, false); }); }
     var sx = 0, sy = 0, st = 0, ok = false, mode = null, wasOpen = false, W = 300, lastX = 0, lastT = 0, vel = 0, p = 0;
     function blocked(t){
@@ -38007,10 +38012,12 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
       if(!drawer) build();
       W = drawer.offsetWidth || 300; dragW = W;
       // Marge de 24 px : ne gêne pas les gestes système (retour iPhone / Android)
-      ok = (sx > 24 && sx < vw - 24) && (wasOpen || !blocked(e.target));
+      ok = !HN_SAFE && (sx > 24 && sx < vw - 24) && (wasOpen || !blocked(e.target));
+      /* Clavier ouvert (champ actif) : on ne détourne jamais le geste (sinon iOS garde le clavier bloqué). */
+      var ae = document.activeElement;
+      if(ok && ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) ok = false;
       /* Préparation avant le premier mouvement : contenu du tiroir déjà dessiné et couches GPU déjà créées, donc
          l'ouverture suit le doigt sans retard (la fermeture était déjà fluide pour cette raison). */
-      if(ok && !wasOpen){ try{ renderDrawer(); }catch(x){} }
     }, { passive: true });
     document.addEventListener('touchmove', function(e){
       if(!ok) return;
@@ -38023,7 +38030,11 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
         else if(wasOpen && dx < 0) mode = 'drag';
         else if(!wasOpen && dx < 0) mode = 'left';
         else { mode = 'none'; ok = false; return; }
-        if(mode === 'drag') document.body.classList.add('hnd-dragging');
+        if(mode === 'drag'){
+          /* Une seule fois par geste (et au plus toutes les 3 s) : dessiner le contenu du tiroir avant qu'il apparaisse. */
+          if(!wasOpen && Date.now() - lastRender > 3000){ lastRender = Date.now(); try{ renderDrawer(); }catch(x){} }
+          document.body.classList.add('hnd-dragging');
+        }
       }
       if(mode === 'drag'){
         if(e.cancelable) e.preventDefault();
