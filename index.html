@@ -4998,6 +4998,41 @@
         </div>
       </div>
 
+      <div class="card" id="cust-card">
+        <h2>Mon compte HelpNaud</h2>
+        <p class="hint" id="cust-intro" style="margin:0 0 10px;">Créez gratuitement votre compte HelpNaud pour utiliser l'assistant IA (crédits d'essai chaque mois) et retrouver votre forfait sur tous vos appareils.</p>
+        <p class="hint" id="cust-msg" hidden role="status" style="margin:0 0 10px; font-weight:600;"></p>
+        <div id="cust-out">
+          <div style="display:flex; gap:6px; margin-bottom:10px;">
+            <button type="button" class="btn primary" id="cust-tab-login" style="padding:6px 12px; font-size:12.5px;">Connexion</button>
+            <button type="button" class="btn" id="cust-tab-signup" style="padding:6px 12px; font-size:12.5px;">Créer un compte</button>
+          </div>
+          <form id="cust-form-login" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input type="email" id="cust-login-email" autocomplete="username" placeholder="Courriel" required style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="password" id="cust-login-pw" autocomplete="current-password" placeholder="Mot de passe" required style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:200px;">
+            <button type="submit" class="btn primary" style="padding:6px 12px; font-size:12.5px;">Se connecter</button>
+            <button type="button" class="btn" id="cust-forgot-btn" style="padding:6px 12px; font-size:12.5px;">Mot de passe oublié</button>
+          </form>
+          <form id="cust-form-signup" hidden style="display:none; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="cust-su-name" autocomplete="name" placeholder="Nom complet" required maxlength="120" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="email" id="cust-su-email" autocomplete="username" placeholder="Courriel" required style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="password" id="cust-su-pw" autocomplete="new-password" placeholder="Mot de passe (8 caractères min.)" required minlength="8" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <label class="hint" style="margin:0; display:flex; gap:6px; align-items:flex-start; width:100%;"><input type="checkbox" id="cust-su-terms" style="margin-top:3px;"> <span>J'accepte les conditions d'utilisation de HelpNaud.ai et le traitement de mes renseignements personnels pour la gestion de mon compte.</span></label>
+            <button type="submit" class="btn primary" style="padding:6px 12px; font-size:12.5px;">Créer mon compte</button>
+          </form>
+        </div>
+        <form id="cust-form-reset" style="display:none; gap:8px; flex-wrap:wrap; align-items:center;">
+          <input type="password" id="cust-reset-pw" autocomplete="new-password" placeholder="Nouveau mot de passe (8 caractères min.)" required minlength="8" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:260px;">
+          <button type="submit" class="btn primary" style="padding:6px 12px; font-size:12.5px;">Enregistrer le mot de passe</button>
+        </form>
+        <div id="cust-in" style="display:none;">
+          <p style="margin:0 0 4px;"><b id="cust-who"></b></p>
+          <p class="hint" id="cust-plan" style="margin:0 0 10px;"></p>
+          <button type="button" class="btn" id="cust-plans-btn" style="padding:6px 12px; font-size:12.5px;">Voir les forfaits</button>
+          <button type="button" class="btn" id="cust-logout-btn" style="padding:6px 12px; font-size:12.5px;">Se déconnecter</button>
+        </div>
+      </div>
+
       <div class="card">
         <h2>Abonnements</h2>
         <p class="hint">Consultez les 5 forfaits prévus pour HelpNaud.ai (Pilote, Essentiel, Professionnel, Affaires, Institution) — à titre indicatif, aucun paiement n'est actif pendant la phase pilote.</p>
@@ -7560,6 +7595,7 @@
      Comme le reste de l'app en phase pilote, il n'y a pas de vrai blocage : au-delà du palier, un
      simple message amical apparaît, avec un lien vers Abonnements — jamais un blocage dur. */
   var AI_CREDIT_TIERS = [
+    { id:'gratuit', nom:'Gratuit', credits: 30 },
     { id:'pilote', nom:'Pilote', credits: 230 },
     { id:'essentiel', nom:'Essentiel', credits: 850 },
     { id:'pro', nom:'Professionnel', credits: 3500 },
@@ -12776,14 +12812,20 @@
      Quand la capacité d'aperçu window.claude 'sample' n'existe pas (site publié sur helpnaud.ai) mais qu'un membre
      de l'équipe est connecté (session Supabase), sampleCap devient un appelable qui passe par le serveur : le serveur
      vérifie la session, réserve les crédits, appelle l'IA avec une clé secrète et renvoie le compteur officiel. */
-  function aiServerToken(){
+  function aiServerSession(){
     var sb = fghlabOwnerSbInit();
-    if(!sb) return Promise.resolve(null);
-    return sb.auth.getSession().then(function(r){
-      var ses = r && r.data && r.data.session;
-      return ses && ses.access_token ? ses.access_token : null;
-    }).catch(function(){ return null; });
+    var team = sb ? sb.auth.getSession().then(function(r){ return r && r.data && r.data.session; }).catch(function(){ return null; }) : Promise.resolve(null);
+    return team.then(function(ses){
+      if(ses && ses.access_token) return { sb: sb, token: ses.access_token };
+      var cs = custSbInit();
+      if(!cs) return null;
+      return cs.auth.getSession().then(function(r){
+        var c = r && r.data && r.data.session;
+        return c && c.access_token ? { sb: cs, token: c.access_token } : null;
+      }).catch(function(){ return null; });
+    });
   }
+  function aiServerToken(){ return aiServerSession().then(function(x){ return x ? x.token : null; }); }
   function aiServerFile(file){
     return new Promise(function(resolve, reject){
       var fr = new FileReader();
@@ -12834,8 +12876,9 @@
       if(!t || sampleCap) return false;
       sampleCap = makeServerSampleCap(); aiServerMode = true;
       /* Compteur officiel du compte, dès la connexion */
-      var sb = fghlabOwnerSbInit();
-      if(sb) sb.rpc('ai_my_status').then(function(r){ if(r && r.data && r.data.ok) aiServerSync({ plan:r.data.plan, used:r.data.used }); }, function(){});
+      aiServerSession().then(function(x){
+        if(x) x.sb.rpc('ai_my_status').then(function(r){ if(r && r.data && r.data.ok) aiServerSync({ plan:r.data.plan, used:r.data.used }); }, function(){});
+      });
       return true;
     });
   }
@@ -12852,10 +12895,178 @@
     if(!sb) return;
     sb.auth.onAuthStateChange(function(event){
       setTimeout(function(){
-        if(event === 'SIGNED_OUT' && aiServerMode){ sampleCap = null; aiServerMode = false; try{ updateCoworkAiBanner(); }catch(e){} }
+        if(event === 'SIGNED_OUT' && aiServerMode){ aiServerToken().then(function(t){ if(!t){ sampleCap = null; aiServerMode = false; try{ updateCoworkAiBanner(); }catch(e){} } }); }
         else if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && !sampleCap){ tryInstallServerAi().then(function(ok){ if(ok){ try{ updateCoworkAiBanner(); }catch(e){} try{ if(typeof refreshCoworkQueryImageAvailability === 'function') refreshCoworkQueryImageAvailability(); }catch(e){} } }); }
       }, 0);
     });
+  })();
+
+  /* ----- Comptes clients HelpNaud (séparés de l'équipe FGH-Colab) -----
+     Client Supabase dédié (clé de stockage propre, session conservée sur l'appareil, flux PKCE) : il ne touche jamais à
+     la connexion de l'équipe. Après l'inscription, customer_register() crée le profil client (forfait « gratuit »). */
+  var custSb = null;
+  function custSbInit(){
+    if(custSb) return custSb;
+    try{
+      if(window.supabase && typeof window.supabase.createClient === 'function'){
+        custSb = window.supabase.createClient(FGHLAB_SB_URL, FGHLAB_SB_KEY, {
+          auth: { storageKey:'helpnaud_cust_auth', persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'pkce' }
+        });
+      }
+    }catch(e){ custSb = null; }
+    return custSb;
+  }
+  var custUser = null, custProfile = null, custBusy = false, custRecovery = false;
+  function cEl(id){ return document.getElementById(id); }
+  function custMsg(kind, text){
+    var m = cEl('cust-msg'); if(!m) return;
+    m.hidden = !text; m.textContent = text || '';
+    m.style.color = kind === 'error' ? 'var(--bad)' : (kind === 'ok' ? 'var(--ok, #2e7d32)' : 'var(--muted)');
+  }
+  function custErrText(e){
+    var t = String((e && (e.message || e.error_description)) || '').toLowerCase();
+    if(t.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
+    if(t.indexOf('email not confirmed') >= 0) return 'Confirmez d’abord votre courriel (lien reçu par courriel).';
+    if(t.indexOf('already registered') >= 0 || t.indexOf('already been registered') >= 0) return 'Un compte existe déjà avec ce courriel : utilisez « Connexion » ou « Mot de passe oublié ».';
+    if(t.indexOf('password') >= 0 && (t.indexOf('least') >= 0 || t.indexOf('weak') >= 0 || t.indexOf('short') >= 0)) return 'Mot de passe trop faible (8 caractères minimum).';
+    if(t.indexOf('rate') >= 0 || t.indexOf('too many') >= 0) return 'Trop de tentatives : patientez quelques minutes.';
+    if(t.indexOf('fetch') >= 0 || t.indexOf('network') >= 0) return 'Connexion impossible : vérifiez votre réseau.';
+    return 'Action impossible pour le moment. Réessayez.';
+  }
+  function custTab(which){
+    var login = which !== 'signup';
+    var fl = cEl('cust-form-login'), fs = cEl('cust-form-signup');
+    if(fl) fl.style.display = login ? 'flex' : 'none';
+    if(fs){ fs.hidden = login; fs.style.display = login ? 'none' : 'flex'; }
+    var tl = cEl('cust-tab-login'), ts = cEl('cust-tab-signup');
+    if(tl) tl.className = 'btn' + (login ? ' primary' : '');
+    if(ts) ts.className = 'btn' + (login ? '' : ' primary');
+  }
+  function custRender(){
+    var out = cEl('cust-out'), inn = cEl('cust-in'), rs = cEl('cust-form-reset'), intro = cEl('cust-intro');
+    if(!out) return;
+    var team = !!(custProfile && custProfile.kind === 'team');
+    out.style.display = (custUser || custRecovery) ? 'none' : '';
+    if(rs) rs.style.display = custRecovery ? 'flex' : 'none';
+    if(inn) inn.style.display = (custUser && !custRecovery) ? '' : 'none';
+    if(intro) intro.hidden = !!custUser || custRecovery;
+    if(custUser && !custRecovery){
+      var who = cEl('cust-who'), pl = cEl('cust-plan');
+      if(who) who.textContent = (custProfile && custProfile.name ? custProfile.name + ' — ' : '') + (custUser.email || '');
+      if(pl){
+        if(team) pl.textContent = 'Compte de l’équipe FGH-Colab : l’assistant IA utilise votre forfait d’équipe.';
+        else if(custProfile && custProfile.plan){
+          var tierName = custProfile.plan; AI_CREDIT_TIERS.forEach(function(t){ if(t.id === custProfile.plan) tierName = t.nom; });
+          pl.textContent = 'Forfait ' + tierName + ' — ' + custProfile.used + (custProfile.limit != null ? ' / ' + custProfile.limit : '') + ' crédits IA utilisés ce mois-ci.' + (custProfile.status === 'suspended' ? ' Compte suspendu : contactez le support.' : '');
+        } else pl.textContent = 'Chargement de votre forfait…';
+      }
+    }
+  }
+  /* Charge (ou crée au premier accès) le profil client du compte connecté. */
+  function custLoadProfile(){
+    var cs = custSbInit();
+    if(!cs || !custUser) return Promise.resolve();
+    return cs.rpc('customer_me').then(function(r){
+      if(r && r.data && r.data.ok){ custProfile = r.data; return; }
+      var md = custUser.user_metadata || {};
+      return cs.rpc('customer_register', { p_name: md.full_name || '', p_terms: md.terms === true }).then(function(rr){
+        var d = rr && rr.data;
+        if(d && d.ok && d.kind === 'team'){ custProfile = { kind:'team' }; return; }
+        if(d && d.ok) return cs.rpc('customer_me').then(function(r2){ if(r2 && r2.data && r2.data.ok) custProfile = r2.data; });
+        custMsg('error', 'Inscription incomplète : recréez votre compte en acceptant les conditions.');
+      });
+    }).catch(function(){ custMsg('error', 'Profil client indisponible pour le moment.'); });
+  }
+  function custAfterAuth(){
+    return custLoadProfile().then(function(){
+      custRender();
+      if(custProfile && custProfile.plan) aiServerSync({ plan: custProfile.plan, used: custProfile.used });
+      return tryInstallServerAi();
+    }).then(function(ok){
+      if(ok){ try{ updateCoworkAiBanner(); }catch(e){} try{ if(typeof refreshCoworkQueryImageAvailability === 'function') refreshCoworkQueryImageAvailability(); }catch(e){} }
+    });
+  }
+  function custRefreshSession(){
+    var cs = custSbInit(); if(!cs) { custRender(); return Promise.resolve(); }
+    return cs.auth.getSession().then(function(r){
+      var ses = r && r.data && r.data.session;
+      custUser = ses && ses.user ? ses.user : null;
+      if(!custUser){ custProfile = null; custRender(); return; }
+      return custAfterAuth();
+    }).catch(function(){ custRender(); });
+  }
+  function custSignIn(email, pw){
+    var cs = custSbInit();
+    if(!cs){ custMsg('error', 'Service de connexion indisponible.'); return; }
+    if(custBusy) return; custBusy = true; custMsg('', '');
+    cs.auth.signInWithPassword({ email: String(email || '').trim(), password: pw }).then(function(res){
+      if(res.error) throw res.error;
+      custMsg('ok', 'Connecté.');
+      return custRefreshSession();
+    }).catch(function(e){ custMsg('error', custErrText(e)); }).then(function(){ custBusy = false; });
+  }
+  function custSignUp(name, email, pw, terms){
+    var cs = custSbInit();
+    if(!cs){ custMsg('error', 'Service de connexion indisponible.'); return; }
+    name = String(name || '').trim(); email = String(email || '').trim();
+    if(!name || !email || !pw){ custMsg('error', 'Remplissez tous les champs.'); return; }
+    if(pw.length < 8){ custMsg('error', 'Mot de passe : 8 caractères minimum.'); return; }
+    if(!terms){ custMsg('error', 'Acceptez les conditions pour créer votre compte.'); return; }
+    if(custBusy) return; custBusy = true; custMsg('', '');
+    cs.auth.signUp({ email: email, password: pw, options: { data: { full_name: name, terms: true }, emailRedirectTo: location.origin + '/?account=confirmed' } }).then(function(res){
+      if(res.error) throw res.error;
+      if(res.data && res.data.session){ custMsg('ok', 'Compte créé. Bienvenue !'); return custRefreshSession(); }
+      /* Confirmation par courriel activée : le profil client sera créé à la première connexion. */
+      custMsg('ok', 'Compte créé. Un courriel de confirmation vous a été envoyé : cliquez sur le lien, puis connectez-vous.');
+      custTab('login');
+    }).catch(function(e){ custMsg('error', custErrText(e)); }).then(function(){ custBusy = false; });
+  }
+  function custForgot(email){
+    var cs = custSbInit();
+    email = String(email || '').trim();
+    if(!cs || !email){ custMsg('error', 'Saisissez votre courriel puis cliquez sur « Mot de passe oublié ».'); return; }
+    cs.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?account=reset' }).then(function(res){
+      if(res.error) throw res.error;
+      custMsg('ok', 'Si un compte existe pour ce courriel, un lien de réinitialisation vient d’être envoyé.');
+    }).catch(function(e){ custMsg('error', custErrText(e)); });
+  }
+  function custSignOut(){
+    var cs = custSbInit(); if(!cs) return;
+    cs.auth.signOut({ scope:'local' }).catch(function(){}).then(function(){
+      custUser = null; custProfile = null; custRecovery = false; custRender(); custMsg('ok', 'Déconnecté.');
+      aiServerToken().then(function(t){ if(!t && aiServerMode){ sampleCap = null; aiServerMode = false; try{ updateCoworkAiBanner(); }catch(e){} } });
+    });
+  }
+  (function wireCustomerAccount(){
+    var f;
+    if((f = cEl('cust-tab-login'))) f.addEventListener('click', function(){ custTab('login'); });
+    if((f = cEl('cust-tab-signup'))) f.addEventListener('click', function(){ custTab('signup'); });
+    if((f = cEl('cust-form-login'))) f.addEventListener('submit', function(ev){ ev.preventDefault(); custSignIn(cEl('cust-login-email').value, cEl('cust-login-pw').value); });
+    if((f = cEl('cust-form-signup'))) f.addEventListener('submit', function(ev){ ev.preventDefault(); custSignUp(cEl('cust-su-name').value, cEl('cust-su-email').value, cEl('cust-su-pw').value, cEl('cust-su-terms').checked); });
+    if((f = cEl('cust-forgot-btn'))) f.addEventListener('click', function(){ custForgot(cEl('cust-login-email').value); });
+    if((f = cEl('cust-logout-btn'))) f.addEventListener('click', custSignOut);
+    if((f = cEl('cust-plans-btn'))) f.addEventListener('click', function(){ var b = cEl('btn-abonnements'); if(b) b.click(); });
+    if((f = cEl('cust-form-reset'))) f.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      var cs = custSbInit(), pw = cEl('cust-reset-pw').value;
+      if(!cs) return;
+      if(pw.length < 8){ custMsg('error', 'Mot de passe : 8 caractères minimum.'); return; }
+      cs.auth.updateUser({ password: pw }).then(function(res){
+        if(res.error) throw res.error;
+        custRecovery = false; cEl('cust-reset-pw').value = ''; custMsg('ok', 'Mot de passe modifié.'); return custRefreshSession();
+      }).catch(function(e){ custMsg('error', custErrText(e)); });
+    });
+    var cs = custSbInit();
+    if(cs) cs.auth.onAuthStateChange(function(event){
+      setTimeout(function(){
+        if(event === 'PASSWORD_RECOVERY'){ custRecovery = true; custRender(); try{ showView('settings'); }catch(e){} }
+        else if(event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'){ if(!custBusy) custRefreshSession(); }
+        else if(event === 'SIGNED_OUT'){ custUser = null; custProfile = null; custRender(); }
+      }, 0);
+    });
+    custRender();
+    var q = ''; try{ q = new URLSearchParams(location.search).get('account') || ''; }catch(e){}
+    if(q === 'confirmed' || q === 'reset'){ setTimeout(function(){ try{ showView('settings'); }catch(e){} if(q === 'confirmed') custMsg('ok', 'Courriel confirmé : vous pouvez vous connecter.'); }, 600); }
   })();
   var sampleReady = Promise.race([
     sampleUsePromise,
@@ -13702,7 +13913,7 @@
   // garde-fou partagé). Chaque bouton/texte de statut est mis à jour en même temps que les autres.
   var AI_RETRY_BTN_IDS = ['chat-ai-retry-btn', 'cowork-ai-retry-btn', 'cowork-discuss-ai-retry-btn'];
   var AI_STATUS_TEXT_IDS = ['chat-ai-status-text', 'cowork-ai-status-text', 'cowork-discuss-ai-status-text'];
-  var AI_OFFLINE_TEXT = "L'assistant IA est réservé aux membres de l'équipe : connectez-vous avec votre compte FGH-Colab (Réglages), puis cliquez sur « Vérifier la connexion ». En attendant, les réponses locales (finance, fichiers, graphiques) restent disponibles.";
+  var AI_OFFLINE_TEXT = "L'assistant IA demande un compte : créez gratuitement votre compte HelpNaud (Réglages › Mon compte HelpNaud) ou connectez-vous, puis cliquez sur « Vérifier la connexion ». En attendant, les réponses locales (finance, fichiers, graphiques) restent disponibles.";
   function applyAiOfflineTexts(){
     AI_STATUS_TEXT_IDS.forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = AI_OFFLINE_TEXT; });
     AI_RETRY_BTN_IDS.forEach(function(id){ var el = document.getElementById(id); if(el) el.textContent = 'Vérifier la connexion'; });
