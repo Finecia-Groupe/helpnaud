@@ -14766,7 +14766,7 @@
     briefing:{ icon:'📰', title:'Briefing FINECIA', desc:"Résumés et briefings internes préparés pour l'équipe FINECIA GROUPE." },
     redaction:{ icon:'✍️', title:"Rédaction de plan d'affaires", desc:"Rédaction assistée d'un plan d'affaires complet, prêt à présenter." },
     rh:{ icon:'👥', title:'Outils recrutement et RH', desc:"Recrutement, gestion RH et suivi du personnel pour les mandats et l'interne." },
-    pgr:{ icon:'💼', title:'PGR - Paie et Gestion des Rémunérations', desc:"Fiche RH intégrée, calcul de la paie, relevés de paie, heures supplémentaires validées et espace employé ECOREP." },
+    pgr:{ icon:'💼', title:'LPGR - Logiciel Paie et Gestion des Rémunérations', desc:"Fiche RH intégrée, calcul de la paie, relevés de paie, heures supplémentaires validées et espace employé ECOREP." },
     formation:{ icon:'🎓', title:'Outils de formation', desc:"Modules et supports de formation pour l'équipe et pour les clients." },
     etat:{ icon:'🏛️', title:"Outil d'accompagnement des États, municipalités et administrations", desc:"Accompagnement spécialisé pour les États, municipalités et administrations publiques." },
     expert:{ icon:'🧭', title:"Outil d'analyse niveau expert du cabinet", desc:"Analyses approfondies, niveau expert, pour les mandats du cabinet." },
@@ -22553,17 +22553,48 @@
       '<div id="fgbank-tab-sanctions" hidden></div>' +
     '</div>';
   }
+  /* Classement des dossiers : Dossiers (en attente) → Traitement en cours → Dossier terminé - Suivi au besoin.
+     Un dossier dont le financement est accepté ou refusé est classé « terminé » automatiquement. */
+  function fgbankStage(proj){
+    if(proj.finishedBy || proj.status === 'accepte' || proj.status === 'refuse') return 'done';
+    return proj.handler ? 'progress' : 'queue';
+  }
+  function fgbankOrigin(proj){
+    if(proj.sourceVehicleLeadId) return 'Partner Market (véhicule)';
+    if(proj.sourceCoprojectId) return 'COPROJECT';
+    return 'Dépôt manuel';
+  }
   function fghlabBankHandlerHtml(proj){
-    var lines = [];
+    var lines = [], stage = fgbankStage(proj), id = escapeHtml(proj.id);
     if(proj.depositedBy) lines.push('Déposé par : <strong>'+escapeHtml(fghlabActorLabel(proj.depositedBy))+'</strong>');
     lines.push('Pris en charge par : ' + (proj.handler ? '<strong>'+escapeHtml(fghlabActorLabel(proj.handler))+'</strong>'+(proj.handledOn ? ' le '+escapeHtml(fmtFghlabShortDate(proj.handledOn)) : '') : '<em>personne pour l\u2019instant</em>'));
     if(proj.finishedBy) lines.push('<span style="color:#2D9C93;">Dossier terminé par : <strong>'+escapeHtml(fghlabActorLabel(proj.finishedBy))+'</strong>'+(proj.finishedOn ? ' le '+escapeHtml(fmtFghlabShortDate(proj.finishedOn)) : '')+'</span>');
+    else if(stage === 'done') lines.push('<span style="color:#2D9C93;">Classé automatiquement : '+(proj.status === 'accepte' ? 'financement accepté' : 'dossier refusé')+'.</span>');
+    var b = function(act, label, cls){ return '<button type="button" class="btn'+(cls ? ' '+cls : '')+'" data-fgbank-act="'+act+'" data-id="'+id+'" style="padding:3px 9px; font-size:11.5px;">'+label+'</button>'; };
     var btns = '';
-    if(!proj.finishedBy){
-      btns = (!proj.handler ? '<button type="button" class="btn" data-fgbank-take="'+escapeHtml(proj.id)+'" style="padding:3px 9px; font-size:11.5px;">Prendre en charge</button>' : '') +
-        '<button type="button" class="btn primary" data-fgbank-finish="'+escapeHtml(proj.id)+'" style="padding:3px 9px; font-size:11.5px;">Terminer le dossier</button>';
-    }
-    return '<div style="margin-top:8px; font-size:12px; line-height:1.7;">' + lines.join('<br>') + (btns ? '<div style="display:flex; gap:6px; margin-top:4px;">'+btns+'</div>' : '') + l6InfoReqHtml(proj, 'project', !proj.finishedBy) + '</div>';
+    if(stage === 'queue') btns = b('take', 'Prendre en charge');
+    else if(stage === 'progress') btns = b('requeue', '↩️ Remettre dans Dossiers') + b('finish', 'Terminer le dossier', 'primary');
+    else btns = (proj.status !== 'accepte' ? b('reopen', '🔄 Rouvrir et reprendre le traitement', 'primary') + b('requeue', '↩️ Remettre dans Dossiers') : '');
+    var hist = (Array.isArray(proj.stageHistory) && proj.stageHistory.length) ? '<details style="margin-top:4px;"><summary style="cursor:pointer; font-size:11.5px;">Historique du classement ('+proj.stageHistory.length+')</summary><div class="hint" style="font-size:11.5px; line-height:1.6;">'+proj.stageHistory.slice().reverse().map(function(h){ return escapeHtml(fmtFghlabShortDate(h.on))+' — '+escapeHtml(h.text)+' <em>('+escapeHtml(fghlabActorLabel(h.by))+')</em>'; }).join('<br>')+'</div></details>' : '';
+    return '<div style="margin-top:8px; font-size:12px; line-height:1.7;">' + lines.join('<br>') + (btns ? '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">'+btns+'</div>' : '') + hist + l6InfoReqHtml(proj, 'project', stage !== 'done') + '</div>';
+  }
+  function fgbankLog(proj, text){
+    if(!Array.isArray(proj.stageHistory)) proj.stageHistory = [];
+    proj.stageHistory.push({ on: new Date().toISOString(), by: fghlabActor(), text: text });
+    try{ l6Hist(proj, 'fgbank-stage', text); }catch(e){}
+  }
+  var fgbankSecOpen = {};
+  function fgbankGroupedHtml(items){
+    var SEC = [['queue','📥 Dossiers — en attente de traitement',true],['progress','⚙️ Traitement en cours',true],['done','✅ Dossier terminé - Suivi au besoin',false]];
+    return SEC.map(function(sec){
+      var mine = items.filter(function(it){ return fgbankStage(it.proj) === sec[0]; });
+      var origins = {}, order = [];
+      mine.forEach(function(it){ var o = fgbankOrigin(it.proj); if(!origins[o]){ origins[o] = []; order.push(o); } origins[o].push(it.html); });
+      order.sort();
+      var isOpen = fgbankSecOpen[sec[0]] === undefined ? sec[2] : fgbankSecOpen[sec[0]];
+      return '<details'+(isOpen ? ' open' : '')+' data-fgbank-sec="'+sec[0]+'" style="margin-bottom:12px;"><summary style="cursor:pointer; font-weight:700; font-size:14px; padding:6px 0;">'+sec[1]+' <span class="hint" style="font-weight:400;">('+mine.length+')</span></summary>' +
+        (mine.length ? order.map(function(o){ return '<div style="margin:8px 0 4px; font-size:12.5px; font-weight:600; color:var(--muted);">Origine : '+escapeHtml(o)+' ('+origins[o].length+')</div>'+origins[o].join(''); }).join('') : '<p class="hint" style="margin:4px 0 8px; font-size:12px;">Aucun dossier.</p>') + '</details>';
+    }).join('');
   }
   function renderFghlabBankProjectList(){
     var listEl = document.getElementById('fgbank-list');
@@ -22577,7 +22608,8 @@
       return;
     }
     var activeBanks = fghlabActiveBankPartners();
-    listEl.innerHTML = fghlabState.fgbankProjects.slice().reverse().map(function(proj){
+    var fgbankSorted = fghlabState.fgbankProjects.slice().reverse();
+    var fgbankCards = fgbankSorted.map(function(proj){
       var statusLabel = FGBANK_STATUS[proj.status] || proj.status;
       var statusColor = proj.status === 'accepte' ? '#2D9C93' : (proj.status === 'refuse' ? '#B3261E' : '#C89B3C');
       var visiblePartnersHtml = activeBanks.length
@@ -22652,7 +22684,8 @@
         offerFormHtml + ((isOwnerSession && proj.status !== 'accepte') ? offerHelpHtml : '') +
         scCardHtml('fgbank', proj) +
       '</div>';
-    }).join('');
+    });
+    listEl.innerHTML = fgbankGroupedHtml(fgbankSorted.map(function(pr, ix){ return { proj: pr, html: fgbankCards[ix] }; }));
   }
   function renderFghlabRevenueDashboard(){
     var breakdownEl = document.getElementById('fgbank-revenue-breakdown');
@@ -22725,19 +22758,37 @@
     });
     var listEl = document.getElementById('fgbank-list');
     if(listEl){
+      listEl.addEventListener('toggle', function(e){ var d = e.target; if(d && d.getAttribute && d.getAttribute('data-fgbank-sec')) fgbankSecOpen[d.getAttribute('data-fgbank-sec')] = d.open; }, true);
       listEl.addEventListener('click', function(e){
-        var take = e.target.closest ? e.target.closest('[data-fgbank-take]') : null;
-        var fin = e.target.closest ? e.target.closest('[data-fgbank-finish]') : null;
-        if(!take && !fin) return;
-        var id = (take || fin).getAttribute(take ? 'data-fgbank-take' : 'data-fgbank-finish');
+        var actBtn = e.target.closest ? e.target.closest('[data-fgbank-act]') : null;
+        if(!actBtn) return;
+        var id = actBtn.getAttribute('data-id'), act = actBtn.getAttribute('data-fgbank-act');
         var proj = null;
         fghlabState.fgbankProjects.forEach(function(p){ if(p.id === id) proj = p; });
-        if(!proj || proj.finishedBy) return;
-        var actor = fghlabActor();
-        if(!proj.handler){ proj.handler = actor; proj.handledOn = new Date().toISOString(); }
-        if(fin){ proj.finishedBy = actor; proj.finishedOn = new Date().toISOString(); }
+        if(!proj) return;
+        var actor = fghlabActor(), nowIso = new Date().toISOString();
+        if(act === 'take'){ proj.handler = actor; proj.handledOn = nowIso; fgbankLog(proj, 'Pris en charge → Traitement en cours'); }
+        else if(act === 'finish'){
+          if(!window.confirm('Terminer ce dossier ? Il sera classé dans « Dossier terminé - Suivi au besoin ». Vous pourrez le rouvrir à tout moment.')) return;
+          proj.finishedBy = actor; proj.finishedOn = nowIso; fgbankLog(proj, 'Dossier terminé');
+        }
+        else if(act === 'requeue'){
+          if(!window.confirm('Remettre ce dossier dans « Dossiers » (en attente de traitement) ? Vous pourrez le reprendre plus tard.')) return;
+          proj.finishedBy = null; proj.finishedOn = null; proj.handler = null; proj.handledOn = null;
+          if(proj.status === 'refuse') proj.status = (proj.offers && proj.offers.length) ? 'offres_recues' : 'en_attente';
+          fgbankLog(proj, 'Remis dans Dossiers (en attente de traitement)');
+        }
+        else if(act === 'reopen'){
+          proj.finishedBy = null; proj.finishedOn = null;
+          if(proj.status === 'refuse') proj.status = (proj.offers && proj.offers.length) ? 'offres_recues' : 'en_attente';
+          proj.handler = actor; proj.handledOn = nowIso; fgbankLog(proj, 'Dossier rouvert → Traitement en cours');
+        }
+        else return;
+        fgbankSecOpen[fgbankStage(proj)] = true;
+        l6Toast({queue:'Dossier classé dans « Dossiers » (en attente).',progress:'Dossier classé dans « Traitement en cours ».',done:'Dossier classé dans « Dossier terminé - Suivi au besoin » — vous pouvez le rouvrir.'}[fgbankStage(proj)]);
         persistFghlabState();
         renderFghlabBankProjectList();
+        try{ renderFghlabBankAlerts(); }catch(x){}
       });
       listEl.addEventListener('change', function(e){
         if(getActiveFghlabMember()) return; // réservé au propriétaire
@@ -22836,8 +22887,8 @@
           var rpid = refuseBtn.getAttribute('data-fgbank-refuse');
           var rproj = null;
           fghlabState.fgbankProjects.forEach(function(p){ if(p.id === rpid) rproj = p; });
-          if(rproj){
-            rproj.status = 'refuse';
+          if(rproj && window.confirm('Marquer ce dossier comme refusé ? Il sera classé dans « Dossier terminé » ; vous pourrez le rouvrir.')){
+            rproj.status = 'refuse'; fgbankLog(rproj, 'Marqué refusé');
             persistFghlabState();
             renderFghlabBankProjectList();
           }
@@ -27695,7 +27746,7 @@
     briefing: "Briefing FINECIA prépare des résumés et briefings internes pour tenir l'équipe informée (dossiers en cours, décisions, priorités). Stub « Bientôt disponible » — pas encore de génération ni d'archivage de briefings.",
     redaction: "Rédaction de plan d'affaires produit un document livrable selon le destinataire : demande de prêt bancaire, investisseurs, bailleur de fonds, résumé exécutif, plan opérationnel interne ou reprise d'entreprise. Chaque modèle contient la structure et une liste de vérifications avant livraison ; des projets fictifs permettent de s'exercer.",
     rh: "Outils recrutement et RH couvre le suivi des candidatures et dossiers RH, la dotation, les affectations temporaires et de longue durée, les périodes d'essai, les nominations (postes professionnels, de responsabilité ou de gestion), les contrats CDD/CDI/PERMANENT et un tableau de bord d'échéances. Les données RH sont stockées sur le serveur et réservées aux membres autorisés sur l'outil.",
-    pgr: "PGR - Paie et Gestion des Rémunérations réunit la fiche RH intégrée (dates d'embauche, d'ancienneté et de retraite projetée, heures cumulées, coordonnées bancaires), le calcul de la paie (taux horaire ou salaire, heures, primes, avantages, impôt, cotisations, assurances, congés et maladie), les relevés de paie publiés dans l'espace employé ECOREP, la validation RH des heures supplémentaires et des barèmes configurables. Les barèmes d'exemple (Canada/Québec) sont indicatifs et doivent être vérifiés chaque année auprès des sources officielles. Données sensibles stockées sur le serveur.",
+    pgr: "LPGR - Logiciel Paie et Gestion des Rémunérations réunit la fiche RH intégrée (dates d'embauche, d'ancienneté et de retraite projetée, heures cumulées, coordonnées bancaires), le calcul de la paie (taux horaire ou salaire, heures, primes, avantages, impôt, cotisations, assurances, congés et maladie), les relevés de paie publiés dans l'espace employé ECOREP, la validation RH des heures supplémentaires et des barèmes configurables. Les barèmes d'exemple (Canada/Québec) sont indicatifs et doivent être vérifiés chaque année auprès des sources officielles. Données sensibles stockées sur le serveur.",
     formation: "Outils de formation rassemble des modules et supports de formation destinés à l'équipe et aux clients de FINECIA GROUPE. Stub « Bientôt disponible » pour l'instant.",
     etat: "L'outil d'accompagnement des États, municipalités et administrations offre un appui spécialisé pour ce type de clients publics, aux enjeux différents des entreprises privées (reddition de comptes, cadre réglementaire, budgets publics). Stub « Bientôt disponible ».",
     expert: "L'outil d'analyse niveau expert du cabinet est pensé pour des analyses plus poussées, réservées aux dossiers qui exigent un niveau d'expertise supérieur à l'analyse courante. Il contient les documents CabDocs (14 documents de référence rédigés par Claude), les grilles de notation pays et financière, l'évaluation (DCF, multiples), l'analyse de rapports (Altman, Piotroski, Beneish) et des listes de revue par les pairs.",
@@ -38184,7 +38235,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
 </script>
 
 <script>
-/* Noyau RH / paie partagé (PGR, Outils RH) : appels serveur (RPC Supabase), outils de dates, CSV, onglets, relevé de paie imprimable. */
+/* Noyau RH / paie partagé (LPGR, Outils RH) : appels serveur (RPC Supabase), outils de dates, CSV, onglets, relevé de paie imprimable. */
 (function(){
   "use strict";
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
@@ -38356,7 +38407,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
 </script>
 
 <script>
-/* PGR — Paie et Gestion des Rémunérations : fiche RH, calcul de paie, relevés, heures supplémentaires, barèmes.
+/* LPGR — Paie et Gestion des Rémunérations : fiche RH, calcul de paie, relevés, heures supplémentaires, barèmes.
    Données sensibles : stockées sur le serveur (Supabase), jamais dans le navigateur ; droits vérifiés par la base (outil « pgr »). */
 (function(){
   "use strict";
@@ -38435,7 +38486,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       leave:{vacationDays:i.vacDays||0,sickDays:(i.sickDays||0),unpaidDays:i.unpaidDays||0},
       bank:{institution:bank.institution||'',accountMasked:acc?('••••'+acc.slice(-4)):''},
       fx:(e.payCurrency&&e.payCurrency!==cur)?{from:e.payCurrency,to:cur}:null,otIds:i.otIds||[],
-      note:i.note||'Estimation de paie calculée à partir des barèmes configurés dans PGR ; à valider avant versement.'};
+      note:i.note||'Estimation de paie calculée à partir des barèmes configurés dans LPGR ; à valider avant versement.'};
   }
 
   /* ====== Onglets ====== */
@@ -38642,7 +38693,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       {id:'hs',label:'⏱ Heures supp.',html:'',init:hsTab},
       {id:'bareme',label:'⚙️ Barèmes',html:'',init:baremesTab},
       {id:'ecorep',label:'🔐 ECOREP',html:'',init:ecorepTab}
-    ],'<h2 style="margin:0 0 4px">💼 PGR - Paie et Gestion des Rémunérations</h2><p class="hint" style="margin:0 0 10px">Paie, avantages, primes, impôt, congés, relevés de paie et fiches RH. Données sensibles conservées sur le serveur, accessibles seulement aux membres autorisés sur l’outil PGR.</p>');
+    ],'<h2 style="margin:0 0 4px">💼 LPGR - Logiciel Paie et Gestion des Rémunérations</h2><p class="hint" style="margin:0 0 10px">Paie, avantages, primes, impôt, congés, relevés de paie et fiches RH. Données sensibles conservées sur le serveur, accessibles seulement aux membres autorisés sur l’outil LPGR.</p>');
     S.emps=null; S.settings=null;
     window.addEventListener('hn-fgh-currency',function(e){ if(e.detail&&e.detail.tool==='pgr'){ /* la devise s'applique au prochain calcul */ } });
   }
@@ -38746,7 +38797,7 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
         al.sort(function(a,b){return a[0]-b[0];});
         var open=P.filter(function(p){return p.status==='ouvert';}).length, need=P.reduce(function(a,p){return a+Math.max(0,(+p.required||0)-(+p.current||0));},0);
         var K=function(v,l){return '<div><b>'+v+'</b><span>'+l+'</span></div>';};
-        sec.querySelector('[data-k]').innerHTML=K(open,'Postes ouverts')+K(need,'Personnes à recruter')+K(C.filter(function(c){return c.status==='encours'||c.status==='signe';}).length,'Contrats actifs')+K(PR.filter(function(p){return p.decision==='encours';}).length,'Périodes d’essai en cours')+K(A.filter(function(a){return a.status==='encours';}).length,'Affectations en cours')+K(AP.filter(function(a){return a.data&&a.data.status==='envigueur';}).length,'Nominations en vigueur')+K(emps.length||'—','Fiches RH (si accès PGR)')+K(retire||0,'Retraites dans 12 mois');
+        sec.querySelector('[data-k]').innerHTML=K(open,'Postes ouverts')+K(need,'Personnes à recruter')+K(C.filter(function(c){return c.status==='encours'||c.status==='signe';}).length,'Contrats actifs')+K(PR.filter(function(p){return p.decision==='encours';}).length,'Périodes d’essai en cours')+K(A.filter(function(a){return a.status==='encours';}).length,'Affectations en cours')+K(AP.filter(function(a){return a.data&&a.data.status==='envigueur';}).length,'Nominations en vigueur')+K(emps.length||'—','Fiches RH (si accès LPGR)')+K(retire||0,'Retraites dans 12 mois');
         sec.querySelector('[data-a]').innerHTML='<div class="card"><strong>Alertes et échéances</strong>'+(al.length?'<ul style="margin:6px 0 0 18px">'+al.map(function(a){return '<li>'+esc(a[1])+'</li>';}).join('')+'</ul>':'<p class="hint">Rien à signaler.</p>')+'</div>';
       });
     }).catch(function(e){ msg(sec,H.errMsg(e),1); });
