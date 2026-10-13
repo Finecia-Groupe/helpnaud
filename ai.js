@@ -34,11 +34,21 @@ const PROVIDER_ORDER = ['anthropic', 'openai', 'google', 'mistral'];
 /* Modèles par défaut selon le fournisseur et la gamme. Les noms de modèles évoluent : on les corrige dans Netlify
    (AI_MODEL_LOW / _MID / _HIGH) sans toucher au code. */
 const DEFAULT_MODELS = {
-  anthropic: { low: 'claude-haiku-4-5-20251001', mid: 'claude-sonnet-5-5', high: 'claude-opus-5-5' },
+  anthropic: { low: 'claude-haiku-5-5', mid: 'claude-sonnet-5-5', high: 'claude-opus-5-5' },
   openai:    { low: 'gpt-4o-mini', mid: 'gpt-4o', high: 'gpt-4o' },
   google:    { low: 'gemini-2.0-flash', mid: 'gemini-2.5-flash', high: 'gemini-2.5-pro' },
   mistral:   { low: 'mistral-small-latest', mid: 'mistral-medium-latest', high: 'mistral-large-latest' }
 };
+/* Tarifs en USD par million de jetons (entrée / sortie) — vérifiés le 12 octobre 2026. Sert à calculer le COÛT RÉEL de chaque appel
+   (enveloppe mensuelle en dollars par forfait, voir SQL 3o). Surcharge possible : AI_PRICES = {"modele":[entree,sortie]}.
+   Modèle inconnu = tarif prudent de 3 / 15. Haiku 5,5 coûte 5 fois plus au-delà de 100 000 jetons d'entrée : sans objet ici (messages limités à 60 000 caractères). */
+const PRICES = Object.assign({
+  'claude-haiku-5-5': [0.10, 0.50], 'claude-sonnet-5-5': [2, 10], 'claude-opus-5-5': [4, 20]
+}, (function(){ try { return JSON.parse(process.env.AI_PRICES || '{}'); } catch (e) { return {}; } })());
+function costMicro(model, tin, tout){
+  const p = PRICES[model] || [3, 15];
+  return Math.ceil((tin || 0) * p[0] + (tout || 0) * p[1]); /* USD par million de jetons = millionièmes de dollar par jeton */
+}
 const SUPPORTS_IMAGES = { anthropic: true, openai: true, google: true, mistral: false };
 const ENV_PROVIDER = String(process.env.AI_PROVIDER || '').toLowerCase();
 const ENV_FALLBACK = String(process.env.AI_FALLBACK || '').toLowerCase();
@@ -222,6 +232,7 @@ exports.handler = async function(event){
   catch (e) { return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
   if (!r || r.ok !== true) {
     if (r && r.error === 'quota') return reply(402, { error: 'quota', message: 'Crédits IA épuisés pour ce mois.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
+    if (r && r.error === 'budget') return reply(402, { error: 'budget', message: 'Limite d’utilisation mensuelle atteinte pour votre forfait. Elle se réinitialise au début du mois.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
     if (r && r.error === 'not_member') return reply(403, { error: 'not_member', message: 'Créez votre compte HelpNaud (Réglages › Mon compte) pour utiliser l’assistant IA.' });
     if (r && r.error === 'suspended') return reply(403, { error: 'suspended', message: 'Compte suspendu : contactez le support.' });
     return reply(400, { error: 'bad_request', message: 'Demande refusée.' });
@@ -242,6 +253,7 @@ exports.handler = async function(event){
       if (!out.text) { lastErr = { code: 'empty', status: 502, message: 'Réponse vide.' }; continue; }
       let data;
       if (wantJson) { data = parseJson(out.text); if (data === undefined) { lastErr = { code: 'bad_json', status: 502, message: 'Réponse illisible, réessayez.' }; continue; } }
+      try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: costMicro(model, out.tin, out.tout) }); } catch (e) {}
       await log(true, label, out.tin, out.tout);
       return reply(200, { text: out.text, data, credits: { used: r.used, limit: r.limit, plan: r.plan } });
     } catch (e) {
