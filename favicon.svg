@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="HelpNaud.ai">
+  <rect x="19" y="19" width="474" height="474" rx="91" fill="#f7f5f0"/>
+  <rect x="109" y="102" width="61" height="350" fill="#16304a"/>
+  <rect x="342" y="102" width="61" height="350" fill="#16304a"/>
+  <rect x="109" y="247" width="293" height="60" fill="#16304a"/>
+  <rect x="360.5" y="95" width="46" height="46" fill="#c89b3c" transform="rotate(45 383.5 118)"/>
+  <circle cx="464" cy="66" r="37.5" fill="#2d9c93"/>
+</svg>
