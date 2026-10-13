@@ -5066,7 +5066,7 @@
 
 <div class="card">
         <h2>Abonnements</h2>
-        <p class="hint">Consultez les 5 forfaits prévus pour HelpNaud.ai (Pilote, Essentiel, Professionnel, Affaires, Institution) — à titre indicatif, aucun paiement n'est actif pendant la phase pilote.</p>
+        <p class="hint">Consultez les 5 forfaits prévus pour HelpNaud.ai (Gratuit, Essentiel, Professionnel, Affaires, Institution ; prix en dollars américains) — à titre indicatif, aucun paiement n'est actif pendant la phase pilote.</p>
         <button class="btn primary" id="btn-abonnements" type="button">
           <svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h10"/></svg>
           Voir les forfaits
@@ -7628,21 +7628,21 @@
      texte public exact des 5 forfaits demandés, affiché en lecture seule dans une fenêtre modale
      accessible depuis Réglages > Abonnements. */
   var ABONNEMENTS_PLANS = [
-    { nom:'Pilote', prix:'Gratuit', tagline:'Pour découvrir HelpNaud.ai',
+    { nom:'Gratuit', prix:'0 USD', tagline:'Pour découvrir HelpNaud.ai',
       avantages:["Accès à Assistant, Co-work et H-Start (tous les 42 domaines)","Rapports PDF de base","1 dossier/entreprise","1 utilisateur","Support communautaire (FAQ et documentation)"],
-      limites:"Assistant 30 messages/mois (4 000 caractères/message) ; Co-work 80 messages/mois, 10 fichiers joints, 8 000 caractères/message ; H-Start 120 messages/mois, 12 000 caractères/message, 5 calculateurs vedettes ; exports avec filigrane « Propulsé par HelpNaud.ai »." },
-    { nom:'Essentiel', prix:'—', tagline:'Pour les indépendants et petites équipes',
+      limites:"30 crédits IA par mois (environ 15 messages au palier Médiane) ; exports avec filigrane « Propulsé par HelpNaud.ai »." },
+    { nom:'Essentiel', prix:'29 USD / mois, hors taxes', tagline:'Pour les indépendants',
       avantages:["Tous les calculateurs H-Start débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique de conversations 90 jours","Support par courriel (réponse sous 48h)"],
-      limites:"Assistant 150 messages/mois (8 000 caractères) ; Co-work 300 messages/mois, 40 fichiers, 15 000 caractères ; H-Start 400 messages/mois, 20 000 caractères ; 3 dossiers, 3 utilisateurs." },
-    { nom:'Professionnel', prix:'—', tagline:'Pour les PME et cabinets',
-      avantages:["Rôles et permissions par utilisateur","Sauvegardes automatiques","Historique illimité","Formation initiale incluse","Support prioritaire (réponse sous 24h)","Exports Excel/PowerPoint personnalisés"],
-      limites:"Assistant 500 messages/mois (12 000 caractères) ; Co-work 1 000 messages/mois, 150 fichiers, 25 000 caractères ; H-Start 2 000 messages/mois, usage élargi ; 10 dossiers, 10 utilisateurs." },
-    { nom:'Affaires', prix:'—', tagline:'Pour les entreprises et organisations',
-      avantages:["Dossiers et utilisateurs illimités (dans une même organisation)","Tableaux de bord consolidés multi-entités","Sécurité avancée (authentification unique, journal d'audit)","Gestionnaire de compte dédié","SLA de support (réponse sous 4h ouvrables)","Accès API (à venir)"],
-      limites:"Messages et fichiers en usage élargi/quasi illimité selon usage raisonnable ; quotas ajustés sur demande selon la taille de l'organisation." },
-    { nom:'Institution', prix:'Sur devis', tagline:"Pour les autorités publiques, universités, banques et grandes institutions",
+      limites:"850 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
+    { nom:'Professionnel', prix:'79 USD / mois, hors taxes', tagline:'Pour les professionnels et cabinets',
+      avantages:["Sauvegardes automatiques","Historique illimité","Formation initiale incluse","Support prioritaire (réponse sous 24h)","Exports Excel/PowerPoint personnalisés","Comptes d'équipe et rôles par utilisateur (à venir)"],
+      limites:"3 500 crédits IA par mois ; 1 utilisateur au lancement (forfait par personne ; comptes d'équipe à venir) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
+    { nom:'Affaires', prix:'249 USD / mois, hors taxes', tagline:'Pour les entreprises et organisations',
+      avantages:["Tableaux de bord consolidés multi-entités","Sécurité avancée (authentification unique, journal d'audit)","Gestionnaire de compte dédié","SLA de support (réponse sous 4h ouvrables)","Comptes d'équipe multi-utilisateurs (à venir)","Accès API (à venir)"],
+      limites:"10 000 crédits IA par mois ; 1 utilisateur au lancement (forfait par personne ; comptes d'équipe à venir) ; usage raisonnable." },
+    { nom:'Institution', prix:'À partir de 999 USD / mois, sur devis', tagline:"Pour les autorités publiques, universités, banques et grandes institutions",
       avantages:["Tous les avantages du forfait Affaires, plus :","Conformité renforcée (résidence des données, normes gouvernementales)","Déploiement multi-organismes/multi-juridictions","Accompagnement dédié pour chercheurs, universités, banques et administrations","Formation sur mesure et ateliers","Support 24/7","Personnalisation de marque (marque blanche) possible"],
-      limites:"Sur mesure — tarification et quotas établis selon les besoins de l'institution. Sur devis, nous contacter." }
+      limites:"Sur mesure — tarification, crédits et utilisateurs établis selon le contrat. Nous contacter." }
   ];
   function renderAbonnementsGrid(){
     var grid = document.getElementById('abonnements-grid');
@@ -7695,6 +7695,7 @@
      simple message amical apparaît, avec un lien vers Abonnements — jamais un blocage dur. */
   var AI_CREDIT_TIERS = [
     { id:'gratuit', nom:'Gratuit', credits: 30 },
+    { id:'proprietaire', nom:'Propriétaire', credits: null },
     { id:'pilote', nom:'Pilote', credits: 230 },
     { id:'essentiel', nom:'Essentiel', credits: 850 },
     { id:'pro', nom:'Professionnel', credits: 3500 },
