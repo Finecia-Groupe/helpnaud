@@ -227,6 +227,21 @@ exports.handler = async function(event){
   const attempts = [primary];
   const fb = fallbackFor(primary); if (fb && (!image || SUPPORTS_IMAGES[fb])) attempts.push(fb);
 
+  // Membres de l'équipe : les outils HelpNaud exigent une autorisation en cours et une journée commencée (SQL 3t).
+  // Les outils FGH-Colab restent libres. Si la fonction SQL n'est pas installée, la vérification est ignorée.
+  try {
+    const tool = typeof body.tool === 'string' ? body.tool.slice(0, 30) : '';
+    if (tool) {
+      const tk = await svcRpc('svc_member_tool_ok', { p_uid: uid, p_tool: tool });
+      if (tk && tk.ok === false) {
+        const msg = tk.error === 'no_workday'
+          ? 'Commencez votre journée (Réglages › Ma journée) pour utiliser cet outil au nom de Finecia. En dehors des heures de travail, utilisez votre compte client personnel.'
+          : 'Vous n’avez pas d’autorisation en cours pour cet outil. Demandez-la au propriétaire, ou utilisez votre compte client personnel.';
+        return reply(403, { error: tk.error === 'no_workday' ? 'no_workday' : 'no_grant', message: msg });
+      }
+    }
+  } catch (e) { /* vérification indisponible : les plafonds du pot restent actifs */ }
+
   // Plafond global mensuel (tous comptes). Variable Netlify AI_GLOBAL_BUDGET_USD, 100 $ par défaut.
   try {
     const cap = Number(process.env.AI_GLOBAL_BUDGET_USD || 100) * 1000000;
