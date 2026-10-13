@@ -12955,7 +12955,7 @@
         if(!res.ok){
           if(j && j.credits) aiServerSync(j.credits);
           var err = new Error((j && j.message) || 'ai'); err.code = (j && j.error) || 'upstream';
-          if(err.code === 'quota'){ try{ showAiCreditsLimitNotice(); }catch(e){} }
+          if(err.code === 'quota' || err.code === 'budget'){ try{ showAiCreditsLimitNotice(); }catch(e){} }
           throw err;
         }
         aiServerSync(j.credits);
@@ -13165,7 +13165,7 @@
       return '<div style="border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--surface); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">' +
         '<div style="flex:1; min-width:200px;"><b>' + escapeHtml(r.full_name || '(sans nom)') + '</b>' + (susp ? ' <span style="color:var(--bad); font-size:12px; font-weight:700;">SUSPENDU</span>' : '') +
         '<div class="hint" style="margin:2px 0 0; word-break:break-all;">' + escapeHtml(r.email || '') + '</div>' +
-        '<div class="hint" style="margin:2px 0 0;">Forfait ' + escapeHtml(custAdminPlanName(r.plan)) + ' · ' + Number(r.used || 0) + ' crédits ce mois-ci · inscrit le ' + escapeHtml(custAdminDate(r.created_at)) + '</div></div>' +
+        '<div class="hint" style="margin:2px 0 0;">Forfait ' + escapeHtml(custAdminPlanName(r.plan)) + ' · ' + Number(r.used || 0) + ' crédits ce mois-ci' + (r.cost_usd != null ? ' · coût API ≈ ' + Number(r.cost_usd).toFixed(2) + ' $ US' : '') + ' · inscrit le ' + escapeHtml(custAdminDate(r.created_at)) + '</div></div>' +
         '<button type="button" class="btn" data-cadm-edit="' + escapeHtml(r.email || '') + '" style="padding:6px 12px; font-size:12.5px;">Gérer</button></div>';
     }).join('');
   }
