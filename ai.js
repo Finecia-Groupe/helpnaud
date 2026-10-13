@@ -240,6 +240,9 @@ exports.handler = async function(event){
   if (!r || r.ok !== true) {
     if (r && r.error === 'quota') return reply(402, { error: 'quota', message: 'Crédits IA épuisés pour ce mois.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
     if (r && r.error === 'budget') return reply(402, { error: 'budget', message: 'Limite d’utilisation mensuelle atteinte pour votre forfait. Elle se réinitialise au début du mois.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
+    if (r && r.error === 'pool_quota') return reply(402, { error: 'quota', message: 'Les crédits IA communs de l’équipe sont épuisés pour ce mois. Demandez au propriétaire de les augmenter.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
+    if (r && r.error === 'pool_budget') return reply(402, { error: 'budget', message: 'Le budget IA commun de l’équipe est atteint pour ce mois. Demandez au propriétaire de l’augmenter.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
+    if (r && r.error === 'member_quota') return reply(402, { error: 'quota', message: 'Votre quota IA individuel est atteint pour ce mois. Demandez au propriétaire de l’ajuster.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
     if (r && r.error === 'not_member') return reply(403, { error: 'not_member', message: 'Créez votre compte HelpNaud (Réglages › Mon compte) pour utiliser l’assistant IA.' });
     if (r && r.error === 'suspended') return reply(403, { error: 'suspended', message: 'Compte suspendu : contactez le support.' });
     return reply(400, { error: 'bad_request', message: 'Demande refusée.' });
