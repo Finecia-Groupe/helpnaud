@@ -5033,6 +5033,22 @@
         </div>
       </div>
 
+            <div class="card" id="pool-card" style="display:none;">
+        <h2>Pot IA de l'équipe <span class="hint" style="font-weight:400; font-size:12px;">(réservé au propriétaire)</span></h2>
+        <p class="hint" style="margin:0 0 10px;">Un seul pot de crédits et de dollars API pour tous les membres (HelpNaud et FGH-Colab ensemble). Les quotas individuels répartissent le pot et n'ajoutent aucun budget. Remise à zéro chaque mois. Le propriétaire n'en fait pas partie.</p>
+        <p class="hint" id="pool-msg" hidden role="status" style="margin:0 0 10px; font-weight:600;"></p>
+        <div id="pool-summary" style="display:grid; gap:8px; margin-bottom:12px;"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px;">
+          <label class="hint" style="margin:0;">Crédits du mois (équipe)
+            <input type="number" id="pool-credits" min="0" max="100000" step="1" style="display:block; width:130px; margin-top:4px; border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink);"></label>
+          <label class="hint" style="margin:0;">Budget API (USD / mois)
+            <input type="number" id="pool-budget" min="0" max="100000" step="1" style="display:block; width:130px; margin-top:4px; border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink);"></label>
+          <button type="button" class="btn primary" id="pool-save" style="padding:6px 14px; font-size:12.5px;">Enregistrer le pot</button>
+          <button type="button" class="btn" id="pool-refresh" style="padding:6px 12px; font-size:12.5px;">Actualiser</button>
+        </div>
+        <div id="pool-members" style="display:grid; gap:8px;"></div>
+      </div>
+
             <div class="card" id="cust-admin-card" style="display:none;">
         <h2>Clients HelpNaud <span class="hint" style="font-weight:400; font-size:12px;">(réservé au propriétaire)</span></h2>
         <p class="hint" style="margin:0 0 10px;">Les clients sont les personnes qui se sont créé un compte HelpNaud (séparé de l'équipe FGH-Colab). Vous voyez leur forfait et leur consommation du mois, et vous pouvez changer un forfait, ajouter des crédits ou suspendre un compte.</p>
@@ -13185,6 +13201,7 @@
   function custAdminSync(){
     if(!custAdminState) return;
     var card = cEl('cust-admin-card'); if(!card) return;
+    try{ if(typeof poolSync === 'function') poolSync(); }catch(e){}
     var on = !!fghlabOwnerCloud;
     card.style.display = on ? '' : 'none';
     if(on && !custAdminState.loaded && !custAdminState.busy) custAdminLoad();
@@ -13236,6 +13253,83 @@
       if(b) custAdminOpen(b.getAttribute('data-cadm-edit'));
     });
     custAdminSync();
+  })();
+
+  /* ----- Pot IA commun de l'équipe (propriétaire) : team_pool_get / team_pool_set / team_member_quota_set ----- */
+  var poolState = { data: null, busy: false };
+  function poolMsg(kind, text){
+    var m = cEl('pool-msg'); if(!m) return;
+    m.hidden = !text; m.textContent = text || '';
+    m.style.color = kind === 'error' ? 'var(--bad)' : (kind === 'ok' ? 'var(--ok, #2e7d32)' : 'var(--muted)');
+  }
+  function poolBar(label, used, limit, unit){
+    var pct = limit > 0 ? Math.min(100, Math.round(used / limit * 100)) : 100;
+    var col = pct >= 100 ? 'var(--bad)' : (pct >= 90 ? '#d9822b' : (pct >= 70 ? '#c9a227' : 'var(--ok, #2e7d32)'));
+    var alert = pct >= 100 ? ' — plafond atteint : nouvelles demandes IA bloquées' : (pct >= 90 ? ' — alerte 90 %' : (pct >= 70 ? ' — alerte 70 %' : ''));
+    return '<div><div class="hint" style="margin:0 0 3px;"><b>' + label + '</b> : ' + used + ' / ' + limit + unit + ' (' + pct + ' %)' + alert + '</div>' +
+      '<div style="height:8px; border-radius:6px; background:var(--line); overflow:hidden;"><div style="height:100%; width:' + pct + '%; background:' + col + ';"></div></div></div>';
+  }
+  function poolRender(){
+    var d = poolState.data; if(!d) return;
+    var sum = cEl('pool-summary');
+    if(sum) sum.innerHTML = poolBar('Crédits', Number(d.used || 0), Number(d.credits || 0), '') + poolBar('Budget API', Number(Number(d.cost_usd || 0).toFixed(2)), Number(Number(d.budget_usd || 0).toFixed(2)), ' $ US');
+    var c = cEl('pool-credits'), b = cEl('pool-budget');
+    if(c && document.activeElement !== c) c.value = d.credits;
+    if(b && document.activeElement !== b) b.value = Number(d.budget_usd);
+    var box = cEl('pool-members'); if(!box) return;
+    var rows = Array.isArray(d.members) ? d.members : [];
+    if(!rows.length){ box.innerHTML = '<p class="hint" style="margin:0;">Aucun membre pour le moment.</p>'; return; }
+    box.innerHTML = rows.map(function(r){
+      return '<div style="border:1px solid var(--line); border-radius:12px; padding:8px 12px; background:var(--surface); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">' +
+        '<div style="flex:1; min-width:180px;"><b>' + escapeHtml(r.name || r.email) + '</b>' + (r.status !== 'active' ? ' <span style="color:var(--bad); font-size:12px;">inactif</span>' : '') +
+        '<div class="hint" style="margin:2px 0 0; word-break:break-all;">' + escapeHtml(r.email) + ' · ' + Number(r.used || 0) + ' crédits · ≈ ' + Number(r.cost_usd || 0).toFixed(2) + ' $ US ce mois-ci</div></div>' +
+        '<label class="hint" style="margin:0;">Quota individuel <input type="number" min="0" max="100000" step="1" placeholder="libre" data-pool-q="' + escapeHtml(r.email) + '" value="' + (r.quota == null ? '' : r.quota) + '" style="width:90px; border:1px solid var(--line); border-radius:9px; padding:5px 8px; background:var(--surface); color:var(--ink);"></label>' +
+        '<button type="button" class="btn" data-pool-qsave="' + escapeHtml(r.email) + '" style="padding:5px 10px; font-size:12.5px;">Appliquer</button></div>';
+    }).join('');
+  }
+  function poolLoad(keepMsg){
+    var sb = fghlabSb; if(!sb || !fghlabOwnerCloud || poolState.busy) return;
+    poolState.busy = true; if(!keepMsg) poolMsg('', '');
+    sb.rpc('team_pool_get').then(function(r){
+      if(r.error) throw r.error;
+      if(!r.data || r.data.ok !== true) throw new Error('refus');
+      poolState.data = r.data; poolRender();
+    }).catch(function(){ poolMsg('error', 'Pot IA indisponible. Vérifiez que le fichier SQL « phase 3s » est exécuté dans Supabase.'); })
+      .then(function(){ poolState.busy = false; });
+  }
+  function poolSync(){
+    var card = cEl('pool-card'); if(!card) return;
+    var on = !!fghlabOwnerCloud;
+    card.style.display = on ? '' : 'none';
+    if(on && !poolState.data && !poolState.busy) poolLoad();
+    if(!on) poolState.data = null;
+  }
+  function poolRpc(name, args, okText){
+    var sb = fghlabSb; if(!sb || !fghlabOwnerCloud) return;
+    sb.rpc(name, args).then(function(r){
+      if(r.error) throw r.error;
+      if(!r.data || r.data.ok !== true) throw new Error('refus');
+      poolMsg('ok', okText); poolState.data = null; poolLoad(true);
+    }).catch(function(){ poolMsg('error', 'Modification refusée ou impossible. Réessayez.'); });
+  }
+  (function wirePool(){
+    var f;
+    if((f = cEl('pool-refresh'))) f.addEventListener('click', function(){ poolState.data = null; poolLoad(); });
+    if((f = cEl('pool-save'))) f.addEventListener('click', function(){
+      var c = parseInt(cEl('pool-credits').value, 10), b = parseFloat(cEl('pool-budget').value);
+      if(!(c >= 0) || !(b >= 0)){ poolMsg('error', 'Indiquez des nombres valides.'); return; }
+      if(!window.confirm('Fixer le pot de l’équipe à ' + c + ' crédits et ' + b + ' $ US par mois ?')) return;
+      poolRpc('team_pool_set', { p_credits: c, p_budget_usd: b }, 'Pot enregistré : ' + c + ' crédits, ' + b + ' $ US par mois.');
+    });
+    if((f = cEl('pool-members'))) f.addEventListener('click', function(ev){
+      var bt = ev.target.closest ? ev.target.closest('[data-pool-qsave]') : null; if(!bt) return;
+      var em = bt.getAttribute('data-pool-qsave'), inp = null;
+      f.querySelectorAll('[data-pool-q]').forEach(function(i){ if(i.getAttribute('data-pool-q') === em) inp = i; });
+      var raw = inp ? String(inp.value).trim() : '', q = raw === '' ? null : parseInt(raw, 10);
+      if(q !== null && !(q >= 0)){ poolMsg('error', 'Quota invalide.'); return; }
+      poolRpc('team_member_quota_set', { p_email: em, p_quota: q }, q === null ? 'Quota retiré : ' + em + ' (libre dans le pot).' : 'Quota de ' + q + ' crédits pour ' + em + '.');
+    });
+    poolSync();
   })();
   (function wireCustomerAccount(){
     var f;
