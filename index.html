@@ -5965,7 +5965,7 @@
     var e = String(hnTs.err || '');
     if(!e) return '';
     if(/^(script-)/.test(e)) return ' (Cloudflare Turnstile est bloqué ou injoignable : désactivez le bloqueur de contenu / VPN et réessayez.)';
-    if(e.indexOf('1102') === 0 || e.indexOf('1101') === 0 || e.indexOf('1100') === 0) return ' (Turnstile ' + e + ' : le domaine helpnaud.ai n’est pas autorisé dans le widget Cloudflare, ou la clé du site est invalide.)';
+    if(e.indexOf('1102') === 0 || e.indexOf('1101') === 0 || e.indexOf('1100') === 0) return ' (Turnstile ' + e + ' : le domaine « ' + location.hostname + ' » n’est pas autorisé dans le widget Cloudflare, ou la clé du site est invalide. Utilisez l’adresse officielle https://helpnaud.ai.)';
     return ' (Turnstile : ' + e + ')';
   }
   function hnCaptchaToken(){
