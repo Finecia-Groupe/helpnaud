@@ -227,6 +227,13 @@ exports.handler = async function(event){
   const attempts = [primary];
   const fb = fallbackFor(primary); if (fb && (!image || SUPPORTS_IMAGES[fb])) attempts.push(fb);
 
+  // Plafond global mensuel (tous comptes). Variable Netlify AI_GLOBAL_BUDGET_USD, 100 $ par défaut.
+  try {
+    const cap = Number(process.env.AI_GLOBAL_BUDGET_USD || 100) * 1000000;
+    const spent = Number(await svcRpc('svc_ai_global_cost', {}));
+    if (isFinite(spent) && cap > 0 && spent >= cap) return reply(503, { error: 'global_budget', message: 'Le service IA est temporairement suspendu (limite globale mensuelle atteinte). Il reprendra au début du mois.' });
+  } catch (e) { /* si la fonction SQL 3q n'est pas installée, les plafonds par compte restent actifs */ }
+
   let r;
   try { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: tier.cost }); }
   catch (e) { return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
