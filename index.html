@@ -1724,7 +1724,7 @@
       onclick="var m=document.getElementById('abonnements-modal'); if(m) m.hidden=true;"
       style="position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:99px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:16px; line-height:1; cursor:pointer;">✕</button>
     <h2>Abonnements HelpNaud.ai</h2>
-    <p class="lead">Cinq forfaits sont prévus pour le déploiement futur de HelpNaud.ai, du pilote gratuit jusqu'aux grandes institutions. Aucun paiement n'est actif pour l'instant.</p>
+    <p class="lead">Six forfaits sont prévus pour le déploiement futur de HelpNaud.ai, du pilote gratuit jusqu'aux grandes institutions. Aucun paiement n'est actif pour l'instant.</p>
     <div class="alert-banner" style="margin:10px 0 16px; background:var(--accent-soft); border:1px solid var(--accent); color:var(--accent-ink); border-radius:10px; padding:10px 14px; font-size:12.5px; line-height:1.5;">
       Les forfaits et limites ci-dessous sont indicatifs et seront ajustés lors du déploiement officiel des abonnements payants de HelpNaud.ai.
     </div>
@@ -5138,7 +5138,7 @@
 
 <div class="card">
         <h2>Abonnements</h2>
-        <p class="hint">Consultez les 5 forfaits prévus pour HelpNaud.ai (Gratuit, Essentiel, Professionnel, Affaires, Institution ; prix en dollars américains) — à titre indicatif, aucun paiement n'est actif pendant la phase pilote.</p>
+        <p class="hint">Consultez les 6 forfaits prévus pour HelpNaud.ai (Gratuit, Essentiel, Avancée, Professionnel, Affaires, Institution ; prix en dollars américains) — à titre indicatif, aucun paiement n'est actif pendant la phase pilote.</p>
         <button class="btn primary" id="btn-abonnements" type="button">
           <svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h10"/></svg>
           Voir les forfaits
@@ -7694,7 +7694,7 @@
     try{ localStorage.setItem('helpnaud_plans_admin_open', open ? '1' : '0'); }catch(e){}
   }
 
-  /* ================= Abonnements (présentation informative, 5 forfaits) =================
+  /* ================= Abonnements (présentation informative, 6 forfaits) =================
      Contenu descriptif seulement — aucun paiement réel. Distinct de DEFAULT_PLANS/plansState
      ci-dessus (catalogue interne « Vue propriétaire », 4 forfaits, modifiable) : ceci est le
      texte public exact des 5 forfaits demandés, affiché en lecture seule dans une fenêtre modale
@@ -7706,7 +7706,10 @@
     { nom:'Essentiel', prix:'29 USD / mois, hors taxes', tagline:'Pour les indépendants',
       avantages:["Tous les calculateurs H-Start débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique de conversations 90 jours","Support par courriel (réponse sous 48h)"],
       limites:"850 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
-    { nom:'Professionnel', prix:'79 USD / mois, hors taxes', tagline:'Pour les professionnels et cabinets',
+    { nom:'Avancée', prix:'79 USD / mois, hors taxes', tagline:'Pour les intermédiaires et les curieux',
+      avantages:["Tout le forfait Essentiel, plus :","Historique de conversations étendu à 1 an","Exports Excel et PowerPoint","Support par courriel prioritaire (réponse sous 36h)"],
+      limites:"2 000 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
+    { nom:'Professionnel', prix:'99 USD / mois, hors taxes', tagline:'Pour les professionnels et cabinets',
       avantages:["Sauvegardes automatiques","Historique illimité","Formation initiale incluse","Support prioritaire (réponse sous 24h)","Exports Excel/PowerPoint personnalisés","Comptes d'équipe et rôles par utilisateur (à venir)"],
       limites:"3 500 crédits IA par mois ; 1 utilisateur au lancement (forfait par personne ; comptes d'équipe à venir) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
     { nom:'Affaires', prix:'249 USD / mois, hors taxes', tagline:'Pour les entreprises et organisations',
@@ -7770,6 +7773,7 @@
     { id:'proprietaire', nom:'Propriétaire', credits: null },
     { id:'pilote', nom:'Pilote', credits: 230 },
     { id:'essentiel', nom:'Essentiel', credits: 850 },
+    { id:'avancee', nom:'Avancée', credits: 2000 },
     { id:'pro', nom:'Professionnel', credits: 3500 },
     { id:'affaires', nom:'Affaires', credits: 10000 },
     { id:'institution', nom:'Institution', credits: null }
@@ -13390,7 +13394,7 @@
   })();
 
   /* ----- Équipe : autorisations d'outils HelpNaud, registre de journée, journal d'activité (SQL 3t) ----- */
-  var HNT_LABELS = { dashboard:'Tableau de bord', catalogue:'Catalogue', assistant:'Chat / Assistant', cowork:'Co-work', hstat:'H-Start', report:'Rapport', hweb:'H-Web', database:'Bases de données', hntools:'Outils HelpNaud' };
+  var HNT_LABELS = { dashboard:'Tableau de bord', catalogue:'Catalogue', assistant:'Chat / Assistant', cowork:'Co-work', hstat:'H-Start', report:'Rapport', hweb:'H-Web', database:'Bases de données', hntools:'Outils HelpNaud', ifhelp:'Interface Help' };
   var hnT = { day:null, grants:[], policy:null, grantsAll:[], team:[], report:[], activity:[], busy:false, timer:null };
   function hnTeamRole(){ return (fghlabCloudRole === 'member' || fghlabCloudRole === 'admin') ? fghlabCloudRole : null; }
   function hnTeamToast(t){ try{ var d = document.createElement('div'); d.textContent = t; d.setAttribute('role','status'); d.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:13px;z-index:99999;max-width:90vw;'; document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 5000); }catch(e){} }
@@ -13444,7 +13448,7 @@
     else if(hnT.timer){ clearInterval(hnT.timer); hnT.timer = null; hnT.day = null; hnT.grants = []; }
   }
   /* --- contrôle d'accès des outils HelpNaud (côté interface ; le serveur IA applique la même règle) --- */
-  var HN_GATED = { dashboard:1, catalogue:1, assistant:1, cowork:1, hstat:1, report:1, hweb:1, database:1, hntools:1 };
+  var HN_GATED = { dashboard:1, catalogue:1, assistant:1, cowork:1, hstat:1, report:1, hweb:1, database:1, hntools:1, ifhelp:1 };
   function hnGateDeny(code){
     var txt = code === 'no_workday' ? 'Commencez votre journée (Réglages › Ma journée) pour utiliser cet outil au nom de Finecia. En dehors des heures de travail, utilisez votre compte client personnel.' : 'Vous n’avez pas d’autorisation en cours pour cet outil. Demandez-la au propriétaire, ou utilisez votre compte client personnel.';
     hnTeamToast(txt); hnMsg('day-msg', 'error', txt);
