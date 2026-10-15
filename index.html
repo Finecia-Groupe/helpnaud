@@ -4399,6 +4399,16 @@
           <p class="sub">FINECIA GROUPE — usage interne. FGH-Colab n'est pas inclus dans les abonnements HelpNaud.ai.</p>
         </div>
       </header>
+      <div id="spc-bar" style="display:none; border:1px solid var(--line); border-radius:12px; padding:10px 14px; background:var(--surface-2); margin:0 0 14px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <label class="hint" style="margin:0; display:flex; gap:6px; align-items:center;">Espace de travail
+            <select id="spc-select" aria-label="Espace de travail" style="border:1px solid var(--line); border-radius:9px; padding:6px 9px; background:var(--surface); color:var(--ink); font-size:13px;"></select></label>
+          <span class="hint" id="spc-clock" style="margin:0;"></span>
+          <label class="hint" style="margin:0; display:flex; gap:6px; align-items:center; flex:1; min-width:200px;">Projet (suivi de l’IA)
+            <input type="text" id="spc-project" maxlength="80" placeholder="facultatif — ex. : Dossier Alpha" style="flex:1; border:1px solid var(--line); border-radius:9px; padding:6px 9px; background:var(--surface); color:var(--ink); font-size:13px;"></label>
+        </div>
+        <p class="hint" id="spc-note" style="margin:6px 0 0;"></p>
+      </div>
 
       <div class="card" id="fghlab-intro-card" style="margin-bottom:16px;">
         <p class="hint" style="margin:0 0 10px;">Module réservé à l'équipe FINECIA GROUPE (propriétaire-exploitant de HelpNaud.ai) — visible seulement si autorisé dans Réglages → « Gestion du compte administrateur ». Ce n'est pas un module offert aux abonnements HelpNaud.ai.</p>
@@ -5040,6 +5050,7 @@
         <p class="hint" style="margin:0 0 10px;">Pour utiliser les outils HelpNaud au nom de Finecia, commencez votre journée de travail. Les outils FGH-Colab restent libres. En dehors des heures de travail, ou sans autorisation, utilisez votre compte client personnel.</p>
         <p class="hint" id="day-msg" hidden role="status" style="margin:0 0 10px; font-weight:600;"></p>
         <p id="day-state" style="margin:0 0 8px; font-weight:600;"></p>
+        <div id="day-space-wrap" style="display:none; margin:0 0 10px;"><label class="hint" style="margin:0;">Espace de travail de la journée <select id="day-space" style="display:block; margin-top:4px; border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink);"></select></label><span class="hint" style="display:block; margin:4px 0 0;">Vos heures sont comptées selon le fuseau horaire de cet espace.</span></div>
         <div id="day-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
         <div id="day-events" class="hint" style="margin:0 0 12px;"></div>
         <details style="margin-bottom:12px;"><summary class="hint" style="cursor:pointer;">Corriger une heure oubliée</summary>
@@ -5437,6 +5448,14 @@
           <p class="hint" style="margin:6px 0 0;">Affichés une seule fois ici — notez-les ou copiez-les maintenant pour les transmettre à l'administrateur désigné.</p>
         </div>
 
+        <div id="spc-card" style="display:none; border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--surface-2); margin-bottom:14px;">
+          <h3 style="margin:0 0 4px; font-size:14px;">Espaces FGH-Colab</h3>
+          <p class="hint" style="margin:0 0 10px;">Un seul FGH-Colab pour FINECIA GROUPE, découpé en espaces (équipes, entités, projets internationaux). Les accès et les données de chaque outil appartiennent à un espace ; le reste de HelpNaud est commun.</p>
+          <div id="spc-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
+          <p class="hint" id="spc-msg" hidden role="status" style="margin:0 0 8px; font-weight:600;"></p>
+          <div id="spc-body"></div>
+        </div>
+
         <!-- Liste accès FGH-Colab - Autorisation : tous les grantedAccess de tous les administrateurs
              (actuels et anciens), visible du propriétaire, et d'un administrateur connecté à
              ADMINISTRATEUR UNIQUEMENT s'il a le droit canViewAccessList (round D16) — jamais d'un
@@ -5496,6 +5515,25 @@
           </div>
 
           <div id="fghlab-team-form-title" style="font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:5px;">Ajouter un membre — équipe FINECIA GROUPE autorisée</div>
+          <div id="spc-addkind-wrap" style="display:none; margin-bottom:10px;">
+            <label class="hint" style="display:block; margin:0 0 3px;" for="spc-addkind">Nouveau ou Ancien membre</label>
+            <select id="spc-addkind" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
+              <option value="new">Nouveau membre — nouveau employé ou collaborateur</option>
+              <option value="returning">Ancien membre — retour d’un employé ou collaborateur</option>
+            </select>
+            <div id="spc-return-box" style="display:none; margin-top:8px;">
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <select id="spc-return-member" aria-label="Ancien membre" style="flex:1; min-width:220px; border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px;"></select>
+                <select id="spc-return-number" aria-label="Numéro de membre" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
+                  <option value="auto">Numéro : selon la règle (moins de 12 mois = conservé)</option>
+                  <option value="keep">Garder l’ancien numéro</option>
+                  <option value="new">Générer un nouveau numéro</option>
+                </select>
+              </div>
+              <p class="hint" id="spc-return-hint" style="margin:6px 0 0;"></p>
+            </div>
+            <p class="hint" id="spc-addkind-note" style="margin:6px 0 0; color:var(--danger, #c0392b);"></p>
+          </div>
           <div style="margin-bottom:10px;">
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
               <input type="text" id="fghlab-team-name-input" maxlength="80" placeholder="Nom &amp; prénom — ex. : Jordan Tremblay" style="flex:1; min-width:180px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
@@ -5515,6 +5553,11 @@
                 <input type="checkbox" id="fghlab-accesslist-check">
                 <span><strong>Liste accès FGH-Colab - Autorisation</strong> <span class="hint" style="margin:0;">(droit d'administrateur — n'est pas un outil)</span></span>
               </label>
+            </div>
+            <div id="spc-addspaces-wrap" style="display:none; margin-bottom:8px;">
+              <span style="font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:5px;">Espaces de travail du membre</span>
+              <div id="spc-addspaces" style="display:flex; gap:12px; flex-wrap:wrap; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface);"></div>
+              <p class="hint" style="margin:4px 0 0;">Les outils cochés ci-dessus s’appliquent à chaque espace choisi ; vous pourrez les ajuster espace par espace dans « Liste accès par espace ».</p>
             </div>
             <!-- Confirmation du code administrateur (round D16) — session ADMINISTRATEUR seulement. -->
             <div id="fghlab-admin-confirm-box" style="display:none; border:1px solid var(--accent); border-radius:9px; padding:10px 12px; background:var(--accent-soft); margin-bottom:8px;">
@@ -5551,6 +5594,22 @@
                Autorisation » et renseigne son Rôle. Ouvert par « Nommer administrateur ». -->
           <div id="fghlab-nominate-panel" style="display:none; border:1px solid var(--accent); border-radius:9px; padding:10px 12px; background:var(--accent-soft); margin-bottom:12px;">
             <p id="fghlab-nominate-title" style="margin:0 0 8px; font-weight:600; font-size:13px;"></p>
+            <fieldset id="spc-nom-wrap" style="display:none; border:0; padding:0; margin:0 0 8px;">
+              <legend style="font-size:12.5px; padding:0; margin-bottom:4px;">Type d’administrateur</legend>
+              <label style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer; margin-bottom:3px;"><input type="radio" name="spc-nom-type" id="spc-nom-designated" checked> Administrateur désigné (règles habituelles)</label>
+              <label style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer;"><input type="radio" name="spc-nom-type" id="spc-nom-delegate"> Administrateur délégué d’espace (numéro Admindes-NNNN)</label>
+              <div id="spc-nom-extra" style="display:none; margin-top:8px; padding:8px 10px; border:1px dashed var(--accent); border-radius:9px;">
+                <span class="hint" style="display:block; margin:0 0 3px;">Espaces confiés à ce délégué</span>
+                <div id="spc-nom-spaces" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px;"></div>
+                <label style="display:flex; gap:6px; font-size:12.5px;"><input type="checkbox" id="spc-nom-p-access" checked> Espace d’équipe dans Colab (accès à l’espace et outils)</label>
+                <label style="display:flex; gap:6px; font-size:12.5px;"><input type="checkbox" id="spc-nom-p-remove"> Retrait d’un membre de l’équipe</label>
+              </div>
+              <div style="margin-top:8px;">
+                <span style="font-size:12.5px; display:block; margin-bottom:3px;">Autoriser « Ajouter un membre — équipe FINECIA GROUPE autorisée » ?</span>
+                <label style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer; margin-bottom:3px;"><input type="radio" name="spc-nom-add" id="spc-nom-add-yes"> Oui</label>
+                <label style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer;"><input type="radio" name="spc-nom-add" id="spc-nom-add-no"> Non</label>
+              </div>
+            </fieldset>
             <label style="display:block; margin-bottom:8px;">
               <span class="hint" style="display:block; margin:0 0 3px;">Rôle de l'administrateur</span>
               <input type="text" id="fghlab-nominate-role-input" maxlength="100" placeholder="ex. : Chef de section service à la clientèle, Directeur, Responsable de projet" style="width:100%; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
@@ -5706,7 +5765,7 @@
     }catch(e){}
     migrateFghlabNumbering();
   }
-  var fghlabSync = { timer: null, pushT: null, busy: false, again: false, applying: false, base: null, lastPull: 0, ready: false, writable: [], status: 'off', statusText: '', uiPending: false };
+  var fghlabSync = { sp: {}, timer: null, pushT: null, busy: false, again: false, applying: false, base: null, lastPull: 0, ready: false, writable: [], status: 'off', statusText: '', uiPending: false };
   function persistFghlabState(){
     try{
       var snap = fghlabState;
@@ -6919,11 +6978,11 @@
       }
     }else{
       if(!isOwner && !fghlabCloudAdminCode){ fghlabCloudTeamErr('Confirmez d’abord votre code administrateur.'); return; }
-      p = fghlabCloudFn('create-member', {
+      p = fghlabCloudFn('create-member', Object.assign({
         name: f.name, email: f.email, job_title: f.job, tools: f.tools,
         activated_by_name: fghlabState.adminProfile.name, activated_by_number: fghlabState.adminProfile.number,
         admin_code: isOwner ? undefined : fghlabCloudAdminCode
-      }).then(function(out){ f._created = out; });
+      }, f.ext || {})).then(function(out){ f._created = out; });
     }
     fghlabCloudTeamErr('');
     if(addBtn) addBtn.disabled = true;
@@ -6932,7 +6991,10 @@
       renderFghlabAdmin();
       if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI();
       if(f._created){
-        showFghlabProvisionalPasswordBox('Mot de passe provisoire pour ' + f.name + ' — N° de membre ' + f._created.member_number + ' — à transmettre au membre :', f._created.provisional_password);
+        var cr = f._created;
+        showFghlabProvisionalPasswordBox('Mot de passe provisoire pour ' + (f.name || 'l’ancien membre') + ' — N° de membre ' + cr.member_number + (cr.note ? ' — ' + cr.note : '') + (cr.kind === 'returning' ? (cr.kept_number ? ' (ancien numéro conservé)' : ' (nouveau numéro)') : '') + ' — à transmettre au membre :', cr.provisional_password);
+        if(cr.space_errors && cr.space_errors.length) fghlabCloudTeamErr('Membre enregistré, mais certains accès d’espace ont été refusés : ' + cr.space_errors.map(function(x){ return x.error; }).join(' ; '));
+        if(window.__hnSpc) window.__hnSpc.reload();
       }
     }).catch(function(e){
       fghlabCloudTeamErr(fghlabCloudErrText(e));
@@ -6974,10 +7036,11 @@
     var errEl = document.getElementById('fghlab-nominate-error');
     var fail = function(e){ if(errEl){ errEl.textContent = fghlabCloudErrText(e); errEl.style.display = 'block'; } };
     if(fghlabCloudRole !== 'owner'){ fail(fghlabCloudFail('Réservé au propriétaire : connectez-vous avec le compte propriétaire (Réglages).')); return; }
+    var addFlag = window.__hnSpc ? window.__hnSpc.addFlag() : null;
     Promise.resolve(sb.rpc('owner_designate_admin', { p_member_id: member.id, p_admin_role: role, p_can_view: canView })).then(function(r){
       if(r.error) throw r.error;
       var creds = r.data || {};
-      return fghlabCloudLoadTeam().then(function(){
+      return Promise.resolve(addFlag === null ? null : sb.rpc('add_member_flag_set', { p_member: member.id, p_on: addFlag })).catch(function(){}).then(function(){ return fghlabCloudLoadTeam(); }).then(function(){
         fghlabClosenominatePanel();
         renderFghlabAdmin();
         showFghlabAdminCredentialsBox('Identifiants ADMINISTRATEUR pour ' + member.name + ' — à transmettre une seule fois :', creds.admin_code, creds.admin_password);
@@ -13025,6 +13088,7 @@
       if(!a[0]) throw Object.assign(new Error('auth'), { code:'auth' });
       var body = { tier:tier, json:!!wantJson };
       try{ var cv = document.querySelector('.view:not([hidden])'); if(cv && cv.id) body.tool = cv.id.replace(/^view-/, ''); }catch(e){}
+      try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
       if(a[1]) body.image = a[1];
       return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) });
@@ -13513,7 +13577,7 @@
     var f;
     if((f = cEl('day-actions'))) f.addEventListener('click', function(ev){
       var b = ev.target.closest ? ev.target.closest('[data-day-act]') : null; if(!b) return;
-      hnRpc('work_event', { p_kind: b.getAttribute('data-day-act') }).then(function(r){
+      hnRpc('work_event', { p_kind: b.getAttribute('data-day-act'), p_space: (b.getAttribute('data-day-act') === 'start' && window.__hnSpc) ? window.__hnSpc.daySpace() : null }).then(function(r){
         if(r && r.ok === false){ hnMsg('day-msg', 'error', hnErr(r)); } else hnMsg('day-msg', 'ok', 'Enregistré.');
         dayLoad();
       }).catch(function(){ hnMsg('day-msg', 'error', 'Action impossible. Réessayez.'); });
@@ -13588,6 +13652,473 @@
     });
     daySync(); mgrSync();
   })();
+  /* ================= FGH-Colab : espaces (FINECIA Togo, FINECIA Canada, projets internationaux) =================
+     Un seul FGH-Colab, découpé en espaces. Droits appliqués par le serveur (SQL 3v/3w) : cette interface ne fait
+     que les présenter. Propriétaire = vue direction (tous les espaces) ; délégué d'espace = ses espaces autorisés ;
+     administrateur désigné = l'espace où il est lié ; membre = ses espaces. */
+  var spc = { ready:false, legacy:false, list:[], active:null, tab:'access', accSpace:null, acc:[], dels:[], audit:[], auditFilter:'', arch:[], rep:[], repPer:'', addOk:false, loading:false, busy:false };
+  var SPC_LS = 'helpnaud_fgh_space', SPC_PJ = 'helpnaud_fgh_project';
+  var SPC_IN = 'border:1px solid var(--line); border-radius:9px; padding:6px 9px; background:var(--surface); color:var(--ink); font-size:12.5px;';
+  var SPC_ACT = { space_create:'Espace créé', space_update:'Espace modifié', space_access_on:'Accès à l’espace donné', space_access_off:'Accès à l’espace retiré', space_tools_set:'Outils modifiés', delegate_set:'Délégué nommé / modifié', delegate_remove:'Rôle de délégué retiré', add_member_flag:'Autorisation « Ajouter un membre » modifiée', member_archive:'Membre retiré (archivé)', member_return:'Ancien membre repris' };
+  var SPC_KIND = { entity:'Entité / équipe', project:'Projet international' };
+  var SPC_STATUS = { preparation:'En préparation', active:'Actif', archived:'Archivé' };
+  function spcLs(k){ try{ return localStorage.getItem(k) || ''; }catch(e){ return ''; } }
+  function spcLsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+  function spcActiveId(){ return (spc.active && spc.active !== 'all') ? spc.active : null; }
+  function spcProject(){ var i = cEl('spc-project'); return (i ? i.value : spcLs(SPC_PJ)).trim().slice(0, 80); }
+  function spcById(id){ var r = null; spc.list.forEach(function(s){ if(s.id === id) r = s; }); return r; }
+  function spcDefault(){ var r = null; spc.list.forEach(function(s){ if(s.is_default) r = s; }); return r; }
+  function spcEl(tag, props, kids){
+    var el = document.createElement(tag); props = props || {};
+    Object.keys(props).forEach(function(k){
+      var v = props[k];
+      if(v === false || v == null) return;
+      if(k === 'text') el.textContent = v; else if(k === 'style') el.style.cssText = v; else if(k === 'class') el.className = v;
+      else if(k === 'checked' || k === 'disabled' || k === 'selected') { if(v) el.setAttribute(k, ''); if(k === 'checked') el.checked = !!v; }
+      else if(k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    });
+    (kids || []).forEach(function(c){ if(c == null) return; el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return el;
+  }
+  function spcMsg(kind, text){ hnMsg('spc-msg', kind, text); }
+  function spcErrText(e){ var m = e && e.message ? String(e.message) : ''; return (m && m.length < 220 && !/^(TypeError|Failed)/.test(m)) ? m : 'Action refusée ou impossible. Réessayez.'; }
+  function spcRole(){ return fghlabCloudRole; }
+  function spcManaged(){ return spc.list.filter(function(s){ return s.managed && s.status !== 'archived'; }); }
+  function spcIsManager(){ return spcRole() === 'owner' || (spcRole() === 'admin' && spcManaged().length > 0); }
+  function spcTools(){
+    var out = FGHLAB_TOOLS.map(function(k){ return { key:k, label:(FGHLAB_INFO[k] && FGHLAB_INFO[k].title) || k }; });
+    Object.keys(FGHLAB_PSEUDO_TOOLS).forEach(function(k){ out.push({ key:k, label:'✏️ ' + FGHLAB_PSEUDO_TOOLS[k] }); });
+    return out;
+  }
+  function spcFmtD(v){ try{ return new Date(v).toLocaleDateString('fr-CA'); }catch(e){ return ''; } }
+
+  /* --- chargement --- */
+  function spcLoad(){
+    if(!fghlabSb || !fghlabCloudRole){ spc.ready = false; spc.list = []; spcRenderAll(); return Promise.resolve(); }
+    if(spc.loading) return Promise.resolve();
+    spc.loading = true;
+    return hnRpc('space_list').then(function(l){ spc.list = Array.isArray(l) ? l : []; spc.legacy = false; },
+                                    function(){ spc.list = []; spc.legacy = true; })
+    .then(function(){
+      var r = spcRole();
+      if(r === 'owner' || r === 'admin') return hnRpc('my_add_member_allowed').then(function(v){ spc.addOk = v === true; }, function(){ spc.addOk = r === 'owner'; });
+      spc.addOk = false;
+    }).then(function(){
+      var r = spcRole(), stored = spcLs(SPC_LS);
+      var usable = spc.list.filter(function(s){ return s.status === 'active' && (r === 'owner' || s.mine); });
+      if(stored === 'all' && r === 'owner') spc.active = 'all';
+      else if(usable.some(function(s){ return s.id === stored; })) spc.active = stored;
+      else spc.active = r === 'owner' ? 'all' : (usable[0] ? usable[0].id : null);
+      var first = !spc.ready; spc.ready = true; spc.loading = false;
+      spcRenderAll();
+      if(first) fghlabSyncSchedule();
+    }).catch(function(){ spc.loading = false; spc.ready = true; });
+  }
+  function spcSwitch(id){
+    if(!id || id === spc.active) return;
+    var go = function(){
+      var b = fghlabSyncLoadBase();
+      FGHLAB_SYNC_COLLECTIONS.forEach(function(c){ fghlabState[c] = []; b[c] = {}; });
+      fghlabSync.sp = {};
+      spc.active = id; spcLsSet(SPC_LS, id);
+      try{ persistFghlabState(); }catch(e){}
+      fghlabSyncSaveBase();
+      fghlabSync.ready = false;
+      spcRenderBar();
+      try{ fghlabSyncRefreshUI(); }catch(e){}
+      return fghlabSyncRun();
+    };
+    fghlabSyncRun().then(go, go);
+  }
+
+  /* --- barre « espace de travail » --- */
+  function spcRenderBar(){
+    var bar = cEl('spc-bar'); if(!bar) return;
+    var show = spc.ready && spc.list.length > 0 && !!fghlabCloudRole;
+    bar.style.display = show ? '' : 'none';
+    if(!show) return;
+    var sel = cEl('spc-select'), r = spcRole();
+    sel.textContent = '';
+    if(r === 'owner') sel.appendChild(spcEl('option', { value:'all', text:'Tous les espaces (vue direction)', selected: spc.active === 'all' }));
+    spc.list.forEach(function(s){
+      if(r !== 'owner' && !(s.mine && s.status === 'active')) return;
+      sel.appendChild(spcEl('option', { value:s.id, text:s.name + (s.status !== 'active' ? ' — ' + SPC_STATUS[s.status] : ''), selected: spc.active === s.id }));
+    });
+    var pj = cEl('spc-project'); if(pj && document.activeElement !== pj) pj.value = spcLs(SPC_PJ);
+    var note = cEl('spc-note'), d = spcDefault();
+    if(note) note.textContent = (r === 'owner' && spc.active === 'all' && d) ? 'Vue direction : les nouvelles fiches sont créées dans « ' + d.name + ' » (espace par défaut). Choisissez un espace pour créer ailleurs.' : '';
+    spcTick();
+  }
+  function spcTick(){
+    var c = cEl('spc-clock'); if(!c) return;
+    var s = spcById(spcActiveId()) || spcDefault();
+    if(!s){ c.textContent = ''; return; }
+    try{ c.textContent = new Date().toLocaleTimeString('fr-CA', { timeZone:s.tz, hour:'2-digit', minute:'2-digit' }) + ' (' + s.tz + ')'; }catch(e){ c.textContent = ''; }
+  }
+  setInterval(function(){ if(!document.hidden) spcTick(); }, 20000);
+
+  /* --- carte « Espaces FGH-Colab » --- */
+  function spcTabs(){
+    var r = spcRole(), t = [];
+    if(r === 'owner') t.push(['spaces', 'Espaces']);
+    t.push(['access', 'Liste accès par espace']);
+    if(r === 'owner') t.push(['delegates', 'Admin délégué espace']);
+    t.push(['archive', 'Ancien membre / Employé']);
+    t.push(['ai', 'Consommation IA']);
+    return t;
+  }
+  function spcRenderAll(){
+    spcRenderBar(); spcRenderDay(); spcRenderAddForm(); spcRenderNominate();
+    var card = cEl('spc-card'); if(!card) return;
+    var show = spc.ready && !spc.legacy && spcIsManager();
+    card.style.display = show ? '' : 'none';
+    if(!show) return;
+    var tabs = spcTabs(); if(!tabs.some(function(t){ return t[0] === spc.tab; })) spc.tab = tabs[0][0];
+    var bar = cEl('spc-tabs'); bar.textContent = '';
+    tabs.forEach(function(t){
+      bar.appendChild(spcEl('button', { type:'button', class:'btn' + (spc.tab === t[0] ? ' primary' : ''), style:'padding:5px 11px; font-size:12.5px;', text:t[1],
+        onclick:function(){ spc.tab = t[0]; spcRenderAll(); spcTabLoad(); } }));
+    });
+    spcRenderTab();
+  }
+  function spcTabLoad(){
+    var t = spc.tab;
+    if(t === 'access') return spcAccLoad();
+    if(t === 'delegates') return spcDelLoad();
+    if(t === 'archive') return spcArchLoad();
+    if(t === 'ai') return spcRepLoad();
+  }
+  function spcRenderTab(){
+    var body = cEl('spc-body'); body.textContent = '';
+    var f = { spaces:spcRenderSpaces, access:spcRenderAccess, delegates:spcRenderDelegates, archive:spcRenderArchive, ai:spcRenderAi }[spc.tab];
+    if(f) f(body);
+  }
+  function spcTable(heads, rows){
+    var th = spcEl('tr', { style:'text-align:left; border-bottom:1px solid var(--line);' }, heads.map(function(h){ return spcEl('th', { style:'padding:4px 6px;', text:h }); }));
+    var tb = spcEl('tbody', {}, rows);
+    return spcEl('div', { style:'overflow-x:auto;' }, [spcEl('table', { style:'width:100%; border-collapse:collapse; font-size:12.5px;' }, [spcEl('thead', {}, [th]), tb])]);
+  }
+  function spcTr(cells){ return spcEl('tr', { style:'border-bottom:1px solid var(--line); vertical-align:top;' }, cells.map(function(c){ return spcEl('td', { style:'padding:5px 6px;' }, [c]); })); }
+  function spcRpcDo(name, args, okText, after){
+    spc.busy = true;
+    return hnRpc(name, args).then(function(r){ spcMsg('ok', okText || 'Enregistré.'); return after ? after(r) : null; })
+      .catch(function(e){ spcMsg('error', spcErrText(e)); }).then(function(){ spc.busy = false; });
+  }
+  function spcReloadAll(){ return spcLoad().then(function(){ return spcTabLoad(); }); }
+
+  /* Onglet « Espaces » (propriétaire) */
+  function spcRenderSpaces(body){
+    body.appendChild(spcEl('p', { class:'hint', style:'margin:0 0 8px;', text:'Un espace regroupe des membres, leurs outils FGH-Colab et leurs données. Le fuseau horaire de l’espace détermine les journées de travail de ses membres. Un espace « En préparation » (ex. FINECIA Canada avant sa constitution) n’est ouvert qu’au propriétaire.' }));
+    var dl = spcEl('datalist', { id:'spc-tz-list' });
+    try{ (Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : ['Africa/Lome', 'America/Toronto', 'Europe/Paris']).forEach(function(z){ dl.appendChild(spcEl('option', { value:z })); }); }catch(e){}
+    body.appendChild(dl);
+    var rows = spc.list.map(function(s){
+      var nm = spcEl('input', { type:'text', value:s.name, maxlength:'60', style:SPC_IN + 'width:170px;' });
+      var st = spcEl('select', { style:SPC_IN }, ['preparation', 'active', 'archived'].map(function(k){ return spcEl('option', { value:k, text:SPC_STATUS[k], selected:s.status === k }); }));
+      var tz = spcEl('input', { type:'text', value:s.tz, list:'spc-tz-list', style:SPC_IN + 'width:170px;' });
+      return spcTr([nm, SPC_KIND[s.kind] || s.kind, st, tz, String(s.members) + (s.is_default ? ' · par défaut' : ''),
+        spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Enregistrer', onclick:function(){
+          spcRpcDo('space_update', { p_space:s.id, p_name:nm.value, p_status:st.value, p_tz:tz.value.trim() }, 'Espace « ' + nm.value + ' » enregistré.', spcReloadAll); } })]);
+    });
+    body.appendChild(spcTable(['Nom', 'Type', 'Statut', 'Fuseau horaire', 'Membres', ''], rows));
+    var f = spcEl('div', { style:'display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; margin-top:12px; padding-top:10px; border-top:1px solid var(--line);' });
+    var n = spcEl('input', { type:'text', maxlength:'60', placeholder:'Nom de l’espace — ex. : Projet international Bénin', style:SPC_IN + 'flex:1; min-width:200px;' });
+    var k = spcEl('select', { style:SPC_IN }, [spcEl('option', { value:'entity', text:SPC_KIND.entity }), spcEl('option', { value:'project', text:SPC_KIND.project })]);
+    var z = spcEl('input', { type:'text', value:'America/Toronto', list:'spc-tz-list', style:SPC_IN + 'width:170px;' });
+    var s2 = spcEl('select', { style:SPC_IN }, [spcEl('option', { value:'active', text:'Actif' }), spcEl('option', { value:'preparation', text:'En préparation' })]);
+    f.appendChild(n); f.appendChild(k); f.appendChild(z); f.appendChild(s2);
+    f.appendChild(spcEl('button', { type:'button', class:'btn primary', style:'padding:6px 12px; font-size:12.5px;', text:'Créer l’espace', onclick:function(){
+      var name = n.value.trim(); if(!name){ spcMsg('error', 'Indiquez le nom de l’espace.'); return; }
+      var key = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+      spcRpcDo('space_create', { p_key:key, p_name:name, p_kind:k.value, p_status:s2.value, p_tz:z.value.trim() }, 'Espace « ' + name + ' » créé.', spcReloadAll);
+    } }));
+    body.appendChild(f);
+  }
+
+  /* Onglet « Liste accès par espace » */
+  function spcAccLoad(){
+    var m = spcManaged(); if(!m.length) return Promise.resolve();
+    if(!spc.accSpace || !m.some(function(s){ return s.id === spc.accSpace; })) spc.accSpace = m[0].id;
+    return hnRpc('space_access_list', { p_space:spc.accSpace }).then(function(r){ spc.acc = Array.isArray(r) ? r : []; }, function(e){ spc.acc = []; spcMsg('error', spcErrText(e)); })
+      .then(function(){ if(spc.tab === 'access') spcRenderTab(); });
+  }
+  function spcRenderAccess(body){
+    var m = spcManaged();
+    if(!m.length){ body.appendChild(spcEl('p', { class:'hint', text:'Aucun espace à gérer pour le moment.' })); return; }
+    var top = spcEl('div', { style:'display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px;' });
+    var sel = spcEl('select', { style:SPC_IN, onchange:function(){ spc.accSpace = sel.value; spc.acc = []; spcRenderTab(); spcAccLoad(); } },
+      m.map(function(s){ return spcEl('option', { value:s.id, text:s.name, selected:s.id === spc.accSpace }); }));
+    top.appendChild(spcEl('span', { class:'hint', style:'margin:0;', text:'Espace' })); top.appendChild(sel);
+    var code = null;
+    if(spcRole() !== 'owner'){
+      code = spcEl('input', { type:'password', id:'spc-admin-code', autocomplete:'off', placeholder:'Code administrateur', value:fghlabCloudAdminCode || '', style:SPC_IN + 'width:180px;' });
+      top.appendChild(code);
+    }
+    body.appendChild(top);
+    body.appendChild(spcEl('p', { class:'hint', style:'margin:0 0 8px;', text:'Cochez les outils de ce membre dans CET espace, puis « Enregistrer ». Un membre peut appartenir à plusieurs espaces, avec des outils différents. Vous ne pouvez pas modifier vos propres accès, et seul le propriétaire gère les accès d’un administrateur.' }));
+    var tools = spcTools();
+    var rows = spc.acc.map(function(a){
+      var isMgr = a.role !== 'member';
+      var canEdit = !isMgr || spcRole() === 'owner';
+      var det = spcEl('details', {}, [spcEl('summary', { class:'hint', style:'cursor:pointer;', text:(a.tools || []).length + ' outil(s) — modifier' })]);
+      var grid = spcEl('div', { style:'max-height:160px; overflow-y:auto; display:grid; gap:4px; margin-top:6px;' });
+      var cbs = [];
+      tools.forEach(function(t){
+        var cb = spcEl('input', { type:'checkbox', 'data-key':t.key, checked:(a.tools || []).indexOf(t.key) !== -1, disabled:!canEdit });
+        cbs.push(cb); grid.appendChild(spcEl('label', { style:'display:flex; gap:6px; align-items:center; font-size:12px; cursor:pointer;' }, [cb, t.label]));
+      });
+      det.appendChild(grid);
+      var acts = spcEl('div', { style:'display:flex; gap:6px; flex-wrap:wrap;' });
+      if(canEdit) acts.appendChild(spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Enregistrer', onclick:function(){
+        var picked = cbs.filter(function(c){ return c.checked; }).map(function(c){ return c.getAttribute('data-key'); });
+        spcRpcDo('space_tools_set', { p_member:a.member_id, p_space:spc.accSpace, p_tools:picked, p_admin_code: code ? code.value : null }, 'Outils de ' + a.name + ' enregistrés.', spcAccLoad); } }));
+      acts.appendChild(spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Retirer de l’espace', onclick:function(){
+        if(!window.confirm('Retirer ' + a.name + ' de cet espace ?')) return;
+        spcRpcDo('space_access_set', { p_member:a.member_id, p_space:spc.accSpace, p_on:false, p_can_assign:true }, a.name + ' retiré(e) de l’espace.', function(){ return spcLoad().then(spcAccLoad); }); } }));
+      if(!isMgr) acts.appendChild(spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Départ (archiver)', onclick:function(){
+        var why = window.prompt('Motif du départ de ' + a.name + ' (démission, fin de contrat…) :', ''); if(why === null) return;
+        if(!window.confirm('Retirer ' + a.name + ' de l’équipe ? Sa fiche sera classée dans « Ancien membre / Employé » et sa connexion bloquée.')) return;
+        spc.busy = true;
+        fghlabCloudFn('archive-member', { member_id:a.member_id, reason:why }).then(function(){ spcMsg('ok', a.name + ' est classé(e) dans « Ancien membre / Employé ».');
+          return fghlabCloudLoadTeam().then(function(){ renderFghlabAdmin(); return spcLoad().then(spcAccLoad); }); })
+          .catch(function(e){ spcMsg('error', spcErrText(e)); }).then(function(){ spc.busy = false; }); } }));
+      var who = spcEl('div', {}, [spcEl('strong', { text:a.name }), spcEl('div', { class:'hint', style:'margin:0;', text:a.email })]);
+      var badge = a.role === 'admin' ? (a.delegate_no ? 'Admin délégué · ' + a.delegate_no : 'Admin désigné') : 'Membre';
+      return spcTr([who, badge, spcEl('div', {}, [det]), acts]);
+    });
+    body.appendChild(spc.acc.length ? spcTable(['Membre', 'Rôle', 'Outils dans l’espace', 'Actions'], rows) : spcEl('p', { class:'hint', text:'Aucun membre dans cet espace pour l’instant.' }));
+    // ajouter un membre existant à l'espace
+    var inSp = {}; spc.acc.forEach(function(a){ inSp[a.member_id] = true; });
+    var cand = (fghlabState.team || []).filter(function(t){ return !inSp[t.id]; });
+    if(cand.length){
+      var add = spcEl('div', { style:'display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid var(--line);' });
+      var ms = spcEl('select', { style:SPC_IN }, cand.map(function(t){ return spcEl('option', { value:t.id, text:t.name + (t.isAdmin ? ' (admin)' : '') }); }));
+      add.appendChild(spcEl('span', { class:'hint', style:'margin:0;', text:'Ajouter à cet espace un membre existant :' })); add.appendChild(ms);
+      add.appendChild(spcEl('button', { type:'button', class:'btn', style:'padding:5px 11px; font-size:12.5px;', text:'Ajouter à l’espace', onclick:function(){
+        spcRpcDo('space_access_set', { p_member:ms.value, p_space:spc.accSpace, p_on:true, p_can_assign:true }, 'Membre ajouté à l’espace. Choisissez maintenant ses outils.', function(){ return spcLoad().then(spcAccLoad); }); } }));
+      body.appendChild(add);
+    }
+  }
+
+  /* Onglet « Admin délégué espace » (propriétaire) */
+  function spcDelLoad(){
+    return Promise.all([hnRpc('space_delegate_list'), hnRpc('space_audit_list', { p_delegate_no: spc.auditFilter || null, p_limit:200 })]).then(function(a){
+      spc.dels = Array.isArray(a[0]) ? a[0] : []; spc.audit = Array.isArray(a[1]) ? a[1] : [];
+    }).catch(function(e){ spcMsg('error', spcErrText(e)); }).then(function(){ if(spc.tab === 'delegates') spcRenderTab(); });
+  }
+  function spcSpaceChecks(selected, onlyOpen){
+    var wrap = spcEl('div', { style:'display:flex; gap:10px; flex-wrap:wrap;' }), boxes = [];
+    spc.list.forEach(function(s){
+      if(onlyOpen && s.status === 'archived') return;
+      var cb = spcEl('input', { type:'checkbox', 'data-space':s.id, checked:(selected || []).indexOf(s.id) !== -1 });
+      boxes.push(cb); wrap.appendChild(spcEl('label', { style:'display:flex; gap:6px; align-items:center; font-size:12.5px; cursor:pointer;' }, [cb, s.name]));
+    });
+    wrap.values = function(){ return boxes.filter(function(c){ return c.checked; }).map(function(c){ return c.getAttribute('data-space'); }); };
+    return wrap;
+  }
+  function spcRenderDelegates(body){
+    body.appendChild(spcEl('p', { class:'hint', style:'margin:0 0 8px;', text:'Trois administrateurs délégués d’espace au maximum, nommés par le propriétaire seulement. Chacun reçoit un numéro Admindes-NNNN et n’agit que dans les espaces que vous lui confiez. Un délégué ne peut jamais se donner un accès ni retirer un administrateur désigné.' }));
+    var rows = spc.dels.filter(function(d){ return !d.removed_on; }).map(function(d){
+      var sp = spcSpaceChecks(d.spaces, true);
+      var pa = spcEl('input', { type:'checkbox', checked:d.perm_space_access }), pr = spcEl('input', { type:'checkbox', checked:d.perm_remove_member }), pad = spcEl('input', { type:'checkbox', checked:d.can_add_members });
+      var perms = spcEl('div', { style:'display:grid; gap:4px;' }, [
+        spcEl('label', { style:'display:flex; gap:6px; font-size:12px;' }, [pa, 'Espace d’équipe dans Colab (accès et outils)']),
+        spcEl('label', { style:'display:flex; gap:6px; font-size:12px;' }, [pr, 'Retrait d’un membre de l’équipe']),
+        spcEl('label', { style:'display:flex; gap:6px; font-size:12px;' }, [pad, 'Ajouter un membre — équipe FINECIA GROUPE autorisée'])]);
+      var acts = spcEl('div', { style:'display:flex; gap:6px; flex-wrap:wrap;' }, [
+        spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Enregistrer', onclick:function(){
+          var v = sp.values(); if(!v.length){ spcMsg('error', 'Choisissez au moins un espace.'); return; }
+          spcRpcDo('space_delegate_set', { p_member:d.member_id, p_perm_access:pa.checked, p_perm_remove:pr.checked, p_spaces:v, p_can_view:false, p_can_add:pad.checked }, d.number + ' mis à jour.', spcDelLoad); } }),
+        spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Retirer le rôle', onclick:function(){
+          if(!window.confirm('Retirer le rôle de délégué à ' + d.name + ' (' + d.number + ') ?')) return;
+          var also = window.confirm('Retirer aussi son statut d’administrateur ?\nOK = oui, il redevient simple membre.\nAnnuler = il reste administrateur désigné.');
+          spcRpcDo('space_delegate_remove', { p_member:d.member_id, p_remove_admin:also }, 'Rôle de délégué retiré.', function(){ return fghlabCloudLoadTeam().then(function(){ renderFghlabAdmin(); return spcDelLoad(); }); }); } })]);
+      return spcTr([spcEl('div', {}, [spcEl('strong', { text:d.number }), spcEl('div', { text:d.name }), spcEl('div', { class:'hint', style:'margin:0;', text:'Depuis le ' + spcFmtD(d.appointed_on) })]), sp, perms, acts]);
+    });
+    body.appendChild(rows.length ? spcTable(['Délégué', 'Espaces autorisés', 'Autorisations', ''], rows) : spcEl('p', { class:'hint', text:'Aucun administrateur délégué pour l’instant. Nommez-en un ci-dessous ou depuis la fiche d’un membre (« Nommer administrateur » → Administrateur délégué d’espace).' }));
+    // nomination directe
+    var activeIds = {}; spc.dels.forEach(function(d){ if(!d.removed_on) activeIds[d.member_id] = true; });
+    var cand = (fghlabState.team || []).filter(function(t){ return !activeIds[t.id]; });
+    if(cand.length && spc.dels.filter(function(d){ return !d.removed_on; }).length < 3){
+      var box = spcEl('div', { style:'margin-top:12px; padding:10px 12px; border:1px solid var(--accent); border-radius:9px; background:var(--accent-soft);' });
+      box.appendChild(spcEl('div', { style:'font-weight:600; font-size:13px; margin-bottom:6px;', text:'Nommer un administrateur délégué d’espace' }));
+      var ms = spcEl('select', { style:SPC_IN }, cand.map(function(t){ return spcEl('option', { value:t.id, text:t.name }); }));
+      var sp2 = spcSpaceChecks([], true);
+      var pa2 = spcEl('input', { type:'checkbox', checked:true }), pr2 = spcEl('input', { type:'checkbox' }), pv2 = spcEl('input', { type:'checkbox' }), pad2 = spcEl('input', { type:'checkbox' });
+      var lines = [[pa2, 'Espace d’équipe dans Colab (accès et outils)'], [pr2, 'Retrait d’un membre de l’équipe'], [pv2, 'Liste accès FGH-Colab - Autorisation'], [pad2, 'Ajouter un membre — équipe FINECIA GROUPE autorisée']];
+      box.appendChild(ms); box.appendChild(spcEl('div', { style:'margin:8px 0;' }, [spcEl('div', { class:'hint', style:'margin:0 0 3px;', text:'Espaces confiés :' }), sp2]));
+      box.appendChild(spcEl('div', { style:'display:grid; gap:4px; margin-bottom:8px;' }, lines.map(function(l){ return spcEl('label', { style:'display:flex; gap:6px; font-size:12.5px;' }, [l[0], l[1]]); })));
+      box.appendChild(spcEl('button', { type:'button', class:'btn primary', style:'padding:6px 12px; font-size:12.5px;', text:'Nommer', onclick:function(){
+        var v = sp2.values(); if(!v.length){ spcMsg('error', 'Choisissez au moins un espace.'); return; }
+        var who = cand.filter(function(t){ return t.id === ms.value; })[0];
+        spcNominate(who, { access:pa2.checked, remove:pr2.checked, view:pv2.checked, add:pad2.checked, spaces:v }); } }));
+      body.appendChild(box);
+    }
+    // journal
+    var jh = spcEl('div', { style:'display:flex; gap:8px; align-items:center; margin:14px 0 6px; flex-wrap:wrap;' });
+    var fl = spcEl('select', { style:SPC_IN, onchange:function(){ spc.auditFilter = fl.value; spcDelLoad(); } },
+      [spcEl('option', { value:'', text:'Toutes les actions', selected:!spc.auditFilter })].concat(spc.dels.map(function(d){ return spcEl('option', { value:d.number, text:d.number + ' — ' + d.name, selected:spc.auditFilter === d.number }); })));
+    jh.appendChild(spcEl('strong', { style:'font-size:13px;', text:'Activité des délégués et des espaces' })); jh.appendChild(fl); body.appendChild(jh);
+    var jr = spc.audit.map(function(a){ return spcTr([hnFmtDT(a.at), (a.actor_name || '') + (a.delegate_no ? ' · ' + a.delegate_no : ''), SPC_ACT[a.action] || a.action, a.target_name || '', a.space_name || '']); });
+    body.appendChild(jr.length ? spcTable(['Date', 'Acteur', 'Action', 'Membre visé', 'Espace'], jr) : spcEl('p', { class:'hint', text:'Aucune activité enregistrée.' }));
+  }
+  function spcNominate(member, o){
+    spc.busy = true;
+    return hnRpc('space_delegate_set', { p_member:member.id, p_perm_access:o.access, p_perm_remove:o.remove, p_spaces:o.spaces, p_can_view:o.view, p_can_add:o.add }).then(function(creds){
+      return fghlabCloudLoadTeam().then(function(){
+        renderFghlabAdmin(); spcMsg('ok', member.name + ' est nommé(e) ' + (creds && creds.delegate_no ? creds.delegate_no : 'délégué d’espace') + '.');
+        if(creds && creds.admin_code) showFghlabAdminCredentialsBox('Identifiants ADMINISTRATEUR pour ' + member.name + ' (' + creds.delegate_no + ') — à transmettre une seule fois :', creds.admin_code, creds.admin_password);
+        return spcLoad().then(spcDelLoad);
+      });
+    }).then(function(){ spc.busy = false; }, function(e){ spc.busy = false; spcMsg('error', spcErrText(e)); throw e; });
+  }
+
+  /* Onglet « Ancien membre / Employé » */
+  function spcArchLoad(){
+    return hnRpc('member_archive_list').then(function(r){ spc.arch = Array.isArray(r) ? r : []; }, function(e){ spc.arch = []; spcMsg('error', spcErrText(e)); })
+      .then(function(){ if(spc.tab === 'archive') spcRenderTab(); spcRenderAddForm(); });
+  }
+  function spcRenderArchive(body){
+    body.appendChild(spcEl('p', { class:'hint', style:'margin:0 0 8px;', text:'Dossier des membres partis (démission, fin de contrat). Rien n’est effacé : la fiche, l’historique et les numéros sont conservés. Pour un retour, utilisez « Réintégrer » : le formulaire « Ajouter un membre » s’ouvre en mode « Ancien membre ».' }));
+    var rows = spc.arch.map(function(a){
+      return spcTr([spcEl('div', {}, [spcEl('strong', { text:a.name }), spcEl('div', { class:'hint', style:'margin:0;', text:a.email })]), a.member_number || '—', spcFmtD(a.left_on) + ' (' + a.months_away + ' mois)', a.reason || '—', a.returns ? String(a.returns) : '0',
+        a.can_return ? spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Réintégrer', onclick:function(){ spcStartReturn(a.member_id); } }) : '']);
+    });
+    body.appendChild(rows.length ? spcTable(['Ancien membre', 'N° (propriétaire)', 'Départ', 'Motif', 'Retours', ''], rows) : spcEl('p', { class:'hint', text:'Aucun ancien membre dans votre périmètre.' }));
+  }
+  function spcStartReturn(id){
+    var k = cEl('spc-addkind'); if(!k) return;
+    k.value = 'returning'; spcRenderAddForm();
+    var s = cEl('spc-return-member'); if(s) s.value = id;
+    spcReturnHint();
+    var t = cEl('fghlab-team-form-title'); if(t && t.scrollIntoView) t.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+
+  /* Onglet « Consommation IA » */
+  function spcRepLoad(){
+    return hnRpc('ai_usage_report', { p_period: spc.repPer || null }).then(function(r){ spc.rep = Array.isArray(r) ? r : []; }, function(e){ spc.rep = []; spcMsg('error', spcErrText(e)); })
+      .then(function(){ if(spc.tab === 'ai') spcRenderTab(); });
+  }
+  function spcRenderAi(body){
+    body.appendChild(spcEl('p', { class:'hint', style:'margin:0 0 8px;', text:'Le pot commun de l’équipe (crédits et plafond en $ US) ne change pas : ici, chaque appel d’IA est simplement identifié par membre, espace et projet. Le projet est celui indiqué dans la barre « Espace de travail » au moment de l’appel.' }));
+    var per = spcEl('input', { type:'month', value: spc.repPer || '', style:SPC_IN });
+    body.appendChild(spcEl('div', { style:'display:flex; gap:8px; align-items:center; margin-bottom:8px;' }, [spcEl('span', { class:'hint', style:'margin:0;', text:'Mois' }), per,
+      spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Actualiser', onclick:function(){ spc.repPer = per.value; spcRepLoad(); } })]));
+    var bySp = {}, order = [];
+    spc.rep.forEach(function(r){ var k = r.space_name; if(!bySp[k]){ bySp[k] = { c:0, m:0, rows:[] }; order.push(k); } bySp[k].c += r.credits; bySp[k].m += Number(r.cost_micro); bySp[k].rows.push(r); });
+    if(!order.length){ body.appendChild(spcEl('p', { class:'hint', text:'Aucune consommation enregistrée pour ce mois dans votre périmètre.' })); return; }
+    var tc = 0, tm = 0, rows = [];
+    order.forEach(function(k){
+      var g = bySp[k]; tc += g.c; tm += g.m;
+      rows.push(spcEl('tr', { style:'background:var(--surface-2); font-weight:600;' }, [spcEl('td', { style:'padding:5px 6px;', text:k }), spcEl('td', { style:'padding:5px 6px;', text:'Total de l’espace' }), spcEl('td', { style:'padding:5px 6px;', text:'' }), spcEl('td', { style:'padding:5px 6px;', text:String(g.c) }), spcEl('td', { style:'padding:5px 6px;', text:(g.m / 1e6).toFixed(2) + ' $' })]));
+      g.rows.forEach(function(r){ rows.push(spcTr(['', r.member_name, r.project, String(r.credits) + ' (' + r.calls + ' appels)', (Number(r.cost_micro) / 1e6).toFixed(2) + ' $'])); });
+    });
+    rows.push(spcEl('tr', { style:'font-weight:700; border-top:2px solid var(--line);' }, [spcEl('td', { style:'padding:5px 6px;', text:'Total' }), spcEl('td'), spcEl('td'), spcEl('td', { style:'padding:5px 6px;', text:String(tc) }), spcEl('td', { style:'padding:5px 6px;', text:(tm / 1e6).toFixed(2) + ' $' })]));
+    body.appendChild(spcTable(['Espace', 'Membre', 'Projet', 'Crédits', 'Coût réel'], rows));
+  }
+
+  /* --- formulaire « Ajouter un membre » : Nouveau ou Ancien membre + espaces --- */
+  function spcReturning(){ var k = cEl('spc-addkind'); return !!(k && k.value === 'returning' && fghlabCloudMode()); }
+  function spcReturnHint(){
+    var h = cEl('spc-return-hint'), s = cEl('spc-return-member'); if(!h || !s) return;
+    var a = null; spc.arch.forEach(function(x){ if(x.member_id === s.value) a = x; });
+    h.textContent = a ? ('Parti(e) le ' + spcFmtD(a.left_on) + ' (' + a.months_away + ' mois). ' + (Number(a.months_away) < 12 ? 'Par défaut, l’ancien numéro est conservé (départ de moins de 12 mois).' : 'Par défaut, un nouveau numéro est généré (départ de plus de 12 mois).') + ' Un nouveau mot de passe provisoire sera généré.') : '';
+  }
+  function spcRenderAddForm(){
+    var wrap = cEl('spc-addkind-wrap'); if(!wrap) return;
+    var show = !!fghlabSb && (spcRole() === 'owner' || spcRole() === 'admin') && fghlabCloudMode();
+    wrap.style.display = show ? '' : 'none';
+    var sw = cEl('spc-addspaces-wrap');
+    var open = spc.list.filter(function(s){ return s.managed && s.status !== 'archived' && (spcRole() === 'owner' || s.status === 'active'); });
+    if(sw){
+      sw.style.display = (show && open.length) ? '' : 'none';
+      var box = cEl('spc-addspaces'), prev = {};
+      Array.prototype.forEach.call(box.querySelectorAll('input'), function(c){ prev[c.getAttribute('data-space')] = c.checked; });
+      box.textContent = '';
+      open.forEach(function(s){ box.appendChild(spcEl('label', { style:'display:flex; gap:6px; align-items:center; font-size:12.5px; cursor:pointer;' }, [spcEl('input', { type:'checkbox', 'data-space':s.id, checked:!!prev[s.id] }), s.name + (s.status === 'preparation' ? ' (en préparation)' : '')])); });
+    }
+    var ret = spcReturning();
+    var rb = cEl('spc-return-box'); if(rb) rb.style.display = ret ? '' : 'none';
+    ['fghlab-team-name-input', 'fghlab-team-email-input', 'fghlab-team-jobtitle-input'].forEach(function(id){ var i = cEl(id); if(i) i.style.display = ret ? 'none' : ''; });
+    if(ret){
+      var s = cEl('spc-return-member'), keep = s.value; s.textContent = '';
+      if(!spc.arch.length) s.appendChild(spcEl('option', { value:'', text:'Aucun ancien membre disponible' }));
+      spc.arch.forEach(function(a){ s.appendChild(spcEl('option', { value:a.member_id, text:a.name + ' — parti(e) le ' + spcFmtD(a.left_on), selected:a.member_id === keep })); });
+      spcReturnHint();
+    }
+    var btn = cEl('fghlab-team-add-btn'); if(btn && !fghlabEditingMemberId) btn.textContent = ret ? 'Réintégrer l’ancien membre' : 'Ajouter le membre';
+    var note = cEl('spc-addkind-note');
+    if(note){ note.textContent = (spcRole() === 'admin' && !spc.addOk) ? 'Vous n’avez pas l’autorisation « Ajouter un membre — équipe FINECIA GROUPE autorisée » : demandez-la au propriétaire.' : ''; }
+  }
+  function spcAddExtras(tools){
+    var spaces = [], box = cEl('spc-addspaces');
+    if(box) Array.prototype.forEach.call(box.querySelectorAll('input'), function(c){ if(c.checked) spaces.push({ space_id:c.getAttribute('data-space'), tools:tools || [] }); });
+    var visible = cEl('spc-addspaces-wrap') && cEl('spc-addspaces-wrap').style.display !== 'none';
+    if(visible && !spaces.length) throw new Error('Choisissez au moins un espace de travail pour ce membre.');
+    if(spcReturning()){
+      var id = cEl('spc-return-member').value; if(!id) throw new Error('Choisissez l’ancien membre à réintégrer.');
+      var kn = cEl('spc-return-number').value;
+      return { kind:'returning', member_id:id, keep_number: kn === 'keep' ? true : (kn === 'new' ? false : null), spaces:spaces };
+    }
+    return { kind:'new', spaces:spaces };
+  }
+
+  /* --- nomination : Administrateur désigné ou Administrateur délégué d'espace --- */
+  function spcNomType(){ var r = cEl('spc-nom-delegate'); return (r && r.checked) ? 'delegate' : 'designated'; }
+  function spcRenderNominate(){
+    var w = cEl('spc-nom-wrap'); if(!w) return;
+    var show = !!fghlabSb && spcRole() === 'owner' && fghlabCloudMode();
+    w.style.display = show ? '' : 'none';
+    var ex = cEl('spc-nom-extra'), isD = spcNomType() === 'delegate';
+    if(ex) ex.style.display = (show && isD) ? '' : 'none';
+    var role = cEl('fghlab-nominate-role-input'); if(role && role.parentNode) role.parentNode.style.display = (show && isD) ? 'none' : '';
+    var sp = cEl('spc-nom-spaces');
+    if(sp && show){
+      var prev = {}; Array.prototype.forEach.call(sp.querySelectorAll('input'), function(c){ prev[c.getAttribute('data-space')] = c.checked; });
+      sp.textContent = '';
+      spc.list.forEach(function(s){ if(s.status === 'archived') return; sp.appendChild(spcEl('label', { style:'display:flex; gap:6px; align-items:center; font-size:12.5px; cursor:pointer;' }, [spcEl('input', { type:'checkbox', 'data-space':s.id, checked:!!prev[s.id] }), s.name])); });
+    }
+  }
+  function spcNomValues(){
+    var spaces = [], sp = cEl('spc-nom-spaces');
+    if(sp) Array.prototype.forEach.call(sp.querySelectorAll('input'), function(c){ if(c.checked) spaces.push(c.getAttribute('data-space')); });
+    return { access: !!cEl('spc-nom-p-access').checked, remove: !!cEl('spc-nom-p-remove').checked, spaces:spaces };
+  }
+  function spcAddFlagChoice(){ var y = cEl('spc-nom-add-yes'), n = cEl('spc-nom-add-no'); return (y && y.checked) ? true : ((n && n.checked) ? false : null); }
+
+  /* --- carte « Ma journée » : espace de la journée (fuseau de l'espace) --- */
+  function spcRenderDay(){
+    var w = cEl('day-space-wrap'); if(!w) return;
+    var mine = spc.list.filter(function(s){ return s.mine && s.status === 'active'; });
+    w.style.display = (mine.length > 0 && hnTeamRole()) ? '' : 'none';
+    var sel = cEl('day-space'); if(!sel) return;
+    var keep = sel.value || spcActiveId() || '';
+    sel.textContent = '';
+    mine.forEach(function(s){ sel.appendChild(spcEl('option', { value:s.id, text:s.name + ' — ' + s.tz, selected:s.id === keep })); });
+  }
+  function spcDaySpace(){ var w = cEl('day-space-wrap'), s = cEl('day-space'); return (w && w.style.display !== 'none' && s && s.value) ? s.value : null; }
+
+  window.__hnSpc = { returning:spcReturning, extras:spcAddExtras, nomType:spcNomType, nomValues:spcNomValues, addFlag:spcAddFlagChoice, nominate:spcNominate, daySpace:spcDaySpace,
+                     activeId:spcActiveId, project:spcProject, reload:function(){ return spcLoad(); } };
+
+  (function wireSpaces(){
+    var f;
+    if((f = cEl('spc-select'))) f.addEventListener('change', function(ev){ spcSwitch(ev.target.value); });
+    if((f = cEl('spc-project'))) f.addEventListener('input', function(ev){ spcLsSet(SPC_PJ, ev.target.value.trim().slice(0, 80)); });
+    if((f = cEl('spc-addkind'))) f.addEventListener('change', function(ev){ if(ev.target.value === 'returning' && !spc.arch.length) spcArchLoad(); spcRenderAddForm(); });
+    if((f = cEl('spc-return-member'))) f.addEventListener('change', spcReturnHint);
+    ['spc-nom-designated', 'spc-nom-delegate'].forEach(function(id){ var r = cEl(id); if(r) r.addEventListener('change', spcRenderNominate); });
+    var lastKey = '', lastAt = 0;
+    document.addEventListener('hn-auth', function(){
+      var key = String(fghlabCloudRole) + '|' + (fghlabOwnerCloud ? 1 : 0), now = Date.now();
+      if(key === lastKey && now - lastAt < 30000) return;
+      lastKey = key; lastAt = now;
+      if(fghlabCloudRole){ spcLoad().then(function(){ if(spcRole() !== 'member') spcArchLoad(); }); } else { spc.ready = false; spc.list = []; spc.active = null; spcRenderAll(); }
+    });
+    if(fghlabCloudRole) spcLoad();
+  })();
+
   (function wireCustomerAccount(){
     var f;
     if((f = cEl('cust-tab-login'))) f.addEventListener('click', function(){ custTab('login'); });
@@ -23833,6 +24364,13 @@
   }
   function fghlabSyncApplyPull(data){
     var base = fghlabSyncLoadBase(), changed = false;
+    // Chaque fiche porte l'espace auquel elle appartient (SQL 3w) ; on s'en souvient pour les envois et suppressions.
+    ((data && data.rows) || []).forEach(function(r){
+      if(!r || !r.s || !r.d || typeof r.d !== 'object') return;
+      r.d.spaceId = r.s;
+      if(!fghlabSync.sp[r.c]) fghlabSync.sp[r.c] = {};
+      fghlabSync.sp[r.c][r.id] = r.s;
+    });
     var readable = (data && data.readable) || [], writable = (data && data.writable) || [];
     var byColl = {};
     ((data && data.rows) || []).forEach(function(r){ if(!byColl[r.c]) byColl[r.c] = []; byColl[r.c].push(r); });
@@ -23879,28 +24417,35 @@
   function fghlabSyncPushAll(){
     var base = fghlabSyncLoadBase();
     var chain = Promise.resolve();
+    var act = (window.__hnSpc && window.__hnSpc.activeId) ? window.__hnSpc.activeId() : null;
     (fghlabSync.writable || []).forEach(function(c){
       chain = chain.then(function(){
         var local = Array.isArray(fghlabState[c]) ? fghlabState[c] : [];
-        var ups = [], dels = [], seen = {};
+        var spOf = fghlabSync.sp[c] || (fghlabSync.sp[c] = {});
+        var groups = {}, seen = {};
+        function grp(k){ return groups[k] || (groups[k] = { ups: [], dels: [] }); }
         local.forEach(function(x){
           if(!x || !x.id) return;
           seen[x.id] = true;
           var h = fghlabHash(x);
-          if(base[c][x.id] !== h) ups.push({ id: x.id, d: x, h: h });
+          if(base[c][x.id] !== h) grp(x.spaceId || spOf[x.id] || act || '').ups.push({ id: x.id, d: x, h: h });
         });
-        Object.keys(base[c]).forEach(function(id){ if(!seen[id]) dels.push(id); });
-        if(!ups.length && !dels.length) return null;
-        var batches = [];
-        for(var i = 0; i < ups.length; i += 100) batches.push(ups.slice(i, i + 100));
-        if(!batches.length) batches.push([]);
+        Object.keys(base[c]).forEach(function(id){ if(!seen[id]) grp(spOf[id] || act || '').dels.push(id); });
         var step = Promise.resolve();
-        batches.forEach(function(batch, bi){
-          step = step.then(function(){
-            return fghlabSb.rpc('fgh_sync_push', { p_collection: c, p_upserts: batch.map(function(u){ return { id: u.id, d: u.d }; }), p_deletes: bi === 0 ? dels : [] }).then(function(r){
-              if(r.error) throw r.error;
-              batch.forEach(function(u){ base[c][u.id] = u.h; });
-              if(bi === 0) dels.forEach(function(id){ delete base[c][id]; });
+        Object.keys(groups).forEach(function(k){
+          var g = groups[k], batches = [];
+          for(var i = 0; i < g.ups.length; i += 100) batches.push(g.ups.slice(i, i + 100));
+          if(!batches.length) batches.push([]);
+          batches.forEach(function(batch, bi){
+            if(!batch.length && !(bi === 0 && g.dels.length)) return;
+            step = step.then(function(){
+              var args = { p_collection: c, p_upserts: batch.map(function(u){ return { id: u.id, d: u.d }; }), p_deletes: bi === 0 ? g.dels : [] };
+              if(k) args.p_space = k;
+              return fghlabSb.rpc('fgh_sync_push', args).then(function(r){
+                if(r.error) throw r.error;
+                batch.forEach(function(u){ base[c][u.id] = u.h; if(k) spOf[u.id] = k; });
+                if(bi === 0) g.dels.forEach(function(id){ delete base[c][id]; delete spOf[id]; });
+              });
             });
           });
         });
@@ -23912,9 +24457,11 @@
   function fghlabSyncRun(){
     if(!fghlabSyncActive()) return Promise.resolve();
     if(fghlabSync.busy){ fghlabSync.again = true; return Promise.resolve(); }
+    if(window.__hnSpc && !fghlabSync.spaceTried){ fghlabSync.spaceTried = true; window.__hnSpc.reload().then(function(){ fghlabSyncSchedule(); }, function(){ fghlabSyncSchedule(); }); return Promise.resolve(); }
     fghlabSync.busy = true;
     var sb = fghlabSb;
-    return sb.rpc('fgh_sync_pull').then(function(res){
+    var pullArgs = {}; try{ var sid = window.__hnSpc ? window.__hnSpc.activeId() : null; if(sid) pullArgs.p_space = sid; }catch(e){}
+    return sb.rpc('fgh_sync_pull', pullArgs).then(function(res){
       if(res.error){
         if(res.error.code === 'PGRST202' || res.error.status === 404) throw new Error('Le serveur n’a pas encore la mise à jour « phase 3 » (script SQL à exécuter).');
         throw res.error;
@@ -33555,6 +34102,9 @@
     renderFghlabToolsChecklist([]);
     syncFghlabFormExtras(null);
     hideFghlabProvisionalPasswordBox();
+    var kk = document.getElementById('spc-addkind'); if(kk) kk.value = 'new';
+    Array.prototype.forEach.call(document.querySelectorAll('#spc-addspaces input'), function(c){ c.checked = false; });
+    if(window.__hnSpc) window.__hnSpc.reload();
   }
   /* Boîte d'affichage unique du mot de passe provisoire (point 1 et point 4 — ajout de membre et
      réinitialisation admin). Affichée côté admin seulement, jamais persistée au-delà du prochain
@@ -33873,7 +34423,7 @@
     fghlabTeamAddBtn.addEventListener('click', function(){
       var name = fghlabTeamNameInput.value.trim();
       var email = fghlabTeamEmailInput.value.trim();
-      if(!name || !email){
+      if(!(window.__hnSpc && window.__hnSpc.returning() && !fghlabEditingMemberId) && (!name || !email)){
         if(fghlabTeamErrorEl){
           fghlabTeamErrorEl.textContent = 'Le nom & prénom et le courriel sont tous les deux requis.';
           fghlabTeamErrorEl.style.display = 'block';
@@ -33896,7 +34446,12 @@
       var jobTitleVal = jobTitleInput ? jobTitleInput.value.trim() : '';
       if(fghlabCloudMode()){
         // Mode serveur : création / modification vérifiées par le serveur (voir fghlabCloudSubmitTeamForm).
-        fghlabCloudSubmitTeamForm({ name: name, email: email, tools: tools, job: jobTitleVal });
+        var ext = null;
+        if(!fghlabEditingMemberId && window.__hnSpc){
+          try{ ext = window.__hnSpc.extras(tools); }
+          catch(err){ if(fghlabTeamErrorEl){ fghlabTeamErrorEl.textContent = err.message; fghlabTeamErrorEl.style.display = 'block'; } return; }
+        }
+        fghlabCloudSubmitTeamForm({ name: name, email: email, tools: tools, job: jobTitleVal, ext: ext });
         return;
       }
       var newMember = null;
@@ -34017,6 +34572,8 @@
     fghlabNominatingMemberId = null;
     var panel = document.getElementById('fghlab-nominate-panel');
     if(panel) panel.style.display = 'none';
+    ['spc-nom-add-yes', 'spc-nom-add-no', 'spc-nom-delegate'].forEach(function(id){ var x = document.getElementById(id); if(x) x.checked = false; });
+    var dd = document.getElementById('spc-nom-designated'); if(dd) dd.checked = true;
   }
   var fghlabNominateConfirmBtn = document.getElementById('fghlab-nominate-confirm-btn');
   var fghlabNominateCancelBtn = document.getElementById('fghlab-nominate-cancel-btn');
@@ -34031,9 +34588,12 @@
       var yesEl = document.getElementById('fghlab-nominate-listaccess-yes');
       var noEl = document.getElementById('fghlab-nominate-listaccess-no');
       if(!nm) return;
-      var role = roleEl ? roleEl.value.trim() : '';
+      var isDel = !!(window.__hnSpc && fghlabCloudMode() && window.__hnSpc.nomType() === 'delegate');
+      var role = isDel ? 'Administrateur délégué d\'espace' : (roleEl ? roleEl.value.trim() : '');
       var problem = '';
       if(!role) problem = 'Indiquez le rôle de l\'administrateur.';
+      else if(isDel && !window.__hnSpc.nomValues().spaces.length) problem = 'Choisissez au moins un espace pour ce délégué.';
+      else if(window.__hnSpc && fghlabCloudMode() && window.__hnSpc.addFlag() === null) problem = 'Choisissez si ' + nm.name + ' reçoit l\'autorisation « Ajouter un membre — équipe FINECIA GROUPE autorisée ».';
       else if(!(yesEl && yesEl.checked) && !(noEl && noEl.checked)) problem = 'Choisissez explicitement si ' + nm.name + ' reçoit l\'accès à « Liste accès FGH-Colab - Autorisation ».';
       if(problem){
         if(errEl){ errEl.textContent = problem; errEl.style.display = 'block'; }
@@ -34041,6 +34601,13 @@
       }
       if(fghlabCloudMode()){
         if(errEl) errEl.style.display = 'none';
+        if(isDel){
+          var nv = window.__hnSpc.nomValues();
+          window.__hnSpc.nominate(nm, { access: nv.access, remove: nv.remove, view: !!(yesEl && yesEl.checked), add: window.__hnSpc.addFlag() === true, spaces: nv.spaces })
+            .then(function(){ fghlabClosenominatePanel(); })
+            .catch(function(e){ if(errEl){ errEl.textContent = fghlabCloudErrText(e); errEl.style.display = 'block'; } });
+          return;
+        }
         fghlabCloudDesignateAdmin(nm, role, !!(yesEl && yesEl.checked));
         return;
       }
