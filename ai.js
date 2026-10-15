@@ -192,6 +192,22 @@ async function openaiLike(o, url, key, images){
   return { text: (typeof c === 'string' ? c : '').trim(), tin: u.prompt_tokens || 0, tout: u.completion_tokens || 0 };
 }
 
+
+/* Alerte administrative (courriel Resend) : une fois par mois et par palier. */
+async function alertAdmin(level, spent, soft, hard){
+  try {
+    const isNew = await svcRpc('svc_ai_alert_mark', { p_level: level });
+    const key = process.env.RESEND_API_KEY, from = process.env.MAIL_FROM_FINECIA || process.env.MAIL_FROM;
+    if (isNew !== true || !key || !from) return;
+    const to = process.env.AI_ALERT_EMAIL || 'contacts@fineciagroupe.com';
+    const usd = (m) => (m / 1000000).toFixed(2) + ' $';
+    const txt = { '70': 'Palier 70 % du plafond souple atteint.', '90': 'Palier 90 % atteint : les comptes gratuits sont suspendus, les abonnés continuent.', 'soft': 'Plafond souple atteint : les comptes gratuits sont suspendus, les abonnés continuent.', 'hard90': 'Attention : 90 % du plafond d’urgence atteint. Une suspension générale approche.' }[level];
+    const resp = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: [to], subject: 'HelpNaud IA — alerte de consommation (' + level + ')', text: txt + '\n\nDépensé ce mois-ci : ' + usd(spent) + '\nPlafond souple : ' + usd(soft) + '\nPlafond d’urgence : ' + usd(hard) + '\n\nAjustez AI_GLOBAL_BUDGET_USD / AI_HARD_BUDGET_USD dans Netlify si nécessaire.' }) });
+    if (!resp.ok) await svcRpc('svc_ai_alert_unmark', { p_level: level });
+  } catch (e) { try { await svcRpc('svc_ai_alert_unmark', { p_level: level }); } catch (e2) {} /* l'alerte ne doit jamais bloquer une requête */ }
+}
+
 exports.handler = async function(event){
   if (event.httpMethod !== 'POST') return reply(405, { error: 'method', message: 'Méthode non permise.' });
   if (!SB_SECRET || !defaultProvider()) return reply(503, { error: 'not_configured', message: 'L’assistant IA n’est pas encore configuré sur le serveur.' });
@@ -242,11 +258,27 @@ exports.handler = async function(event){
     }
   } catch (e) { /* vérification indisponible : les plafonds du pot restent actifs */ }
 
-  // Plafond global mensuel (tous comptes). Variable Netlify AI_GLOBAL_BUDGET_USD, 100 $ par défaut.
+  // Plafond global à paliers (SQL 3q + 3y). AI_GLOBAL_BUDGET_USD = plafond souple (100 $ par défaut),
+  // AI_HARD_BUDGET_USD = plafond d'urgence (3 × le souple par défaut).
+  //   70 % et 90 % du souple : courriel d'alerte (une fois par mois) ;
+  //   ≥ 90 % du souple : comptes gratuits suspendus, les abonnés (et l'équipe) continuent ;
+  //   ≥ plafond d'urgence : suspension générale.
   try {
-    const cap = Number(process.env.AI_GLOBAL_BUDGET_USD || 100) * 1000000;
+    const soft = Number(process.env.AI_GLOBAL_BUDGET_USD || 100) * 1000000;
+    const hard = Number(process.env.AI_HARD_BUDGET_USD || 0) * 1000000 || soft * 3;
     const spent = Number(await svcRpc('svc_ai_global_cost', {}));
-    if (isFinite(spent) && cap > 0 && spent >= cap) return reply(503, { error: 'global_budget', message: 'Le service IA est temporairement suspendu (limite globale mensuelle atteinte). Il reprendra au début du mois.' });
+    if (isFinite(spent) && soft > 0) {
+      const stop = (msg) => reply(503, { error: 'global_budget', message: msg });
+      let level = '';
+      if (spent >= hard * 0.9) level = 'hard90'; else if (spent >= soft) level = 'soft'; else if (spent >= soft * 0.9) level = '90'; else if (spent >= soft * 0.7) level = '70';
+      if (level) await alertAdmin(level, spent, soft, hard);
+      if (spent >= hard) return stop('Le service IA est temporairement suspendu (limite globale mensuelle atteinte). Il reprendra au début du mois.');
+      if (spent >= soft * 0.9) {
+        let cls = 'paid';
+        try { cls = String(await svcRpc('svc_ai_caller_class', { p_uid: uid })) || 'paid'; } catch (e) { cls = 'free'; }   // 3y absent : ancien comportement (tous bloqués au plafond)
+        if (cls === 'free' && spent >= soft * 0.9) return stop('L’assistant IA gratuit est momentanément suspendu (forte demande ce mois-ci). Les forfaits payants restent actifs ; il reprendra au début du mois.');
+      }
+    }
   } catch (e) { /* si la fonction SQL 3q n'est pas installée, les plafonds par compte restent actifs */ }
 
   let r;
