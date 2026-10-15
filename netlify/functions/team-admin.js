@@ -55,6 +55,20 @@ async function userRpc(token, fn, args){
   if (!res.ok) throw new Fail(res.status === 401 ? 401 : 403, 'Accès refusé.');
   return data;
 }
+/* Variante qui conserve le message métier (en français) renvoyé par la base. */
+async function actorRpc(token, fn, args){
+  const res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SB_PUB, Authorization: 'Bearer ' + token },
+    body: JSON.stringify(args || {})
+  });
+  const data = await readJson(res);
+  if (!res.ok) {
+    const msg = data && data.message ? String(data.message) : 'Accès refusé.';
+    throw new Fail(res.status === 401 ? 401 : 403, msg.slice(0, 240));
+  }
+  return data;
+}
 async function svcRpc(fn, args){
   const res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
     method: 'POST', headers: serviceHeaders(), body: JSON.stringify(args || {})
@@ -111,6 +125,51 @@ async function createAuthUser(email, password, name){
   return { error: 'other', status: r.status };
 }
 
+function cleanSpaces(v){
+  if (!Array.isArray(v)) return [];
+  return v.filter(x => x && isUuid(x.space_id)).slice(0, 20)
+          .map(x => ({ space_id: x.space_id, tools: cleanTools(x.tools) }));
+}
+/* Rattache le membre aux espaces choisis. Les règles (périmètre, autorisations, code admin) sont
+   appliquées par la base avec le jeton de l'appelant : on ne contourne jamais ses droits. */
+async function assignSpaces(ctx, memberId, spaces, p){
+  const errors = [];
+  for (const sp of spaces) {
+    try {
+      await actorRpc(ctx.token, 'space_access_set', { p_member: memberId, p_space: sp.space_id, p_on: true, p_can_assign: true });
+      if (sp.tools.length) {
+        await actorRpc(ctx.token, 'space_tools_set', {
+          p_member: memberId, p_space: sp.space_id, p_tools: sp.tools, p_admin_code: str(p.admin_code, 20) || null });
+      }
+    } catch (e) { errors.push({ space_id: sp.space_id, error: e.message }); }
+  }
+  return errors;
+}
+/* Ancien membre qui revient : même fiche, nouveau mot de passe provisoire, compte rétabli. */
+async function returnMember(ctx, p){
+  if (!isUuid(p.member_id)) throw new Fail(400, 'Ancien membre invalide.');
+  const keep = p.keep_number === true ? true : (p.keep_number === false ? false : null);
+  const r = await actorRpc(ctx.token, 'member_return_prepare', { p_member: p.member_id, p_keep_number: keep });
+  const password = provisionalPassword();
+  const u = await authAdmin('PUT', 'users/' + r.auth_user_id, { password, ban_duration: 'none' });
+  if (!u.ok) throw new Fail(502, 'Rétablissement du compte impossible pour le moment.');
+  await svcRpc('svc_mark_provisional', { p_member_id: p.member_id });
+  const space_errors = await assignSpaces(ctx, p.member_id, cleanSpaces(p.spaces), p);
+  return { id: r.id, member_number: r.member_number, kept_number: r.kept_number, provisional_password: password,
+           kind: 'returning', note: r.note, space_errors };
+}
+/* Départ : la fiche est archivée (jamais effacée) et la connexion est bloquée. */
+async function archiveMember(ctx, p){
+  if (ctx.role !== 'owner' && ctx.role !== 'admin') throw new Fail(403, 'Réservé.');
+  if (!isUuid(p.member_id)) throw new Fail(400, 'Membre invalide.');
+  const r = await actorRpc(ctx.token, 'member_archive', { p_member: p.member_id, p_reason: str(p.reason, 300) || null });
+  if (r && r.auth_user_id) {
+    const b = await authAdmin('PUT', 'users/' + r.auth_user_id, { ban_duration: '876000h' });
+    if (!b.ok) throw new Fail(502, 'Fiche archivée, mais le blocage de la connexion a échoué. Réessayez.');
+  }
+  return { archived: true };
+}
+
 /* ---------- actions ---------- */
 async function createMember(ctx, p){
   const asOwner = ctx.role === 'owner';
@@ -123,9 +182,14 @@ async function createMember(ctx, p){
     const okCode = await userRpc(ctx.token, 'verify_admin_code', { p_code: str(p.admin_code, 20) });
     if (okCode !== true) throw new Fail(403, 'Code administrateur incorrect.');
   }
+  // Autorisation « Ajouter un membre — équipe FINECIA GROUPE autorisée » (propriétaire : toujours).
+  const allowed = await actorRpc(ctx.token, 'my_add_member_allowed', {});
+  if (allowed !== true) throw new Fail(403, 'Autorisation « Ajouter un membre — équipe FINECIA GROUPE autorisée » requise.');
+  if (p.kind === 'returning') return returnMember(ctx, p);
   const name = str(p.name, 120);
   const email = str(p.email, 254).toLowerCase();
   if (!name || !isEmail(email)) throw new Fail(400, 'Nom et courriel valides requis.');
+  const spaces = cleanSpaces(p.spaces);
   const password = provisionalPassword();
   const created = await createAuthUser(email, password, name);
   if (created.error === 'exists') throw new Fail(409, 'Un compte existe déjà pour ce courriel.');
@@ -133,12 +197,14 @@ async function createMember(ctx, p){
   try {
     const row = await svcRpc('svc_create_member', {
       p_auth_user_id: created.id, p_name: name, p_email: email,
-      p_job_title: str(p.job_title, 120), p_tools: cleanTools(p.tools),
+      p_job_title: str(p.job_title, 120), p_tools: spaces.length ? [] : cleanTools(p.tools),
       p_activated_by_name: str(p.activated_by_name, 120) || null,
       p_activated_by_number: str(p.activated_by_number, 20) || null,
-      p_granted_by: (asAdmin || cleanTools(p.tools).length) ? ctx.memberId : null
+      p_granted_by: (asAdmin || cleanTools(p.tools).length) ? ctx.memberId : null   // propriétaire inclus : l'octroi est journalisé
     });
-    return { id: row.id, member_number: row.member_number, provisional_password: password };
+    const space_errors = await assignSpaces(ctx, row.id, spaces, p);
+    return { id: row.id, member_number: row.member_number, provisional_password: password,
+             kind: 'new', note: 'Nouveau employé ou collaborateur', space_errors };
   } catch (e) {
     await authAdmin('DELETE', 'users/' + created.id);   // on n'abandonne pas un compte sans fiche
     if (e.code === '23505') throw new Fail(409, 'Un membre existe déjà avec ce courriel.');
@@ -241,6 +307,8 @@ const ACTIONS = {
   'create-member': createMember,
   'reset-member-password': resetMemberPassword,
   'remove-member': removeMember,
+  'archive-member': archiveMember,
+  'reactivate-member': (ctx, p) => createMember(ctx, Object.assign({}, p, { kind: 'returning' })),
   'import-members': importMembers,
   'import-grants': importGrants
 };
