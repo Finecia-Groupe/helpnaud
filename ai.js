@@ -264,7 +264,15 @@ exports.handler = async function(event){
   }
 
   const refund = async () => { try { await svcRpc('svc_ai_refund', { p_uid: uid, p_cost: tier.cost }); } catch (e) {} };
-  const log = async (ok, label, tin, tout) => { try { await svcRpc('svc_ai_log', { p_uid: uid, p_tier: tierId, p_cost: tier.cost, p_model: label, p_in: tin || 0, p_out: tout || 0, p_ok: ok }); } catch (e) {} };
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const spaceId = typeof body.space === 'string' && uuidRe.test(body.space) ? body.space : null;
+  const project = typeof body.project === 'string' ? body.project.slice(0, 80) : '';
+  // Consommation identifiée par membre, espace et projet (SQL 3w). Le serveur vérifie l'appartenance à l'espace.
+  const log = async (ok, label, tin, tout, micro) => {
+    const base = { p_uid: uid, p_tier: tierId, p_cost: tier.cost, p_model: label, p_in: tin || 0, p_out: tout || 0, p_ok: ok };
+    try { await svcRpc('svc_ai_log', Object.assign({}, base, { p_space: spaceId, p_project: project || null, p_micro: micro || 0 })); }
+    catch (e) { try { await svcRpc('svc_ai_log', base); } catch (e2) {} }   // 3w pas encore installé : journal simple
+  };
 
   const system = wantJson ? 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ni après, sans bloc de code markdown.' : '';
   const deadline = Date.now() + TIMEOUT_MS;
@@ -278,8 +286,9 @@ exports.handler = async function(event){
       if (!out.text) { lastErr = { code: 'empty', status: 502, message: 'Réponse vide.' }; continue; }
       let data;
       if (wantJson) { data = parseJson(out.text); if (data === undefined) { lastErr = { code: 'bad_json', status: 502, message: 'Réponse illisible, réessayez.' }; continue; } }
-      try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: costMicro(model, out.tin, out.tout) }); } catch (e) {}
-      await log(true, label, out.tin, out.tout);
+      const micro = costMicro(model, out.tin, out.tout);
+      try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: micro }); } catch (e) {}
+      await log(true, label, out.tin, out.tout, micro);
       return reply(200, { text: out.text, data, credits: { used: r.used, limit: r.limit, plan: r.plan } });
     } catch (e) {
       lastErr = e && e.name === 'AbortError' ? { code: 'timeout', status: 504, message: 'L’assistant IA a mis trop de temps à répondre.' } : { code: 'upstream', status: 502, message: 'L’assistant IA est momentanément indisponible.' };
