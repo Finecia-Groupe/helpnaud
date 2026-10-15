@@ -564,6 +564,23 @@
     font-family:inherit; display:block;
   }
   .btn.icon-only{ padding:9px 10px; }
+  .hnr-det > summary{ cursor:pointer; font-size:12px; color:var(--muted); padding:2px 0; }
+  .hnr-det > summary b{ color:var(--accent); font-weight:700; }
+  /* Écrans étroits : la zone de saisie reste compacte (boutons carrés alignés en bas, champ qui prend
+     la largeur restante) et la conversation garde toujours une hauteur minimale lisible. */
+  @media (max-width: 640px){
+    .chat-form{ align-items:flex-end; gap:6px; }
+    .chat-form > .btn.icon-only, .chat-form .attach-menu-wrap > .btn.icon-only, .chat-form .symbols-menu-wrap > .btn.icon-only, .chat-form .chat-info-wrap > .btn.icon-only{
+      width:38px; height:38px; padding:0; display:inline-flex; align-items:center; justify-content:center; flex:none;
+    }
+    .chat-form .attach-menu-wrap, .chat-form .symbols-menu-wrap, .chat-form .chat-info-wrap{ flex:none; align-self:flex-end; }
+    .chat-form .chat-info-wrap{ display:none; }
+    .chat-form textarea{ min-height:40px; max-height:120px; }
+    .chat-input-wrap textarea{ padding-right:84px; }
+    .chat-shell{ min-height:430px; }
+    .chat-log{ min-height:200px; }
+    .chat-log .msg, .chat-log .bubble{ max-width:96%; }
+  }
   .btn.icon-only svg{ width:16px; height:16px; }
   /* Zone de saisie compacte : le champ texte et le bouton Envoyer partagent la même case
      (bouton en icône flottant à droite dans le champ) au lieu d'occuper deux lignes séparées,
@@ -11464,9 +11481,17 @@
      en CSS), pour rester confortable avec un texte collé volumineux. Entrée envoie le formulaire ;
      Maj+Entrée insère un saut de ligne. */
   function wireAutoGrowInput(textarea, form){
+    /* Mobile : un long texte d'exemple (placeholder) dans un champ étroit le faisait grandir sur toute la
+       hauteur de l'écran et cachait les réponses. On raccourcit l'exemple et on ignore le placeholder
+       dans le calcul de hauteur. */
+    try{
+      var ph = textarea.getAttribute('placeholder') || '';
+      if(window.innerWidth <= 640 && ph.length > 28){ textarea.setAttribute('data-full-ph', ph); textarea.setAttribute('placeholder', 'Votre message…'); }
+    }catch(e){}
     function resize(){
+      if(!textarea.value){ textarea.style.height = '40px'; return; }
       textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 168) + 'px';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
     }
     textarea.addEventListener('input', resize);
     textarea.addEventListener('keydown', function(e){
@@ -37756,11 +37781,12 @@
   }
   function hnrImagePrompts(){ try{ var r = JSON.parse(localStorage.getItem('helpnaud_image_prompts') || '[]'); return Array.isArray(r) ? r : []; }catch(e){ return []; } }
   function hnrImageSave(list){ try{ localStorage.setItem('helpnaud_image_prompts', JSON.stringify(list.slice(-20))); }catch(e){} }
-  function hnrBarHtml(view){
-    var s = hnrGet(view), chip = function(key, label, on, extra){
+  function hnrBarHtml(view, isOpen){
+    if(isOpen === undefined) isOpen = window.innerWidth > 860;
+    var s = hnrGet(view), activeN = (s.deep ? 1 : 0) + (s.web ? 1 : 0) + (s.multi ? 1 : 0) + ((s.adapted && s.adapted !== 'general') ? 1 : 0), chip = function(key, label, on, extra){
       return '<button type="button" class="btn" data-hnr-toggle="' + key + '" aria-pressed="' + (on ? 'true' : 'false') + '" style="padding:3px 10px; font-size:12px;' + (on ? ' background:var(--accent); color:#fff; border-color:var(--accent);' : '') + '">' + label + (extra || '') + '</button>';
     };
-    return '<div class="hnr-bar" data-hnr-view="' + view + '" style="margin:0 0 8px;"><div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">' +
+    return '<div class="hnr-bar" data-hnr-view="' + view + '" style="margin:0 0 8px;"><details class="hnr-det"' + (isOpen ? ' open' : '') + '><summary>⚙️ Options de recherche et Image IA' + (activeN ? ' <b>(' + activeN + ' actif' + (activeN > 1 ? 's' : '') + ')</b>' : '') + '</summary><div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;">' +
       '<span class="hint" style="margin:0; font-size:11.5px;">Mode de recherche :</span>' +
       chip('deep', '🔎 Recherche approfondie', s.deep, ' <small>+' + HNR_COSTS.deep + '</small>') +
       chip('web', '🌐 Web en temps réel', s.web, hnrBackend() ? '' : ' <small>bientôt</small>') +
@@ -37768,7 +37794,7 @@
       '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;">🎯 Recherche adaptée <select data-hnr-adapted style="border:1px solid var(--line); border-radius:8px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">' + HNR_PROFILES.map(function(p){ return '<option value="' + p.id + '"' + (p.id === s.adapted ? ' selected' : '') + '>' + p.label + '</option>'; }).join('') + '</select></label>' +
       '<button type="button" class="btn" data-hnr-image-open style="padding:3px 10px; font-size:12px;">🖼️ Image IA</button></div>' +
       (s.multi ? '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; font-size:12px;">' + HNR_SOURCES.map(function(o){ var soon = o.id === 'web' || o.id === 'publiques'; return '<label style="display:inline-flex; gap:4px; align-items:center;' + (soon ? ' opacity:.65;' : '') + '"><input type="checkbox" data-hnr-source="' + o.id + '"' + (s.sources.indexOf(o.id) > -1 ? ' checked' : '') + (soon && !hnrBackend() ? ' disabled' : '') + '> ' + o.label + '</label>'; }).join('') + '</div>' : '') +
-      '<div data-hnr-image-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface-2);"></div></div>';
+      '<div data-hnr-image-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface-2);"></div></details></div>';
   }
   function hnrImagePanelHtml(){
     var list = hnrImagePrompts();
@@ -37789,7 +37815,8 @@
   function hnrRedraw(view){
     var bar = document.querySelector('.hnr-bar[data-hnr-view="' + view + '"]'); if(!bar) return;
     var imgOpen = bar.querySelector('[data-hnr-image-panel]') && !bar.querySelector('[data-hnr-image-panel]').hidden;
-    var holder = document.createElement('div'); holder.innerHTML = hnrBarHtml(view);
+    var det = bar.querySelector('.hnr-det'), wasOpen = det ? det.open : undefined;
+    var holder = document.createElement('div'); holder.innerHTML = hnrBarHtml(view, wasOpen);
     var nb = holder.firstChild; bar.parentNode.replaceChild(nb, bar);
     if(imgOpen){ var pn = nb.querySelector('[data-hnr-image-panel]'); pn.hidden = false; pn.innerHTML = hnrImagePanelHtml(); }
   }
