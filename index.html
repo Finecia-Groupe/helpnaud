@@ -1059,6 +1059,25 @@
     }
     #chat-ai-status-banner strong, #cowork-discuss-ai-status-banner strong{ font-size:12.5px; }
     #chat-ai-status-banner p, #cowork-discuss-ai-status-banner p{ font-size:11px; line-height:1.4; }
+    /* Un seul avertissement, sur une ligne : texte long masqué, accès direct à la connexion. */
+    #chat-ai-status-banner, #cowork-discuss-ai-status-banner, #cowork-ai-status-banner{
+      flex-wrap:wrap !important; margin-bottom:6px !important; padding:6px 8px !important; align-items:center !important; gap:4px 8px !important;
+    }
+    #chat-ai-status-banner > div:first-child, #cowork-discuss-ai-status-banner > div:first-child, #cowork-ai-status-banner > div:first-child{ min-width:0 !important; flex:1; }
+    #chat-ai-status-banner p, #cowork-discuss-ai-status-banner p, #cowork-ai-status-banner p,
+    #chat-ai-copy-link-btn, #cowork-ai-copy-link-btn, #cowork-discuss-ai-copy-link-btn{ display:none !important; }
+    #chat-ai-status-banner > div:last-child, #cowork-discuss-ai-status-banner > div:last-child, #cowork-ai-status-banner > div:last-child{ flex-wrap:nowrap !important; flex:none; gap:6px !important; }
+    #chat-ai-status-banner strong, #cowork-discuss-ai-status-banner strong, #cowork-ai-status-banner strong{ font-size:12px; line-height:1.3; }
+    #chat-ai-status-banner .btn, #cowork-discuss-ai-status-banner .btn, #cowork-ai-status-banner .btn{ padding:6px 8px; font-size:12px; white-space:nowrap; }
+    /* « 🎯 Recherche adaptée » : ligne pleine largeur, sans débordement. */
+    .hnr-bar label{ display:flex !important; width:100%; min-width:0; flex-wrap:nowrap; }
+    .hnr-bar label select{ flex:1; min-width:0; max-width:100%; width:100%; }
+    .hnr-det > div{ min-width:0; max-width:100%; }
+    /* Navigation basse : réserve la zone sûre, aucun chevauchement. */
+    .chat-form{ padding-bottom:max(4px, env(safe-area-inset-bottom)); }
+    .hn-retry-row{ display:none !important; }
+    .chat-input-wrap textarea{ padding-right:92px; }
+    .chat-log{ flex:1 1 auto; }
   }
 
   /* Resolutions */
@@ -2502,7 +2521,8 @@
             <p class="hint" id="chat-ai-status-text" style="margin:2px 0 0">La vraie intelligence de l'assistant (réponses à toute question, pas seulement les questions financières) ne peut pas se connecter ici — c'est presque toujours parce que la page est ouverte dans une fenêtre intégrée (depuis un lien partagé) plutôt que dans votre navigateur. Ouvrez cette adresse directement dans Safari/Chrome pour retrouver toutes les réponses : <code style="user-select:all">https://claude.ai/artifact/DJdGGEdeRYNRUL3sGnbh4W</code></p>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button type="button" class="btn primary" id="chat-ai-retry-btn">Réessayer la connexion</button>
+            <button type="button" class="btn primary" id="chat-ai-login-btn" data-view="settings" onclick="try{showView('settings')}catch(e){}">Se connecter</button>
+            <button type="button" class="btn" id="chat-ai-retry-btn">Réessayer la connexion</button>
             <button type="button" class="btn" id="chat-ai-copy-link-btn">Copier le lien de l'application</button>
           </div>
         </div>
