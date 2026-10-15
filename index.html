@@ -40515,4 +40515,83 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
 })();
 </script>
 
+<style id="hn-tidy-css">
+.hn-chathead{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:2px 0 6px; min-width:0; }
+.hn-chathead .conv-toolbar-title, .hn-chathead .hn-ct{ flex:1 1 90px; min-width:0; max-width:none; font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hn-chathead .attach-menu-wrap{ margin:0 !important; flex:none; }
+.hn-chathead .hn-newbtn{ flex:none; }
+.hn-opt-toggle{ flex:none; }
+.hn-opt-toggle[aria-expanded="true"]{ background:var(--accent-soft, #e8eef9); border-color:var(--accent); }
+.hn-opts-panel{ display:flex; flex-direction:column; gap:8px; padding:8px 10px; margin:0 0 8px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.hn-opts-panel[hidden]{ display:none; }
+.hn-opts-panel .conv-toolbar{ border:0; background:none; padding:0; margin:0; }
+.hn-opts-panel .cowork-panel-head{ margin:0; }
+.hn-opts-panel .cowork-panel-head h2{ display:none; }
+.hn-opts-panel .hnr-det > summary{ display:none; }
+.hn-opts-panel .chat-mini-bar{ margin:0; }
+.hn-opts-panel > p.hint{ margin:0; }
+@media (max-width:860px){
+  #view-assistant > .topbar{ display:none; }
+  .hn-chathead .hn-newbtn{ font-size:0; padding:6px 10px; line-height:1; }
+  .hn-chathead .hn-newbtn::before{ content:"＋"; font-size:18px; }
+  #hstat-tab-consult > .cowork-panel-head, #cowork-panel-discuss > .cowork-panel-head{ display:none; }
+  #hstatis-panel-chat ~ *, .hstatis-desc{ }
+  #fghlab-panel-hstatis > p.hint{ display:none; }
+  #view-assistant .chat-shell{ height:clamp(380px, calc(100dvh - 200px), 900px); }
+  #cowork-panel-discuss .chat-shell{ height:clamp(380px, calc(100dvh - 215px), 900px); }
+  #hstat-tab-consult .chat-shell, #hstatis-panel-chat .chat-shell{ height:clamp(380px, calc(100dvh - 250px), 860px); }
+  #hstat-tab-consult .hn-chathead .hn-ct, #hstatis-panel-chat .hn-chathead .hn-ct{ display:none; }
+  #hstat-domain-wrap, #hstatis-domain-wrap{ flex:1 1 0 !important; min-width:0; }
+  #hstat-domain-toggle, #hstatis-domain-toggle{ width:100%; font-size:12.5px; padding:7px 8px; text-align:left; }
+  #view-hstat > .topbar{ flex-direction:row !important; align-items:center; margin-bottom:6px; gap:8px; }
+  #view-hstat > .topbar h1{ font-size:20px; }
+  #hstat-tabs-row{ margin-bottom:6px !important; }
+  .promo-website-card{ display:none !important; }
+}
+</style>
+<script id="hn-tidy-js">
+(function(){
+  'use strict';
+  function mk(tag, cls){ var e=document.createElement(tag); if(cls) e.className=cls; return e; }
+  function tidy(S){
+    if(!S.__hnT){
+      var scope = S.closest('.cowork-panel') || S.closest('#hstat-tab-consult') || S.closest('#hstatis-panel-chat') || S.closest('.view');
+      if(!scope) return;
+      var head = mk('div','hn-chathead'), panel = mk('div','hn-opts-panel'); panel.hidden = true;
+      var tb = scope.querySelector('.conv-toolbar');
+      var title = tb && tb.querySelector('.conv-toolbar-title');
+      if(!title){
+        var h = scope.querySelector('.cowork-panel-head h2, h2');
+        title = mk('span','hn-ct'); title.textContent = h ? h.textContent.replace(/\s+/g,' ').trim() : 'Conversation';
+      }
+      head.appendChild(title);
+      var nb = tb && tb.querySelector('[id$="conv-new-btn"]');
+      if(nb){ nb.classList.add('hn-newbtn'); nb.style.marginLeft='0'; nb.title='Nouvelle conversation'; nb.setAttribute('aria-label','Nouvelle conversation'); head.appendChild(nb); }
+      var dw = scope.querySelector('[id$="domain-wrap"]'); if(dw) head.appendChild(dw);
+      var ot = mk('button','btn icon-only hn-opt-toggle'); ot.type='button'; ot.setAttribute('aria-expanded','false'); ot.title='Options'; ot.setAttribute('aria-label','Options'); ot.textContent='⋯';
+      ot.style.fontWeight='700'; ot.style.fontSize='18px'; ot.style.lineHeight='1';
+      ot.addEventListener('click',function(){ var open = panel.hidden; panel.hidden = !open; ot.setAttribute('aria-expanded', open?'true':'false'); });
+      head.appendChild(ot);
+      var ph = scope.querySelector('.cowork-panel-head'); if(ph && !ph.closest('.hn-opts-panel')) panel.appendChild(ph);
+      if(tb) panel.appendChild(tb);
+      S.insertBefore(panel, S.firstChild); S.insertBefore(head, S.firstChild);
+      S.__hnT = {head:head, panel:panel};
+    }
+    var P = S.__hnT.panel, log = S.querySelector('.chat-log');
+    Array.prototype.slice.call(S.children).forEach(function(c){
+      if(c === S.__hnT.head || c === P) return;
+      if(c.classList.contains('voicemode-status-line')) return;
+      var chrome = (log && (c.compareDocumentPosition(log) & 4)) || c.classList.contains('hnr-bar');
+      if(!chrome) return;
+      if(c.classList.contains('hnr-bar')){ var d=c.querySelector('.hnr-det'); if(d) d.open = true; }
+      P.appendChild(c);
+    });
+  }
+  function scan(){ Array.prototype.forEach.call(document.querySelectorAll('.chat-shell'), tidy); }
+  var pend=false;
+  function init(){ scan(); new MutationObserver(function(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; scan(); },150); }).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
 </body></html>
