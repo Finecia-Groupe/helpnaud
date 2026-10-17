@@ -180,6 +180,7 @@
     padding:12px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
   }
   .accent-menu[hidden]{ display:none; }
+  @media (max-width:860px){ .accent-menu{ position:fixed; left:12px; right:12px; top:150px; width:auto; max-width:340px; margin-inline:auto; max-height:calc(100dvh - 220px); } }
   .accent-menu-title{ grid-column:1/-1; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:2px; }
   .accent-opt{
     display:flex; flex-direction:column; align-items:center; gap:5px; background:none; border:none; cursor:pointer; padding:4px; border-radius:8px;
@@ -10552,6 +10553,8 @@
     var menu = document.getElementById('accent-menu');
     closeAllInfoTips();
     menu.hidden = !menu.hidden;
+    /* Mobile : menu fixe, centré, placé sous le bouton, jamais hors de l'écran */
+    if(!menu.hidden){ try{ if(window.innerWidth <= 860){ var br = e.currentTarget.getBoundingClientRect(); menu.style.top = Math.max(60, Math.min(br.bottom + 8, window.innerHeight - 300)) + 'px'; } else menu.style.top = ''; }catch(err){} }
   });
   document.getElementById('accent-menu').addEventListener('click', function(e){
     var opt = e.target.closest('.accent-opt');
