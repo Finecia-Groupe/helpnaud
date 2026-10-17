@@ -526,7 +526,7 @@
   .scroll-bottom-btn svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .scroll-bottom-btn:hover{ border-color:var(--accent); color:var(--accent-ink); }
   .msg{ max-width:78%; padding:10px 13px; border-radius:12px; font-size:13.3px; line-height:1.5; display:flex; flex-direction:column; gap:5px; }
-  .msg.bot{ background:var(--surface-2); color:var(--ink); border-bottom-left-radius:3px; align-self:flex-start; }
+  .msg.bot{ background:var(--surface); border:1px solid var(--line); color:var(--ink); border-bottom-left-radius:3px; align-self:flex-start; }
   .msg.user{ background:var(--accent-gradient, var(--accent)); color:var(--accent-contrast); border-bottom-right-radius:3px; align-self:flex-end; }
   .msg-text{ white-space:pre-line; }
   .msg-text.md{ white-space:normal; }
@@ -537,8 +537,8 @@
   .msg-text.md .md-math{ font-family:Cambria,'Times New Roman',serif; }
   .msg-text.md .md-tablewrap{ overflow-x:auto; margin:0 0 10px; max-width:100%; }
   .msg-text.md table{ border-collapse:collapse; font-size:.95em; min-width:60%; }
-  .msg-text.md th, .msg-text.md td{ border:1px solid rgba(0,0,0,.18); padding:5px 9px; text-align:left; vertical-align:top; }
-  .msg-text.md th{ background:rgba(0,0,0,.06); font-weight:700; }
+  .msg-text.md th, .msg-text.md td{ border:1px solid var(--line); padding:5px 9px; text-align:left; vertical-align:top; }
+  .msg-text.md th{ background:var(--surface-2); font-weight:700; }
   .msg-text.md ul, .msg-text.md ol{ margin:0 0 8px; padding-left:20px; } .msg-text.md li{ margin:2px 0; }
   .msg-text.md code{ font-family:ui-monospace,Consolas,monospace; font-size:.92em; background:rgba(0,0,0,.06); padding:1px 5px; border-radius:5px; }
   .msg-text.md pre{ margin:0 0 8px; padding:8px 10px; background:rgba(0,0,0,.06); border-radius:8px; overflow:auto; white-space:pre; } .msg-text.md pre code{ background:none; padding:0; }
