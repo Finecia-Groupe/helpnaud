@@ -78,10 +78,10 @@ const TIERS = {
   dure:    { cost: 1, band: 'low',  max: 700 },
   basse:   { cost: 1, band: 'low',  max: 700 },
   lumiere: { cost: 1, band: 'low',  max: 700 },
-  mediane: { cost: 2, band: 'mid',  max: 1200 },
-  medium2: { cost: 2, band: 'mid',  max: 1200 },
-  idee:    { cost: 2, band: 'mid',  max: 1200 },
-  cover:   { cost: 2, band: 'mid',  max: 1200 },
+  mediane: { cost: 2, band: 'mid',  max: 1600 },
+  medium2: { cost: 2, band: 'mid',  max: 1600 },
+  idee:    { cost: 2, band: 'mid',  max: 1600 },
+  cover:   { cost: 2, band: 'mid',  max: 1600 },
   top:     { cost: 3, band: 'mid',  max: 2000 },
   premium: { cost: 3, band: 'mid',  max: 2000 },
   pretium: { cost: 4, band: 'high', max: 2800 },
@@ -181,7 +181,7 @@ const ADAPTERS = {
     const p = { model: o.model, max_tokens: o.max, messages: msgs }; if (o.system) p.system = o.system;
     const j = await postJson('https://api.anthropic.com/v1/messages', { 'x-api-key': KEYS.anthropic, 'anthropic-version': '2023-06-01' }, p, o.signal);
     const text = (Array.isArray(j.content) ? j.content : []).filter(b => b && b.type === 'text').map(b => b.text).join('').trim();
-    const u = j.usage || {}; return { text, tin: u.input_tokens || 0, tout: u.output_tokens || 0 };
+    const u = j.usage || {}; return { text, tin: u.input_tokens || 0, tout: u.output_tokens || 0, cut: j.stop_reason === 'max_tokens' };
   },
   async openai(o){ return openaiLike(o, 'https://api.openai.com/v1/chat/completions', KEYS.openai, true); },
   async mistral(o){ return openaiLike(o, 'https://api.mistral.ai/v1/chat/completions', KEYS.mistral, false); },
@@ -193,7 +193,7 @@ const ADAPTERS = {
     const j = await postJson('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(o.model) + ':generateContent', { 'x-goog-api-key': KEYS.google }, p, o.signal);
     const parts = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts || [];
     const u = j.usageMetadata || {};
-    return { text: parts.map(x => x.text || '').join('').trim(), tin: u.promptTokenCount || 0, tout: u.candidatesTokenCount || 0 };
+    return { text: parts.map(x => x.text || '').join('').trim(), tin: u.promptTokenCount || 0, tout: u.candidatesTokenCount || 0, cut: !!(j.candidates && j.candidates[0] && j.candidates[0].finishReason === 'MAX_TOKENS') };
   }
 };
 async function openaiLike(o, url, key, images){
@@ -205,7 +205,7 @@ async function openaiLike(o, url, key, images){
   const j = await postJson(url, { Authorization: 'Bearer ' + key }, { model: o.model, max_tokens: o.max, messages: msgs }, o.signal);
   const c = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
   const u = j.usage || {};
-  return { text: (typeof c === 'string' ? c : '').trim(), tin: u.prompt_tokens || 0, tout: u.completion_tokens || 0 };
+  return { text: (typeof c === 'string' ? c : '').trim(), tin: u.prompt_tokens || 0, tout: u.completion_tokens || 0, cut: !!(j.choices && j.choices[0] && j.choices[0].finish_reason === 'length') };
 }
 
 
@@ -322,7 +322,7 @@ exports.handler = async function(event){
     catch (e) { try { await svcRpc('svc_ai_log', base); } catch (e2) {} }   // 3w pas encore installé : journal simple
   };
 
-  const system = wantJson ? 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ni après, sans bloc de code markdown.' : '';
+  const system = wantJson ? 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ni après, sans bloc de code markdown.' : 'Réponds en français, de façon complète mais concise (une réponse doit tenir en environ 600 mots et se terminer proprement). Mise en forme : Markdown simple (titres ##, listes, **gras**, tableaux). N’utilise jamais LaTeX ni $$ : écris les formules en texte simple (ex. moyenne = (10+15+20)/3 = 15).';
   const deadline = Date.now() + TIMEOUT_MS;
   let lastErr = null, label = attempts[0] + ':' + modelFor(attempts[0], tier.band);
   for (const provider of attempts) {
@@ -337,7 +337,8 @@ exports.handler = async function(event){
       const micro = costMicro(model, out.tin, out.tout);
       try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: micro }); } catch (e) {}
       await log(true, label, out.tin, out.tout, micro);
-      return reply(200, { text: out.text, data, credits: { used: r.used, limit: r.limit, plan: r.plan } });
+      const finalText = (!wantJson && out.cut) ? out.text + '\n\n…(réponse tronquée par la limite de longueur : écrivez « continue » pour obtenir la suite.)' : out.text;
+      return reply(200, { text: finalText, data, credits: { used: r.used, limit: r.limit, plan: r.plan } });
     } catch (e) {
       lastErr = e && e.name === 'AbortError' ? { code: 'timeout', status: 504, message: 'L’assistant IA a mis trop de temps à répondre.' } : { code: 'upstream', status: 502, message: 'L’assistant IA est momentanément indisponible.' };
     } finally { clearTimeout(timer); }
