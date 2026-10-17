@@ -13377,7 +13377,14 @@
     if(t.indexOf('password') >= 0 && (t.indexOf('least') >= 0 || t.indexOf('weak') >= 0 || t.indexOf('short') >= 0)) return 'Mot de passe trop faible (8 caractères minimum).';
     if(t.indexOf('rate') >= 0 || t.indexOf('too many') >= 0) return 'Trop de tentatives : patientez quelques minutes.';
     if(t.indexOf('fetch') >= 0 || t.indexOf('network') >= 0) return 'Connexion impossible : vérifiez votre réseau.';
-    return 'Action impossible pour le moment. Réessayez.';
+    if(t.indexOf('sending confirmation') >= 0 || t.indexOf('sending') >= 0 && t.indexOf('email') >= 0 || t.indexOf('smtp') >= 0) return 'Compte non créé : le service n’a pas pu envoyer le courriel de confirmation. Réessayez dans quelques minutes ; si cela persiste, écrivez à support@helpnaud.ai.';
+    if(t.indexOf('database error') >= 0) return 'Compte non créé : erreur d’enregistrement côté serveur. Écrivez à support@helpnaud.ai en indiquant votre courriel.';
+    if(t.indexOf('signups not allowed') >= 0 || t.indexOf('signup is disabled') >= 0 || t.indexOf('signups are disabled') >= 0) return 'Les inscriptions sont momentanément fermées.';
+    if(t.indexOf('invalid format') >= 0 || t.indexOf('unable to validate email') >= 0) return 'Adresse courriel invalide : vérifiez sa saisie.';
+    if(t.indexOf('security purposes') >= 0) return 'Patientez quelques secondes avant de réessayer.';
+    var raw = String((e && (e.message || e.error_description)) || '').replace(/\s+/g, ' ').slice(0, 90);
+    try{ console.warn('HelpNaud auth error:', e); }catch(_){}
+    return 'Action impossible pour le moment. Réessayez.' + (raw ? ' (détail : ' + raw + ')' : '');
   }
   function custTab(which){
     var login = which !== 'signup';
