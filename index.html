@@ -27944,9 +27944,13 @@
         }
         var domainPart = hstatisDomain ? (', avec un accent particulier sur : ' + hstatisDomain.label.toLowerCase()) : '';
         var prefix = "Tu es H-Statis, l'agent statistique interne avancé de FINECIA GROUPE (via HelpNaud.ai). Réponds avec rigueur technique, niveau expert, en statistiques, économétrie, finance quantitative et méthodes scientifiques" + domainPart + ". Si pertinent, précise les formules, hypothèses et conditions d'application. Réponds en français, de façon professionnelle et structurée.";
-        var prompt = prefix + "\n\nQuestion : " + q + "\n\nRéponds UNIQUEMENT avec un objet JSON de la forme {\"reponse\": string}.";
-        sampleCap.json(prompt, { modelTier:'default', cache:false }).then(function(data){
-          var reponse = (data && typeof data.reponse === 'string' && data.reponse.trim()) ? data.reponse.trim() : "Je n'ai pas pu formuler de réponse claire à cette question.";
+        // Texte libre (pas de JSON) : une réponse longue en JSON se tronquait et donnait « bad_json ». L'historique est conservé.
+        var hs = hstatisHistory.slice(-12).map(function(h){ return { role:h.role, content:h.content }; });
+        if(hs.length && hs[hs.length - 1].role === 'user') hs[hs.length - 1].content = prefix + "\n\nQuestion : " + q;
+        else hs.push({ role:'user', content: prefix + "\n\nQuestion : " + q });
+        while(hs.length && hs[0].role !== 'user') hs.shift();
+        sampleCap(hs, { modelTier:'default', cache:false }).then(function(res){
+          var reponse = (res && typeof res.text === 'string' && res.text.trim()) ? res.text.trim() : "Je n'ai pas pu formuler de réponse claire à cette question.";
           hstatisHistory.push({ role:'assistant', content: reponse });
           setMsgText(thinkingEl, reponse);
           fillHstatisSuggestRow(suggestionsAfter);
