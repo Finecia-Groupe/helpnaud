@@ -147,7 +147,23 @@ function parseJson(text){
   try { return JSON.parse(t); } catch (e) {}
   const a = t.search(/[\[{]/); const b = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
   if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
-  return undefined;
+  return salvageReponse(t);
+}
+/* Réponse longue coupée par la limite de longueur au milieu de {"reponse": "…" : on referme proprement la chaîne et l'objet
+   et on garde le texte reçu (mieux qu'une erreur « bad_json »). Ne s'applique qu'à ce format précis. */
+function salvageReponse(t){
+  const m = /^\s*\{\s*"reponse"\s*:\s*"/.exec(t);
+  if (!m) return undefined;
+  let body = t.slice(m[0].length), out = '', esc = false;
+  for (let i = 0; i < body.length; i++) {
+    const c = body[i];
+    if (esc) { out += c; esc = false; continue; }
+    if (c === '\\') { out += c; esc = true; continue; }
+    if (c === '"') break;
+    out += c;
+  }
+  if (esc) out = out.slice(0, -1);               // antislash final orphelin
+  try { const v = JSON.parse('"' + out + '"'); return v && v.trim() ? { reponse: v } : undefined; } catch (e) { return undefined; }
 }
 
 /* ---------- Adaptateurs : un par fournisseur, même entrée, même sortie { text, tin, tout } ---------- */
