@@ -13134,6 +13134,15 @@
     if(typeof c.used === 'number'){ aiCreditsUsed = c.used; saveAiCreditsUsage(c.used); }
     renderAiCreditsIndicator();
   }
+  /* Diagnostic visible : indique la vraie raison quand l'appel serveur à l'IA échoue (au lieu d'une réponse hors-ligne muette). */
+  function hnAiErrNotice(err){
+    var code = (err && err.code) || 'inconnue';
+    if(code === 'quota' || code === 'budget') return;   // déjà signalé par showAiCreditsLimitNotice
+    var d = document.createElement('div'); d.setAttribute('role','alert');
+    d.textContent = 'Assistant IA : ' + ((err && err.message) || 'erreur') + ' [' + code + ']';
+    d.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom));background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:10px;font-size:12.5px;z-index:99999;max-width:92vw;line-height:1.4;box-shadow:0 4px 18px rgba(0,0,0,.25);';
+    document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 9000);
+  }
   function aiServerCall(input, opts, wantJson){
     opts = opts || {};
     var tier = (typeof opts.modelTier === 'string' && getHmodelTierDef(opts.modelTier)) ? opts.modelTier : 'mediane';
@@ -13145,12 +13154,15 @@
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
       if(a[1]) body.image = a[1];
-      return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) });
+      return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) })
+        .catch(function(){ throw Object.assign(new Error('Impossible de joindre le serveur IA (réseau ou déploiement).'), { code:'network' }); });
     }).then(function(res){
       return res.json().catch(function(){ return {}; }).then(function(j){
         if(!res.ok){
           if(j && j.credits) aiServerSync(j.credits);
-          var err = new Error((j && j.message) || 'ai'); err.code = (j && j.error) || 'upstream';
+          var err = new Error((j && j.message) || 'ai'); err.code = (j && j.error) || ('http_' + res.status);
+          if(!(j && j.message)) err.message = res.status === 404 ? 'La fonction serveur IA est introuvable (fichier ai.js non déployé ?).' : 'Le serveur IA a répondu par une erreur (' + res.status + ').';
+          try{ hnAiErrNotice(err); }catch(e){}
           if(err.code === 'quota' || err.code === 'budget'){ try{ showAiCreditsLimitNotice(); }catch(e){} }
           throw err;
         }
