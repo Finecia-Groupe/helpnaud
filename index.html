@@ -11292,17 +11292,47 @@
      écoulé) ou 'user' (copier / modifier / partager). `refill(text)` recharge le prompt dans le
      champ de saisie pour le modifier ; laissé vide pour les bulles sans formulaire associé
      (ex. message d'accueil). */
+  /* Copie riche d'une réponse mise en forme : HTML avec bordures en ligne (Word/Docs) + texte brut où les tableaux sont séparés par des tabulations (Excel, bloc-notes). */
+  function hnRichCopyData(tx){
+    var plain = [];
+    Array.prototype.forEach.call(tx.children, function(n){
+      var tg = n.tagName;
+      if(tg === 'TABLE' || n.classList.contains('md-tablewrap')){
+        Array.prototype.forEach.call(n.querySelectorAll('tr'), function(tr){ plain.push(Array.prototype.map.call(tr.children, function(c){ return c.textContent.replace(/\s+/g,' ').trim(); }).join('\t')); });
+        plain.push('');
+      } else if(tg === 'UL'){ Array.prototype.forEach.call(n.children, function(li){ plain.push('- ' + li.textContent); }); plain.push(''); }
+      else if(tg === 'OL'){ Array.prototype.forEach.call(n.children, function(li, i){ plain.push((i + 1) + '. ' + li.textContent); }); plain.push(''); }
+      else if(tg === 'HR'){ plain.push('———'); plain.push(''); }
+      else { plain.push(n.innerText || n.textContent); plain.push(''); }
+    });
+    var c = tx.cloneNode(true);
+    Array.prototype.forEach.call(c.querySelectorAll('table'), function(t){ t.setAttribute('border','1'); t.setAttribute('cellpadding','6'); t.style.cssText = 'border-collapse:collapse;border:1px solid #999'; });
+    Array.prototype.forEach.call(c.querySelectorAll('th,td'), function(d){ d.style.cssText = 'border:1px solid #999;padding:5px 9px;text-align:left;vertical-align:top' + (d.tagName === 'TH' ? ';background:#eee;font-weight:bold' : ''); });
+    Array.prototype.forEach.call(c.querySelectorAll('.md-h'), function(h){ h.style.fontWeight = 'bold'; });
+    Array.prototype.forEach.call(c.querySelectorAll('.md-mathblock'), function(m){ m.style.cssText = 'text-align:center;margin:6px 0'; });
+    return { html:'<meta charset="utf-8">' + c.innerHTML, text:plain.join('\n').replace(/\n{3,}/g,'\n\n').trim() };
+  }
   function buildMsgActions(msgEl, who, refill){
     var bar = document.createElement('div');
     bar.className = 'msg-actions';
 
     var copyBtn = document.createElement('button');
-    copyBtn.type = 'button'; copyBtn.className = 'msg-action-btn'; copyBtn.title = 'Copier';
+    copyBtn.type = 'button'; copyBtn.className = 'msg-action-btn'; copyBtn.title = 'Copier (Maj+clic : texte brut)';
     copyBtn.innerHTML = msgActionIcon('copy');
     var status = document.createElement('span');
     status.className = 'msg-status';
-    copyBtn.addEventListener('click', function(){
+    copyBtn.addEventListener('click', function(ev){
       var text = getMsgText(msgEl);
+      var tx = msgEl.querySelector('.msg-text.md');
+      /* Réponse mise en forme : copie riche (HTML + texte à tabulations) pour Word, Docs, Excel, courriel. Maj+clic = texte brut. */
+      if(tx && !ev.shiftKey && navigator.clipboard && window.ClipboardItem){
+        var rc = hnRichCopyData(tx);
+        navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([rc.html], { type:'text/html' }), 'text/plain': new Blob([rc.text], { type:'text/plain' }) })])
+          .then(function(){ showTempStatus(status, 'Copié ✓'); })
+          .catch(function(){ navigator.clipboard.writeText(rc.text).then(function(){ showTempStatus(status, 'Copié ✓'); }).catch(function(){ showTempStatus(status, 'Copie impossible'); }); });
+        return;
+      }
+      if(tx && !ev.shiftKey) text = hnRichCopyData(tx).text;
       if(navigator.clipboard && navigator.clipboard.writeText){
         navigator.clipboard.writeText(text).then(function(){ showTempStatus(status, 'Copié ✓'); }).catch(function(){ showTempStatus(status, 'Copie impossible'); });
       } else { showTempStatus(status, 'Copie impossible ici'); }
