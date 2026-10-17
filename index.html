@@ -532,6 +532,13 @@
   .msg-text.md{ white-space:normal; }
   .msg-text.md p{ margin:0 0 8px; } .msg-text.md p:last-child{ margin-bottom:0; }
   .msg-text.md .md-h{ font-weight:700; margin-top:4px; }
+  .msg-text.md hr{ border:0; border-top:1px solid rgba(0,0,0,.15); margin:10px 0; }
+  .msg-text.md .md-mathblock{ margin:6px 0 10px; padding:8px 12px; background:rgba(0,0,0,.05); border-radius:8px; text-align:center; font-family:Cambria,'Times New Roman',serif; font-size:1.05em; overflow-x:auto; }
+  .msg-text.md .md-math{ font-family:Cambria,'Times New Roman',serif; }
+  .msg-text.md .md-tablewrap{ overflow-x:auto; margin:0 0 10px; max-width:100%; }
+  .msg-text.md table{ border-collapse:collapse; font-size:.95em; min-width:60%; }
+  .msg-text.md th, .msg-text.md td{ border:1px solid rgba(0,0,0,.18); padding:5px 9px; text-align:left; vertical-align:top; }
+  .msg-text.md th{ background:rgba(0,0,0,.06); font-weight:700; }
   .msg-text.md ul, .msg-text.md ol{ margin:0 0 8px; padding-left:20px; } .msg-text.md li{ margin:2px 0; }
   .msg-text.md code{ font-family:ui-monospace,Consolas,monospace; font-size:.92em; background:rgba(0,0,0,.06); padding:1px 5px; border-radius:5px; }
   .msg-text.md pre{ margin:0 0 8px; padding:8px 10px; background:rgba(0,0,0,.06); border-radius:8px; overflow:auto; white-space:pre; } .msg-text.md pre code{ background:none; padding:0; }
@@ -11053,29 +11060,91 @@
   /* Mise en forme légère (Markdown) des réponses de l'assistant : gras, italique, code, titres, listes. Le texte est
      toujours échappé d'abord (aucun HTML venant de l'IA n'est interprété). La version brute reste dans data-raw (copie, relecture vocale). */
   function mdEsc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function mdInline(x){
-    return mdEsc(x).replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[\s(])\*([^*\s][^*\n]*?)\*(?=[\s).,;:!?]|$)/g,'$1<em>$2</em>');
+  /* Formules LaTeX -> texte lisible (sans bibliothèque externe) */
+  var TEX_SYM = { alpha:'α',beta:'β',gamma:'γ',delta:'δ',epsilon:'ε',theta:'θ',lambda:'λ',mu:'μ',pi:'π',rho:'ρ',sigma:'σ',tau:'τ',phi:'φ',omega:'ω',Delta:'Δ',Sigma:'Σ',Omega:'Ω',
+    times:'×',cdot:'·',pm:'±',leq:'≤',le:'≤',geq:'≥',ge:'≥',neq:'≠',ne:'≠',approx:'≈',infty:'∞',sum:'Σ',prod:'Π',int:'∫',to:'→',rightarrow:'→',Rightarrow:'⇒',in:'∈',ldots:'…',dots:'…',percent:'%',quad:' ',qquad:'  ',',':' ','\;':' ',';':' ','!':'' };
+  var SUP = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','n':'ⁿ','i':'ⁱ','(':'⁽',')':'⁾','=':'⁼' };
+  var SUB = { '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','+':'₊','-':'₋','i':'ᵢ','n':'ₙ','x':'ₓ','(':'₍',')':'₎','=':'₌' };
+  function texGroup(s, i){ /* renvoie [contenu, index après] pour {..} ou un caractère */
+    if(s.charAt(i) === '{'){ var d = 0, j = i; for(; j < s.length; j++){ if(s.charAt(j) === '{') d++; else if(s.charAt(j) === '}'){ d--; if(!d) break; } } return [s.slice(i + 1, j), j + 1]; }
+    return [s.charAt(i), i + 1];
   }
+  function texMap(str, map, pre){ var o = '', ok = true; String(str).split('').forEach(function(c){ if(map[c]) o += map[c]; else ok = false; }); return ok ? o : pre + '(' + str + ')'; }
+  function texToText(s){
+    s = String(s);
+    var out = '', i = 0;
+    while(i < s.length){
+      var c = s.charAt(i);
+      if(c === '\\'){
+        var m = /^\\([A-Za-z]+|[,;!])/.exec(s.slice(i));
+        if(!m){ out += s.charAt(i + 1); i += 2; continue; }
+        var cmd = m[1]; i += m[0].length;
+        if(cmd === 'frac' || cmd === 'dfrac'){ var g1 = texGroup(s, i); var g2 = texGroup(s, g1[1]); i = g2[1];
+          var n = texToText(g1[0]), d2 = texToText(g2[0]); out += (/^[\w.,]+$/.test(n) ? n : '(' + n + ')') + '/' + (/^[\w.,]+$/.test(d2) ? d2 : '(' + d2 + ')'); }
+        else if(cmd === 'sqrt'){ var g = texGroup(s, i); i = g[1]; out += '√(' + texToText(g[0]) + ')'; }
+        else if(cmd === 'bar' || cmd === 'overline'){ var g3 = texGroup(s, i); i = g3[1]; out += texToText(g3[0]) + '̄'; }
+        else if(cmd === 'hat'){ var g4 = texGroup(s, i); i = g4[1]; out += texToText(g4[0]) + '̂'; }
+        else if(/^(text|mathbf|mathrm|textbf|mathit|operatorname|boldsymbol|left|right|displaystyle|big|Big)$/.test(cmd)){
+          if(/^(left|right|displaystyle|big|Big)$/.test(cmd)){ if(s.charAt(i) === '.') i++; } else { var g5 = texGroup(s, i); i = g5[1]; out += texToText(g5[0]); } }
+        else if(Object.prototype.hasOwnProperty.call(TEX_SYM, cmd)) out += TEX_SYM[cmd];
+        else out += cmd;
+        continue;
+      }
+      if(c === '^' || c === '_'){
+        var gg = texGroup(s, i + 1); i = gg[1]; var inner = texToText(gg[0]);
+        out += c === '^' ? texMap(inner, SUP, '^') : texMap(inner, SUB, '_'); continue;
+      }
+      if(c === '{' || c === '}'){ i++; continue; }
+      out += c; i++;
+    }
+    return out.replace(/[ \t]+/g,' ').trim();
+  }
+  function mdMath(x){ /* x est déjà échappé : on convertit les $$..$$ et les $..$ contenant du LaTeX */
+    return x.replace(/\$\$([\s\S]+?)\$\$/g, function(_, f){ return '<span class="md-math">' + mdEsc(texToText(f.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'))) + '</span>'; })
+            .replace(/\$([^$\n]*[\\^_][^$\n]*)\$/g, function(_, f){ return '<span class="md-math">' + mdEsc(texToText(f.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'))) + '</span>'; });
+  }
+  function mdInline(x){
+    var held = [];
+    var e = mdEsc(x).replace(/`([^`\n]+)`/g,function(_, c){ held.push('<code>' + c + '</code>'); return '\u0001' + (held.length - 1) + '\u0001'; });
+    e = mdMath(e).replace(/<span class="md-math">[\s\S]*?<\/span>/g,function(h){ held.push(h); return '\u0001' + (held.length - 1) + '\u0001'; });
+    e = e.replace(/\*\*([^*\n]+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[\s(])\*([^*\s][^*\n]*?)\*(?=[\s).,;:!?]|$)/g,'$1<em>$2</em>');
+    return e.replace(/\u0001(\d+)\u0001/g,function(_, n){ return held[+n]; });
+  }
+  function mdRow(ln){ var t = ln.trim().replace(/^\|/,'').replace(/\|$/,''); return t.split('|').map(function(c){ return c.trim(); }); }
   function mdRender(text){
-    var lines = String(text).replace(/\r\n?/g,'\n').split('\n'), out = [], list = null, para = [], code = null;
+    var src = String(text).replace(/\r\n?/g,'\n');
+    /* Formules en bloc $$...$$ (même sur plusieurs lignes) : isolées sur leur propre ligne */
+    src = src.replace(/\$\$([\s\S]+?)\$\$/g, function(_, f){ return '\n\n\u0002' + f.replace(/\n/g,' ') + '\u0002\n\n'; });
+    var lines = src.split('\n'), out = [], list = null, para = [], code = null;
     function flushP(){ if(para.length){ out.push('<p>' + para.map(mdInline).join('<br>') + '</p>'); para = []; } }
     function flushL(){ if(list){ out.push('</' + list + '>'); list = null; } }
-    lines.forEach(function(ln){
-      if(/^\s*```/.test(ln)){ if(code){ out.push('<pre><code>' + mdEsc(code.join('\n')) + '</code></pre>'); code = null; } else { flushP(); flushL(); code = []; } return; }
-      if(code){ code.push(ln); return; }
-      var m;
-      if((m = /^\s{0,3}(#{1,4})\s+(.*)$/.exec(ln))){ flushP(); flushL(); out.push('<p class="md-h">' + mdInline(m[2]) + '</p>'); return; }
-      if((m = /^\s*[-*•]\s+(.*)$/.exec(ln))){ flushP(); if(list !== 'ul'){ flushL(); out.push('<ul>'); list = 'ul'; } out.push('<li>' + mdInline(m[1]) + '</li>'); return; }
-      if((m = /^\s*\d{1,2}[.)]\s+(.*)$/.exec(ln))){ flushP(); if(list !== 'ol'){ flushL(); out.push('<ol>'); list = 'ol'; } out.push('<li>' + mdInline(m[1]) + '</li>'); return; }
-      if(/^\s*$/.test(ln)){ flushP(); flushL(); return; }
+    for(var k = 0; k < lines.length; k++){
+      var ln = lines[k], m;
+      if(/^\s*```/.test(ln)){ if(code){ out.push('<pre><code>' + mdEsc(code.join('\n')) + '</code></pre>'); code = null; } else { flushP(); flushL(); code = []; } continue; }
+      if(code){ code.push(ln); continue; }
+      if((m = /^\u0002([\s\S]*)\u0002$/.exec(ln.trim()))){ flushP(); flushL(); out.push('<div class="md-mathblock">' + mdEsc(texToText(m[1])) + '</div>'); continue; }
+      if(/^\s*\|.*\|\s*$/.test(ln) && k + 1 < lines.length && /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(lines[k + 1])){
+        flushP(); flushL();
+        var head = mdRow(ln), rows = []; k += 2;
+        while(k < lines.length && /^\s*\|.*\|\s*$/.test(lines[k])){ rows.push(mdRow(lines[k])); k++; }
+        k--;
+        out.push('<div class="md-tablewrap"><table><thead><tr>' + head.map(function(c){ return '<th>' + mdInline(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+          rows.map(function(r){ return '<tr>' + r.map(function(c){ return '<td>' + mdInline(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>');
+        continue;
+      }
+      if(/^\s*([-*_])(\s*\1){2,}\s*$/.test(ln)){ flushP(); flushL(); out.push('<hr>'); continue; }
+      if((m = /^\s{0,3}(#{1,4})\s+(.*)$/.exec(ln))){ flushP(); flushL(); out.push('<p class="md-h">' + mdInline(m[2]) + '</p>'); continue; }
+      if((m = /^\s*[-*•]\s+(.*)$/.exec(ln))){ flushP(); if(list !== 'ul'){ flushL(); out.push('<ul>'); list = 'ul'; } out.push('<li>' + mdInline(m[1]) + '</li>'); continue; }
+      if((m = /^\s*\d{1,2}[.)]\s+(.*)$/.exec(ln))){ flushP(); if(list !== 'ol'){ flushL(); out.push('<ol>'); list = 'ol'; } out.push('<li>' + mdInline(m[1]) + '</li>'); continue; }
+      if(/^\s*$/.test(ln)){ flushP(); flushL(); continue; }
       flushL(); para.push(ln);
-    });
+    }
     if(code) out.push('<pre><code>' + mdEsc(code.join('\n')) + '</code></pre>');
     flushP(); flushL();
     return out.join('');
   }
   function mdFill(t, text, isBot){
-    if(isBot && text && /[*`#\n]|^\s*\d+[.)]\s/.test(text)){ t.dataset.raw = String(text); t.classList.add('md'); t.innerHTML = mdRender(text); }
+    if(isBot && text && /[*`#$|\n]|^\s*\d+[.)]\s/.test(text)){ t.dataset.raw = String(text); t.classList.add('md'); t.innerHTML = mdRender(text); }
     else { delete t.dataset.raw; t.classList.remove('md'); t.textContent = text; }
   }
   function setMsgText(el, text){
