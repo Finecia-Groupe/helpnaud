@@ -517,7 +517,7 @@
      .chat-shell (et non à .chat-log, qui défile) pour rester fixe juste au-dessus de la barre de
      saisie quel que soit le défilement du journal. */
   .scroll-bottom-btn{
-    position:absolute; right:12px; bottom:78px; z-index:6;
+    position:absolute; left:50%; right:auto; transform:translateX(-50%); bottom:78px; z-index:6;
     width:32px; height:32px; border-radius:99px; padding:0;
     display:flex; align-items:center; justify-content:center;
     background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); color:var(--ink);
@@ -1021,6 +1021,20 @@
     #cowork-panel-discuss .chat-shell{ height:clamp(420px, calc(100dvh - 160px), 860px); }
     #hstat-tab-consult .chat-shell{ height:clamp(420px, calc(100dvh - 210px), 860px); }
     #fghlab-panel-hstatis .chat-shell{ height:clamp(420px, calc(100dvh - 140px), 860px); }
+  }
+  /* La barre de navigation du bas (fixe, ≤860px) recouvrait une partie de la saisie : on réserve
+     ~60px de plus sous chaque zone de chat pour que réponses et champ restent entièrement visibles. */
+  @media (max-width: 640px){
+    #view-assistant .chat-shell{ height:clamp(340px, calc(100dvh - 275px), 760px); }
+    #cowork-panel-discuss .chat-shell{ height:clamp(340px, calc(100dvh - 225px), 760px); }
+    #hstat-tab-consult .chat-shell{ height:clamp(340px, calc(100dvh - 295px), 760px); }
+    #fghlab-panel-hstatis .chat-shell{ height:clamp(340px, calc(100dvh - 215px), 760px); }
+  }
+  @media (min-width: 641px) and (max-width: 860px){
+    #view-assistant .chat-shell{ height:clamp(380px, calc(100dvh - 245px), 860px); }
+    #cowork-panel-discuss .chat-shell{ height:clamp(380px, calc(100dvh - 225px), 860px); }
+    #hstat-tab-consult .chat-shell{ height:clamp(380px, calc(100dvh - 275px), 860px); }
+    #fghlab-panel-hstatis .chat-shell{ height:clamp(380px, calc(100dvh - 205px), 860px); }
   }
 
   /* Allègement du chrome au-dessus de .chat-shell sur mobile/tablette (≤860px), pour Assistant,
@@ -1558,7 +1572,8 @@
     .global-search-wrap{ width:100%; margin-left:0 !important; order:5; }
     .global-search-field{ min-width:0; width:100%; }
     .global-search-results{ left:0; right:0; width:auto; max-width:none; }
-    .main{ padding:96px 16px 84px; }
+    .main{ padding:96px 16px calc(112px + env(safe-area-inset-bottom,0px)); }
+    .chat-form, .chat-shell{ scroll-margin-bottom:104px; }
     /* scrollAppToTop() (changement de vue) et selectCoworkTool()/selectFghlabTool() (ouverture
        d'un panneau Co-work/FGH-Colab) utilisent tous deux Element.scrollIntoView({block:'start'})
        pour remonter le contenu nouvellement affiché en haut de l'écran. Ce scroll s'aligne sur le
@@ -3845,6 +3860,7 @@
             <span class="info-tip-wrap"><button type="button" class="info-tip-btn" data-i18n-tip="tip.database" data-tip="Une vue technique de vos données HelpNaud : aperçu et statistiques, documentation du schéma, et un outil pour explorer une table (dossier, catalogue ou tâches) comme un ensemble de données.">?</button></span>
           </h1>
           <p class="sub" data-i18n="sub.database">Vos données HelpNaud sont stockées localement dans votre navigateur (aucun serveur de base de données pour l'instant). Cet onglet en donne une vue technique.</p>
+          <p class="hint plan-note" style="margin:6px 0 0;">💳 Les éléments de ce menu fonctionnent avec votre forfait HelpNaud ; les fonctions assistées par l’IA utilisent votre crédit IA. <a href="#" onclick="try{showView('settings')}catch(e){}return false;">Voir les forfaits</a></p>
         </div>
       </header>
 
@@ -4034,6 +4050,7 @@
         <div>
           <h1 style="margin:0; display:flex; align-items:center; gap:10px;"><svg viewBox="0 0 240 240" width="32" height="32" style="stroke:none; flex:none;" role="img" aria-label="H-Web"><rect x="25" y="40" width="190" height="160" rx="18" fill="none" stroke="#16304A" stroke-width="14"/><line x1="25" y1="85" x2="215" y2="85" stroke="#16304A" stroke-width="14"/><circle cx="55" cy="62" r="7" fill="#C89B3C"/><circle cx="80" cy="62" r="7" fill="#2D9C93"/><circle cx="120" cy="146" r="46" fill="none" stroke="#2D9C93" stroke-width="10"/><line x1="74" y1="146" x2="166" y2="146" stroke="#2D9C93" stroke-width="10"/><path d="M120 100c-20 20-20 72 0 92M120 100c20 20 20 72 0 92" fill="none" stroke="#2D9C93" stroke-width="7"/></svg>H-Web</h1>
           <p class="sub">Générez un vrai site web (HTML/CSS autonome, logo et photos intégrés) pour une entreprise ou une organisation, avec aperçu immédiat et plusieurs formats de téléchargement.</p>
+          <p class="hint plan-note" style="margin:6px 0 0;">💳 La génération et la régénération par l’IA utilisent votre forfait et votre crédit IA ; l’aperçu, la galerie de sections, les thèmes et le téléchargement restent inclus. <a href="#" onclick="try{showView('settings')}catch(e){}return false;">Voir les forfaits</a></p>
         </div>
       </header>
 
@@ -4183,6 +4200,8 @@
             </div>
           </div>
           <button class="btn" id="hweb-seo-apply" type="button">Appliquer les champs SEO</button>
+          <button class="btn" id="hweb-check" type="button" title="Vérifie le site généré : titre, description, langue, images, accessibilité de base">✔ Contrôle avant publication</button>
+          <button class="btn" id="hweb-copy-html" type="button">Copier le code HTML</button>
           <span class="copy-status" id="cowork-website-status"></span>
         </div>
         <details id="hweb-templates-details" style="margin-top:14px;">
@@ -4234,6 +4253,7 @@
             <span class="info-tip-wrap"><button type="button" class="info-tip-btn" data-i18n-tip="tip.hntools" data-tip="Sept outils d'analyse et de contrôle complémentaires au Tableau de bord : performance, contexte économique, ratios financiers, tenue de livres, évaluation rapide, méthodologie d'évaluation, et rapprochement des comptes.">?</button></span>
           </h1>
           <p class="sub" data-i18n="sub.hntools">Analyses et contrôles complémentaires au Tableau de bord, pour le dossier actuellement ouvert.</p>
+          <p class="hint plan-note" style="margin:6px 0 0;">💳 Les éléments de ce menu fonctionnent avec votre forfait HelpNaud ; les commentaires et analyses générés par l’IA utilisent votre crédit IA. <a href="#" onclick="try{showView('settings')}catch(e){}return false;">Voir les forfaits</a></p>
         </div>
       </header>
 
@@ -4975,6 +4995,7 @@
           <summary><h2>Modèles de documents</h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
           <div class="collapsible-body">
             <p class="hint">Points de départ courts, à adapter et copier — pas des documents juridiques prêts à signer ; faites-les valider au besoin.</p>
+            <p class="hint">💳 « Créer un dossier » (rangement des modèles) s’inscrit dans votre forfait HelpNaud ; toute adaptation par l’IA utilise votre forfait et votre crédit IA. <a href="#" onclick="try{showView('settings')}catch(e){}return false;">Voir les forfaits</a></p>
             <div class="library-grid" id="library-templates"></div>
             <p class="hint" id="library-templates-empty" hidden>Aucun modèle ne correspond à ce filtre.</p>
           </div>
@@ -4984,6 +5005,7 @@
         <details class="collapsible" id="library-lexique-details">
           <summary><h2>Lexique de termes financiers</h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
           <div class="collapsible-body">
+            <p class="hint">💳 « Créer un dossier » (rangement de vos termes favoris) s’inscrit dans votre forfait HelpNaud ; toute explication ou reformulation par l’IA utilise votre forfait et votre crédit IA. <a href="#" onclick="try{showView('settings')}catch(e){}return false;">Voir les forfaits</a></p>
             <div class="lexique-list" id="library-lexique"></div>
             <p class="hint" id="library-lexique-empty" hidden>Aucun terme ne correspond à ce filtre.</p>
           </div>
@@ -13864,7 +13886,7 @@
   var spc = { ready:false, legacy:false, list:[], active:null, tab:'access', accSpace:null, acc:[], dels:[], audit:[], auditFilter:'', arch:[], rep:[], repPer:'', addOk:false, loading:false, busy:false };
   var SPC_LS = 'helpnaud_fgh_space', SPC_PJ = 'helpnaud_fgh_project';
   var SPC_IN = 'border:1px solid var(--line); border-radius:9px; padding:6px 9px; background:var(--surface); color:var(--ink); font-size:12.5px;';
-  var SPC_ACT = { space_create:'Espace créé', space_update:'Espace modifié', space_access_on:'Accès à l’espace donné', space_access_off:'Accès à l’espace retiré', space_tools_set:'Outils modifiés', delegate_set:'Délégué nommé / modifié', delegate_remove:'Rôle de délégué retiré', add_member_flag:'Autorisation « Ajouter un membre » modifiée', member_archive:'Membre retiré (archivé)', member_return:'Ancien membre repris' };
+  var SPC_ACT = { space_delete:'Espace de travail supprimé', space_restore:'Espace de travail restauré', space_create:'Espace créé', space_update:'Espace modifié', space_access_on:'Accès à l’espace donné', space_access_off:'Accès à l’espace retiré', space_tools_set:'Outils modifiés', delegate_set:'Délégué nommé / modifié', delegate_remove:'Rôle de délégué retiré', add_member_flag:'Autorisation « Ajouter un membre » modifiée', member_archive:'Membre retiré (archivé)', member_return:'Ancien membre repris' };
   var SPC_KIND = { entity:'Entité / équipe', project:'Projet international' };
   var SPC_STATUS = { preparation:'En préparation', active:'Actif', archived:'Archivé' };
   function spcLs(k){ try{ return localStorage.getItem(k) || ''; }catch(e){ return ''; } }
@@ -13873,6 +13895,28 @@
   function spcProject(){ var i = cEl('spc-project'); return (i ? i.value : spcLs(SPC_PJ)).trim().slice(0, 80); }
   function spcById(id){ var r = null; spc.list.forEach(function(s){ if(s.id === id) r = s; }); return r; }
   function spcDefault(){ var r = null; spc.list.forEach(function(s){ if(s.is_default) r = s; }); return r; }
+  /* « Outil Documentation » porte le code de l'espace actif : TOG (Togo), CAD (Canada), Mis (Mission) ;
+     pour un nouvel espace, les trois premières lettres de son nom (ex. « Projet international Bénin » → Ben). */
+  function spcDocCode(s){
+    if(!s) return '';
+    var n = String(s.name || s.key || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+    var l = (n + ' ' + String(s.key || '')).toLowerCase();
+    if(/togo/.test(l)) return 'TOG';
+    if(/canada/.test(l)) return 'CAD';
+    if(/mission/.test(l)) return 'Mis';
+    var b = n, prev;
+    do{ prev = b; b = b.replace(/^\s*(espace|finecia|projet international|projet|groupe)\s+/i, ''); }while(b !== prev);
+    var letters = b.replace(/[^A-Za-z]/g, '').slice(0, 3);
+    return letters ? letters.charAt(0).toUpperCase() + letters.slice(1).toLowerCase() : '';
+  }
+  function spcApplyDocTitle(){
+    var info = FGHLAB_INFO && FGHLAB_INFO.documentation; if(!info) return;
+    var s = spcById(spcActiveId()), code = spcDocCode(s);
+    var t = code ? 'Outil Documentation - ' + code : 'Outil Documentation';
+    info.title = t;
+    var c = document.querySelector('[data-fghlabtool="documentation"] .cowork-card-title'); if(c) c.textContent = t;
+    var h = document.querySelector('#fghlab-panel-documentation h2'); if(h) h.textContent = t;
+  }
   function spcEl(tag, props, kids){
     var el = document.createElement(tag); props = props || {};
     Object.keys(props).forEach(function(k){
@@ -13939,6 +13983,7 @@
 
   /* --- barre « espace de travail » --- */
   function spcRenderBar(){
+    try{ spcApplyDocTitle(); }catch(e){}
     var bar = cEl('spc-bar'); if(!bar) return;
     var show = spc.ready && spc.list.length > 0 && !!fghlabCloudRole;
     bar.style.display = show ? '' : 'none';
@@ -13967,6 +14012,7 @@
   function spcTabs(){
     var r = spcRole(), t = [];
     if(r === 'owner') t.push(['spaces', 'Espaces']);
+    if(r === 'owner') t.push(['restore', 'Restaurer – Espace de travail supprimé']);
     t.push(['access', 'Liste accès par espace']);
     if(r === 'owner') t.push(['delegates', 'Admin délégué espace']);
     t.push(['archive', 'Ancien membre / Employé']);
@@ -13989,6 +14035,7 @@
   }
   function spcTabLoad(){
     var t = spc.tab;
+    if(t === 'restore') return spcDelSpLoad();
     if(t === 'access') return spcAccLoad();
     if(t === 'delegates') return spcDelLoad();
     if(t === 'archive') return spcArchLoad();
@@ -13996,7 +14043,7 @@
   }
   function spcRenderTab(){
     var body = cEl('spc-body'); body.textContent = '';
-    var f = { spaces:spcRenderSpaces, access:spcRenderAccess, delegates:spcRenderDelegates, archive:spcRenderArchive, ai:spcRenderAi }[spc.tab];
+    var f = { spaces:spcRenderSpaces, restore:spcRenderRestore, access:spcRenderAccess, delegates:spcRenderDelegates, archive:spcRenderArchive, ai:spcRenderAi }[spc.tab];
     if(f) f(body);
   }
   function spcTable(heads, rows){
@@ -14023,8 +14070,13 @@
       var st = spcEl('select', { style:SPC_IN }, ['preparation', 'active', 'archived'].map(function(k){ return spcEl('option', { value:k, text:SPC_STATUS[k], selected:s.status === k }); }));
       var tz = spcEl('input', { type:'text', value:s.tz, list:'spc-tz-list', style:SPC_IN + 'width:170px;' });
       return spcTr([nm, SPC_KIND[s.kind] || s.kind, st, tz, String(s.members) + (s.is_default ? ' · par défaut' : ''),
-        spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Enregistrer', onclick:function(){
-          spcRpcDo('space_update', { p_space:s.id, p_name:nm.value, p_status:st.value, p_tz:tz.value.trim() }, 'Espace « ' + nm.value + ' » enregistré.', spcReloadAll); } })]);
+        spcEl('div', { style:'display:flex; gap:6px; flex-wrap:wrap;' }, [
+          spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px;', text:'Enregistrer', onclick:function(){
+            spcRpcDo('space_update', { p_space:s.id, p_name:nm.value, p_status:st.value, p_tz:tz.value.trim() }, 'Espace « ' + nm.value + ' » enregistré.', spcReloadAll); } }),
+          s.is_default ? null : spcEl('button', { type:'button', class:'btn', style:'padding:4px 10px; font-size:12px; color:#b42318; border-color:#b42318;', title:'Réservé au propriétaire — restaurable depuis « Restaurer – Espace de travail supprimé »', text:'Supprimer', onclick:function(){
+            if(!window.confirm('Supprimer l’espace « ' + s.name + ' » ?\n\nRien n’est détruit : l’espace est masqué et désactivé (' + s.members + ' membre(s), données conservées). Vous pourrez le restaurer à tout moment depuis l’onglet « Restaurer – Espace de travail supprimé ».')) return;
+            if(spc.active === s.id){ spc.active = 'all'; spcLsSet(SPC_LS, 'all'); }
+            spcRpcDo('space_delete', { p_space:s.id }, 'Espace « ' + s.name + ' » supprimé. Il peut être restauré depuis l’onglet « Restaurer ».', spcReloadAll); } })])]);
     });
     body.appendChild(spcTable(['Nom', 'Type', 'Statut', 'Fuseau horaire', 'Membres', ''], rows));
     var f = spcEl('div', { style:'display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; margin-top:12px; padding-top:10px; border-top:1px solid var(--line);' });
@@ -14039,6 +14091,22 @@
       spcRpcDo('space_create', { p_key:key, p_name:name, p_kind:k.value, p_status:s2.value, p_tz:z.value.trim() }, 'Espace « ' + name + ' » créé.', spcReloadAll);
     } }));
     body.appendChild(f);
+  }
+
+  /* Onglet « Restaurer – Espace de travail supprimé » (propriétaire) */
+  function spcDelSpLoad(){
+    return hnRpc('space_deleted_list').then(function(r){ spc.delSp = Array.isArray(r) ? r : []; }, function(e){ spc.delSp = []; spcMsg('error', spcErrText(e)); })
+      .then(function(){ if(spc.tab === 'restore') spcRenderTab(); });
+  }
+  function spcRenderRestore(body){
+    body.appendChild(spcEl('p', { class:'hint', style:'margin:0 0 8px;', text:'Un espace supprimé (par erreur ou non) n’est pas détruit : ses membres, ses accès, ses outils et ses données sont conservés. Restaurez-le ici pour le remettre exactement comme avant.' }));
+    var l = spc.delSp || [];
+    if(!l.length){ body.appendChild(spcEl('p', { class:'hint', text:'Aucun espace de travail supprimé.' })); return; }
+    body.appendChild(spcTable(['Espace', 'Supprimé le', 'Membres', 'Fiches', ''], l.map(function(s){
+      return spcTr([s.name, spcFmtD(s.deleted_at), String(s.members), String(s.records),
+        spcEl('button', { type:'button', class:'btn primary', style:'padding:4px 10px; font-size:12px;', text:'Restaurer', onclick:function(){
+          spcRpcDo('space_restore', { p_space:s.id }, 'Espace « ' + s.name + ' » restauré.', function(){ return spcReloadAll().then(spcDelSpLoad); }); } })]);
+    })));
   }
 
   /* Onglet « Liste accès par espace » */
@@ -14602,7 +14670,8 @@
     "Tu peux repondre a n'importe quelle question, comme le ferait Claude, et ta specialite est d'aider avec les finances et la gestion de l'entreprise — mais ne t'y limite jamais : traite aussi normalement les questions administratives, de droit des affaires ou du travail, de fiscalite et douanes, de gestion et strategie, d'informatique et de securite (y compris pour la gestion de sites web ou de projets), d'environnement et de finance climatique, ou tout autre sujet du quotidien d'une entreprise ou de son personnel. " +
     "Quand une question porte sur les transactions, le solde, les anomalies, les budgets ou les dossiers de l'application, utilise les outils fournis pour aller chercher les vraies donnees plutot que de deviner ou d'halluciner des chiffres. " +
     "Reponds en francais, de facon concise et professionnelle, sauf si on te parle dans une autre langue. " +
-    "Tu n'es pas un conseiller financier, comptable ou juridique agree : pour une decision importante, rappelle-le brievement si pertinent, sans en faire une longue mise en garde a chaque reponse.";
+    "Tu n'es pas un conseiller financier, comptable ou juridique agree : pour une decision importante, rappelle-le brievement si pertinent, sans en faire une longue mise en garde a chaque reponse. " +
+    "FORMAT DE REPONSE : pour une question simple (calcul, definition, fait precis, salutation), donne D'ABORD le resultat en une ligne, puis une explication de 2 a 4 lignes maximum, SANS titres, SANS tableau, SANS section « application concrete » ni « prochaine etape », puis termine par une seule courte phrase du type « Voulez-vous plus de details ? ». Ne developpe (sections, tableaux, exemples, options) que si l'utilisateur le demande ou si la question est complexe.";
 
   // Prompt systeme de Co-work (Discussion) : volontairement DISTINCT d'ASSISTANT_SYSTEM (demande
   // explicite de l'utilisateur, apres un retour signalant que Co-work « sonnait » comme une copie
@@ -33856,6 +33925,36 @@
     saveOrFallback({ filename: fname, data: blob, statusEl: coworkWebsiteStatus, fallbackText: coworkWebsiteGeneratedHtml, fallbackSourceEl: coworkWebsitePreviewWrap });
   });
 
+  /* H-Web : fonctions additionnelles sans IA (donc sans crédit) — contrôle avant publication et copie du code. */
+  (function(){
+    var chk = document.getElementById('hweb-check'), cp = document.getElementById('hweb-copy-html');
+    if(cp) cp.addEventListener('click', function(){
+      if(!coworkWebsiteGeneratedHtml){ showTempStatus(coworkWebsiteStatus, 'Générez d’abord un site.', 3000); return; }
+      try{ navigator.clipboard.writeText(coworkWebsiteGeneratedHtml).then(function(){ showTempStatus(coworkWebsiteStatus, 'Code HTML copié ✓', 3000); }, function(){ showTempStatus(coworkWebsiteStatus, 'Copie impossible : utilisez Télécharger › HTML.', 4000); }); }
+      catch(e){ showTempStatus(coworkWebsiteStatus, 'Copie impossible : utilisez Télécharger › HTML.', 4000); }
+    });
+    if(chk) chk.addEventListener('click', function(){
+      var h = coworkWebsiteGeneratedHtml;
+      if(!h){ showTempStatus(coworkWebsiteStatus, 'Générez d’abord un site.', 3000); return; }
+      var d; try{ d = new DOMParser().parseFromString(h, 'text/html'); }catch(e){ return; }
+      var imgs = d.querySelectorAll('img'), noAlt = 0; Array.prototype.forEach.call(imgs, function(i){ if(!(i.getAttribute('alt') || '').trim()) noAlt++; });
+      var md = d.querySelector('meta[name="description"]'), mdv = md ? (md.getAttribute('content') || '').trim() : '';
+      var t = (d.title || '').trim(), h1 = d.querySelectorAll('h1').length, lang = d.documentElement.getAttribute('lang');
+      var empty = 0; Array.prototype.forEach.call(d.querySelectorAll('a'), function(a){ var hr = (a.getAttribute('href') || '').trim(); if(!hr || hr === '#') empty++; });
+      var rows = [
+        [!!t && t.length <= 65, 'Titre de page' + (t ? ' (' + t.length + ' car.)' : ' manquant') + (t.length > 65 ? ' — trop long (65 max)' : '')],
+        [mdv.length >= 50 && mdv.length <= 160, 'Méta-description' + (mdv ? ' (' + mdv.length + ' car., idéal 50–160)' : ' manquante')],
+        [!!lang, 'Langue de la page (attribut lang)' + (lang ? ' : ' + lang : ' manquante')],
+        [h1 === 1, 'Un seul titre principal H1 (trouvé : ' + h1 + ')'],
+        [noAlt === 0, 'Images avec texte alternatif' + (imgs.length ? ' (' + (imgs.length - noAlt) + '/' + imgs.length + ')' : ' (aucune image)')],
+        [!!d.querySelector('meta[name="viewport"]'), 'Affichage mobile (balise viewport)'],
+        [empty === 0, 'Liens avec une destination' + (empty ? ' (' + empty + ' lien(s) vide(s) ou « # »)' : '')]
+      ];
+      var ok = rows.filter(function(r){ return r[0]; }).length;
+      window.alert('Contrôle avant publication — ' + ok + '/' + rows.length + ' points validés\n\n' + rows.map(function(r){ return (r[0] ? '✔ ' : '✘ ') + r[1]; }).join('\n') + '\n\nCe contrôle est automatique et gratuit (sans crédit IA). Il ne remplace pas une relecture humaine.');
+    });
+  })();
+
   // Sépare le CSS (contenu des balises <style>) du HTML généré, et le remplace par un lien
   // <link rel="stylesheet" href="style.css">, pour permettre l'export en .zip (HTML + CSS séparés) —
   // utile pour modifier le code plus facilement dans un éditeur/hébergeur externe.
@@ -35180,7 +35279,8 @@
     { titre:'Créer un nouveau dossier', texte:"Utilisez « + Nouveau dossier » dans la barre latérale pour séparer vos entités, projets ou volets budgétaires — chacun garde ses propres transactions et budgets." },
     { titre:'Utiliser le Co-work', texte:"Générez des graphiques, documents, tableaux Excel ou présentations PowerPoint à partir de vos données, directement depuis l'onglet Co-work." },
     { titre:'Suivre les anomalies', texte:"L'onglet Anomalies signale les montants inhabituels, doublons et montants ronds à vérifier — ajustez la sensibilité dans les réglages de cet onglet." },
-    { titre:'Exporter une sauvegarde', texte:"Dans Documents, « Exporter une sauvegarde » télécharge un fichier JSON de tous vos dossiers — à conserver en lieu sûr, HelpNaud ne les stocke que sur cet appareil." }
+    { titre:'Exporter une sauvegarde', texte:"Dans Documents, « Exporter une sauvegarde » télécharge un fichier JSON de tous vos dossiers — à conserver en lieu sûr, HelpNaud ne les stocke que sur cet appareil." },
+    { titre:'Utiliser H-Start', texte:"H-Start est la consultation IA avancée de HelpNaud : choisissez un domaine (finance, droit, informatique, environnement…), posez votre question et obtenez une réponse structurée. Chaque réponse utilise le crédit IA de votre forfait — un message simple coûte peu, une analyse longue davantage." }
   ];
   var LIBRARY_TEMPLATES = [
     { titre:"Lettre de mise en demeure (retard de paiement)", texte:"Objet : Mise en demeure — facture no [X]. Par la présente, nous vous mettons en demeure de payer la somme de [montant] $ due depuis le [date d'échéance], dans un délai de 10 jours suivant la réception de cette lettre, à défaut de quoi nous nous réservons le droit d'entreprendre les recours appropriés." },
@@ -35286,6 +35386,7 @@
       : '<div class="lib-folder-picker-empty">Aucun dossier — créez-en un ci-dessous.</div>';
     return '<div class="lib-folder-picker" data-lib-item-id="'+itemId+'" hidden>' + options +
       '<form class="lib-folder-picker-new" data-lib-new-folder-form="1"><input type="text" placeholder="Nouveau dossier…" maxlength="40"><button type="submit" class="btn primary" style="padding:5px 10px; font-size:12px;">Créer</button></form>' +
+      '<div class="hint" style="margin:6px 0 0; font-size:11px;">💳 « Créer un dossier » et l’organisation de la bibliothèque s’inscrivent dans votre forfait HelpNaud ; les aides IA associées utilisent votre crédit IA.</div>' +
       '</div>';
   }
 
@@ -39421,10 +39522,14 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
       '<div class="card"><h1 style="margin:0 0 4px; font-size:22px;">Interface Help</h1>' +
       '<p class="hint" style="margin:0 0 10px;">Vos créations HelpNaud : pages, mini-applications, tableaux de bord et maquettes. Décrivez ce que vous voulez, HelpNaud le génère, vous l’aperçevez en direct (mobile, tablette, ordinateur), le modifiez, l’épinglez, le copiez ou le téléchargez.</p>' +
       '<div class="ifh-actions"><button type="button" class="btn primary" id="ifh-new">＋ Nouvelle interface</button><button type="button" class="btn" id="ifh-import">📥 Importer depuis l’Atelier de code</button></div>' +
+      '<div class="ifh-actions" style="margin-top:8px;"><span class="hint" style="margin:0;align-self:center;">Gabarits de départ (gratuits, sans IA) :</span>' +
+      '<button type="button" class="btn" data-ifh-tpl="vitrine">🏢 Page vitrine</button><button type="button" class="btn" data-ifh-tpl="contact">✉️ Formulaire de contact</button><button type="button" class="btn" data-ifh-tpl="kpi">📊 Tableau de bord KPI</button></div>' +
+      (a.length > 2 ? '<input type="search" id="ifh-search" placeholder="Rechercher une interface…" aria-label="Rechercher une interface" style="margin-top:10px;max-width:320px;">' : '') +
+      '<p class="hint" style="margin:10px 0 0;">💳 Les éléments de ce menu utilisent votre forfait et votre crédit IA : la génération et l’amélioration par l’IA consomment du crédit, alors que les gabarits, l’aperçu, l’enregistrement et le téléchargement restent inclus dans votre forfait. <a href="#" data-ifh-plans="1">Voir les forfaits</a></p>' +
       '<div id="ifh-body"></div></div>' +
       '<div class="ifh-grid" id="ifh-grid">' + (a.length ? a.map(function(it){
-        return '<div class="card ifh-card"><h3 title="' + esc(it.title) + '">' + esc(it.title) + '</h3><div class="hint" style="margin:0;">Modifiée le ' + new Date(it.updated).toLocaleDateString('fr-CA') + ' · ' + Math.round((it.html || '').length / 1024) + ' Ko</div>' +
-          '<div class="ifh-actions"><button class="btn primary" data-ifh="open" data-id="' + esc(it.id) + '">Ouvrir</button><button class="btn" data-ifh="pin" data-id="' + esc(it.id) + '">📌 Épingler</button><button class="btn" data-ifh="copy" data-id="' + esc(it.id) + '">Copier</button><button class="btn" data-ifh="dl" data-id="' + esc(it.id) + '">Télécharger</button><button class="btn" data-ifh="del" data-id="' + esc(it.id) + '">Supprimer</button></div></div>';
+        return '<div class="card ifh-card" data-ifh-title="' + esc((it.title || '').toLowerCase()) + '"><h3 title="' + esc(it.title) + '">' + esc(it.title) + '</h3><div class="hint" style="margin:0;">Modifiée le ' + new Date(it.updated).toLocaleDateString('fr-CA') + ' · ' + Math.round((it.html || '').length / 1024) + ' Ko</div>' +
+          '<div class="ifh-actions"><button class="btn primary" data-ifh="open" data-id="' + esc(it.id) + '">Ouvrir</button><button class="btn" data-ifh="tab" data-id="' + esc(it.id) + '">↗ Nouvel onglet</button><button class="btn" data-ifh="dup" data-id="' + esc(it.id) + '">Dupliquer</button><button class="btn" data-ifh="pin" data-id="' + esc(it.id) + '">📌 Épingler</button><button class="btn" data-ifh="copy" data-id="' + esc(it.id) + '">Copier</button><button class="btn" data-ifh="dl" data-id="' + esc(it.id) + '">Télécharger</button><button class="btn" data-ifh="del" data-id="' + esc(it.id) + '">Supprimer</button></div></div>';
       }).join('') : '<div class="card"><p class="hint" style="margin:0;">Aucune interface pour l’instant. Cliquez sur « Nouvelle interface » pour commencer.</p></div>') + '</div>';
   }
   function ifhEditor(it){
@@ -39472,9 +39577,22 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
       st.textContent = (err && err.code === 'ai_unavailable') ? 'L’assistant IA n’est pas disponible pour l’instant.' : 'La génération n’a pas pu être complétée.';
     }).then(function(){ var g = $('ifh-gen'); if(g) g.disabled = false; });
   }
+  var IFH_CSS = '*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#1f2937;background:#f8fafc;line-height:1.55}.w{max-width:960px;margin:0 auto;padding:24px 18px}h1{margin:.2em 0}.btn{display:inline-block;background:#1e3a8a;color:#fff;padding:10px 18px;border-radius:10px;text-decoration:none;border:0;font-size:15px;cursor:pointer}.c{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px}.g{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}input,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;margin:4px 0 12px}label{font-weight:600;font-size:14px}';
+  var IFH_TPL = {
+    vitrine: { t: 'Page vitrine', h: '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mon entreprise</title><style>' + IFH_CSS + '</style></head><body><div class="w"><header><h1>Mon entreprise</h1><p>Une phrase qui explique clairement ce que vous offrez et à qui.</p><a class="btn" href="#contact">Nous joindre</a></header><section class="g" style="margin-top:24px"><div class="c"><h3>Service 1</h3><p>Description courte.</p></div><div class="c"><h3>Service 2</h3><p>Description courte.</p></div><div class="c"><h3>Service 3</h3><p>Description courte.</p></div></section><section id="contact" class="c" style="margin-top:24px"><h2>Contact</h2><p>courriel@exemple.com · 000 000-0000</p></section></div></body></html>' },
+    contact: { t: 'Formulaire de contact', h: '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Contact</title><style>' + IFH_CSS + '</style></head><body><div class="w"><form class="c" onsubmit="event.preventDefault();document.getElementById(\'ok\').hidden=false"><h1>Nous écrire</h1><label for="n">Nom</label><input id="n" required><label for="e">Courriel</label><input id="e" type="email" required><label for="m">Message</label><textarea id="m" rows="5" required></textarea><button class="btn" type="submit">Envoyer</button><p id="ok" hidden>Merci ! (aperçu : aucun envoi réel — branchez ce formulaire à votre service de courriel.)</p></form></div></body></html>' },
+    kpi: { t: 'Tableau de bord KPI', h: '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tableau de bord</title><style>' + IFH_CSS + '.k{font-size:28px;font-weight:700;color:#1e3a8a}.l{color:#64748b;font-size:13px}</style></head><body><div class="w"><h1>Tableau de bord</h1><div class="g"><div class="c"><div class="k">0 $</div><div class="l">Revenus du mois</div></div><div class="c"><div class="k">0 $</div><div class="l">Dépenses du mois</div></div><div class="c"><div class="k">0 $</div><div class="l">Solde</div></div><div class="c"><div class="k">0</div><div class="l">Factures en attente</div></div></div><p class="l" style="margin-top:18px">Modifiez les valeurs ci-dessus ou demandez à HelpNaud de les adapter.</p></div></body></html>' }
+  };
   if(ifhEl){
     ifhRender();
+    ifhEl.addEventListener('input', function(e){
+      if(e.target.id !== 'ifh-search') return;
+      var q = e.target.value.trim().toLowerCase();
+      Array.prototype.forEach.call(ifhEl.querySelectorAll('.ifh-card'), function(c){ c.style.display = (!q || (c.getAttribute('data-ifh-title') || '').indexOf(q) !== -1) ? '' : 'none'; });
+    });
     ifhEl.addEventListener('click', function(e){
+      var pl = e.target.closest('[data-ifh-plans]');
+      if(pl){ e.preventDefault(); var nb = document.querySelector('[data-view="settings"]'); if(nb) nb.click(); return; }
       var b = e.target.closest('button'); if(!b) return;
       if(b.id === 'ifh-new'){ ifhEditor({ id: uid(), title: 'Nouvelle interface', html: '', created: Date.now(), updated: Date.now() }); return; }
       if(b.id === 'ifh-import'){
@@ -39486,6 +39604,10 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
         var it = { id: uid(), title: p.name, html: inlineProject(p), created: Date.now(), updated: Date.now() };
         var a = items(); a.unshift(it); saveItems(a); ifhRender(); ifhEditor(it); toast('Projet importé ✓'); return;
       }
+      if(b.hasAttribute('data-ifh-tpl')){
+        var tp = IFH_TPL[b.getAttribute('data-ifh-tpl')]; if(!tp) return;
+        ifhEditor({ id: uid(), title: tp.t, html: tp.h, created: Date.now(), updated: Date.now() }); toast('Gabarit chargé ✓ — personnalisez-le ou enregistrez-le.'); return;
+      }
       if(b.id === 'ifh-gen'){ ifhGen(); return; }
       if(b.id === 'ifh-run'){ ifhRun(); return; }
       if(b.id === 'ifh-save'){ ifhSave(); return; }
@@ -39493,6 +39615,8 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
       var act = b.getAttribute('data-ifh'), id = b.getAttribute('data-id');
       var it2 = items().filter(function(x){ return x.id === id; })[0]; if(!it2) return;
       if(act === 'open') ifhPreview(id);
+      else if(act === 'tab'){ var tb = new Blob([it2.html || ''], { type: 'text/html' }), tu = URL.createObjectURL(tb); window.open(tu, '_blank', 'noopener'); setTimeout(function(){ URL.revokeObjectURL(tu); }, 60000); }
+      else if(act === 'dup'){ var cp = { id: uid(), title: (it2.title || 'Interface') + ' (copie)', html: it2.html, created: Date.now(), updated: Date.now() }; var al = items(); al.unshift(cp); saveItems(al); ifhRender(); toast('Interface dupliquée ✓'); }
       else if(act === 'pin'){ var pins = J(PK, []); if(!pins.some(function(x){ return x.kind === 'ifhelp' && x.ref === id; })){ pins.unshift({ id: uid(), kind: 'ifhelp', ref: id, label: 'Interface : ' + it2.title }); S(PK, pins.slice(0, 20)); } toast('Épinglée ✓'); renderDrawer(); }
       else if(act === 'copy'){ if(window.__hn && window.__hn.copyText) window.__hn.copyText(it2.html); else if(navigator.clipboard) navigator.clipboard.writeText(it2.html); toast('Code copié ✓'); }
       else if(act === 'dl'){ var bl = new Blob([it2.html], { type: 'text/html' }), u = URL.createObjectURL(bl), l = document.createElement('a'); l.href = u; l.download = (it2.title || 'interface').replace(/[^\w\-]+/g, '-').toLowerCase() + '.html'; document.body.appendChild(l); l.click(); setTimeout(function(){ URL.revokeObjectURL(u); l.remove(); }, 500); }
