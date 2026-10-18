@@ -124,6 +124,26 @@ exports.handler = async function(event){
         const id = str(body.id, 80); if (!okId(id)) return reply(400, { error: 'Requête invalide.' });
         r = await svcRpc('svc_ecorep_mgr_decide', { p_uid: uid, p_id: id, p_decision: str(body.decision, 12), p_comment: str(body.comment, 300) }); break;
       }
+      case 'banks': r = await svcRpc('svc_ecorep_banks', { p_uid: uid }); break;
+      case 'att-codes': r = await svcRpc('svc_ecorep_att_codes', { p_uid: uid }); break;
+      case 'att-list': {
+        const mo = str(body.month, 7); if (!/^20[0-9]{2}-(0[1-9]|1[0-2])$/.test(mo)) return reply(400, { error: 'Requête invalide.' });
+        r = await svcRpc('svc_ecorep_att_list', { p_uid: uid, p_month: mo }); break;
+      }
+      case 'att-save': {
+        const p = { date: str(body.date, 10), code: str(body.code, 12), hours: Number(body.hours), note: str(body.note, 200) };
+        if (!/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/.test(p.date) || !/^[A-Za-z0-9]{2,12}$/.test(p.code) || !(p.hours > 0 && p.hours <= 24)) return reply(400, { error: 'Requête invalide.' });
+        r = await svcRpc('svc_ecorep_att_save', { p_uid: uid, p }); break;
+      }
+      case 'att-delete': {
+        const id = str(body.id, 80); if (!okId(id)) return reply(400, { error: 'Requête invalide.' });
+        r = await svcRpc('svc_ecorep_att_delete', { p_uid: uid, p_id: id }); break;
+      }
+      case 'tax-list': r = await svcRpc('svc_ecorep_taxdocs', { p_uid: uid }); break;
+      case 'tax-get': {
+        const id = str(body.id, 80); if (!okId(id)) return reply(400, { error: 'Requête invalide.' });
+        r = await svcRpc('svc_ecorep_taxdoc_get', { p_uid: uid, p_id: id }); break;
+      }
       default: return reply(400, { error: 'Action inconnue.' });
     }
     if (r && r.mailId) { await sendQueued(r.mailId); delete r.mailId; }
