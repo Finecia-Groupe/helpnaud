@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>FINECIA GROUPE — Partner Market</title>
+<title>FINECIA GROUPE — Marché Partenaire | Partner Market</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" data-hn-default="1">
 <link rel="icon" href="/favicon.ico" sizes="any" data-hn-default="1">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" data-hn-default="1">
@@ -37,7 +37,7 @@
 </head>
 <body>
 <main>
-  <header><span class="dot"></span><strong>FINECIA GROUPE</strong><span class="hint" style="margin:0;">Partner Market</span></header>
+  <header><span class="dot"></span><strong>FINECIA GROUPE</strong><span class="hint" style="margin:0;">Marché Partenaire | Partner Market</span></header>
   <div id="app"><div class="card"><p class="hint">Chargement…</p></div></div>
   <footer style="text-align:center;font-size:12px;color:var(--muted);margin-top:18px;">Une question ? <a href="mailto:contacts@fineciagroupe.com" style="color:inherit;">contacts@fineciagroupe.com</a> · Partenaires : <a href="mailto:partnersinfo@fineciagroupe.com" style="color:inherit;">partnersinfo@fineciagroupe.com</a> · Assistance : <a href="mailto:supportbusiness@fineciagroupe.com" style="color:inherit;">supportbusiness@fineciagroupe.com</a></footer>
 </main>
@@ -61,7 +61,7 @@
   function viewInvitation(token){
     call({ action:'invite-info', token: token }).then(function(r){
       if(!r.ok){ app.innerHTML = '<div class="card"><h1>Lien d’invitation invalide</h1><p class="hint">Ce lien n’est plus valide. Demandez un nouveau lien à FINECIA GROUPE.</p></div>'; return; }
-      app.innerHTML = '<div class="card"><h1>Rejoindre Partner Market</h1><p class="hint">Invitation de FINECIA GROUPE — profil : <strong>' + esc(r.type) + '</strong>. Votre demande sera examinée par notre équipe avant activation.</p>' +
+      app.innerHTML = '<div class="card"><h1>Rejoindre Marché Partenaire | Partner Market</h1><p class="hint">Invitation de FINECIA GROUPE — profil : <strong>' + esc(r.type) + '</strong>. Votre demande sera examinée par notre équipe avant activation.</p>' +
         '<label for="f-name">Nom de l’organisation (ou votre nom)</label><input id="f-name" maxlength="120">' +
         '<label for="f-contact">Personne-contact</label><input id="f-contact" maxlength="100">' +
         '<label for="f-email">Courriel</label><input id="f-email" type="email" maxlength="140">' +
@@ -80,14 +80,14 @@
             docs = '<div class="card" style="background:var(--bg);"><strong>Documents de votre organisation (facultatif)</strong><p class="hint">Vous pouvez téléverser vos documents maintenant ou plus tard, à partir de votre lien personnel. Gardez ce lien : il est réservé à votre organisation.</p>' +
               '<p style="word-break:break-all;"><a id="f-doclink" href="' + esc(link) + '">' + esc(link) + '</a></p></div>';
           }
-          var numBox = (res && res.partnerNumber) ? '<div class="card" style="background:var(--bg); border-color:var(--gold);"><strong>Votre numéro de partenaire</strong><p style="font-size:26px; letter-spacing:3px; margin:6px 0;">' + esc(res.partnerNumber) + '</p><p class="hint">Conservez-le précieusement et ne le communiquez à personne. Il sert à vous identifier sur Partner Market pour compléter votre dossier ou mettre à jour un document. Il vous est aussi envoyé par courriel. <a href="' + esc(location.origin + location.pathname + '?espace=1') + '">Ouvrir mon espace partenaire</a></p></div>' : '';
+          var numBox = (res && res.partnerNumber) ? '<div class="card" style="background:var(--bg); border-color:var(--gold);"><strong>Votre numéro de partenaire</strong><p style="font-size:26px; letter-spacing:3px; margin:6px 0;">' + esc(res.partnerNumber) + '</p><p class="hint">Conservez-le précieusement et ne le communiquez à personne. Il sert à vous identifier sur Marché Partenaire | Partner Market pour compléter votre dossier ou mettre à jour un document. Il vous est aussi envoyé par courriel. <a href="' + esc(location.origin + location.pathname + '?espace=1') + '">Ouvrir mon espace partenaire</a></p></div>' : '';
           app.innerHTML = '<div class="card"><h1>Merci !</h1><p class="ok">Votre demande est bien reçue.</p><p class="hint">FINECIA GROUPE vous contactera après examen de votre dossier.</p>' + numBox + docs + '</div>';
         }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
       });
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
   }
   /* ---------- Politique de confidentialité et de conduite ---------- */
-  var DEFAULT_POLICY = {"partner": "1. Confidentialité des dossiers — Les dossiers, informations sur les clients, prix, offres, conditions et documents échangés par Partner Market et FG & Bank Partnership sont strictement confidentiels. Le partenaire les utilise uniquement pour l’opération visée et ne les communique à aucun tiers sans l’accord écrit de FINECIA GROUPE.\n\n2. Données personnelles des clients — Les coordonnées et renseignements d’un client ne servent qu’au dossier concerné. Toute prospection, revente ou réutilisation en dehors de ce dossier est interdite.\n\n3. Non-contournement — Le partenaire s’engage à ne pas contourner FINECIA GROUPE pour conclure une opération issue d’une mise en relation. Les commissions et frais prévus restent dus, y compris lorsque le client paie la totalité comptant, et y compris sur les garanties et extras ajoutés pendant la négociation.\n\n4. Exactitude et documents — Les informations fournies (identité, activité, prix, état des véhicules, taux) doivent être exactes. Les documents de l’entreprise sont facultatifs à l’inscription ; FINECIA GROUPE peut les demander ultérieurement et le partenaire s’engage à les fournir dans un délai raisonnable.\n\n5. Engagements pris — Les prix, garanties et extras convenus pendant la négociation doivent être respectés. Une garantie ou un service demandé par le client et accepté dans le dossier doit être fourni par le concessionnaire, l’entreprise ou le vendeur.\n\n6. Avertissements — En cas de manquement à cette politique, FINECIA GROUPE peut adresser un avertissement au partenaire.\n\n7. Pause, suspension, retrait — FINECIA GROUPE peut mettre un partenaire en pause pour une durée déterminée (par exemple 10, 20 ou 30 jours, ou plus selon la nature du manquement) : pendant la pause, il ne peut ni soumettre d’offres ni publier d’annonces. En cas de manquement grave, FINECIA GROUPE peut le suspendre sans délai ou le retirer définitivement de la plateforme.\n\n8. Accès aux dossiers internes — Le dossier interne de chaque partenaire (PartnerDoss) est réservé à l’équipe de FINECIA GROUPE ; aucun partenaire n’y a accès.\n\n9. Modification de la politique — FINECIA GROUPE se réserve le droit de modifier cette politique. La version en vigueur et sa date sont indiquées ; la poursuite de l’utilisation après modification vaut acceptation de la nouvelle version.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement.", "client": "1. Utilisation de vos informations — Vos coordonnées et renseignements ne servent qu’à traiter votre dossier avec FINECIA GROUPE et ses partenaires concernés (concessionnaire, banque ou microfinance).\n\n2. Aucun document à l’inscription — Aucun document ne vous est demandé avant, pendant ou après votre inscription. Si votre dossier est en cours, notre équipe peut vous contacter pour compléter uniquement les informations de ce dossier.\n\n3. Confidentialité — Vos informations ne sont pas partagées en dehors du dossier sans votre accord, et ne sont jamais vendues.\n\n4. Vos droits — Vous pouvez demander l’accès à vos informations, leur correction ou leur suppression en écrivant à FINECIA GROUPE.\n\n5. Modification — FINECIA GROUPE peut mettre à jour cette politique ; la version en vigueur est toujours affichée à l’inscription.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement."};
+  var DEFAULT_POLICY = {"partner": "1. Confidentialité des dossiers — Les dossiers, informations sur les clients, prix, offres, conditions et documents échangés par Marché Partenaire | Partner Market et FG & Bank Partnership sont strictement confidentiels. Le partenaire les utilise uniquement pour l’opération visée et ne les communique à aucun tiers sans l’accord écrit de FINECIA GROUPE.\n\n2. Données personnelles des clients — Les coordonnées et renseignements d’un client ne servent qu’au dossier concerné. Toute prospection, revente ou réutilisation en dehors de ce dossier est interdite.\n\n3. Non-contournement — Le partenaire s’engage à ne pas contourner FINECIA GROUPE pour conclure une opération issue d’une mise en relation. Les commissions et frais prévus restent dus, y compris lorsque le client paie la totalité comptant, et y compris sur les garanties et extras ajoutés pendant la négociation.\n\n4. Exactitude et documents — Les informations fournies (identité, activité, prix, état des véhicules, taux) doivent être exactes. Les documents de l’entreprise sont facultatifs à l’inscription ; FINECIA GROUPE peut les demander ultérieurement et le partenaire s’engage à les fournir dans un délai raisonnable.\n\n5. Engagements pris — Les prix, garanties et extras convenus pendant la négociation doivent être respectés. Une garantie ou un service demandé par le client et accepté dans le dossier doit être fourni par le concessionnaire, l’entreprise ou le vendeur.\n\n6. Avertissements — En cas de manquement à cette politique, FINECIA GROUPE peut adresser un avertissement au partenaire.\n\n7. Pause, suspension, retrait — FINECIA GROUPE peut mettre un partenaire en pause pour une durée déterminée (par exemple 10, 20 ou 30 jours, ou plus selon la nature du manquement) : pendant la pause, il ne peut ni soumettre d’offres ni publier d’annonces. En cas de manquement grave, FINECIA GROUPE peut le suspendre sans délai ou le retirer définitivement de la plateforme.\n\n8. Accès aux dossiers internes — Le dossier interne de chaque partenaire (PartnerDoss) est réservé à l’équipe de FINECIA GROUPE ; aucun partenaire n’y a accès.\n\n9. Modification de la politique — FINECIA GROUPE se réserve le droit de modifier cette politique. La version en vigueur et sa date sont indiquées ; la poursuite de l’utilisation après modification vaut acceptation de la nouvelle version.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement.", "client": "1. Utilisation de vos informations — Vos coordonnées et renseignements ne servent qu’à traiter votre dossier avec FINECIA GROUPE et ses partenaires concernés (concessionnaire, banque ou microfinance).\n\n2. Aucun document à l’inscription — Aucun document ne vous est demandé avant, pendant ou après votre inscription. Si votre dossier est en cours, notre équipe peut vous contacter pour compléter uniquement les informations de ce dossier.\n\n3. Confidentialité — Vos informations ne sont pas partagées en dehors du dossier sans votre accord, et ne sont jamais vendues.\n\n4. Vos droits — Vous pouvez demander l’accès à vos informations, leur correction ou leur suppression en écrivant à FINECIA GROUPE.\n\n5. Modification — FINECIA GROUPE peut mettre à jour cette politique ; la version en vigueur est toujours affichée à l’inscription.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement."};
   function policyBoxHtml(r){
     var pol = (r && r.policy) || {};
     var isClient = r && r.type === 'Client';
@@ -137,7 +137,7 @@
   }
 
 
-  /* ---------- COPROJECT : formulaire public (lien envoyé par FINECIA GROUPE) ---------- */
+  /* ---------- CO-PROJET | COPROJECT : formulaire public (lien envoyé par FINECIA GROUPE) ---------- */
   var CP_TYPES = ['Infrastructure','Énergie','Agriculture et agro-industrie','Santé','Éducation et formation','Habitation et immobilier','Commerce et PME','Industrie et transformation','Technologies et numérique','Partenariat institutionnel / État','Autre (à préciser)'];
   var ID_TYPES = ['Passeport','Carte nationale d’identité','Permis de conduire','Carte de résident / séjour','Autre pièce officielle'];
   function readFile(f){
@@ -152,7 +152,7 @@
       if(!r.ok){ app.innerHTML = '<div class="card"><h1>Lien non valide</h1><p class="hint">Ce lien n’est plus valide. Demandez un nouveau lien à FINECIA GROUPE.</p></div>'; return; }
       var typeOpts = '<option value="">— Type de projet —</option>' + CP_TYPES.map(function(t){ return '<option>' + esc(t) + '</option>'; }).join('');
       var idOpts = '<option value="">— Type de pièce —</option>' + ID_TYPES.map(function(t){ return '<option>' + esc(t) + '</option>'; }).join('');
-      app.innerHTML = '<div class="card"><h1>Présenter mon projet — COPROJECT</h1><p class="hint">FINECIA GROUPE accompagne les entreprises, les porteurs de projets et les États dans la recherche de financement et de partenariat. Remplissez ce formulaire : notre équipe examinera votre demande et vous contactera. Vous pouvez aussi nous joindre par téléphone ou vous présenter à notre bureau.</p></div>' +
+      app.innerHTML = '<div class="card"><h1>Présenter mon projet — CO-PROJET | COPROJECT</h1><p class="hint">FINECIA GROUPE accompagne les entreprises, les porteurs de projets et les États dans la recherche de financement et de partenariat. Remplissez ce formulaire : notre équipe examinera votre demande et vous contactera. Vous pouvez aussi nous joindre par téléphone ou vous présenter à notre bureau.</p></div>' +
         '<div class="card"><strong>1. Vous</strong>' +
         '<label for="c-client">Nom de l’organisation, de l’État ou de la personne</label><input id="c-client" maxlength="100">' +
         '<label for="c-email">Courriel</label><input id="c-email" type="email" maxlength="140">' +
@@ -203,7 +203,7 @@
       });
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
   }
-  /* ---------- COPROJECT : lien sécurisé « compléter mon dossier » ---------- */
+  /* ---------- CO-PROJET | COPROJECT : lien sécurisé « compléter mon dossier » ---------- */
   function viewComplement(token){
     function draw(msg){
       call({ action:'coproject-doc-info', token: token }).then(function(r){
@@ -573,7 +573,8 @@
     }
     var SLIP_CSS = '.slip{font:13px/1.45 system-ui,sans-serif;color:#16304A} .slip h2,.slip h3{margin:10px 0 4px} .slip table{width:100%;border-collapse:collapse;margin:6px 0} .slip td,.slip th{padding:5px 6px;border-bottom:1px solid #D9D4C7;text-align:left} .slip .r{text-align:right} .slip .kv td:nth-child(odd){color:#5B6B7B} .slip .net{font-size:17px;padding:10px;background:#F6F4EF;border-radius:8px;margin:8px 0} .slip .hint{color:#5B6B7B;font-size:12px} .slip .row{display:flex;justify-content:space-between;gap:10px}';
     var pcss = document.createElement('style');
-    pcss.textContent = '@media print{ body *{ visibility:hidden !important; } #ec-slip, #ec-slip *{ visibility:visible !important; } #ec-slip{ position:absolute; left:0; top:0; width:100%; } .noprint{ display:none !important; } }';
+    pcss.textContent = '@media print{ body *{ visibility:hidden !important; } #ec-slip, #ec-slip *, #ec-sheet, #ec-sheet *{ visibility:visible !important; } #ec-slip, #ec-sheet{ position:absolute; left:0; top:0; width:100%; } .noprint{ display:none !important; } }';
+    pcss.textContent += ' table.t{border-collapse:collapse;width:100%} table.t td, table.t th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top} table.t .r, .r{text-align:right} code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:5px;font-size:.92em}';
     document.head.appendChild(pcss);
 
     function login(msg){
@@ -594,12 +595,12 @@
     }
 
     function shell(){
-      var m = S.me, tabs = [['paie','Mes relevés de paie'],['hs','Heures supplémentaires']]; if(m.isManager) tabs.push(['equipe','Approbations (équipe)']);
+      var m = S.me, tabs = [['paie','Mes relevés de paie'],['fiscal','Documents fiscaux'],['assid','Feuille d’assiduité'],['banques','Banques d’heures'],['hs','Heures supplémentaires']]; if(m.isManager) tabs.push(['equipe','Approbations (équipe)']);
       app.innerHTML = '<div class="card noprint"><div class="row"><div><h1 style="font-size:20px;">ECOREP</h1><div class="hint">' + esc(m.name) + ' · N° ' + esc(m.number) + (m.position ? ' · ' + esc(m.position) : '') + '</div></div><button class="light" id="ec-out-btn">Se déconnecter</button></div>' +
         '<div class="row" style="justify-content:flex-start; margin-top:10px;">' + tabs.map(function(t){ return '<button class="light" data-tab="' + t[0] + '" style="' + (t[0] === S.tab ? 'background:var(--ink);color:var(--surface);' : '') + '">' + t[1] + '</button>'; }).join('') + '</div></div><div id="ec-body"></div>';
       document.getElementById('ec-out-btn').addEventListener('click', function(){ logout('Vous êtes déconnecté.'); });
       Array.prototype.forEach.call(app.querySelectorAll('[data-tab]'), function(b){ b.addEventListener('click', function(){ S.tab = b.getAttribute('data-tab'); shell(); }); });
-      if(S.tab === 'paie') tabPaie(); else if(S.tab === 'hs') tabHs(); else tabEquipe();
+      if(S.tab === 'paie') tabPaie(); else if(S.tab === 'hs') tabHs(); else if(S.tab === 'fiscal') tabFiscal(); else if(S.tab === 'assid') tabAssid(); else if(S.tab === 'banques') tabBanques(); else tabEquipe();
     }
     var body = function(){ return document.getElementById('ec-body'); };
     function fail(e){ body().innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; }
@@ -655,6 +656,80 @@
         Array.prototype.forEach.call(app.querySelectorAll('[data-fix]'), function(b){ b.addEventListener('click', function(){
           var o = list.filter(function(x){ return x.id === b.getAttribute('data-fix'); })[0]; if(o) tabHs({ date: fd(o.date), start: o.start, end: o.end, reason: o.reason }, o.id);
         }); });
+      }).catch(fail);
+    }
+
+
+    /* ---- Documents fiscaux (T4, Relevé 1, W-2…) : un document par exercice, publié par les RH ---- */
+    function tabFiscal(){
+      ecall({ action:'tax-list' }).then(function(r){
+        var list = r.list || [], years = {}; list.forEach(function(d){ (years[d.year] = years[d.year] || []).push(d); });
+        var ys = Object.keys(years).sort().reverse();
+        body().innerHTML = '<div class="card"><strong>Mes documents fiscaux</strong><p class="hint">T4, Relevé 1, W-2 ou autre fiche fiscale à joindre à votre déclaration d’impôt, classés par exercice fiscal (année). Ils sont publiés par les ressources humaines.</p>' +
+          (ys.length ? ys.map(function(y){ return '<h3 style="margin:14px 0 4px;">Exercice ' + esc(y) + '</h3>' + years[y].map(function(d){
+            return '<div class="row" style="padding:8px 0; border-top:1px solid var(--line);"><span><strong>' + esc(d.kind) + '</strong>' + (d.title ? ' <span class="hint">· ' + esc(d.title) + '</span>' : '') + '<div class="hint">' + esc(d.fileName) + '</div></span><button class="light" data-tax="' + esc(d.id) + '">⬇ Télécharger</button></div>'; }).join(''); }).join('') : '<p class="hint">Aucun document fiscal publié pour l’instant. Ils apparaissent ici après la fin de l’exercice, dès que les RH les publient.</p>') + '<div id="fi-out" class="msg"></div></div>';
+        Array.prototype.forEach.call(app.querySelectorAll('[data-tax]'), function(b){ b.addEventListener('click', function(){
+          var out = document.getElementById('fi-out'); out.className = 'msg'; out.textContent = ''; b.disabled = true;
+          ecall({ action:'tax-get', id: b.getAttribute('data-tax') }).then(function(x){
+            b.disabled = false;
+            if(!x.ok){ out.className = 'msg err'; out.textContent = 'Document introuvable.'; return; }
+            var bin = atob(x.b64), arr = new Uint8Array(bin.length); for(var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([arr], { type: x.mime || 'application/pdf' })); a.download = x.fileName || 'document-fiscal.pdf';
+            document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+          }).catch(function(e){ b.disabled = false; out.className = 'msg err'; out.textContent = e.message; });
+        }); });
+      }).catch(fail);
+    }
+
+    /* ---- Banques d'heures : heures supplémentaires, maladie, vacances ---- */
+    function fh(n, hd){ var v = Number(n || 0), d = hd > 0 ? v / hd : 0; return (Math.round(v * 100) / 100).toLocaleString('fr-CA') + ' h' + (hd > 0 && v ? ' <span class="hint">(≈ ' + (Math.round(d * 10) / 10).toLocaleString('fr-CA') + ' j)</span>' : ''); }
+    function tabBanques(){
+      Promise.all([ecall({ action:'banks' }), ecall({ action:'att-codes' })]).then(function(a){
+        var b = a[0].banks || {}, hd = Number(a[0].hoursDay) || 8, codes = a[1].list || [], led = a[0].ledger || [];
+        var bankCodes = function(k){ return codes.filter(function(c){ return c.bank === k; }).map(function(c){ return '<code>' + esc(c.code) + '</code>'; }).join(' ') || '—'; };
+        var o = b.overtime || {}, s = b.sick || {}, v = b.vacation || {};
+        var row = function(l, x, strong){ return '<tr><td>' + l + '</td><td class="r">' + (strong ? '<strong>' + x + '</strong>' : x) + '</td></tr>'; };
+        var BN = { overtime:'Heures supplémentaires', sick:'Maladie', vacation:'Vacances' };
+        body().innerHTML = '<div class="card"><strong>Mes banques d’heures</strong><p class="hint">Journée normale : ' + esc(hd) + ' h. Pour utiliser une banque, inscrivez le code correspondant dans votre feuille d’assiduité ; les RH valident et le solde se met à jour.</p>' +
+          '<h3 style="margin:12px 0 4px;">⏱ Heures supplémentaires</h3><table class="t kv">' +
+          row('Heures supplémentaires approuvées (total)', fh(o.approved, hd)) + row('· dont payées avec la paie', fh(o.paid, hd)) + row('· en attente d’approbation', fh(o.pending, hd)) +
+          row('Heures mises en banque', fh(o.banked, hd)) + row('Heures reprises', fh(o.recovered, hd)) + row('Heures restantes en banque', fh(o.balance, hd), 1) + '</table><p class="hint">Code d’usage : ' + bankCodes('overtime') + '</p>' +
+          '<h3 style="margin:12px 0 4px;">🤒 Journées de maladie</h3><table class="t kv">' + row('Accordées', fh(s.allocated, hd)) + row('Utilisées', fh(s.used, hd)) + row('Restantes', fh(s.balance, hd), 1) + '</table><p class="hint">Codes d’usage : ' + bankCodes('sick') + '</p>' +
+          '<h3 style="margin:12px 0 4px;">🏖 Vacances</h3><table class="t kv">' + row('Accordées', fh(v.allocated, hd)) + row('Utilisées', fh(v.used, hd)) + row('Restantes', fh(v.balance, hd), 1) + '</table><p class="hint">Codes d’usage : ' + bankCodes('vacation') + '</p></div>' +
+          '<div class="card"><strong>Derniers mouvements</strong>' + (led.length ? led.map(function(l){ return '<div class="row" style="padding:6px 0; border-top:1px solid var(--line);"><span>' + esc(fd(l.date)) + ' · ' + esc(BN[l.bank] || l.bank) + '<div class="hint">' + esc(l.note || '') + '</div></span><strong style="color:' + (l.hours < 0 ? '#B3261E' : '#0F7B55') + ';">' + (l.hours > 0 ? '+' : '') + esc(l.hours) + ' h</strong></div>'; }).join('') : '<p class="hint">Aucun mouvement pour l’instant.</p>') + '</div>';
+      }).catch(fail);
+    }
+
+    /* ---- Feuille d'assiduité : codes de présence et d'absence, validés par les RH ---- */
+    var CAT = { presence:'Présence et travail', vacation:'Vacances', holiday:'Jours fériés et fermeture', health:'Santé', parental:'Congés parentaux', family:'Famille', absence:'Absences', recovery:'Reprise d’heures', civic:'Obligations civiques', other:'Autres' };
+    var PAY = { paid:'Payé', unpaid:'Non payé', partial:'Partiellement payé', 'n/a':'Information' };
+    var ASTAT = { soumis:'En attente (RH)', valide:'Validée', rejete:'Refusée' };
+    var ERR2 = { bad_input:'Vérifiez la date (dans les 2 derniers mois), le code et les heures.', over24:'Le total des heures de cette journée dépasse 24 h.', locked:'Cette ligne est déjà validée : elle ne peut plus être modifiée.', limit:'Maximum 4 codes par journée.', auth:'Session invalide.' };
+    function tabAssid(month){
+      var mo = month || (new Date().toISOString().slice(0, 7));
+      Promise.all([ecall({ action:'att-codes' }), ecall({ action:'att-list', month: mo }), S.hd ? Promise.resolve({ hoursDay: S.hd }) : ecall({ action:'banks' })]).then(function(a){
+        var codes = a[0].list || [], list = a[1].list || []; S.hd = Number(a[2].hoursDay) || 8;
+        var groups = {}; codes.forEach(function(c){ (groups[c.category] = groups[c.category] || []).push(c); });
+        var opts = Object.keys(CAT).filter(function(k){ return groups[k]; }).map(function(k){ return '<optgroup label="' + esc(CAT[k]) + '">' + groups[k].map(function(c){ return '<option value="' + esc(c.code) + '">' + esc(c.code) + ' — ' + esc(c.label) + '</option>'; }).join('') + '</optgroup>'; }).join('');
+        var tot = {}; list.forEach(function(x){ if(x.status !== 'rejete') tot[x.code] = (tot[x.code] || 0) + Number(x.hours); });
+        body().innerHTML = '<div class="card noprint"><strong>Feuille d’assiduité</strong><p class="hint">Inscrivez chaque journée avec son code. Les RH valident ; les codes liés à une banque (heures supplémentaires, maladie, vacances) diminuent automatiquement votre solde une fois validés.</p>' +
+          '<label>Mois</label><input id="as-mo" type="month" value="' + esc(mo) + '">' +
+          '<div class="row" style="gap:10px; align-items:flex-end;"><div style="flex:1"><label>Date</label><input id="as-date" type="date" value="' + esc(new Date().toISOString().slice(0, 10)) + '"></div><div style="flex:1"><label>Heures</label><input id="as-h" type="number" step="0.25" min="0.25" max="24" value="' + esc(S.hd) + '"></div></div>' +
+          '<label>Code</label><select id="as-code">' + opts + '</select><label>Note (facultatif)</label><input id="as-note" maxlength="200" placeholder="Ex. : mission à Lomé"><button id="as-add" style="margin-top:10px;">Ajouter à la feuille</button><div id="as-out" class="msg"></div></div>' +
+          '<div class="card" id="ec-sheet"><div class="row"><strong>Feuille d’assiduité — ' + esc(S.me && S.me.name || '') + ' (N° ' + esc(S.me && S.me.number || '') + ') — ' + esc(mo) + '</strong><button class="light noprint" id="as-print">🖨 Imprimer la feuille</button></div>' +
+          (list.length ? '<table class="t" style="width:100%; margin-top:8px;"><thead><tr><th>Date</th><th>Code</th><th class="r">Heures</th><th>Statut</th><th class="noprint"></th></tr></thead><tbody>' + list.map(function(x){ return '<tr><td>' + esc(fd(x.date)) + '</td><td><strong>' + esc(x.code) + '</strong><div class="hint">' + esc(x.label) + (x.note ? ' · ' + esc(x.note) : '') + '</div></td><td class="r">' + esc(x.hours) + '</td><td>' + esc(ASTAT[x.status] || x.status) + '</td><td class="noprint">' + (x.status === 'valide' ? '' : '<button class="light" data-del="' + esc(x.id) + '">✕</button>') + '</td></tr>'; }).join('') + '</tbody></table>' +
+            '<p class="hint" style="margin-top:8px;"><strong>Totaux par code :</strong> ' + Object.keys(tot).sort().map(function(k){ return esc(k) + ' ' + (Math.round(tot[k] * 100) / 100) + ' h'; }).join(' · ') + '</p>' : '<p class="hint">Aucune ligne ce mois-ci.</p>') + '</div>' +
+          '<div class="card noprint"><details><summary><strong>Tous les codes d’assiduité</strong></summary>' + Object.keys(CAT).filter(function(k){ return groups[k]; }).map(function(k){ return '<h3 style="margin:12px 0 4px;">' + esc(CAT[k]) + '</h3><table class="t" style="width:100%;"><tbody>' + groups[k].map(function(c){ return '<tr><td><strong>' + esc(c.code) + '</strong></td><td>' + esc(c.label) + '</td><td class="hint">' + esc(PAY[c.pay] || '') + (c.bank ? ' · banque ' + esc({ overtime:'heures supp.', sick:'maladie', vacation:'vacances' }[c.bank]) : '') + '</td></tr>'; }).join('') + '</tbody></table>'; }).join('') + '</details></div>';
+        document.getElementById('as-mo').addEventListener('change', function(){ if(this.value) tabAssid(this.value); });
+        document.getElementById('as-print').addEventListener('click', function(){ window.print(); });
+        document.getElementById('as-add').addEventListener('click', function(){
+          var b = this, out = document.getElementById('as-out'); out.className = 'msg'; out.textContent = ''; b.disabled = true;
+          ecall({ action:'att-save', date: val('as-date'), code: val('as-code'), hours: Number(val('as-h')), note: val('as-note') }).then(function(x){
+            if(!x.ok){ out.className = 'msg err'; out.textContent = ERR2[x.error] || 'Ligne refusée.'; b.disabled = false; return; }
+            tabAssid(val('as-date').slice(0, 7));
+          }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; b.disabled = false; });
+        });
+        Array.prototype.forEach.call(app.querySelectorAll('[data-del]'), function(b){ b.addEventListener('click', function(){ ecall({ action:'att-delete', id: b.getAttribute('data-del') }).then(function(){ tabAssid(mo); }).catch(fail); }); });
       }).catch(fail);
     }
 

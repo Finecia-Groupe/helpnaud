@@ -1736,7 +1736,7 @@
       onclick="var m=document.getElementById('feedback-modal'); if(m) m.hidden=true;"
       style="position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:99px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:16px; line-height:1; cursor:pointer;">✕</button>
     <h2>Envoyer un commentaire</h2>
-    <p class="lead">HelpNaud est en phase pilote — vos retours (bug, suggestion, question) sont précieux. Rien n'est envoyé automatiquement : « Ouvrir dans le courriel » pré-remplit un brouillon adressé à l'équipe HelpNaud (impactkwa@gmail.com), à vous d'appuyer sur Envoyer dans votre client de courriel. Si rien ne s'ouvre, utilisez « Copier le texte ».</p>
+    <p class="lead">HelpNaud est en phase pilote — vos retours (bug, suggestion, question) sont précieux. Rien n'est envoyé automatiquement : « Ouvrir dans le courriel » pré-remplit un brouillon adressé à l'équipe HelpNaud (support@helpnaud.ai), à vous d'appuyer sur Envoyer dans votre client de courriel. Si rien ne s'ouvre, utilisez « Copier le texte ».</p>
     <textarea id="feedback-text" rows="5" placeholder="Décrivez le bug ou la suggestion…"
       style="width:100%; border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:var(--surface); color:var(--ink); font-size:13.5px; font-family:inherit; resize:vertical;"></textarea>
     <div class="modal-actions" style="justify-content:space-between; margin-top:14px; align-items:center;">
@@ -4679,7 +4679,7 @@
       <div id="fghlab-panels"></div>
       <div class="card" id="fghlab-contact-card" style="margin-top:14px;">
         <h3 style="margin:0 0 6px; font-size:14.5px;">Contacts FINECIA GROUPE (FGH-Colab)</h3>
-        <p class="hint" style="margin:0 0 8px;">Pour toute information sur les outils FGH-Colab (Partner Market, COPROJECT, FG &amp; Bank Partnership, paie et RH…), écrivez à FINECIA GROUPE, marque mère.</p>
+        <p class="hint" style="margin:0 0 8px;">Pour toute information sur les outils FGH-Colab (Marché Partenaire | Partner Market, CO-PROJET | COPROJECT, FG &amp; Bank Partnership, paie et RH…), écrivez à FINECIA GROUPE, marque mère.</p>
         <p style="margin:0 0 3px;"><strong>Correspondance générale :</strong> <a href="mailto:contacts@fineciagroupe.com">contacts@fineciagroupe.com</a></p>
         <p style="margin:0 0 3px;"><strong>Partenaires :</strong> <a href="mailto:partnersinfo@fineciagroupe.com">partnersinfo@fineciagroupe.com</a></p>
         <p style="margin:0;"><strong>Assistance entreprises :</strong> <a href="mailto:supportbusiness@fineciagroupe.com">supportbusiness@fineciagroupe.com</a></p>
@@ -5006,7 +5006,7 @@
         <p class="hint" style="margin:0 0 8px;">Une question, un problème ou une demande de partenariat ? Écrivez-nous.</p>
         <p style="margin:0 0 4px;"><strong>Contact général :</strong> <a href="mailto:contact@helpnaud.ai">contact@helpnaud.ai</a></p>
         <p style="margin:0;"><strong>Assistance :</strong> <a href="mailto:support@helpnaud.ai">support@helpnaud.ai</a></p>
-        <p class="hint" style="margin:8px 0 0;">Les courriels automatiques sont envoyés depuis une adresse « ne pas répondre ». Les courriels des outils FGH-Colab (Partner Market, COPROJECT, FG &amp; Bank Partnership, paie) portent la marque FINECIA GROUPE : les réponses vont à contacts@fineciagroupe.com, partnersinfo@fineciagroupe.com ou supportbusiness@fineciagroupe.com. Les adresses contact@helpnaud.ai et support@helpnaud.ai sont réservées à la marque HelpNaud.</p>
+        <p class="hint" style="margin:8px 0 0;">Les courriels automatiques sont envoyés depuis une adresse « ne pas répondre ». Les courriels des outils FGH-Colab (Marché Partenaire | Partner Market, CO-PROJET | COPROJECT, FG &amp; Bank Partnership, paie) portent la marque FINECIA GROUPE : les réponses vont à contacts@fineciagroupe.com, partnersinfo@fineciagroupe.com ou supportbusiness@fineciagroupe.com. Les adresses contact@helpnaud.ai et support@helpnaud.ai sont réservées à la marque HelpNaud.</p>
       </div>
 
       <div class="card">
@@ -5334,23 +5334,15 @@
       <div class="grid-2">
         <div class="card">
           <details class="collapsible">
-            <summary><h2 style="margin:0;">Profil utilisateur <span class="badge-soon">Bientôt</span></h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <summary><h2 style="margin:0;">Profil utilisateur <span class="badge-soon" style="background:var(--good-soft); color:var(--good);">Comptes actifs</span></h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
             <div class="collapsible-body">
-          <p class="hint" style="margin:0 0 4px;">Comptes individuels, rôles et permissions par utilisateur arriveront avec la version hébergée de HelpNaud (Netlify + service d'authentification). Aperçu du formulaire à venir :</p>
-          <div class="profile-placeholder-form">
-            <div><label for="profile-ph-nom">Nom complet</label><input type="text" id="profile-ph-nom" placeholder="Ex.: Jordan Tremblay" disabled></div>
-            <div><label for="profile-ph-role">Rôle</label>
-              <select id="profile-ph-role" disabled>
-                <option>Propriétaire</option>
-                <option>Administrateur</option>
-                <option>Employé</option>
-                <option>Lecture seule</option>
-              </select>
-            </div>
-            <div class="full"><label for="profile-ph-courriel">Courriel</label><input type="email" id="profile-ph-courriel" placeholder="ex.: nom@entreprise.com" disabled></div>
-            <div><label for="profile-ph-tel">Téléphone</label><input type="text" id="profile-ph-tel" placeholder="Optionnel" disabled></div>
-            <div><label for="profile-ph-pw">Mot de passe</label><input type="password" id="profile-ph-pw" placeholder="••••••••" disabled></div>
-          </div>
+          <p class="hint" style="margin:0 0 8px;">Les comptes individuels sont <strong>déjà en service</strong> : créez votre compte, connectez-vous et suivez votre forfait et vos crédits IA dans la carte « Mon compte HelpNaud » (plus haut dans Réglages).</p>
+          <ul style="margin:0 0 8px; padding-left:18px; font-size:12.5px; line-height:1.7;">
+            <li><strong>Disponible :</strong> nom, courriel, mot de passe, confirmation par courriel, forfait et crédits, appareils multiples.</li>
+            <li><strong>Équipes FGH-Colab :</strong> rôles et permissions par membre déjà gérés par le propriétaire.</li>
+            <li><strong>À venir (forfaits Professionnel et Affaires) :</strong> comptes d'équipe pour les clients, avec rôles (administrateur, employé, lecture seule).</li>
+          </ul>
+          <button type="button" class="btn" onclick="try{var t=document.getElementById('cust-intro')||document.getElementById('cust-out');if(t)t.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}">Aller à Mon compte HelpNaud</button>
             </div>
           </details>
         </div>
@@ -5369,10 +5361,10 @@
           <h2 style="margin:0;">Note HelpNaud — offres et abonnements</h2>
           <button type="button" class="btn" id="plans-admin-toggle">⚙ Vue propriétaire</button>
         </div>
-        <p class="hint">HelpNaud est actuellement en phase pilote, gratuite, hébergée dans Claude. Les forfaits et abonnements futurs (version hébergée avec courriel automatique, comptes utilisateurs, applications mobiles) seront annoncés ici avant tout changement. Vos commentaires (bouton « Envoyer un commentaire ») aident à orienter ces prochaines étapes.</p>
+        <p class="hint">HelpNaud.ai est en ligne avec comptes utilisateurs et six forfaits (Gratuit, Essentiel, Avancée, Professionnel, Affaires, Institution). Les paiements en ligne (Stripe) et les recharges de crédits seront annoncés ici avant tout changement. Vos commentaires (bouton « Envoyer un commentaire ») aident à orienter les prochaines étapes.</p>
 
         <div id="plans-admin-panel" hidden style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
-          <p class="hint"><strong>Visible uniquement par vous pour l'instant.</strong> Ce plan tarifaire est prêt côté code : il sera proposé automatiquement aux clients dès que la version hébergée de HelpNaud (Netlify + authentification) sera en ligne — sans qu'il soit nécessaire de reconstruire cet écran. L'écran d'administration et le centre de support HelpNaud viendront dans une étape ultérieure.</p>
+          <p class="hint"><strong>Visible uniquement par vous.</strong> Fiche de référence interne des forfaits en vigueur (prix, crédits IA, enveloppe de coût API). Elle sert de pense-bête sur cet appareil : les prix montrés aux clients (Réglages › Abonnements) et les plafonds appliqués par le serveur sont définis dans le code et la base de données. Après une nouvelle politique de tarifs, notez-la ici puis demandez la mise à jour du code et de la base.</p>
           <label style="display:flex; align-items:center; gap:8px; margin:10px 0; cursor:not-allowed;">
             <input type="checkbox" id="plans-activation-toggle" disabled>
             <span>Abonnements payants activés pour les clients <span class="badge-soon">Automatique au lancement</span></span>
@@ -5812,7 +5804,7 @@
           fghlabState.adminProfile.name = (typeof parsed.adminProfile.name === 'string' && parsed.adminProfile.name.trim()) ? parsed.adminProfile.name : 'Propriétaire';
           fghlabState.adminProfile.number = (typeof parsed.adminProfile.number === 'string') ? parsed.adminProfile.number : '';
         }
-        // Devises indépendantes par outil (FG & Bank Partnership / COPROJECT / Partner Market) —
+        // Devises indépendantes par outil (FG & Bank Partnership / CO-PROJET | COPROJECT / Marché Partenaire | Partner Market) —
         // persistées séparément de la devise du dossier et de celle de H-Start.
         fghlabState.fgbankCurrency = (typeof parsed.fgbankCurrency === 'string' && parsed.fgbankCurrency) ? parsed.fgbankCurrency : null;
         fghlabState.coprojectCurrency = (typeof parsed.coprojectCurrency === 'string' && parsed.coprojectCurrency) ? parsed.coprojectCurrency : null;
@@ -7741,20 +7733,24 @@
      l'écran admin, sans reconstruction : il suffira d'activer le commutateur "Abonnements
      payants activés pour les clients" côté serveur. */
   var DEFAULT_PLANS = [
-    { id:'pilote', nom:'Pilote (actuel)', prix:'Gratuit', periode:'', actif:true,
-      fonctionnalites:['Accès complet aux fonctionnalités pilote','Hébergé via Claude, sans carte de crédit','Données stockées uniquement sur votre appareil'] },
-    { id:'essentiel', nom:'Essentiel', prix:'19', periode:'CAD / mois', actif:false,
-      fonctionnalites:['1 utilisateur','3 dossiers','Rapports PDF, Excel, Word','Support par courriel'] },
-    { id:'pro', nom:'Pro', prix:'49', periode:'CAD / mois', actif:false,
-      fonctionnalites:['5 utilisateurs','Dossiers illimités','Assistant IA avancé et Co-work','Support prioritaire'] },
-    { id:'entreprise', nom:'Entreprise', prix:'Sur mesure', periode:'', actif:false,
-      fonctionnalites:['Utilisateurs illimités','Rôles et permissions','Intégrations personnalisées','Accompagnement dédié'] }
+    { id:'gratuit', nom:'Gratuit', prix:'0 USD', periode:'', actif:true,
+      fonctionnalites:['Crédits IA : 30 / mois','Enveloppe API interne : 0,30 $ / mois','1 dossier, 1 utilisateur','Exports avec filigrane'] },
+    { id:'essentiel', nom:'Essentiel', prix:'29 USD', periode:'/ mois, hors taxes', actif:true,
+      fonctionnalites:['Crédits IA : 850 / mois','Enveloppe API interne : 5 $ / mois','Calculateurs H-Start débloqués, rapports sans filigrane','Support courriel 48 h'] },
+    { id:'avancee', nom:'Avancée', prix:'79 USD', periode:'/ mois, hors taxes', actif:true,
+      fonctionnalites:['Crédits IA : 2 000 / mois','Enveloppe API interne : 10 $ / mois','Historique 1 an, exports Excel et PowerPoint','Support courriel prioritaire 36 h'] },
+    { id:'pro', nom:'Professionnel', prix:'129 USD', periode:'/ mois, hors taxes', actif:true,
+      fonctionnalites:['Crédits IA : 3 500 / mois','Enveloppe API interne : 15 $ / mois','Sauvegardes auto, historique illimité, formation initiale','Support prioritaire 24 h'] },
+    { id:'affaires', nom:'Affaires', prix:'249 USD', periode:'/ mois, hors taxes', actif:true,
+      fonctionnalites:['Crédits IA : 10 000 / mois','Enveloppe API interne : 50 $ / mois','Tableaux de bord multi-entités, sécurité avancée','Gestionnaire de compte, SLA 4 h ouvrables'] },
+    { id:'institution', nom:'Institution', prix:'À partir de 999 USD', periode:'/ mois, sur devis', actif:true,
+      fonctionnalites:['Crédits et utilisateurs selon contrat','Enveloppe API interne : 209 $ / mois (base)','Conformité renforcée, multi-organismes, support 24/7','Marque blanche possible'] }
   ];
   var plansState = [];
   function loadPlans(){
     plansState = DEFAULT_PLANS.map(function(p){ return { id:p.id, nom:p.nom, prix:p.prix, periode:p.periode, actif:p.actif, fonctionnalites:p.fonctionnalites.slice() }; });
     try{
-      var raw = localStorage.getItem('helpnaud_plans');
+      var raw = localStorage.getItem('helpnaud_plans_v2');
       if(raw){
         var parsed = JSON.parse(raw);
         if(Array.isArray(parsed)){
@@ -7771,7 +7767,7 @@
     }catch(e){}
   }
   function persistPlans(){
-    try{ localStorage.setItem('helpnaud_plans', JSON.stringify(plansState)); }catch(e){}
+    try{ localStorage.setItem('helpnaud_plans_v2', JSON.stringify(plansState)); }catch(e){}
   }
   function renderPlans(){
     var grid = document.getElementById('plans-grid');
@@ -7782,11 +7778,11 @@
         '<div class="plan-admin-head">' +
           '<input type="text" class="plan-nom-input" data-idx="'+i+'" value="'+escapeHtml(p.nom)+'">' +
           (p.actif
-            ? '<span class="badge-soon" style="background:var(--good-soft); color:var(--good);">Actif (pilote)</span>'
+            ? '<span class="badge-soon" style="background:var(--good-soft); color:var(--good);">En vigueur</span>'
             : '<span class="badge-soon">Inactif</span>') +
         '</div>' +
         '<div class="plan-admin-price">' +
-          '<input type="text" class="plan-prix-input" data-idx="'+i+'" value="'+escapeHtml(p.prix)+'" style="width:90px;">' +
+          '<input type="text" class="plan-prix-input" data-idx="'+i+'" value="'+escapeHtml(p.prix)+'" style="width:130px;">' +
           '<input type="text" class="plan-periode-input" data-idx="'+i+'" value="'+escapeHtml(p.periode || '')+'" placeholder="ex.: CAD / mois">' +
         '</div>' +
         '<textarea class="plan-features-input" data-idx="'+i+'" rows="4">'+escapeHtml(features)+'</textarea>' +
@@ -10622,7 +10618,7 @@
     // presse-papiers en repli, avec un rappel visible d'utiliser « Copier le texte » si besoin.
     var subject = encodeURIComponent('Commentaire HelpNaud');
     var body = encodeURIComponent(txt + '\n\n— Dossier : ' + getFolder().nom);
-    this.href = 'mailto:impactkwa@gmail.com?subject=' + subject + '&body=' + body;
+    this.href = 'mailto:support@helpnaud.ai?subject=' + subject + '&body=' + body;
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(txt).catch(function(){});
     }
@@ -16395,9 +16391,9 @@
     comptaconsolidee:{ icon:'🧾', title:'Outil de comptabilité consolidée des entreprises', desc:"Comptabilité consolidée pour les groupes d'entreprises." },
     comptaconsolideepublic:{ icon:'🏛️', title:'Outil de comptabilité consolidée des municipalités, des ministères et des administrations', desc:"Comptabilité consolidée pour municipalités, ministères et administrations." },
     etatscommercants:{ icon:'🏪', title:'Outils des états financiers des commerçants et des industrielles', desc:"États financiers adaptés aux commerçants et aux entreprises industrielles." },
-    coproject:{ icon:'🧩', title:'COPROJECT', desc:"Gestion et évaluation des projets clients de FINECIA GROUPE." },
+    coproject:{ icon:'🧩', title:'CO-PROJET | COPROJECT', desc:"Gestion et évaluation des projets clients de FINECIA GROUPE." },
     academie:{ icon:'🎓', title:'FINECIA ACADÉMIE', desc:"Catalogue des formations, liste de prix et formulaire d'inscription." },
-    partnermarket:{ icon:'🤝', title:'Partner Market', desc:"Registre des partenaires externes (banques, microfinances, concessionnaires, vendeurs) pouvant recevoir des clients référés." },
+    partnermarket:{ icon:'🤝', title:'Marché Partenaire | Partner Market', desc:"Registre des partenaires externes (banques, microfinances, concessionnaires, vendeurs) pouvant recevoir des clients référés." },
     fgbankpartnership:{ icon:'🔗', title:'FG & Bank Partnership', desc:"Mise en relation des projets clients structurés avec les offres de financement des partenaires bancaires et de microfinance actifs." },
     touttest:{ icon:'🧪', title:'TOUTTEST', desc:"Tests de recrutement (pilote) pour évaluer des candidats à l'embauche, pour le compte des entreprises/organisations clientes de FINECIA GROUPE." },
     pese:{ icon:'📝', title:"PESE — Programme d'évaluation du Staff et des employés", desc:"Évaluation de la performance du personnel existant : critères notés, historique et progression par employé." },
@@ -18331,7 +18327,7 @@
   function l9NewNumber(pid){
     var p = fghlabFindPartner(pid); if(!p) return;
     if(!l9Can('partner-newnumber')){ l6Toast('Réservé au propriétaire ou à un administrateur autorisé.'); return; }
-    if(!window.confirm('Générer un NOUVEAU numéro pour ' + p.name + ' ? L’ancien numéro cessera immédiatement de fonctionner (partout : Partner Market, PartnerDoss). Cette action est consignée dans l’historique.')) return;
+    if(!window.confirm('Générer un NOUVEAU numéro pour ' + p.name + ' ? L’ancien numéro cessera immédiatement de fonctionner (partout : Marché Partenaire | Partner Market, PartnerDoss). Cette action est consignée dans l’historique.')) return;
     var byEmail = window.confirm('Envoyer le nouveau numéro par courriel à ' + (p.email || 'le courriel du dossier') + ' ?\n\nOK = par courriel · Annuler = vous le communiquerez vous-même par téléphone.');
     function finish(num, by){
       p.partnerNumber = num; p.partnerNumberChangedOn = l6Now();
@@ -20663,8 +20659,8 @@
     });
   }
 
-  /* ================= FGH-Lab — COPROJECT (gestion & évaluation des projets clients) =================
-     Panneau un peu plus développé que les autres stubs FGH-Colab : COPROJECT sert à suivre les
+  /* ================= FGH-Lab — CO-PROJET | COPROJECT (gestion & évaluation des projets clients) =================
+     Panneau un peu plus développé que les autres stubs FGH-Colab : CO-PROJET | COPROJECT sert à suivre les
      projets de CLIENTS externes de FINECIA GROUPE (à distinguer du mini-Kanban « Suivi de
      dossiers/projets internes » plus haut dans la vue, qui concerne les projets opérationnels
      internes de FGH-Colab). Donnée persistée dans fghlabState.coprojects (clé localStorage
@@ -20676,7 +20672,7 @@
      gouvernemental/international" sont tous additifs : tout projet créé avant cette phase (sans ces
      champs) reste affichable, chaque lecture est protégée par des valeurs par défaut (|| [] / || '').
      Ajout/suppression et attribution d'une évaluation sont ouverts au propriétaire comme à un membre
-     connecté (COPROJECT n'a pas de restriction propriétaire-seul comme le Kanban interne, puisqu'il
+     connecté (CO-PROJET | COPROJECT n'a pas de restriction propriétaire-seul comme le Kanban interne, puisqu'il
      s'agit d'un outil de mandat et non d'une donnée de gouvernance interne). */
   var COPROJECT_STATUS = [
     { key:'prospection', label:'Prospection' },
@@ -20725,7 +20721,7 @@
     COPROJECT_STATUS.forEach(function(s){ if(s.key === key) found = s.label; });
     return found || key;
   }
-  /* Id du projet COPROJECT en cours de modification via le formulaire d'ajout (voir
+  /* Id du projet CO-PROJET | COPROJECT en cours de modification via le formulaire d'ajout (voir
      fghlabCoprojectEnterEditMode()/resetFghlabCoprojectForm() plus bas) — null = mode « ajout »
      normal. Même idiome que fghlabEditingMemberId pour la fiche équipe FGH-Lab. */
   var fghlabEditingCoprojectId = null;
@@ -20741,7 +20737,7 @@
     for(var sum = minSum; sum <= maxSum; sum++){ values.push(sum / critCount); }
     return values;
   }
-  /* Légende/interprétation professionnelle d'un niveau d'évaluation COPROJECT (moyenne des 3
+  /* Légende/interprétation professionnelle d'un niveau d'évaluation CO-PROJET | COPROJECT (moyenne des 3
      critères Viabilité / Structuration financière / Risque, chacun noté 1 à 5). Bornes de bandes :
      [1.0–2.0) Faible, [2.0–2.7) Moyen-faible, [2.7–3.3) Moyen, [3.3–4.0) Fort, [4.0–5.0] Excellent —
      choix éditorial FINECIA GROUPE, à ajuster au besoin. */
@@ -21129,7 +21125,7 @@
       wireExtraFormatBtn(document.getElementById('fghlab-coproject-export-' + kind + '-' + p.id), kind, function(){ return fghlabCoprojectExportText(p); }, statusEl, function(){ return safeFileSlug(fghlabCoprojectExportText(p).title); });
     });
   }
-  /* Devise indépendante de COPROJECT (voir même pattern que fgbankCurrency/hstatCurrency) —
+  /* Devise indépendante de CO-PROJET | COPROJECT (voir même pattern que fgbankCurrency/hstatCurrency) —
      persistée dans fghlabState.coprojectCurrency. */
   var coprojectCurrency = fghlabState.coprojectCurrency || activeCurrencyCode();
   function coprojectMoney(n){ return fmtMoney(n, coprojectCurrency); }
@@ -21266,7 +21262,7 @@
   }
   /* Réinitialise le formulaire « Ajouter le projet » en mode ajout (quitte le mode modification —
      voir fghlabCoprojectEnterEditMode() ci-dessous). Même idiome que resetFghlabTeamForm(). */
-  /* ================= COPROJECT — accueil des clients (lien public, téléphone, bureau), numéros, lien sécurisé ================= */
+  /* ================= CO-PROJET | COPROJECT — accueil des clients (lien public, téléphone, bureau), numéros, lien sécurisé ================= */
   var CP_ID_TYPES = ['Passeport', 'Carte nationale d’identité', 'Permis de conduire', 'Carte de résident / séjour', 'Autre pièce officielle'];
   var CP_CHANNELS = ['Téléphone', 'En personne', 'Autre'];
   var CP_REQ_ITEMS = ['Pièce d’identité', 'Preuve d’adresse', 'Statuts / immatriculation', 'Plan d’affaires', 'États financiers', 'Lettre d’appui / mandat', 'Exigences du bailleur ou de la banque'];
@@ -21327,8 +21323,8 @@
       '<p class="hint" style="margin:4px 0 0; font-size:11px;">Les documents sont enregistrés sur le serveur (session connectée requise). Vous pourrez en demander d’autres plus tard avec un lien sécurisé.</p>' +
     '</details>' +
     '<details class="collapsible" id="cp-links-details" style="margin:0 0 12px;">' +
-      '<summary style="cursor:pointer; font-size:13px; font-weight:600;">🔗 Liens publics COPROJECT (à envoyer au public, aux entreprises, aux États…)</summary>' +
-      '<p class="hint" style="margin:6px 0 8px; font-size:11.5px;">Un lien public ouvre le formulaire COPROJECT en ligne : le client reçoit ses numéros par courriel, et sa demande arrive ici (alerte dans FG &amp; Bank Partnership). Un lien peut être désactivé à tout moment.</p>' +
+      '<summary style="cursor:pointer; font-size:13px; font-weight:600;">🔗 Liens publics CO-PROJET | COPROJECT (à envoyer au public, aux entreprises, aux États…)</summary>' +
+      '<p class="hint" style="margin:6px 0 8px; font-size:11.5px;">Un lien public ouvre le formulaire CO-PROJET | COPROJECT en ligne : le client reçoit ses numéros par courriel, et sa demande arrive ici (alerte dans FG &amp; Bank Partnership). Un lien peut être désactivé à tout moment.</p>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
         '<input type="text" id="cp-link-label" maxlength="80" placeholder="Nom du lien (ex. Campagne Afrique de l’Ouest)" style="'+cpInputStyle()+'">' +
         '<button type="button" class="btn primary" id="cp-link-gen">🔗 Générer un lien public</button>' +
@@ -21351,7 +21347,7 @@
   }
   function cpGenLink(label){
     if(!Array.isArray(fghlabState.coLinks)) fghlabState.coLinks = [];
-    var l = { id: 'fghcl-' + Date.now().toString(36) + l6Rand(5), token: l6Rand(24), label: (label || '').trim() || 'Lien public COPROJECT', createdOn: new Date().toISOString(), createdBy: fghlabActor(), active: true, usedCount: 0 };
+    var l = { id: 'fghcl-' + Date.now().toString(36) + l6Rand(5), token: l6Rand(24), label: (label || '').trim() || 'Lien public CO-PROJET | COPROJECT', createdOn: new Date().toISOString(), createdBy: fghlabActor(), active: true, usedCount: 0 };
     fghlabState.coLinks.push(l); persistFghlabState(); cpRenderLinks();
     l6Copy(fghlabPublicUrl('coproject', l.token), 'Lien public copié ✓ (actif après synchronisation)');
     return l;
@@ -21507,7 +21503,7 @@
   function cpPushAlert(p){
     if(!Array.isArray(fghlabState.alerts)) fghlabState.alerts = [];
     fghlabState.alerts.push({ id: 'fghal-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kind: 'coproject_new', coprojectId: p.id,
-      text: 'Nouvelle demande COPROJECT à évaluer : ' + p.client + ' — ' + p.title + ' (' + (p.projectNumber || '') + ')', createdOn: new Date().toISOString(), createdBy: fghlabActor(), read: false });
+      text: 'Nouvelle demande CO-PROJET | COPROJECT à évaluer : ' + p.client + ' — ' + p.title + ' (' + (p.projectNumber || '') + ')', createdOn: new Date().toISOString(), createdBy: fghlabActor(), read: false });
   }
   function cpBindCards(listEl){
     if(listEl.getAttribute('data-cp-bound')) return;
@@ -21581,7 +21577,7 @@
     });
   }
 
-  /* ================= Lien sécurisé « demande / réponse de documents » — FG & Bank Partnership, FINECIA ACADÉMIE, Partner Market ================= */
+  /* ================= Lien sécurisé « demande / réponse de documents » — FG & Bank Partnership, FINECIA ACADÉMIE, Marché Partenaire | Partner Market ================= */
   var scOpen = {}, scDocs = {}, scMsg = {};
   var SC_KINDS = {
     fgbank: { coll: 'fgbankProjects', label: 'dossier de financement', items: ['Pièce d’identité', 'Preuve d’adresse', 'États financiers', 'Plan d’affaires', 'Relevés bancaires', 'Garanties / sûretés', 'Exigences de la banque ou de la microfinance'],
@@ -22176,7 +22172,7 @@
     }
   }
 
-  /* ================= FGH-Lab — Partner Market (registre des partenaires externes) =================
+  /* ================= FGH-Lab — Marché Partenaire | Partner Market (registre des partenaires externes) =================
      Registre local des organisations partenaires externes (banques, institutions de microfinance,
      concessionnaires, vendeurs, etc.) susceptibles de recevoir des clients référés par FINECIA
      GROUPE. Donnée persistée dans fghlabState.partners (clé localStorage 'helpnaud_fghlab', voir
@@ -22211,14 +22207,14 @@
       return (p.type === 'Banque' || p.type === 'Microfinance') && p.status === 'Actif';
     });
   }
-  /* ================= Lot 6 — Partner Market : politique, conformité, documents, sanctions, PartnerDoss =================
+  /* ================= Lot 6 — Marché Partenaire | Partner Market : politique, conformité, documents, sanctions, PartnerDoss =================
      Données (dans les enregistrements « partners », synchronisés) : policyAcceptedAt, policyVersion, warnings[], sanction
      { kind:'pause'|'suspension', startedOn, until, days, reason }, statusBeforeSanction, history[], docRequest
      { on, items[], note }, docToken, docsCount. Les FICHIERS ne sont jamais dans ces enregistrements : ils sont dans la table
      serveur fgh_partner_docs (lecture uniquement via fgh_partner_doc_*, réservée à l'équipe FINECIA — voir supabase-phase3d.sql).
      La politique est la collection « partnerPolicy » (un seul enregistrement id « policy »). Les partenaires n'ont AUCUN accès à
      l'application : ils ne voient que leurs propres pages publiques (inscription, dépôt de leurs documents). */
-  var L6_POLICY_DEFAULT = {"partner": "1. Confidentialité des dossiers — Les dossiers, informations sur les clients, prix, offres, conditions et documents échangés par Partner Market et FG & Bank Partnership sont strictement confidentiels. Le partenaire les utilise uniquement pour l’opération visée et ne les communique à aucun tiers sans l’accord écrit de FINECIA GROUPE.\n\n2. Données personnelles des clients — Les coordonnées et renseignements d’un client ne servent qu’au dossier concerné. Toute prospection, revente ou réutilisation en dehors de ce dossier est interdite.\n\n3. Non-contournement — Le partenaire s’engage à ne pas contourner FINECIA GROUPE pour conclure une opération issue d’une mise en relation. Les commissions et frais prévus restent dus, y compris lorsque le client paie la totalité comptant, et y compris sur les garanties et extras ajoutés pendant la négociation.\n\n4. Exactitude et documents — Les informations fournies (identité, activité, prix, état des véhicules, taux) doivent être exactes. Les documents de l’entreprise sont facultatifs à l’inscription ; FINECIA GROUPE peut les demander ultérieurement et le partenaire s’engage à les fournir dans un délai raisonnable.\n\n5. Engagements pris — Les prix, garanties et extras convenus pendant la négociation doivent être respectés. Une garantie ou un service demandé par le client et accepté dans le dossier doit être fourni par le concessionnaire, l’entreprise ou le vendeur.\n\n6. Avertissements — En cas de manquement à cette politique, FINECIA GROUPE peut adresser un avertissement au partenaire.\n\n7. Pause, suspension, retrait — FINECIA GROUPE peut mettre un partenaire en pause pour une durée déterminée (par exemple 10, 20 ou 30 jours, ou plus selon la nature du manquement) : pendant la pause, il ne peut ni soumettre d’offres ni publier d’annonces. En cas de manquement grave, FINECIA GROUPE peut le suspendre sans délai ou le retirer définitivement de la plateforme.\n\n8. Accès aux dossiers internes — Le dossier interne de chaque partenaire (PartnerDoss) est réservé à l’équipe de FINECIA GROUPE ; aucun partenaire n’y a accès.\n\n9. Modification de la politique — FINECIA GROUPE se réserve le droit de modifier cette politique. La version en vigueur et sa date sont indiquées ; la poursuite de l’utilisation après modification vaut acceptation de la nouvelle version.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement.", "client": "1. Utilisation de vos informations — Vos coordonnées et renseignements ne servent qu’à traiter votre dossier avec FINECIA GROUPE et ses partenaires concernés (concessionnaire, banque ou microfinance).\n\n2. Aucun document à l’inscription — Aucun document ne vous est demandé avant, pendant ou après votre inscription. Si votre dossier est en cours, notre équipe peut vous contacter pour compléter uniquement les informations de ce dossier.\n\n3. Confidentialité — Vos informations ne sont pas partagées en dehors du dossier sans votre accord, et ne sont jamais vendues.\n\n4. Vos droits — Vous pouvez demander l’accès à vos informations, leur correction ou leur suppression en écrivant à FINECIA GROUPE.\n\n5. Modification — FINECIA GROUPE peut mettre à jour cette politique ; la version en vigueur est toujours affichée à l’inscription.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement."};
+  var L6_POLICY_DEFAULT = {"partner": "1. Confidentialité des dossiers — Les dossiers, informations sur les clients, prix, offres, conditions et documents échangés par Marché Partenaire | Partner Market et FG & Bank Partnership sont strictement confidentiels. Le partenaire les utilise uniquement pour l’opération visée et ne les communique à aucun tiers sans l’accord écrit de FINECIA GROUPE.\n\n2. Données personnelles des clients — Les coordonnées et renseignements d’un client ne servent qu’au dossier concerné. Toute prospection, revente ou réutilisation en dehors de ce dossier est interdite.\n\n3. Non-contournement — Le partenaire s’engage à ne pas contourner FINECIA GROUPE pour conclure une opération issue d’une mise en relation. Les commissions et frais prévus restent dus, y compris lorsque le client paie la totalité comptant, et y compris sur les garanties et extras ajoutés pendant la négociation.\n\n4. Exactitude et documents — Les informations fournies (identité, activité, prix, état des véhicules, taux) doivent être exactes. Les documents de l’entreprise sont facultatifs à l’inscription ; FINECIA GROUPE peut les demander ultérieurement et le partenaire s’engage à les fournir dans un délai raisonnable.\n\n5. Engagements pris — Les prix, garanties et extras convenus pendant la négociation doivent être respectés. Une garantie ou un service demandé par le client et accepté dans le dossier doit être fourni par le concessionnaire, l’entreprise ou le vendeur.\n\n6. Avertissements — En cas de manquement à cette politique, FINECIA GROUPE peut adresser un avertissement au partenaire.\n\n7. Pause, suspension, retrait — FINECIA GROUPE peut mettre un partenaire en pause pour une durée déterminée (par exemple 10, 20 ou 30 jours, ou plus selon la nature du manquement) : pendant la pause, il ne peut ni soumettre d’offres ni publier d’annonces. En cas de manquement grave, FINECIA GROUPE peut le suspendre sans délai ou le retirer définitivement de la plateforme.\n\n8. Accès aux dossiers internes — Le dossier interne de chaque partenaire (PartnerDoss) est réservé à l’équipe de FINECIA GROUPE ; aucun partenaire n’y a accès.\n\n9. Modification de la politique — FINECIA GROUPE se réserve le droit de modifier cette politique. La version en vigueur et sa date sont indiquées ; la poursuite de l’utilisation après modification vaut acceptation de la nouvelle version.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement.", "client": "1. Utilisation de vos informations — Vos coordonnées et renseignements ne servent qu’à traiter votre dossier avec FINECIA GROUPE et ses partenaires concernés (concessionnaire, banque ou microfinance).\n\n2. Aucun document à l’inscription — Aucun document ne vous est demandé avant, pendant ou après votre inscription. Si votre dossier est en cours, notre équipe peut vous contacter pour compléter uniquement les informations de ce dossier.\n\n3. Confidentialité — Vos informations ne sont pas partagées en dehors du dossier sans votre accord, et ne sont jamais vendues.\n\n4. Vos droits — Vous pouvez demander l’accès à vos informations, leur correction ou leur suppression en écrivant à FINECIA GROUPE.\n\n5. Modification — FINECIA GROUPE peut mettre à jour cette politique ; la version en vigueur est toujours affichée à l’inscription.\n\nTexte provisoire à faire valider par un conseiller juridique avant le lancement."};
   var fghlabOpen6 = {};
   var l6DocCache = {};
   var l6DossFilter = { q: '', type: '' };
@@ -22542,7 +22538,7 @@
   }
   function l6PartnerDossShell(){
     return '<div class="card" style="background:var(--surface-2); margin-bottom:10px;"><strong>🗄️ PartnerDoss</strong> <span class="ctb-stub-badge" style="background:#B3261E; color:#fff;">Confidentiel — équipe FINECIA GROUPE uniquement</span>' +
-      '<p class="hint" style="margin:6px 0 8px;">Le dossier de chaque partenaire s’ouvre automatiquement dès son inscription sur Partner Market (avec ses documents, s’il en a déposé) et reçoit ensuite chaque dossier finalisé. Aucun partenaire — actif ou non, Partner Market ou FG &amp; Bank Partnership — ne peut consulter PartnerDoss.</p>' +
+      '<p class="hint" style="margin:6px 0 8px;">Le dossier de chaque partenaire s’ouvre automatiquement dès son inscription sur Marché Partenaire | Partner Market (avec ses documents, s’il en a déposé) et reçoit ensuite chaque dossier finalisé. Aucun partenaire — actif ou non, Marché Partenaire | Partner Market ou FG &amp; Bank Partnership — ne peut consulter PartnerDoss.</p>' +
       '<div style="display:flex; gap:6px; flex-wrap:wrap;"><input type="search" data-l6-dossq placeholder="Rechercher un partenaire…" style="flex:1; min-width:180px; border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink);">' +
       '<select data-l6-dosst style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink);"><option value="">Tous les types</option>' + PARTNER_TYPES.map(function(t){ return '<option>' + t + '</option>'; }).join('') + '</select></div></div><div id="l6-doss-list"></div>';
   }
@@ -22654,7 +22650,7 @@
       var pl = l6Policy();
       p.policyNotifiedVersion = pl.version;
       l6Hist(p, 'Avis de modification de la politique', 'Version ' + pl.version + ' notifiée.');
-      l6Copy('Bonjour, la politique de confidentialité et de conduite de FINECIA GROUPE a été mise à jour (version ' + pl.version + ', ' + fmtFghlabShortDate(pl.updatedOn || l6Now()) + '). Votre poursuite d’utilisation de Partner Market vaut acceptation de la nouvelle version. Texte :\n\n' + pl.partnerText, 'Avis copié ✓');
+      l6Copy('Bonjour, la politique de confidentialité et de conduite de FINECIA GROUPE a été mise à jour (version ' + pl.version + ', ' + fmtFghlabShortDate(pl.updatedOn || l6Now()) + '). Votre poursuite d’utilisation de Marché Partenaire | Partner Market vaut acceptation de la nouvelle version. Texte :\n\n' + pl.partnerText, 'Avis copié ✓');
       l6AfterPartnerChange(); return;
     }
     if((b = t.closest('[data-l6-warn-add]'))){
@@ -22814,7 +22810,7 @@
     }, true);
   }
 
-  /* Devise indépendante de Partner Market (voir même pattern que fgbankCurrency/coprojectCurrency)
+  /* Devise indépendante de Marché Partenaire | Partner Market (voir même pattern que fgbankCurrency/coprojectCurrency)
      — persistée dans fghlabState.partnermarketCurrency. */
   var partnermarketCurrency = fghlabState.partnermarketCurrency || activeCurrencyCode();
   function partnermarketMoney(n){ return fmtMoney(n, partnermarketCurrency); }
@@ -22852,7 +22848,7 @@
       '<p class="hint" style="margin-top:10px;">Registre local (fghlabState.partners), géré par le propriétaire — simulation sans vérification réelle des partenaires ni facturation effective. Les frais d\'inscription affichés alimentent le tableau de bord « Revenus &amp; commissions » de l\'outil FG &amp; Bank Partnership.</p>' +
       '<div class="card" id="vehicle-catalog-card" style="margin-top:16px; background:var(--surface-2);">' +
         '<h3 style="margin:0 0 6px; font-size:14.5px;">Catalogue véhicules — concessionnaires partenaires</h3>' +
-        '<p class="hint" style="margin:0 0 10px;">Véhicules « Disponible » des concessionnaires partenaires au statut « Actif » — visible par les entreprises, les banques/microfinances et les clients inscrits sur Partner Market.</p>' +
+        '<p class="hint" style="margin:0 0 10px;">Véhicules « Disponible » des concessionnaires partenaires au statut « Actif » — visible par les entreprises, les banques/microfinances et les clients inscrits sur Marché Partenaire | Partner Market.</p>' +
         '<div id="vehicle-catalog-list"></div>' +
       '</div>' +
       '<div class="card" id="vehicle-leads-card" style="margin-top:16px; background:var(--surface-2);">' +
@@ -23527,8 +23523,8 @@
     }
   }
 
-  /* ================= FGH-Lab — Partner Market : véhicules concessionnaires (modèle d'affaires) =====
-     Extension du Partner Market pour le modèle d'affaires concessionnaires automobiles : FINECIA
+  /* ================= FGH-Lab — Marché Partenaire | Partner Market : véhicules concessionnaires (modèle d'affaires) =====
+     Extension du Marché Partenaire | Partner Market pour le modèle d'affaires concessionnaires automobiles : FINECIA
      GROUPE amène des clients aux concessionnaires partenaires en échange d'une commission sur la
      vente conclue (dealerCommissionRate du partenaire) et d'un frais de mise en relation par client
      référé (dealerReferralFee du partenaire) — en plus des mécanismes de monétisation déjà en place
@@ -23541,7 +23537,7 @@
          dealerCommissionAmount, dealerReferralFeeCharged, dealerReferralFeeAmount, fgbankProjectId,
          notes, createdOn }]
      Création/gestion des opportunités réservées au propriétaire (pas de session membre active, voir
-     getActiveFghlabMember()), comme pour le reste de Partner Market — un membre connecté consulte le
+     getActiveFghlabMember()), comme pour le reste de Marché Partenaire | Partner Market — un membre connecté consulte le
      catalogue et les opportunités en lecture seule. */
   var VEHICLE_LEAD_STATUS = [
     'Intérêt manifesté', 'En négociation', 'Prix convenu', 'Offre de financement proposée',
@@ -23883,9 +23879,9 @@
   }
 
   /* ================= FGH-Lab — FG & Bank Partnership (mise en relation financement) =================
-     Espace de travail où les projets clients structurés par FINECIA GROUPE (via COPROJECT ou créés
+     Espace de travail où les projets clients structurés par FINECIA GROUPE (via CO-PROJET | COPROJECT ou créés
      directement ici) sont déposés pour être mis en relation avec les offres de financement des
-     partenaires Banque/Microfinance « Actifs » du Partner Market. Donnée persistée dans
+     partenaires Banque/Microfinance « Actifs » du Marché Partenaire | Partner Market. Donnée persistée dans
      fghlabState.fgbankProjects (clé localStorage 'helpnaud_fghlab') : [{ id, referenceId, title,
      client, status, sourceCoprojectId, structuringFee, offers:[{id, partnerId, rate, conditions,
      amount, submittedOn, introFeeCharged}], acceptedOfferId, acceptedOn, commissionAmount,
@@ -24116,7 +24112,7 @@
   }
   function fmtFghlabAmount(n){ return (Number(n) || 0).toLocaleString('fr-FR'); }
   /* Devise indépendante de FG & Bank Partnership (distincte du dossier, de H-Start, et des devises
-     propres à COPROJECT/Partner Market) — même pattern que hstatCurrency (voir ~ligne 26682), mais
+     propres à CO-PROJET | COPROJECT/Marché Partenaire | Partner Market) — même pattern que hstatCurrency (voir ~ligne 26682), mais
      avec persistance dans fghlabState.fgbankCurrency (voir persistFghlabState/loadFghlabState). */
   var fgbankCurrency = fghlabState.fgbankCurrency || activeCurrencyCode();
   function fgbankMoney(n){ return fmtMoney(n, fgbankCurrency); }
@@ -24164,8 +24160,8 @@
     return proj.handler ? 'progress' : 'queue';
   }
   function fgbankOrigin(proj){
-    if(proj.sourceVehicleLeadId) return 'Partner Market (véhicule)';
-    if(proj.sourceCoprojectId) return 'COPROJECT';
+    if(proj.sourceVehicleLeadId) return 'Marché Partenaire | Partner Market (véhicule)';
+    if(proj.sourceCoprojectId) return 'CO-PROJET | COPROJECT';
     return 'Dépôt manuel';
   }
   function fghlabBankHandlerHtml(proj){
@@ -24275,7 +24271,7 @@
             '<div class="hint" style="margin:0; font-family:monospace; font-size:12px; letter-spacing:.3px;">'+escapeHtml(proj.referenceId)+'</div>' +
             (proj.clientNumber || proj.projectNumber ? '<div class="hint" style="margin:1px 0 0; font-family:monospace; font-size:11px; letter-spacing:.3px;">'+(proj.clientNumber ? 'Client N° '+escapeHtml(proj.clientNumber) : '')+(proj.clientNumber && proj.projectNumber ? ' · ' : '')+(proj.projectNumber ? 'Projet N° '+escapeHtml(proj.projectNumber) : '')+'</div>' : '') +
             '<div style="font-weight:700; font-size:13.5px; margin-top:2px;">'+escapeHtml(proj.title)+'</div>' +
-            '<div class="hint" style="margin:2px 0 0;">Client : '+escapeHtml(proj.client || '—')+' · Déposé le '+escapeHtml(fmtFghlabShortDate(proj.createdOn))+(proj.sourceCoprojectId ? ' · Origine : COPROJECT' : '')+(proj.sourceVehicleLeadId ? ' · Origine : Partner Market (véhicule)' : '')+'</div>' +
+            '<div class="hint" style="margin:2px 0 0;">Client : '+escapeHtml(proj.client || '—')+' · Déposé le '+escapeHtml(fmtFghlabShortDate(proj.createdOn))+(proj.sourceCoprojectId ? ' · Origine : CO-PROJET | COPROJECT' : '')+(proj.sourceVehicleLeadId ? ' · Origine : Marché Partenaire | Partner Market (véhicule)' : '')+'</div>' +
           '</div>' +
           '<span class="ctb-stub-badge" style="background:'+statusColor+'; color:#fff;">'+escapeHtml(statusLabel)+'</span>' +
         '</div>' +
@@ -24300,14 +24296,14 @@
     if(!breakdownEl) return;
     var rev = computeFghlabRevenue();
     breakdownEl.innerHTML =
-      '<div>Frais d\'inscription partenaires (Partner Market, cumulés) : <strong>'+fgbankMoney(rev.partnerListingFees)+'</strong><span class="hint"> — payé par le partenaire (banque, microfinance, concessionnaire ou vendeur qui s\'inscrit)</span></div>' +
+      '<div>Frais d\'inscription partenaires (Marché Partenaire | Partner Market, cumulés) : <strong>'+fgbankMoney(rev.partnerListingFees)+'</strong><span class="hint"> — payé par le partenaire (banque, microfinance, concessionnaire ou vendeur qui s\'inscrit)</span></div>' +
       '<div>Frais de structuration de dossier (projets FG &amp; Bank Partnership) : <strong>'+fgbankMoney(rev.structuringFees)+'</strong><span class="hint"> — payé par le client (porteur du projet)</span></div>' +
       '<div>Commissions sur financement accepté : <strong>'+fgbankMoney(rev.commissions)+'</strong><span class="hint"> — payé par la banque/microfinance partenaire</span></div>' +
       '<div>Frais de mise en relation (offres soumises) : <strong>'+fgbankMoney(rev.introFees)+'</strong><span class="hint"> — payé par la banque/microfinance partenaire</span></div>' +
       '<div>Commissions concessionnaires (ventes véhicules conclues) : <strong>'+fgbankMoney(rev.dealerCommissions)+'</strong><span class="hint"> — payé par le concessionnaire</span></div>' +
       '<div>Frais de mise en relation concessionnaires (clients référés) : <strong>'+fgbankMoney(rev.dealerReferralFees)+'</strong><span class="hint"> — payé par le concessionnaire</span></div>' +
       '<div style="margin-top:6px; font-size:14px;">Total revenu suivi : <strong>'+fgbankMoney(rev.total)+'</strong></div>' +
-      '<p class="hint" style="margin-top:6px;">Les deux lignes « concessionnaires » proviennent du suivi des opportunités véhicules de Partner Market (voir plus bas) — même avertissement : simulation locale, aucune facturation réelle.</p>';
+      '<p class="hint" style="margin-top:6px;">Les deux lignes « concessionnaires » proviennent du suivi des opportunités véhicules de Marché Partenaire | Partner Market (voir plus bas) — même avertissement : simulation locale, aucune facturation réelle.</p>';
   }
   function bindFghlabBankPanel(){
     var fgbankCurrencySelect = document.getElementById('fgbank-currency');
@@ -24502,7 +24498,7 @@
   }
 
   /* ================= FGH-Colab — Phase 3 : synchronisation serveur des données partagées =================
-     Partner Market, FG & Bank Partnership, alertes, TOUTTEST, FINECIA ACADÉMIE, rendez-vous : quand une
+     Marché Partenaire | Partner Market, FG & Bank Partnership, alertes, TOUTTEST, FINECIA ACADÉMIE, rendez-vous : quand une
      session serveur est ouverte (propriétaire ou membre), ces collections sont synchronisées via les
      fonctions SQL fgh_sync_pull / fgh_sync_push (droits vérifiés par la base, voir supabase-phase3.sql).
      Règles : (1) une fiche inchangée localement prend la version du serveur ; (2) une fiche modifiée
@@ -24733,7 +24729,7 @@
     });
   }
 
-  /* ================= FGH-Lab — Partner Market : lien d'invitation + documentation automatique ================= */
+  /* ================= FGH-Lab — Marché Partenaire | Partner Market : lien d'invitation + documentation automatique ================= */
   var PARTNER_INVITE_TYPES = ['Banque', 'Microfinance', 'Concessionnaire', 'Vendeur', 'Client', 'Autre'];
   function partnerDocHtml(type){
     var cfg = fghlabState.monetizationConfig || {};
@@ -24746,7 +24742,7 @@
     var who, cond, adv, rel, fast, effort;
     if(type === 'Banque' || type === 'Microfinance'){
       who = 'banque ou institution de microfinance';
-      cond = ['Inscription sur Partner Market, validée par FINECIA GROUPE (statut « Actif » requis pour voir les dossiers).',
+      cond = ['Inscription sur Marché Partenaire | Partner Market, validée par FINECIA GROUPE (statut « Actif » requis pour voir les dossiers).',
         'Frais d’inscription selon le palier : '+l6TierFeesText()+' (paramétrables).',
         'Frais de mise en relation : '+money(cfg.introFee)+' par offre de financement soumise.',
         'Commission de '+(cfg.commissionRate != null ? cfg.commissionRate : 2)+' % sur le montant d’un financement accepté.'];
@@ -24762,7 +24758,7 @@
         'Un membre de l’équipe FINECIA prend en charge le dossier et reste identifié.'];
     }else if(type === 'Concessionnaire'){
       who = 'concessionnaire';
-      cond = ['Inscription sur Partner Market, validée par FINECIA GROUPE (statut « Actif » requis pour publier l’inventaire).',
+      cond = ['Inscription sur Marché Partenaire | Partner Market, validée par FINECIA GROUPE (statut « Actif » requis pour publier l’inventaire).',
         'Frais d’inscription selon le palier : '+l6TierFeesText()+' (paramétrables).',
         'Commission concessionnaire : '+DEALER_DEFAULT_COMMISSION_RATE+' % sur une vente conclue grâce à FINECIA GROUPE (paramétrable par partenaire).',
         'Frais de mise en relation : '+money(DEALER_DEFAULT_REFERRAL_FEE)+' par client référé (paramétrable par partenaire).'];
@@ -24788,7 +24784,7 @@
       effort = ['Vous n’avez pas à démarcher les concessionnaires ni les banques : FINECIA GROUPE s’en charge.'];
     }else{
       who = 'entreprise ou vendeur';
-      cond = ['Inscription sur Partner Market, validée par FINECIA GROUPE.',
+      cond = ['Inscription sur Marché Partenaire | Partner Market, validée par FINECIA GROUPE.',
         'Frais d’inscription selon le palier : '+l6TierFeesText()+' (paramétrables).',
         'Les conditions commerciales précises sont confirmées par écrit avant activation.'];
       adv = ['Visibilité auprès des clients, banques et entreprises du réseau FINECIA GROUPE.',
@@ -24798,7 +24794,7 @@
       fast = ['Processus unique de la demande à la décision, avec suivi d’état.'];
       effort = ['Les clients sont amenés et qualifiés par FINECIA GROUPE : vous répondez à des demandes déjà préparées.'];
     }
-    return '<p style="font-size:12.5px; margin:0 0 8px;">Documentation destinée à un(e) <strong>'+escapeHtml(who)+'</strong> — générée automatiquement à partir des paramètres actuels de Partner Market.</p>' +
+    return '<p style="font-size:12.5px; margin:0 0 8px;">Documentation destinée à un(e) <strong>'+escapeHtml(who)+'</strong> — générée automatiquement à partir des paramètres actuels de Marché Partenaire | Partner Market.</p>' +
       sec('Conditions', cond) + sec('Avantages', adv) + sec('Mise en relation', rel) +
       sec('Ventes intelligentes et rapides', fast) + sec('Des clients sans effort', effort) +
       '<p class="hint" style="margin:6px 0 0;">Document informatif : les montants sont ceux paramétrés dans l’outil ; les conditions définitives sont confirmées par FINECIA GROUPE avant activation.</p>';
@@ -24811,7 +24807,7 @@
   function partnerInviteCardHtml(){
     var typeOpts = PARTNER_INVITE_TYPES.map(function(t){ return '<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>'; }).join('');
     return '<div class="card" id="partner-invite-card" style="margin-bottom:14px; background:var(--surface-2);">' +
-      '<h3 style="margin:0 0 6px; font-size:14.5px;">Lien d’invitation Partner Market</h3>' +
+      '<h3 style="margin:0 0 6px; font-size:14.5px;">Lien d’invitation Marché Partenaire | Partner Market</h3>' +
       '<p class="hint" style="margin:0 0 8px;">Choisissez le type de partenaire, générez son lien d’invitation et sa documentation (conditions, avantages, mise en relation, ventes rapides, clients sans effort).</p>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
         '<select id="partner-invite-type" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">'+typeOpts+'</select>' +
@@ -24907,7 +24903,7 @@
     var unread = all.filter(function(a){ return !a.read; }).length;
     if(!all.length){ el.innerHTML = ''; return; }
     el.innerHTML = '<div style="border:1px solid #C89B3C; border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:12px;">' +
-      '<div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">🔔 Alertes (Partner Market, COPROJECT…)' + (unread ? ' <span class="ctb-stub-badge" style="background:#C89B3C; color:#fff;">'+unread+' nouvelle'+(unread > 1 ? 's' : '')+'</span>' : '') + '</div>' +
+      '<div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">🔔 Alertes (Marché Partenaire | Partner Market, CO-PROJET | COPROJECT…)' + (unread ? ' <span class="ctb-stub-badge" style="background:#C89B3C; color:#fff;">'+unread+' nouvelle'+(unread > 1 ? 's' : '')+'</span>' : '') + '</div>' +
       alerts.map(function(a){
         var done = a.kind === 'vehicle_completed', l9k = L9_ALERT_KINDS[a.kind];
         return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:5px 0; border-top:1px solid var(--line); font-size:12.5px;'+(a.read && !(done && !a.classifiedOn) ? ' opacity:.65;' : '')+'" data-alert-row="'+escapeHtml(a.id)+'">' +
@@ -24938,7 +24934,7 @@
       return;
     }
     if(a.kind === 'coproject_new' || a.kind === 'coproject_docs'){
-      if(getFghlabVisibleTools().indexOf('coproject') === -1){ window.alert('Ce dossier se trouve dans COPROJECT, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.'); return; }
+      if(getFghlabVisibleTools().indexOf('coproject') === -1){ window.alert('Ce dossier se trouve dans CO-PROJET | COPROJECT, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.'); return; }
       if(a.kind === 'coproject_docs'){ cpOpen[a.coprojectId + ':sec'] = true; cpDocsCache[a.coprojectId] = null; }
       selectFghlabTool('coproject', { noClose: true });
       renderFghlabCoprojectList();
@@ -24957,7 +24953,7 @@
       return;
     }
     if(a.kind === 'partner_docs'){
-      if(getFghlabVisibleTools().indexOf('partnermarket') === -1){ window.alert('Les documents se trouvent dans Partner Market, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.'); return; }
+      if(getFghlabVisibleTools().indexOf('partnermarket') === -1){ window.alert('Les documents se trouvent dans Marché Partenaire | Partner Market, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.'); return; }
       fghlabOpen6['docs-' + a.partnerId] = true;
       selectFghlabTool('partnermarket', { noClose: true });
       renderFghlabPartnerList();
@@ -24968,7 +24964,7 @@
       return;
     }
     if(getFghlabVisibleTools().indexOf('partnermarket') === -1){
-      window.alert('Ce dossier se trouve dans Partner Market, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.');
+      window.alert('Ce dossier se trouve dans Marché Partenaire | Partner Market, un outil non autorisé pour votre compte. Demandez l’accès au propriétaire.');
       return;
     }
     selectFghlabTool('partnermarket', { noClose: true });
@@ -27221,7 +27217,7 @@
   }
 
   /* ================= FGH-Lab — H-Statis (agent IA statistique interne de FINECIA GROUPE) =================
-     H-Statis est un outil bespoke FGH-Colab (comme COPROJECT/TOUTTEST — PAS un des 25/8 outils
+     H-Statis est un outil bespoke FGH-Colab (comme CO-PROJET | COPROJECT/TOUTTEST — PAS un des 25/8 outils
      tracker/relevé génériques) : une consultation IA avancée en statistiques, économétrie, finance
      quantitative et méthodes scientifiques, réservée à l'équipe FINECIA GROUPE (jamais exposée aux
      abonnés HelpNaud.ai ordinaires, qui ont déjà H-Start — voir hstat-tab-consult plus haut — comme
@@ -29147,7 +29143,7 @@
        overall (moyenne, 1 décimale), comment, createdOn }].
      Outil réservé au propriétaire (création ET consultation) : si une session membre est active
      (voir getActiveFghlabMember()), la carte affiche un message d'accès restreint plutôt qu'une
-     version lecture seule — plus strict que Partner Market/FG & Bank Partnership, conformément à sa
+     version lecture seule — plus strict que Marché Partenaire | Partner Market/FG & Bank Partnership, conformément à sa
      nature de données RH internes. */
   var PESE_CRITERIA = [
     { key:'technique', label:'Compétence technique' },
@@ -29365,7 +29361,7 @@
     bizplan: "Business plan accompagne la rédaction d'un plan d'affaires section par section. Choisissez un modèle selon le secteur (commerce, restauration, agroalimentaire, e-commerce, technologie, transport, OBNL, véhicules, immobilier), suivez l'avancement par section, chargez un projet fictif pour vous exercer, puis assemblez le document complet.",
     conseiller: "Conseiller en finance et économie répond à des questions ponctuelles de finance ou d'économie avec des repères adaptés au contexte d'un mandat FINECIA GROUPE — un point d'entrée structuré par niveau (PME, Entreprises, Société, Local, Municipal, Pays, International) avec questions de cadrage, calculateurs d'indicateurs avec seuils d'alerte, références et livrables types.",
     compta: "Comptabilité, contrôle et audit regroupe les contrôles internes (suivi des vérifications) et des modules de travail : Caisse, Service des opérations financières, journal comptable et balance de vérification, rapprochement bancaire, comptes clients et fournisseurs (balance âgée), immobilisations et amortissement, taxes de vente (TPS/TVQ/TVA) et clôture mensuelle. Les données de ces modules sont conservées sur l'appareil ; la devise se choisit en haut de la carte et figure dans les exportations CSV. Outil d'aide : il n'exécute aucun paiement et ne remplace pas un comptable.",
-    montage: "Montage de projets appuie la structuration financière d'un projet étape par étape (besoins, sources de financement, montage juridique et financier). Le panneau propose un cadre par niveau, un parcours pour le porteur d'une idée de projet (canevas, grille Go/No-go), la viabilité financière (VAN, TRI, délais, sensibilité, DSCR), la structure de financement (WACC, garanties), un registre des risques et la liste des pièces du dossier de financement. Distinct de COPROJECT qui gère le suivi et l'évaluation des projets déjà en portefeuille.",
+    montage: "Montage de projets appuie la structuration financière d'un projet étape par étape (besoins, sources de financement, montage juridique et financier). Le panneau propose un cadre par niveau, un parcours pour le porteur d'une idée de projet (canevas, grille Go/No-go), la viabilité financière (VAN, TRI, délais, sensibilité, DSCR), la structure de financement (WACC, garanties), un registre des risques et la liste des pièces du dossier de financement. Distinct de CO-PROJET | COPROJECT qui gère le suivi et l'évaluation des projets déjà en portefeuille.",
     pme: "Accompagnement des entreprises et PME regroupe le suivi des entreprises et PME clientes de FINECIA GROUPE — un espace pensé pour centraliser leur accompagnement dans la durée. Stub « Bientôt disponible » pour l'instant.",
     briefing: "Briefing FINECIA prépare des résumés et briefings internes pour tenir l'équipe informée (dossiers en cours, décisions, priorités). Stub « Bientôt disponible » — pas encore de génération ni d'archivage de briefings.",
     redaction: "Rédaction de plan d'affaires produit un document livrable selon le destinataire : demande de prêt bancaire, investisseurs, bailleur de fonds, résumé exécutif, plan opérationnel interne ou reprise d'entreprise. Chaque modèle contient la structure et une liste de vérifications avant livraison ; des projets fictifs permettent de s'exercer.",
@@ -29395,9 +29391,9 @@
     comptaconsolidee: "L'outil de comptabilité consolidée des entreprises tient la comptabilité consolidée pour des groupes d'entreprises liées, au-delà de la simple production d'états financiers consolidés ponctuels. Stub « Bientôt disponible ».",
     comptaconsolideepublic: "L'outil de comptabilité consolidée des municipalités, ministères et administrations adapte cette même logique de consolidation comptable au secteur public. Stub « Bientôt disponible ».",
     etatscommercants: "Les outils des états financiers des commerçants et des industrielles adaptent la préparation des états financiers aux réalités commerciales et industrielles (stocks, immobilisations, marges). Stub « Bientôt disponible ».",
-    coproject: "COPROJECT est l'un des trois outils FGH-Colab réellement fonctionnels : il gère et évalue les projets clients de FINECIA GROUPE (titre, client, statut d'avancement, scores de viabilité/structuration financière/risque). Les données sont enregistrées localement sur l'appareil (fghlabState.coprojects) — pas encore de synchronisation serveur, mais l'ajout, le suivi et l'évaluation d'un projet fonctionnent déjà, pour le propriétaire comme pour un membre connecté.",
-    partnermarket: "Partner Market est fonctionnel : c'est le registre des partenaires externes (banques, microfinances, concessionnaires, vendeurs) susceptibles de recevoir des clients référés par FINECIA GROUPE, avec type, statut (En attente, Actif, En pause, Suspendu), palier (Standard, Médium, Premium, Prétium) et frais d'inscription. Chaque partenaire accepte à l'inscription une politique de confidentialité et de conduite (modifiable par FINECIA GROUPE, avec avertissements, pauses de 10/20/30 jours ou plus, suspensions) ; les documents de l'entreprise sont facultatifs à l'inscription et peuvent être demandés ensuite (les clients ne sont jamais soumis à cette exigence). Pendant la négociation, le client peut ajouter des garanties et extras qui augmentent le prix final et la commission de FINECIA GROUPE ; s'il paie la totalité comptant, le dossier passe au statut « Complété », n'est pas visible des banques et une alerte est envoyée à FG & Bank Partnership pour le classer. La gestion (ajout/édition/suppression) est réservée au propriétaire ; un membre connecté le consulte en lecture seule. Les partenaires Banque/Microfinance actifs qui y figurent sont ceux visibles dans FG & Bank Partnership. Pour les concessionnaires automobiles, l'outil couvre désormais tout le modèle d'affaires : enrôlement du concessionnaire (lien d'inscription envoyé, visite sur place par notre équipe, ou inscription par appel téléphonique), puis gestion de son inventaire de véhicules, affiché dans un catalogue visible par les entreprises, les banques/microfinances et les clients inscrits sur Partner Market. Lorsqu'un client se montre intéressé par un véhicule, FINECIA GROUPE l'accompagne dans la négociation du prix avec le concessionnaire, calcule une offre de financement (calculateur intégré : acompte, taux estimé, durée, paiement hebdomadaire/aux deux semaines/mensuel), puis, une fois l'offre acceptée par le client, dépose l'opportunité dans FG & Bank Partnership pour la mettre en relation avec les partenaires Banque/Microfinance actifs. FINECIA GROUPE/HelpNaud.ai gagnent ainsi, en plus des commissions et frais de mise en relation déjà en place côté banques, une commission concessionnaire sur chaque vente conclue et un frais de mise en relation par client référé à un concessionnaire — ces deux revenus apparaissent dans le tableau de bord « Revenus & commissions » de FG & Bank Partnership.",
-    fgbankpartnership: "FG & Bank Partnership est fonctionnel (avec l'onglet PartnerDoss, réservé à l'équipe FINECIA GROUPE : dossier de chaque partenaire ouvert automatiquement à l'inscription, documents, conformité, dossiers finalisés) : il met en relation les projets clients structurés avec les offres de financement des partenaires bancaires et de microfinance actifs (issus de Partner Market), jusqu'à l'acceptation d'une offre et au calcul d'une commission simulée. Comme Partner Market, la gestion des offres et de la configuration est réservée au propriétaire ; un membre connecté consulte en lecture seule.",
+    coproject: "CO-PROJET | COPROJECT est l'un des trois outils FGH-Colab réellement fonctionnels : il gère et évalue les projets clients de FINECIA GROUPE (titre, client, statut d'avancement, scores de viabilité/structuration financière/risque). Les données sont enregistrées localement sur l'appareil (fghlabState.coprojects) — pas encore de synchronisation serveur, mais l'ajout, le suivi et l'évaluation d'un projet fonctionnent déjà, pour le propriétaire comme pour un membre connecté.",
+    partnermarket: "Marché Partenaire | Partner Market est fonctionnel : c'est le registre des partenaires externes (banques, microfinances, concessionnaires, vendeurs) susceptibles de recevoir des clients référés par FINECIA GROUPE, avec type, statut (En attente, Actif, En pause, Suspendu), palier (Standard, Médium, Premium, Prétium) et frais d'inscription. Chaque partenaire accepte à l'inscription une politique de confidentialité et de conduite (modifiable par FINECIA GROUPE, avec avertissements, pauses de 10/20/30 jours ou plus, suspensions) ; les documents de l'entreprise sont facultatifs à l'inscription et peuvent être demandés ensuite (les clients ne sont jamais soumis à cette exigence). Pendant la négociation, le client peut ajouter des garanties et extras qui augmentent le prix final et la commission de FINECIA GROUPE ; s'il paie la totalité comptant, le dossier passe au statut « Complété », n'est pas visible des banques et une alerte est envoyée à FG & Bank Partnership pour le classer. La gestion (ajout/édition/suppression) est réservée au propriétaire ; un membre connecté le consulte en lecture seule. Les partenaires Banque/Microfinance actifs qui y figurent sont ceux visibles dans FG & Bank Partnership. Pour les concessionnaires automobiles, l'outil couvre désormais tout le modèle d'affaires : enrôlement du concessionnaire (lien d'inscription envoyé, visite sur place par notre équipe, ou inscription par appel téléphonique), puis gestion de son inventaire de véhicules, affiché dans un catalogue visible par les entreprises, les banques/microfinances et les clients inscrits sur Marché Partenaire | Partner Market. Lorsqu'un client se montre intéressé par un véhicule, FINECIA GROUPE l'accompagne dans la négociation du prix avec le concessionnaire, calcule une offre de financement (calculateur intégré : acompte, taux estimé, durée, paiement hebdomadaire/aux deux semaines/mensuel), puis, une fois l'offre acceptée par le client, dépose l'opportunité dans FG & Bank Partnership pour la mettre en relation avec les partenaires Banque/Microfinance actifs. FINECIA GROUPE/HelpNaud.ai gagnent ainsi, en plus des commissions et frais de mise en relation déjà en place côté banques, une commission concessionnaire sur chaque vente conclue et un frais de mise en relation par client référé à un concessionnaire — ces deux revenus apparaissent dans le tableau de bord « Revenus & commissions » de FG & Bank Partnership.",
+    fgbankpartnership: "FG & Bank Partnership est fonctionnel (avec l'onglet PartnerDoss, réservé à l'équipe FINECIA GROUPE : dossier de chaque partenaire ouvert automatiquement à l'inscription, documents, conformité, dossiers finalisés) : il met en relation les projets clients structurés avec les offres de financement des partenaires bancaires et de microfinance actifs (issus de Marché Partenaire | Partner Market), jusqu'à l'acceptation d'une offre et au calcul d'une commission simulée. Comme Marché Partenaire | Partner Market, la gestion des offres et de la configuration est réservée au propriétaire ; un membre connecté consulte en lecture seule.",
     touttest: "TOUTTEST est fonctionnel : c'est un outil pilote de tests de recrutement permettant à FINECIA GROUPE d'évaluer des candidats à l'embauche pour le compte d'entreprises ou d'organisations clientes. Il couvre 5 modules (psychométrique, jugement, raisonnement, mise en situation, analyse) et une liste de niveaux de poste (Commis, Technicien, Analyste comptable et financier, Analyste de crédit, Analyste de risque, Médecin, Directeur, Gestionnaire, Économiste, Juriste, Agent en administration, Fonctionnaire d'État, Haut fonctionnaire/gouvernement, Employé généraliste). On crée une session pour un candidat, qui répond directement à un petit questionnaire (banque de questions d'exemple), puis un score sur 100 est calculé automatiquement et conservé dans l'historique des sessions. Ce n'est pas un instrument psychométrique validé ou certifié — un avertissement le rappelle dans la carte.",
     pese: "PESE (Programme d'évaluation du Staff et des employés) est fonctionnel : il sert à évaluer la performance du personnel déjà en poste (à distinguer de TOUTTEST, qui teste des candidats à l'embauche). On y tient une liste d'employés (nom, poste), puis on enregistre pour chacun des évaluations datées (évaluateur, note de 1 à 5 sur 5 critères standards, commentaire), avec un score global calculé automatiquement et un historique chronologique par employé. Outil réservé au propriétaire, en création comme en consultation — une session membre y voit un message d'accès restreint plutôt que les données."
   };
@@ -35544,7 +35540,7 @@
     '<h3>4. Propriété des données</h3><p>Les données que vous importez (transactions, budgets, documents) demeurent votre propriété. HelpNaud ne les collecte pas à des fins autres que leur affichage dans l\'application.</p>' +
     '<h3>5. Limitation de responsabilité</h3><p>Pendant la phase pilote, HelpNaud peut évoluer sans préavis. Aucune garantie n\'est offerte quant à l\'exactitude des calculs, prévisions ou détections d\'anomalies affichés ; vérifiez toujours les montants importants par vous-même.</p>' +
     '<h3>6. Résiliation</h3><p>L\'accès à HelpNaud peut être interrompu à tout moment pendant la phase pilote. Exportez régulièrement une sauvegarde de vos données (voir « Documents »).</p>' +
-    '<h3>7. Contact</h3><p>Pour toute question sur ces conditions, écrivez-nous via « Envoyer un commentaire » dans la barre latérale, ou à impactkwa@gmail.com.</p>';
+    '<h3>7. Contact</h3><p>Pour toute question sur ces conditions, écrivez-nous via « Envoyer un commentaire » dans la barre latérale, ou à contact@helpnaud.ai.</p>';
   var LEGAL_PRIVACY_HTML =
     '<h3>1. Où vivent vos données</h3><p>Les dossiers, transactions et réglages que vous créez dans HelpNaud sont stockés localement dans le navigateur de cet appareil (mémoire « localStorage »). HelpNaud lui-même ne dispose pas, à ce stade, d\'un serveur distinct qui reçoit ou conserve ces données.</p>' +
     '<h3>2. Hébergement de l\'application</h3><p>HelpNaud s\'exécute actuellement comme une page « Artifact » dans l\'environnement Claude, fourni par Anthropic. Le fonctionnement de cette page (chargement, exécution) est régi par la politique de confidentialité d\'Anthropic ; consultez-la pour comprendre le traitement effectué à ce niveau.</p>' +
@@ -35553,7 +35549,7 @@
     '<h3>5. Témoins et suivi</h3><p>HelpNaud n\'utilise pas de témoins (cookies) publicitaires ni de suivi analytique tiers.</p>' +
     '<h3>6. Vos droits</h3><p>Vous pouvez supprimer vos données à tout moment en supprimant les dossiers concernés dans HelpNaud, ou en effaçant les données de site de votre navigateur pour cette page.</p>' +
     '<h3>7. Évolutions à venir</h3><p>Une future version hébergée (au-delà de Claude, avec compte utilisateur et courriel automatique) impliquera une politique mise à jour, communiquée avant son activation.</p>' +
-    '<h3>8. Contact</h3><p>Pour toute question sur cette politique, écrivez à impactkwa@gmail.com.</p>';
+    '<h3>8. Contact</h3><p>Pour toute question sur cette politique, écrivez à contact@helpnaud.ai.</p>';
   function renderLegalText(){
     var t = document.getElementById('legal-terms');
     if(t && !t.dataset.rendered){ t.innerHTML = LEGAL_TERMS_HTML; t.dataset.rendered = '1'; }
@@ -40354,9 +40350,85 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
     sec.querySelector('#bp-save').addEventListener('click',function(){ readTop(); S.settings.updatedOn=H.today(); H.rpc('hr_settings_set',{p_key:'pgr_params',p_value:S.settings}).then(function(){ msg(sec,'Barèmes enregistrés ✓'); }).catch(function(e){ msg(sec,H.errMsg(e),1); }); });
   }
 
+
+  /* ---------- Assiduité : validation des feuilles, banques d'heures, catalogue des codes ---------- */
+  var ATT_CAT=[['presence','Présence et travail'],['vacation','Vacances'],['holiday','Jours fériés et fermeture'],['health','Santé'],['parental','Congés parentaux'],['family','Famille'],['absence','Absences'],['recovery','Reprise d’heures'],['civic','Obligations civiques'],['other','Autres']];
+  var ATT_PAY=[['paid','Payé'],['unpaid','Non payé'],['partial','Partiellement payé'],['n/a','Information']];
+  var ATT_BANK=[['','—'],['overtime','Heures supp.'],['sick','Maladie'],['vacation','Vacances']];
+  var ATT_ST={soumis:'En attente',valide:'Validée',rejete:'Refusée'};
+  function assiduiteTab(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">🗓 Assiduité et banques d’heures</h3><p class="hint" style="margin:0 0 10px">Les employés remplissent leur feuille d’assiduité dans ECOREP avec des codes. Validez les lignes ici : un code lié à une banque (maladie, vacances, reprise d’heures supp.) diminue automatiquement le solde de l’employé.</p><div class="hn-msg msg" style="min-height:18px"></div>'+
+      '<div class="card" style="margin-bottom:12px"><strong>1) Feuilles à valider</strong><div class="hn-cp-row" style="margin-top:6px"><label>Statut<select id="as-st"><option value="soumis">En attente</option><option value="">Tous</option><option value="valide">Validées</option><option value="rejete">Refusées</option></select></label><label>Employé<select id="as-emp"><option value="">Tous</option></select></label></div><div id="as-list" class="hn-cp-wrap"></div></div>'+
+      '<div class="card" style="margin-bottom:12px"><strong>2) Banques d’heures par employé</strong><div class="hn-cp-row" style="margin-top:6px"><label>Employé<select id="bk-emp"><option value="">— choisir —</option></select></label></div><div id="bk-view"></div></div>'+
+      '<div class="card"><strong>3) Codes d’assiduité</strong><p class="hint">Catalogue modifiable (47 codes proposés). Un code ne peut pas être supprimé : décochez « Actif » pour le retirer des listes.</p><div id="cd-host"></div><div class="hn-cp-row" style="margin-top:8px"><button class="btn primary" id="cd-save" type="button">💾 Enregistrer les codes</button></div></div>';
+    var names={}, list=sec.querySelector('#as-list');
+    loadEmps().then(function(em){ var o=em.map(function(e){ names[e.member]=empName(e); return '<option value="'+esc(e.member)+'">'+esc(empName(e))+' ('+esc(e.member)+')</option>'; }).join(''); sec.querySelector('#as-emp').insertAdjacentHTML('beforeend',o); sec.querySelector('#bk-emp').insertAdjacentHTML('beforeend',o); }).catch(function(){});
+    function go(){
+      H.rpc('hr_att_list',{p_status:sec.querySelector('#as-st').value,p_member:sec.querySelector('#as-emp').value||null}).then(function(l){
+        list.innerHTML='<table class="hn-cp-tbl"><tr><th>Employé</th><th>Date</th><th>Code</th><th>Heures</th><th>Statut</th><th>Décision</th></tr>'+((l||[]).length?l.map(function(a){
+          return '<tr><td>'+esc(names[a.member]||a.member)+'<br><span class="hint">'+esc(a.member)+'</span></td><td>'+esc(String(a.date).slice(0,10))+'</td><td><strong>'+esc(a.code)+'</strong><br><span class="hint">'+esc(a.label)+(a.note?' · '+esc(a.note):'')+(a.bank?' · banque '+esc(a.bank):'')+'</span></td><td>'+esc(a.hours)+'</td><td>'+esc(ATT_ST[a.status]||a.status)+'</td><td>'+(a.status==='valide'?'<button class="btn" data-d="soumis" data-id="'+esc(a.id)+'" style="padding:2px 7px">↺ Rouvrir</button>':'<button class="btn" data-d="valide" data-id="'+esc(a.id)+'" style="padding:2px 7px">✓ Valider</button> '+(a.status==='rejete'?'':'<button class="btn" data-d="rejete" data-id="'+esc(a.id)+'" style="padding:2px 7px">✕ Refuser</button>'))+'</td></tr>'; }).join(''):'<tr><td colspan="6" class="hint">Aucune ligne.</td></tr>')+'</table>';
+      }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    }
+    sec.querySelector('#as-st').addEventListener('change',go); sec.querySelector('#as-emp').addEventListener('change',go);
+    list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-d]'); if(!b) return; H.rpc('hr_att_decide',{p_id:b.dataset.id,p_decision:b.dataset.d}).then(function(r){ if(r&&r.ok===false){ msg(sec,'Action impossible.',1); return; } msg(sec,'Décision enregistrée ✓'); go(); var m=sec.querySelector('#bk-emp').value; if(m) showBank(m); }).catch(function(e){ msg(sec,H.errMsg(e),1); }); });
+    go();
+    /* Banques */
+    var bkv=sec.querySelector('#bk-view');
+    function hh(n){ return (Math.round((+n||0)*100)/100)+' h'; }
+    function showBank(m){
+      if(!m){ bkv.innerHTML=''; return; }
+      H.rpc('hr_bank_summary',{p_member:m}).then(function(r){ var b=r.banks||{}, o=b.overtime||{}, sk=b.sick||{}, v=b.vacation||{};
+        var BN={overtime:'Heures supp.',sick:'Maladie',vacation:'Vacances'};
+        bkv.innerHTML='<table class="hn-cp-tbl" style="margin-top:8px"><tr><th>Banque</th><th>Accordées / mises en banque</th><th>Utilisées / reprises</th><th>Solde</th></tr>'+
+          '<tr><td>⏱ Heures supp.<br><span class="hint">approuvées au total : '+hh(o.approved)+' · payées : '+hh(o.paid)+' · en attente : '+hh(o.pending)+'</span></td><td>'+hh(o.banked)+'</td><td>'+hh(o.recovered)+'</td><td><strong>'+hh(o.balance)+'</strong></td></tr>'+
+          '<tr><td>🤒 Maladie</td><td>'+hh(sk.allocated)+'</td><td>'+hh(sk.used)+'</td><td><strong>'+hh(sk.balance)+'</strong></td></tr>'+
+          '<tr><td>🏖 Vacances</td><td>'+hh(v.allocated)+'</td><td>'+hh(v.used)+'</td><td><strong>'+hh(v.balance)+'</strong></td></tr></table>'+
+          '<div class="hn-cp-row" style="margin-top:8px"><label>Banque<select id="bk-b"><option value="overtime">Heures supp.</option><option value="sick">Maladie</option><option value="vacation">Vacances</option></select></label><label>Type<select id="bk-k"><option value="allocation">Allocation (+)</option><option value="banked">Mise en banque d’heures approuvées (+)</option><option value="adjust">Ajustement (+ ou −)</option></select></label><label>Heures<input id="bk-h" type="number" step="0.25" style="width:90px"></label><label>Date<input id="bk-d" type="date" value="'+H.today()+'"></label><label>Note<input id="bk-n" maxlength="200" style="width:200px"></label><button class="btn primary" id="bk-add" type="button">Ajouter</button></div>'+
+          '<div style="margin-top:8px">'+((r.ledger||[]).length?'<table class="hn-cp-tbl"><tr><th>Date</th><th>Banque</th><th>Heures</th><th>Type</th><th>Note</th><th></th></tr>'+r.ledger.map(function(l){ return '<tr><td>'+esc(String(l.date).slice(0,10))+'</td><td>'+esc(BN[l.bank]||l.bank)+'</td><td>'+(l.hours>0?'+':'')+esc(l.hours)+'</td><td>'+esc(l.kind)+'</td><td>'+esc(l.note)+'</td><td>'+(l.kind==='use'?'':'<button class="btn" data-del="'+esc(l.id)+'" style="padding:1px 7px">✕</button>')+'</td></tr>'; }).join('')+'</table>':'<p class="hint">Aucun mouvement.</p>')+'</div>';
+        bkv.querySelector('#bk-add').addEventListener('click',function(){ var h=parseFloat(bkv.querySelector('#bk-h').value); if(!h){ msg(sec,'Indiquez un nombre d’heures.',1); return; }
+          H.rpc('hr_bank_add',{p_member:m,p_bank:bkv.querySelector('#bk-b').value,p_hours:h,p_kind:bkv.querySelector('#bk-k').value,p_note:bkv.querySelector('#bk-n').value,p_date:bkv.querySelector('#bk-d').value||null}).then(function(x){ if(x&&x.ok===false){ msg(sec,'Valeurs refusées.',1); return; } msg(sec,'Mouvement ajouté ✓'); showBank(m); }).catch(function(e){ msg(sec,H.errMsg(e),1); }); });
+        bkv.addEventListener('click',function(ev){ var d=ev.target.closest('[data-del]'); if(!d||!confirm('Supprimer ce mouvement ?')) return; H.rpc('hr_bank_delete',{p_id:+d.dataset.del}).then(function(){ showBank(m); }).catch(function(e){ msg(sec,H.errMsg(e),1); }); });
+      }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    }
+    sec.querySelector('#bk-emp').addEventListener('change',function(){ showBank(this.value); });
+    /* Codes */
+    var codes=[]; var ed=null;
+    H.rpc('hr_att_codes_list',{}).then(function(l){ codes=(l||[]).map(function(c){ c.active=c.active?'1':'0'; c.bank=c.bank||''; return c; });
+      ed=H.rowsEditor(sec.querySelector('#cd-host'),[{k:'code',l:'Code',w:90},{k:'label',l:'Libellé',w:280},{k:'category',l:'Catégorie',t:'select',o:ATT_CAT,d:'other'},{k:'pay',l:'Rémunération',t:'select',o:ATT_PAY,d:'paid'},{k:'bank',l:'Banque débitée',t:'select',o:ATT_BANK,d:''},{k:'sort',l:'Ordre',t:'number',w:60,d:100},{k:'active',l:'Actif',t:'select',o:[['1','Oui'],['0','Non']],d:'1'}],codes,null,'Ajouter un code'); }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    sec.querySelector('#cd-save').addEventListener('click',function(){ var ok=0,fail=0; var jobs=codes.map(function(c){ return H.rpc('hr_att_code_save',{p:{code:c.code,label:c.label,category:c.category,pay:c.pay,bank:c.bank||null,sort:c.sort===''?100:c.sort,active:c.active!=='0'}}).then(function(r){ if(r&&r.ok===false) fail++; else ok++; }).catch(function(){ fail++; }); });
+      Promise.all(jobs).then(function(){ msg(sec,ok+' code(s) enregistré(s)'+(fail?' · '+fail+' refusé(s) (code de 2 à 12 lettres ou chiffres, libellé requis)':'')+'.',fail?1:0); }); });
+  }
+
+  /* ---------- Documents fiscaux : T4, Relevé 1, W-2… publiés vers ECOREP ---------- */
+  var TAX_KINDS=['T4','Relevé 1 (RL-1)','T4A','Relevé 2 (RL-2)','Relevé 24 (RL-24)','W-2 (États-Unis)','1099 (États-Unis)','Attestation fiscale (Togo)','Attestation fiscale (Bénin)','Fiche fiscale (France)','Fiche fiscale (autre pays)','Autre document fiscal'];
+  function fiscalTab(sec){
+    sec.innerHTML='<h3 style="margin:0 0 4px">📄 Documents fiscaux</h3><p class="hint" style="margin:0 0 10px">Déposez le T4, le Relevé 1 ou la fiche fiscale de chaque employé (PDF ou image, 2 Mo max.) pour un exercice fiscal. L’employé le télécharge dans ECOREP › Documents fiscaux. Produisez d’abord le document officiel avec le logiciel ou le portail de l’administration fiscale de son pays : LPGR ne remplace pas ces déclarations.</p><div class="hn-msg msg" style="min-height:18px"></div>'+
+      '<div class="card" style="margin-bottom:12px"><div class="hn-cp-row"><label>Employé<select id="tx-emp"></select></label><label>Exercice (année)<input id="tx-y" type="number" value="'+(new Date().getFullYear()-1)+'" style="width:100px"></label><label>Type<select id="tx-k">'+TAX_KINDS.map(function(k){return '<option>'+esc(k)+'</option>';}).join('')+'</select></label><label>Titre (facultatif)<input id="tx-t" maxlength="120" style="width:180px"></label><label>Fichier<input id="tx-f" type="file" accept="application/pdf,image/png,image/jpeg"></label><button class="btn primary" id="tx-up" type="button">⬆ Publier</button></div></div>'+
+      '<div class="hn-cp-row"><label>Voir l’employé<select id="tx-fe"><option value="">Tous</option></select></label><label>Année<input id="tx-fy" type="number" placeholder="Toutes" style="width:100px"></label><button class="btn" id="tx-go" type="button">Afficher</button></div><div id="tx-list" class="hn-cp-wrap"></div>';
+    var names={}, list=sec.querySelector('#tx-list');
+    loadEmps().then(function(em){ var o=em.map(function(e){ names[e.member]=empName(e); return '<option value="'+esc(e.member)+'">'+esc(empName(e))+' ('+esc(e.member)+')</option>'; }).join(''); sec.querySelector('#tx-emp').innerHTML=o; sec.querySelector('#tx-fe').insertAdjacentHTML('beforeend',o); }).catch(function(){});
+    function go(){
+      H.rpc('hr_taxdoc_list',{p_member:sec.querySelector('#tx-fe').value||null,p_year:parseInt(sec.querySelector('#tx-fy').value,10)||null}).then(function(l){
+        list.innerHTML='<table class="hn-cp-tbl"><tr><th>Employé</th><th>Exercice</th><th>Type</th><th>Fichier</th><th>ECOREP</th><th></th></tr>'+((l||[]).length?l.map(function(d){ return '<tr><td>'+esc(names[d.member]||d.member)+'<br><span class="hint">'+esc(d.member)+'</span></td><td>'+esc(d.year)+'</td><td>'+esc(d.kind)+(d.title?'<br><span class="hint">'+esc(d.title)+'</span>':'')+'</td><td>'+esc(d.fileName)+'</td><td>'+(d.published?'<span class="hn-pos">Publié</span>':'Retiré')+'</td><td><button class="btn" data-p="'+esc(d.id)+'" data-v="'+(d.published?'0':'1')+'" style="padding:2px 7px">'+(d.published?'Retirer':'Publier')+'</button> <button class="btn" data-x="'+esc(d.id)+'" style="padding:2px 7px">✕</button></td></tr>'; }).join(''):'<tr><td colspan="6" class="hint">Aucun document.</td></tr>')+'</table>';
+      }).catch(function(e){ msg(sec,H.errMsg(e),1); });
+    }
+    sec.querySelector('#tx-go').addEventListener('click',go);
+    list.addEventListener('click',function(ev){ var p=ev.target.closest('[data-p]'), x=ev.target.closest('[data-x]');
+      if(p) H.rpc('hr_taxdoc_publish',{p_id:p.dataset.p,p_published:p.dataset.v==='1'}).then(go).catch(function(e){ msg(sec,H.errMsg(e),1); });
+      else if(x&&confirm('Supprimer ce document définitivement ?')) H.rpc('hr_taxdoc_delete',{p_id:x.dataset.x}).then(go).catch(function(e){ msg(sec,H.errMsg(e),1); }); });
+    sec.querySelector('#tx-up').addEventListener('click',function(){
+      var f=sec.querySelector('#tx-f').files[0], m=sec.querySelector('#tx-emp').value, y=sec.querySelector('#tx-y').value;
+      if(!m||!f){ msg(sec,'Choisissez l’employé et le fichier.',1); return; }
+      if(f.size>2000000){ msg(sec,'Fichier trop volumineux (2 Mo maximum).',1); return; }
+      var rd=new FileReader(); rd.onload=function(){ var b64=String(rd.result).split(',')[1]||'';
+        H.rpc('hr_taxdoc_save',{p:{member:m,year:y,kind:sec.querySelector('#tx-k').value,title:sec.querySelector('#tx-t').value,fileName:f.name,mime:f.type,b64:b64,published:true}}).then(function(r){ if(r&&r.ok===false){ msg(sec,'Document refusé (PDF, PNG ou JPEG de 2 Mo maximum ; année valide).',1); return; } msg(sec,'Document publié dans ECOREP ✓'); sec.querySelector('#tx-f').value=''; go(); }).catch(function(e){ msg(sec,H.errMsg(e),1); }); };
+      rd.readAsDataURL(f); });
+    go();
+  }
+
   function ecorepTab(sec){
     var url=location.origin+location.pathname.replace(/[^\/]*$/,'')+'public.html?ecorep=1';
-    sec.innerHTML='<h3 style="margin:0 0 4px">🔐 ECOREP — espace employé</h3><p class="hint">Chaque employé consulte uniquement ses propres relevés de paie (imprimer, télécharger), soumet ses heures supplémentaires à son gestionnaire, puis les RH valident avant l’imputation à la paie.</p>'+
+    sec.innerHTML='<h3 style="margin:0 0 4px">🔐 ECOREP — espace employé</h3><p class="hint">Chaque employé consulte uniquement ses propres données : relevés de paie, documents fiscaux de chaque exercice (T4, Relevé 1…), banques d’heures (heures supplémentaires, maladie, vacances) et feuille d’assiduité avec codes. Il soumet aussi ses heures supplémentaires à son gestionnaire, puis les RH valident avant l’imputation à la paie.</p>'+
       '<div class="card"><strong>Lien d’accès à communiquer aux employés</strong><div class="hn-cp-row" style="margin-top:6px"><input id="ec-url" readonly value="'+esc(url)+'" style="min-width:280px;flex:1"><button class="btn" id="ec-copy" type="button">Copier</button></div></div>'+
       '<div class="card"><strong>Connexion</strong><p class="hint">Courriel <b>ou</b> numéro de membre à 8 chiffres, avec le mot de passe du compte d’équipe. Un employé doit avoir un compte membre actif (Réglages → équipe) <b>et</b> une fiche RH avec le même numéro de membre.</p><strong>Circuit des heures supplémentaires</strong><p class="hint">1) L’employé soumet (date, plage horaire, motif) → 2) le gestionnaire (numéro indiqué dans la fiche) approuve, refuse ou demande une correction → 3) les RH valident, refusent ou demandent une correction (onglet « Heures supp. ») → 4) imputation au calcul de la paie.</p></div>';
     sec.querySelector('#ec-copy').addEventListener('click',function(){ try{ navigator.clipboard.writeText(url); H.toast('Lien copié ✓'); }catch(e){ sec.querySelector('#ec-url').select(); } });
@@ -40370,6 +40442,8 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       {id:'releves',label:'📚 Relevés',html:'',init:relevesTab},
       {id:'hs',label:'⏱ Heures supp.',html:'',init:hsTab},
       {id:'bareme',label:'⚙️ Barèmes',html:'',init:baremesTab},
+      {id:'assid',label:'🗓 Assiduité',html:'',init:assiduiteTab},
+      {id:'fiscal',label:'📄 Docs fiscaux',html:'',init:fiscalTab},
       {id:'ecorep',label:'🔐 ECOREP',html:'',init:ecorepTab}
     ],'<h2 style="margin:0 0 4px">💼 LPGR - Logiciel Paie et Gestion des Rémunérations</h2><p class="hint" style="margin:0 0 10px">Paie, avantages, primes, impôt, congés, relevés de paie et fiches RH. Données sensibles conservées sur le serveur, accessibles seulement aux membres autorisés sur l’outil LPGR.</p>');
     S.emps=null; S.settings=null;
