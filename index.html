@@ -11333,6 +11333,46 @@
     Array.prototype.forEach.call(c.querySelectorAll('.md-mathblock'), function(m){ m.style.cssText = 'text-align:center;margin:6px 0'; });
     return { html:'<meta charset="utf-8">' + c.innerHTML, text:plain.join('\n').replace(/\n{3,}/g,'\n\n').trim() };
   }
+  function hnIsAppleWebkit(){ var u = navigator.userAgent || ''; return /iP(hone|ad|od)/.test(u) || (/Safari/.test(u) && !/Chrome|Chromium|Edg|OPR|Android/.test(u)) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function hnSelectionCopy(tx){
+    var box = null, ok = false;
+    try{
+      var rc = hnRichCopyData(tx);
+      box = document.createElement('div');
+      box.setAttribute('contenteditable', 'true');
+      box.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;overflow:hidden;white-space:pre-wrap;';
+      box.innerHTML = rc.html.replace(/^<meta[^>]*>/, '');
+      document.body.appendChild(box);
+      var r = document.createRange(); r.selectNodeContents(box);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      ok = document.execCommand('copy');
+      sel.removeAllRanges();
+    }catch(e){ ok = false; }
+    if(box && box.parentNode) box.parentNode.removeChild(box);
+    return ok;
+  }
+  /* Collage de texte encodé (« Understood:%20from%20now… », ou lien avec fragment #:~:text=) : on le décode avant l'insertion dans un champ de saisie. */
+  function hnFixPastedText(t){
+    var s = String(t || '');
+    var m = s.match(/^\s*https?:\/\/\S*#:~:text=(\S+)\s*$/i); if(m) s = m[1];
+    if(!/\s/.test(s.trim()) && (s.match(/%[0-9A-Fa-f]{2}/g) || []).length >= 3){
+      try{ s = decodeURIComponent(s); }catch(e){ s = s.replace(/%20/g, ' '); }
+    }
+    return s;
+  }
+  document.addEventListener('paste', function(e){
+    var el = e.target; if(!el || !(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && /^(text|search|)$/i.test(el.type)))) return;
+    var cd = e.clipboardData; if(!cd) return;
+    var t = cd.getData('text/plain'), f = hnFixPastedText(t);
+    if(f === t) return;
+    e.preventDefault();
+    try{
+      var a = el.selectionStart, b = el.selectionEnd;
+      el.value = el.value.slice(0, a) + f + el.value.slice(b);
+      el.selectionStart = el.selectionEnd = a + f.length;
+      el.dispatchEvent(new Event('input', { bubbles:true }));
+    }catch(x){}
+  }, true);
   function buildMsgActions(msgEl, who, refill){
     var bar = document.createElement('div');
     bar.className = 'msg-actions';
@@ -11346,6 +11386,8 @@
       var text = getMsgText(msgEl);
       var tx = msgEl.querySelector('.msg-text.md');
       /* Réponse mise en forme : copie riche (HTML + texte à tabulations) pour Word, Docs, Excel, courriel. Maj+clic = texte brut. */
+      /* Safari / iOS : la copie par ClipboardItem peut donner un texte collé encodé (%20) ailleurs. On passe par une vraie sélection + copie native, qui produit un HTML et un texte normaux. */
+      if(tx && !ev.shiftKey && hnIsAppleWebkit() && hnSelectionCopy(tx)){ showTempStatus(status, 'Copié ✓'); return; }
       if(tx && !ev.shiftKey && navigator.clipboard && window.ClipboardItem){
         var rc = hnRichCopyData(tx);
         navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([rc.html], { type:'text/html' }), 'text/plain': new Blob([rc.text], { type:'text/plain' }) })])
