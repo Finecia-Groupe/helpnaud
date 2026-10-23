@@ -41053,10 +41053,16 @@ var H = window.__hn || {};
 var OPS = window.__ops = { tabs:{ taiso:[], itaf:[] }, A:{}, E:{} };
 var COLLS = ['inv','ord','pay','sup','mail','bank','alert','doc','set'];
 var PNAME = { taiso:'TAISO', itaf:'iTAF' };
-var ST = { orgs:[], org:null, sb:null, email:'', err:'', ready:false, cache:{}, prod:'taiso', loading:false };
+var ST = { orgs:[], invites:[], demo:false, org:null, sb:null, email:'', err:'', ready:false, cache:{}, prod:'taiso', loading:false };
 var UI = { taiso:{ tab:'dash', f:{} }, itaf:{ tab:'dash', f:{} } };
-var LSK = 'hn_ops_local', ORGK = 'hn_ops_org', AUDK = 'hn_ops_audit';
-var PRICE_NOTE = 'Tarifs indicatifs : TAISO dès 199 $ US/mois, iTAF dès 149 $ US/mois, les deux dès 299 $ US/mois (jusqu’à 10 comptes). Institutions : sur devis.';
+var LSK = 'hn_ops_local', DEMOK = 'hn_ops_demo', ORGK = 'hn_ops_org', AUDK = 'hn_ops_audit';
+var PRICE_NOTE = 'Tarifs de départ (hypothèses, avant taxes, en dollars US, facturés annuellement) : TAISO dès 199 $/mois, iTAF dès 149 $/mois, TAISO + iTAF dès 299 $/mois — par exemple 250 documents par mois et 5 utilisateurs inclus ; dépassements par lots. Institutions et grandes organisations : sur devis.';
+var PLANS = [
+  ['trial', 'Essai gratuit de 14 jours', 'TAISO + iTAF, sans engagement', 'Gratuit'],
+  ['taiso', 'TAISO', 'Gestion et rapprochement des opérations', 'dès 199 $ US/mois*'],
+  ['itaf', 'iTAF', 'Contrôles et analyse des anomalies', 'dès 149 $ US/mois*'],
+  ['both', 'TAISO + iTAF', 'Suite intégrée', 'dès 299 $ US/mois*']
+];
 
 /* ---------- utilitaires ---------- */
 function $(id){ return document.getElementById(id); }
@@ -41150,8 +41156,9 @@ function money(n){ return (Math.round((+n || 0) * 100) / 100).toLocaleString('fr
 function L(c){ return ST.cache[c] || []; }
 function byId(c, id){ return L(c).filter(function(x){ return x.id === id; })[0]; }
 function isCloud(){ return !!ST.org; }
-function localLoad(){ var d = J(LSK, {}); COLLS.forEach(function(c){ ST.cache[c] = Array.isArray(d[c]) ? d[c] : []; }); }
-function localSave(){ var d = {}; COLLS.forEach(function(c){ d[c] = ST.cache[c] || []; }); if(!S(LSK, d)) toast('Espace de stockage plein : exportez vos données.'); }
+function lsk(){ return ST.demo ? DEMOK : LSK; }
+function localLoad(){ var d = J(lsk(), {}); COLLS.forEach(function(c){ ST.cache[c] = Array.isArray(d[c]) ? d[c] : []; }); }
+function localSave(){ var d = {}; COLLS.forEach(function(c){ d[c] = ST.cache[c] || []; }); if(!S(lsk(), d)) toast('Espace de stockage plein : exportez vos données.'); }
 function rpc(fn, args){
   if(!ST.sb) return Promise.reject(new Error('Connexion requise.'));
   return ST.sb.rpc(fn, args || {}).then(function(r){ if(r.error) throw r.error; return r.data; });
@@ -41203,14 +41210,14 @@ function loadAll(){
 function loadOrgs(){
   return (H.session ? H.session() : Promise.resolve(null)).then(function(x){
     ST.sb = x && x.sb || null; ST.email = '';
-    if(!x) { ST.orgs = []; return; }
+    if(!x) { ST.orgs = []; ST.invites = []; return; }
     return x.sb.auth.getSession().then(function(r){ var u = r && r.data && r.data.session && r.data.session.user; ST.email = u && u.email ? String(u.email).toLowerCase() : ''; }).then(function(){
-      return rpc('ops_my_orgs').then(function(d){ ST.orgs = Array.isArray(d) ? d : []; ST.err = ''; }).catch(function(e){ ST.orgs = []; ST.err = errTxt(e); });
+      return rpc('ops_my_orgs').then(function(d){ ST.orgs = Array.isArray(d) ? d : []; ST.err = ''; }).catch(function(e){ ST.orgs = []; ST.err = errTxt(e); }).then(function(){ return rpc('ops_my_invites').then(function(d){ ST.invites = Array.isArray(d) ? d : []; }).catch(function(){ ST.invites = []; }); });
     });
   }).catch(function(){ ST.orgs = []; });
 }
 function pickOrg(){
-  var want = J(ORGK, ''); ST.org = null;
+  var want = J(ORGK, ''); ST.org = null; ST.demo = want === '__demo__';
   if(want) ST.org = ST.orgs.filter(function(o){ return o.id === want; })[0] || null;
 }
 function init(force){
@@ -41291,14 +41298,14 @@ OPS.v = { tbl:tbl, badge:badge, btn:btn, ib:ib, kpi:kpi, filterBar:filterBar, F:
 /* ---------- gabarit des deux produits ---------- */
 var INTRO = {
   taiso: 'Traitement automatique intelligent des services et des opérations : factures, commandes, paiements, fournisseurs, boîte courriel et rapprochement bancaire de votre organisation.',
-  itaf: 'Intelligence et traitement automatique des factures : détection d’erreurs et de fraudes, analyse des paiements par carte et par dépôt direct, réconciliation intelligente.'
+  itaf: 'Intelligence et traitement automatique des factures : repérage des erreurs, des anomalies et des indices de fraude (à vérifier, jamais une preuve), analyse des paiements par carte et par dépôt direct, réconciliation intelligente.'
 };
 function root(prod){ return $('view-' + prod); }
 function ctxBar(prod){
   var h = '<div class="ops-ctx"><label>Espace de travail&nbsp;<select id="ops-org-' + prod + '" data-orgsel>';
-  h += '<option value="">Local — sur cet appareil</option>';
+  h += '<option value="">Local — sur cet appareil</option><option value="__demo__"' + (ST.demo ? ' selected' : '') + '>Démonstration — données d’exemple (séparées)</option>';
   ST.orgs.forEach(function(o){ h += '<option value="' + esc(o.id) + '"' + (ST.org && ST.org.id === o.id ? ' selected' : '') + '>' + esc(o.name) + (o.role === 'admin' ? ' (admin)' : '') + '</option>'; });
-  h += '</select></label> ' + btn('+ Organisation / Acheter', 'org-new', null, 'ops-sm') + ' ' + btn('↻', 'reload', null, 'ops-sm') + '</div>';
+  h += '</select></label> ' + btn('+ Organisation / Abonnement', 'org-new', null, 'ops-sm') + ' ' + btn('↻', 'reload', null, 'ops-sm') + '</div>';
   return h;
 }
 function lockScreen(prod){
@@ -41308,7 +41315,8 @@ function lockScreen(prod){
     : 'Votre administrateur ne vous a pas encore donné accès à ' + PNAME[prod] + '. Demandez-lui d’ouvrir vos accès dans « Équipe & accès ».') + '</p></div>';
 }
 function statusLine(prod){
-  if(!isCloud()) return '<div class="ops-note">Mode local : vos données restent sur cet appareil. Pour travailler à plusieurs (comptes administrateurs et employés), créez une organisation avec « + Organisation / Acheter ».</div>';
+  if(ST.demo) return '<div class="ops-note warn">Espace de démonstration : données d’exemple séparées de vos vraies données. ' + btn('Réinitialiser la démonstration', 'demo-clear', null, 'ops-sm') + '</div>';
+  if(!isCloud()) return '<div class="ops-note">Mode local : vos données restent sur cet appareil. Pour travailler à plusieurs (comptes administrateurs et employés), créez une organisation avec « + Organisation / Abonnement ».</div>';
   var o = ST.org, until = o.paid_until && new Date(o.paid_until) > new Date() ? 'Abonnement actif jusqu’au ' + String(o.paid_until).slice(0, 10) : (new Date(o.trial_until) > new Date() ? 'Essai gratuit jusqu’au ' + String(o.trial_until).slice(0, 10) : 'Essai terminé');
   return '<div class="ops-note">Organisation « ' + esc(o.name) + ' » · ' + (o.role === 'admin' ? 'administrateur' : 'employé (' + (lvl(prod) === 'edit' ? 'modification' : 'lecture seule') + ')') + ' · ' + esc(until) + ' · ' + o.members + ' compte(s)</div>';
 }
@@ -41321,6 +41329,7 @@ function render(){
     if(ST.loading){ el.innerHTML = h + '<p class="hint">Chargement…</p></div>'; return; }
     if(ST.err && !ST.orgs.length && ST.err.indexOf('SQL') > -1) h += '<div class="ops-note warn">' + esc(ST.err) + ' Le mode local reste utilisable.</div>';
     h += statusLine(prod);
+    (ST.invites || []).forEach(function(iv){ h += '<div class="ops-note warn">Invitation de l’organisation « ' + esc(iv.org) + ' » (' + (iv.role === 'admin' ? 'administrateur' : 'employé') + ') — valable jusqu’au ' + esc(String(iv.expires).slice(0, 10)) + '. ' + btn('Accepter', 'invite-accept', { id: iv.id }, 'primary ops-sm') + ' ' + btn('Refuser', 'invite-decline', { id: iv.id }, 'ops-sm') + '</div>'; });
     if(isCloud() && lvl(prod) === 'none'){ el.innerHTML = h + lockScreen(prod) + '</div>'; bindCtx(el); return; }
     h += '<nav class="ops-tabs">' + tabs.map(function(t){ return '<button type="button" class="' + (u.tab === t.id ? 'on' : '') + '" data-act="tab" data-tab="' + t.id + '">' + t.label + '</button>'; }).join('') + '</nav>';
     var t = tabs.filter(function(x){ return x.id === u.tab; })[0] || tabs[0];
@@ -41362,18 +41371,22 @@ OPS.A.reload = function(){ ST.ready = false; init(true); };
 /* ---------- organisation : création, achat, essai ---------- */
 OPS.A['org-new'] = function(){
   if(!ST.sb || !ST.email){
-    modal('Créer une organisation', '<p>Pour acheter TAISO ou iTAF et créer des comptes administrateurs et employés, connectez-vous d’abord à votre compte HelpNaud (Réglages › compte).</p><p class="hint">Sans compte, vous pouvez utiliser les deux logiciels en mode local sur cet appareil.</p>', [{ label: 'Aller aux Réglages', cls: 'primary', fn: function(){ var b = document.querySelector('.nav-btn[data-view="settings"]'); if(b) b.click(); } }, { label: 'Fermer' }]);
+    modal('Organisation et abonnement', '<p>Pour créer une organisation, démarrer l’essai ou choisir un abonnement (avec comptes administrateurs et employés), connectez-vous d’abord à votre compte HelpNaud (Réglages › compte).</p><p class="hint">Sans compte, vous pouvez utiliser les deux logiciels en mode local ou dans l’espace de démonstration.</p>', [{ label: 'Aller aux Réglages', cls: 'primary', fn: function(){ var b = document.querySelector('.nav-btn[data-view="settings"]'); if(b) b.click(); } }, { label: 'Fermer' }]);
     return;
   }
-  modal('Acheter / créer une organisation', '<div class="ops-form"><div class="ops-fw w2"><label class="ops-fl">Nom de l’entreprise ou de l’institution *</label><input id="ops-on" placeholder="Ex. Entreprise Alpha inc."></div>' +
-    '<div class="ops-fw w2"><label class="ops-ck"><input type="checkbox" id="ops-p-taiso" checked> TAISO — services et opérations financières</label><br><label class="ops-ck"><input type="checkbox" id="ops-p-itaf" checked> iTAF — factures, erreurs et fraudes</label></div></div>' +
-    '<p class="hint">Essai gratuit de 14 jours. Vous devenez administrateur : vous pourrez ensuite créer d’autres comptes administrateurs et des comptes employés et choisir leurs accès. L’activation payante est confirmée par HelpNaud après paiement.</p><p class="hint">' + esc(PRICE_NOTE) + '</p>',
-    [{ label: 'Démarrer l’essai gratuit', cls: 'primary', fn: function(d){
-      var name = d.querySelector('#ops-on').value.trim(), pr = []; if(d.querySelector('#ops-p-taiso').checked) pr.push('taiso'); if(d.querySelector('#ops-p-itaf').checked) pr.push('itaf');
-      if(name.length < 2){ toast('Nom requis.'); return false; } if(!pr.length){ toast('Choisissez au moins un produit.'); return false; }
-      rpc('ops_org_create', { p_name: name, p_products: pr }).then(function(r){ S(ORGK, r.id); return loadOrgs(); }).then(function(){ pickOrg(); return loadAll(); }).then(function(){ render(); toast('Organisation créée — essai de 14 jours.'); }).catch(function(e){ toast(errTxt(e)); });
-    } }, { label: 'Annuler' }]);
+  var h = '<div class="ops-form"><div class="ops-fw w2"><label class="ops-fl">1. Nom de l’entreprise ou de l’institution *</label><input id="ops-on" placeholder="Ex. Entreprise Alpha inc."></div></div>' +
+    '<p class="ops-fl" style="margin-top:12px">2. Votre choix</p>' + PLANS.map(function(p, i){ return '<label class="ops-note" style="display:block;cursor:pointer"><input type="radio" name="ops-plan" value="' + p[0] + '"' + (i === 0 ? ' checked' : '') + '> <b>' + esc(p[1]) + '</b> — ' + esc(p[3]) + '<br><span class="hint" style="margin:0">' + esc(p[2]) + '</span></label>'; }).join('') +
+    '<p class="hint">* ' + esc(PRICE_NOTE) + '</p><p class="hint">Dans tous les cas, l’organisation démarre avec 14 jours d’essai, et vous en êtes l’administrateur. Pour un abonnement, le paiement en ligne automatique n’est pas encore ouvert : votre choix est enregistré et HelpNaud confirme l’activation après paiement. Une page « paiement réussi » ne débloque jamais les accès à elle seule.</p>';
+  modal('Organisation et abonnement', h, [{ label: 'Créer l’organisation', cls: 'primary', fn: function(d){
+    var name = d.querySelector('#ops-on').value.trim(), plan = (d.querySelector('input[name=ops-plan]:checked') || {}).value || 'trial';
+    if(name.length < 2){ toast('Nom requis.'); return false; }
+    var pr = plan === 'taiso' ? ['taiso'] : (plan === 'itaf' ? ['itaf'] : ['taiso', 'itaf']);
+    rpc('ops_org_create', { p_name: name, p_products: pr }).then(function(r){ S(ORGK, r.id); return (plan === 'trial' ? Promise.resolve() : rpc('ops_org_request_plan', { p_org: r.id, p_plan: plan }).catch(function(){})).then(function(){ return loadOrgs(); }); }).then(function(){ pickOrg(); return loadAll(); }).then(function(){ render(); toast(plan === 'trial' ? 'Organisation créée — essai de 14 jours.' : 'Organisation créée. Votre choix est enregistré ; l’activation suivra le paiement.'); }).catch(function(e){ toast(errTxt(e)); });
+  } }, { label: 'Annuler' }], true);
 };
+OPS.A['invite-accept'] = function(a){ rpc('ops_invite_accept', { p_member: a.getAttribute('data-id') }).then(function(){ return loadOrgs(); }).then(function(){ if(!ST.org && ST.orgs.length){ S(ORGK, ST.orgs[ST.orgs.length - 1].id); } pickOrg(); return loadAll(); }).then(function(){ render(); toast('Invitation acceptée.'); }).catch(function(e){ toast(errTxt(e)); }); };
+OPS.A['invite-decline'] = function(a){ if(!confirm('Refuser cette invitation ?')) return; rpc('ops_invite_decline', { p_member: a.getAttribute('data-id') }).then(function(){ return loadOrgs(); }).then(function(){ render(); }).catch(function(e){ toast(errTxt(e)); }); };
+OPS.d.useDemo = function(){ S(ORGK, '__demo__'); pickOrg(); return loadAll(); };
 
 /* ---------- équipe & accès ---------- */
 var team = { list: null, audit: null, busy: false };
@@ -41387,12 +41400,12 @@ function teamHtml(){
   var h = '<h3 class="ops-h3">Comptes de l’organisation</h3>';
   h += tbl(['Nom / courriel', 'Rôle', 'TAISO', 'iTAF', 'État', ''], (team.list || []).map(function(m){
     var lab = { none: 'Aucun', view: 'Lecture', edit: 'Modification' };
-    return ['<b>' + esc(m.name || m.email) + '</b><br><span class="hint" style="margin:0">' + esc(m.email) + (m.joined ? '' : ' · invitation en attente') + '</span>', m.role === 'admin' ? badge('Administrateur', 'ok') : badge('Employé'),
+    return ['<b>' + esc(m.name || m.email) + '</b><br><span class="hint" style="margin:0">' + esc(m.email) + (m.joined ? '' : (m.expired ? ' · invitation expirée' : ' · invitation en attente jusqu’au ' + String(m.expires || '').slice(0, 10))) + '</span>', m.role === 'admin' ? badge('Administrateur', 'ok') : badge('Employé'),
       m.role === 'admin' ? 'Tout' : lab[m.access && m.access.taiso || 'none'], m.role === 'admin' ? 'Tout' : lab[m.access && m.access.itaf || 'none'],
-      m.active ? badge('Actif', 'ok') : badge('Désactivé', 'bad'), ib('✏️', 'mem-edit', { id: m.id }, 'Modifier') + (m.self ? '' : ib('🗑', 'mem-del', { id: m.id }, 'Retirer'))];
+      m.active ? badge('Actif', 'ok') : badge('Désactivé', 'bad'), ib('✏️', 'mem-edit', { id: m.id }, 'Modifier') + (m.joined ? '' : ib('🔄', 'mem-reinvite', { id: m.id }, 'Renvoyer l’invitation')) + (m.self ? '' : ib('🗑', 'mem-del', { id: m.id }, m.joined ? 'Retirer' : 'Révoquer l’invitation'))];
   }), 'Aucun compte.');
   h += '<p style="margin-top:10px">' + btn('+ Inviter un administrateur ou un employé', 'mem-new', null, 'primary') + ' ' + btn('Renommer l’organisation', 'org-rename') + '</p>';
-  h += '<p class="hint">L’employé reçoit l’accès dès qu’il crée (ou utilise) son compte HelpNaud avec le courriel invité. Seul un administrateur voit cet onglet.</p>';
+  h += '<p class="hint">La personne doit se connecter avec le courriel invité et accepter l’invitation (valable 14 jours ; vous pouvez la révoquer ou la renvoyer). Seul un administrateur voit cet onglet.</p>';
   h += '<h3 class="ops-h3">Journal d’activité</h3>' + tbl(['Date', 'Qui', 'Produit', 'Action', 'Détail'], (team.audit || []).slice(0, 100).map(function(a){ return [esc(String(a.at).replace('T', ' ').slice(0, 16)), esc(a.who), esc(a.product || ''), esc(a.action), esc(a.detail || '')]; }), 'Aucune activité.');
   return h;
 }
@@ -41421,11 +41434,12 @@ function memForm(m){
     var acc = { taiso: g('#ops-m-taiso'), itaf: g('#ops-m-itaf') }, role = g('#ops-m-role');
     var p = isNew ? rpc('ops_member_invite', { p_org: ST.org.id, p_email: g('#ops-m-email'), p_name: g('#ops-m-name'), p_role: role, p_access: acc })
       : rpc('ops_member_update', { p_org: ST.org.id, p_member: m.id, p_role: role, p_access: acc, p_active: d.querySelector('#ops-m-active').checked });
-    p.then(function(r){ toast(isNew ? (r && r.has_account ? 'Compte ajouté : accès immédiat.' : 'Invitation enregistrée : la personne aura accès dès la création de son compte HelpNaud avec ce courriel.') : 'Compte mis à jour.'); teamLoad(); }).catch(function(e){ toast(errTxt(e)); });
+    p.then(function(r){ toast(isNew ? (r && r.has_account ? 'Invitation enregistrée : la personne la verra en se connectant et devra l’accepter.' : 'Invitation enregistrée (aucun courriel n’est envoyé automatiquement) : prévenez la personne ; elle doit se connecter avec ce courriel (créer son compte HelpNaud au besoin) et l’accepter.') : 'Compte mis à jour.'); teamLoad(); }).catch(function(e){ toast(errTxt(e)); });
   } }, { label: 'Annuler' }]);
 }
 OPS.A['mem-new'] = function(){ memForm(null); };
 OPS.A['mem-edit'] = function(a){ var m = (team.list || []).filter(function(x){ return x.id === a.getAttribute('data-id'); })[0]; if(m) memForm(m); };
+OPS.A['mem-reinvite'] = function(a){ var m = (team.list || []).filter(function(x){ return x.id === a.getAttribute('data-id'); })[0]; if(!m) return; rpc('ops_member_invite', { p_org: ST.org.id, p_email: m.email, p_name: m.name || '', p_role: m.role, p_access: m.access }).then(function(){ toast('Invitation renvoyée (valable 14 jours).'); teamLoad(); }).catch(function(e){ toast(errTxt(e)); }); };
 OPS.A['mem-del'] = function(a){ if(!confirm('Retirer ce compte de l’organisation ?')) return; rpc('ops_member_remove', { p_org: ST.org.id, p_member: a.getAttribute('data-id') }).then(function(){ toast('Compte retiré.'); teamLoad(); }).catch(function(e){ toast(errTxt(e)); }); };
 OPS.A['org-rename'] = function(){ var n = prompt('Nouveau nom de l’organisation', ST.org.name); if(!n) return; rpc('ops_org_rename', { p_org: ST.org.id, p_name: n }).then(function(){ return loadOrgs(); }).then(function(){ pickOrg(); render(); }).catch(function(e){ toast(errTxt(e)); }); };
 
@@ -41479,16 +41493,17 @@ E.ordCalc = function(o){
   else if(paid > 0) state = 'Déficit';
   else state = late ? 'En retard' : 'Ouverte';
   if(state === 'Déficit' && late) state = 'Déficit (échue)';
-  var rel = o.relances || [];
+  var rel = (o.relances || []).filter(function(r){ return r.st !== 'préparée'; });
   return { paid: paid, exp: exp, diff: diff, state: state, pays: pays, late: !!late && !o.cancelled && diff < -tol, relances: rel.length };
 };
 E.dueRelances = function(){
   var S = SET(), t = today();
   return L('ord').filter(function(o){
-    if(o.cancelled) return false;
+    if(o.cancelled || o.dispute) return false;
+    if(L('inv').some(function(i){ return i.ordId === o.id && i.status === 'litige'; })) return false;
     var c = E.ordCalc(o); if(c.diff >= -num(S.tol) || !o.due) return false;
     if(U.dDiff(t, o.due) < num(S.relDays)) return false;
-    var rel = o.relances || []; if(rel.length >= num(S.relMax)) return false;
+    var rel = (o.relances || []).filter(function(r){ return r.st !== 'préparée'; }); if(rel.length >= num(S.relMax)) return false;
     if(rel.length && U.dDiff(t, rel[rel.length - 1].at) < num(S.relEvery)) return false;
     return true;
   });
@@ -41602,7 +41617,9 @@ E.parseEml = function(raw){
 E.extractMail = function(m){
   var t = (m.subject || '') + '\n' + (m.body || ''), ex = {}, x;
   if((x = /(?:facture|invoice|inv\.?|n[°o]\.?\s*(?:de\s+)?facture)\s*(?:#|no\.?|n°|:)?\s*([A-Z0-9][A-Z0-9\-\/]{2,})/i.exec(t))) ex.no = x[1].replace(/[.,;]$/, '');
-  if((x = /(?:total|montant(?:\s+(?:dû|total|à payer))?|amount(?:\s+due)?|à payer|balance due)[^\d\-\n]{0,24}(-?[\d][\d\s.,]*\d)/i.exec(t))) ex.amount = num(x[1]);
+  var re = /(total|montant(?:\s+(?:dû|total|à payer))?|amount(?:\s+due)?|à payer|balance due)[^\d\-\n]{0,24}(-?[\d][\d\s.,]*\d)/ig, mm, last = null;
+  while((mm = re.exec(t))){ if(!/(sous|sub)[-\s]?$/i.test(t.slice(Math.max(0, mm.index - 6), mm.index))) last = mm; }
+  if(last) ex.amount = num(last[2]);
   if((x = /(?:échéance|due(?:\s+date)?|date limite)[^\d\n]{0,14}(\d{4}-\d{2}-\d{2}|\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4})/i.exec(t))) ex.due = U.normDate(x[1]);
   if((x = /(\d{4}-\d{2}-\d{2}|\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4})/.exec(t))) ex.date = U.normDate(x[1]);
   var fm = /^\s*"?([^"<]*?)"?\s*<([^>]+)>/.exec(m.from || ''); ex.supName = fm ? (fm[1].trim() || fm[2]) : String(m.from || '').trim(); ex.email = fm ? fm[2] : (/\S+@\S+/.exec(m.from || '') || [''])[0];
@@ -41872,8 +41889,7 @@ T.push({ id: 'dash', label: '📊 Tableau de bord', render: function(){
   if(fol.length) todo.push(['Suivre ' + fol.length + ' fournisseur(s) (date de suivi atteinte)', 'sup']);
   if(dupI + dupP) todo.push(['Vérifier les doublons détectés', 'inv']);
   h += '<div class="card"><h3 class="ops-h3" style="margin-top:0">À faire</h3>' + (todo.length ? '<ul class="hn-check-list">' + todo.map(function(x){ return '<li class="hn-check-item warn"><a href="#" data-act="tab" data-tab="' + x[1] + '">' + esc(x[0]) + '</a></li>'; }).join('') + '</ul>' : '<p>✅ Rien d’urgent.</p>') + '</div>';
-  if(!invs.length && !ords.length && !L('sup').length && D.canEdit()) h += '<div class="card"><h3 class="ops-h3" style="margin-top:0">Pour commencer</h3><p class="hint">Ajoutez vos fournisseurs, factures et commandes, importez un relevé bancaire ou un fichier CSV, ou chargez des données d’exemple pour essayer.</p><p>' + btn('Charger des données d’exemple', 'demo-load', null, 'primary') + '</p></div>';
-  else if(L('sup').some(function(s){ return s.demo; }) && D.canEdit()) h += '<p>' + btn('Retirer les données d’exemple', 'demo-clear') + '</p>';
+  if(!invs.length && !ords.length && !L('sup').length && D.canEdit()) h += '<div class="card"><h3 class="ops-h3" style="margin-top:0">Pour commencer</h3><p class="hint">Ajoutez vos fournisseurs, factures et commandes, importez un relevé bancaire ou un fichier CSV, ou essayez d’abord l’espace de démonstration (données d’exemple, séparées de vos vraies données).</p><p>' + btn('Ouvrir la démonstration', 'demo-load', null, 'primary') + '</p></div>';
   return h;
 } });
 
@@ -41933,12 +41949,13 @@ function invForm(rec, isNew){
     D.put('inv', r).then(function(){ D.audit(isNew ? 'inv_create' : 'inv_update', (r.no || '') + ' ' + r.supName); OPS.render(); var n = E.scan().filter(function(x){ return x.type === 'inv' && x.id === r.id; }); if(n.length) U.toast('⚠ ' + n.length + ' point(s) à vérifier sur cette facture.'); }, function(){});
   } });
 }
+OPS.E.invForm = invForm;
 A['inv-new'] = function(){ if(need()) invForm(null, true); };
 A['inv-edit'] = function(a){ var i = D.byId('inv', a.getAttribute('data-id')); if(i) invForm(i, false); };
 A['inv-del'] = function(a){ if(!need()) return; if(confirm('Supprimer cette facture ?')){ var i = D.byId('inv', a.getAttribute('data-id')); D.del('inv', i.id).then(function(){ D.audit('inv_delete', (i.no || '') + ' ' + E.supName(i)); OPS.render(); }); } };
 A['inv-check'] = function(a){
   var i = D.byId('inv', a.getAttribute('data-id')), f = E.scan().filter(function(x){ return x.type === 'inv' && x.id === i.id; });
-  M.modal('Contrôle de la facture ' + (i.no || ''), f.length ? '<ul class="hn-check-list">' + f.map(function(x){ return '<li class="hn-check-item warn"><b class="' + (x.sev === 'critique' ? 'ops-sev-c' : 'ops-sev-a') + '">' + (x.sev === 'critique' ? 'Critique' : 'À vérifier') + '</b> — ' + esc(E.ruleLabel(x.rule)) + '<br><span class="hint" style="margin:0">' + esc(x.msg) + '</span></li>'; }).join('') + '</ul><p class="hint">Une alerte n’est pas une preuve d’erreur ou de fraude : vérifiez la pièce.</p>' : '<p>✅ Aucun point à vérifier.</p>');
+  M.modal('Contrôle de la facture ' + (i.no || ''), f.length ? '<ul class="hn-check-list">' + f.map(function(x){ return '<li class="hn-check-item warn"><b class="' + (x.sev === 'critique' ? 'ops-sev-c' : 'ops-sev-a') + '">' + (x.sev === 'critique' ? 'Prioritaire' : 'À vérifier') + '</b> — ' + esc(E.ruleLabel(x.rule)) + '<br><span class="hint" style="margin:0">' + esc(x.msg) + '</span></li>'; }).join('') + '</ul><p class="hint">Une alerte n’est pas une preuve d’erreur ou de fraude : vérifiez la pièce.</p>' : '<p>✅ Aucun point à vérifier.</p>');
 };
 A['inv-code'] = function(){
   if(!need()) return; var n = 0, ch = [];
@@ -41986,7 +42003,7 @@ OPS.E.file = function(input){
 
 /* ================= Commandes ================= */
 T.push({ id: 'ord', label: '📦 Commandes', render: function(prod){
-  return ro() + '<div class="ops-act">' + btn('+ Nouvelle commande', 'ord-new', null, 'primary') + btn('Relances automatiques', 'ord-rel') + V.fileBtn('Importer CSV', 'ops-ord-csv', '.csv,.txt') + btn('Exporter CSV', 'ord-export') + '</div>' +
+  return ro() + '<div class="ops-act">' + btn('+ Nouvelle commande', 'ord-new', null, 'primary') + btn('Relances à préparer', 'ord-rel') + V.fileBtn('Importer CSV', 'ops-ord-csv', '.csv,.txt') + btn('Exporter CSV', 'ord-export') + '</div>' +
     V.filterBar(prod, 'ord', [{ k: 'q', l: 'Rechercher' }, { k: 'type', l: 'Type', t: 'select', opts: [['', 'Achats et ventes'], 'Achat', 'Vente'] }, { k: 'st', l: 'État', t: 'select', opts: [['', 'Tous les états'], 'Ouverte', 'En retard', 'Déficit', 'Déficit (échue)', 'Surplus', 'Soldée', 'Annulée'] }]) +
     '<div class="ops-list">' + TL('ord').list(prod) + '</div>';
 }, list: function(prod){
@@ -41994,7 +42011,7 @@ T.push({ id: 'ord', label: '📦 Commandes', render: function(prod){
   var a = L('ord').filter(function(o){ var c = E.ordCalc(o); return (!f.type || (o.type || 'Achat') === f.type) && (!f.st || c.state === f.st) && (!q || norm([o.no, E.supName(o), o.notes].join(' ')).indexOf(q) > -1); }).sort(function(x, y){ return CMP(y.date || '', x.date || ''); });
   return tbl(['N°', 'Tiers', 'Type', 'Date', 'Échéance', 'Attendu', 'Reçu / payé', 'Écart', 'État', 'Relances', ''], a.map(function(o){
     var c = E.ordCalc(o), k = c.state === 'Soldée' ? 'ok' : (c.state === 'Annulée' || c.state === 'Ouverte' ? '' : (c.state === 'Surplus' ? 'warn' : 'bad'));
-    return ['<b>' + esc(o.no || '—') + '</b>', esc(E.supName(o)), esc(o.type || 'Achat'), esc(o.date || ''), esc(o.due || ''), money(c.exp), money(c.paid), '<span class="' + (c.diff < -0.05 ? 'ops-sev-c' : c.diff > 0.05 ? 'ops-sev-a' : '') + '">' + money(c.diff) + '</span>', badge(c.state, k), c.relances ? c.relances + (o.relances[c.relances - 1] ? ' (dernière ' + esc(o.relances[c.relances - 1].at.slice(0, 10)) + ')' : '') : '—',
+    return ['<b>' + esc(o.no || '—') + '</b>', esc(E.supName(o)), esc(o.type || 'Achat'), esc(o.date || ''), esc(o.due || ''), money(c.exp), money(c.paid), '<span class="' + (c.diff < -0.05 ? 'ops-sev-c' : c.diff > 0.05 ? 'ops-sev-a' : '') + '">' + money(c.diff) + '</span>', badge(c.state, k), c.relances ? c.relances + ' envoyée(s)' : ((o.relances || []).length ? 'préparée' : '—'),
       ib('📨', 'ord-relance', { id: o.id }, 'Préparer une relance') + ib('✏️', 'ord-edit', { id: o.id }, 'Modifier') + ib('🗑', 'ord-del', { id: o.id }, 'Supprimer')];
   }), 'Aucune commande.');
 } });
@@ -42002,7 +42019,7 @@ function ordForm(rec, isNew){
   M.form({ title: isNew ? 'Nouvelle commande' : 'Modifier la commande', rec: rec || { type: 'Achat', date: today() }, extra: supList(), fields: [
     { k: 'no', l: 'N° de commande', req: true }, { k: 'type', l: 'Type', t: 'select', opts: [['Achat', 'Achat (je paie)'], ['Vente', 'Vente (j’encaisse)']] },
     { k: 'supName', l: 'Fournisseur / client', req: true, list: 'ops-sups' }, { k: 'amount', l: 'Montant attendu', t: 'number', req: true },
-    { k: 'date', l: 'Date', t: 'date' }, { k: 'due', l: 'Échéance de paiement', t: 'date' }, { k: 'cancelled', l: 'Commande annulée', t: 'check' }, { k: 'notes', l: 'Notes', t: 'textarea', wide: true }],
+    { k: 'date', l: 'Date', t: 'date' }, { k: 'due', l: 'Échéance de paiement', t: 'date' }, { k: 'cancelled', l: 'Commande annulée', t: 'check' }, { k: 'dispute', l: 'Commande contestée (arrête les relances)', t: 'check' }, { k: 'notes', l: 'Notes', t: 'textarea', wide: true }],
     onSave: function(o){ var sup = E.ensureSup(o.supName, o.type === 'Vente' ? 'Client' : 'Fournisseur'), r = rec && !isNew ? rec : { id: U.uid() }; for(var k in o) r[k] = o[k]; r.supId = sup ? sup.id : ''; if(!r.due && sup && r.date) r.due = U.addDays(r.date, num(sup.termDays || 30)); D.put('ord', r).then(function(){ D.audit(isNew ? 'ord_create' : 'ord_update', r.no); OPS.render(); }, function(){}); } });
 }
 A['ord-new'] = function(){ if(need()) ordForm(null, true); };
@@ -42019,17 +42036,18 @@ function relText(o){
   return { subj: subj, body: body, to: sup && sup.email || '' };
 }
 function relModal(o){
-  var t = relText(o);
-  M.modal('Relance — commande ' + (o.no || ''), '<label class="ops-fl">Destinataire</label><input id="ops-r-to" value="' + esc(t.to) + '" placeholder="courriel du tiers"><label class="ops-fl">Objet</label><input id="ops-r-s" value="' + esc(t.subj) + '"><label class="ops-fl">Message</label><textarea id="ops-r-b" rows="10">' + esc(t.body) + '</textarea><p class="hint">HelpNaud prépare le message ; l’envoi se fait depuis votre messagerie (bouton ci-dessous). Marquez-la « envoyée » pour tenir le suivi.</p>', [
-    { label: 'Ouvrir dans ma messagerie', cls: 'primary', fn: function(d){ var g = function(i){ return d.querySelector(i).value; }; location.href = 'mailto:' + encodeURIComponent(g('#ops-r-to')) + '?subject=' + encodeURIComponent(g('#ops-r-s')) + '&body=' + encodeURIComponent(g('#ops-r-b')); return false; } },
-    { label: 'Copier', fn: function(d){ var v = d.querySelector('#ops-r-b').value; try{ navigator.clipboard.writeText(v); U.toast('Copié.'); }catch(e){ d.querySelector('#ops-r-b').select(); document.execCommand('copy'); } return false; } },
-    { label: 'Marquer comme envoyée', fn: function(){ if(!need()) return false; o.relances = (o.relances || []).concat([{ at: new Date().toISOString(), by: D.ST.email || '' }]); D.put('ord', o).then(function(){ D.audit('ord_relance', o.no); OPS.render(); }, function(){}); } },
+  var t = relText(o), prep = (o.relances || []).filter(function(r){ return r.st === 'préparée'; });
+  var hist = (o.relances || []).length ? '<p class="hint">Historique : ' + o.relances.map(function(r){ return esc(r.at.slice(0, 10)) + ' ' + (r.st === 'préparée' ? '(préparée, non envoyée)' : '(envoyée' + (r.by ? ' par ' + esc(r.by) : '') + ')'); }).join(' · ') + '</p>' : '';
+  M.modal('Relance — commande ' + (o.no || ''), '<p class="hint"><b>Préparer → Vérifier → Envoyer → Enregistrer la trace.</b> HelpNaud ne marque jamais une relance comme « envoyée » sans votre confirmation.</p><label class="ops-fl">1. Destinataire</label><input id="ops-r-to" value="' + esc(t.to) + '" placeholder="courriel du tiers"><label class="ops-fl">2. Objet et message à vérifier</label><input id="ops-r-s" value="' + esc(t.subj) + '"><textarea id="ops-r-b" rows="10" style="margin-top:6px">' + esc(t.body) + '</textarea>' + hist + '<p class="hint">3. « Ouvrir dans ma messagerie » prépare le message dans votre logiciel de courriel ; vous l’y envoyez vous-même. 4. Ensuite seulement, cliquez sur « J’ai envoyé ce message » pour garder la trace.</p>', [
+    { label: 'Ouvrir dans ma messagerie', cls: 'primary', fn: function(d){ var g = function(i){ return d.querySelector(i).value; }; if(D.canEdit() && !prep.length){ o.relances = (o.relances || []).concat([{ at: new Date().toISOString(), st: 'préparée', by: D.ST.email || '' }]); D.put('ord', o, true); } location.href = 'mailto:' + encodeURIComponent(g('#ops-r-to')) + '?subject=' + encodeURIComponent(g('#ops-r-s')) + '&body=' + encodeURIComponent(g('#ops-r-b')); return false; } },
+    { label: 'Copier le message', fn: function(d){ var v = d.querySelector('#ops-r-b').value; try{ navigator.clipboard.writeText(v); U.toast('Copié.'); }catch(e){ d.querySelector('#ops-r-b').select(); document.execCommand('copy'); } return false; } },
+    { label: 'J’ai envoyé ce message', fn: function(){ if(!need()) return false; var rel = (o.relances || []).filter(function(r){ return r.st !== 'préparée'; }); o.relances = rel.concat([{ at: new Date().toISOString(), st: 'envoyée', by: D.ST.email || '' }]); D.put('ord', o).then(function(){ D.audit('ord_relance_envoyee', o.no); OPS.render(); }, function(){}); } },
     { label: 'Fermer' }], true);
 }
 A['ord-relance'] = function(a){ var o = D.byId('ord', a.getAttribute('data-id')); if(o) relModal(o); };
 A['ord-rel'] = function(){
   var due = E.dueRelances(), S = SET();
-  M.modal('Relances automatiques', '<p class="hint">Règle actuelle : relancer ' + S.relDays + ' jour(s) après l’échéance, tous les ' + S.relEvery + ' jour(s), jusqu’à ' + S.relMax + ' relance(s) (modifiable dans Paramètres).</p>' + (due.length ? tbl(['Commande', 'Tiers', 'Reste', 'Échéance', ''], due.map(function(o){ var c = E.ordCalc(o); return ['<b>' + esc(o.no) + '</b>', esc(E.supName(o)), money(-c.diff), esc(o.due || ''), ib('📨', 'ord-relance', { id: o.id }, 'Préparer')]; })) : '<p>✅ Aucune relance à faire aujourd’hui.</p>'), [{ label: 'Fermer' }], true);
+  M.modal('Relances à préparer', '<p class="hint">Chaque relance est préparée puis vérifiée par vous avant l’envoi ; elles s’arrêtent quand la commande est réglée, annulée ou contestée. Règle actuelle : relancer ' + S.relDays + ' jour(s) après l’échéance, tous les ' + S.relEvery + ' jour(s), jusqu’à ' + S.relMax + ' relance(s) (modifiable dans Paramètres).</p>' + (due.length ? tbl(['Commande', 'Tiers', 'Reste', 'Échéance', ''], due.map(function(o){ var c = E.ordCalc(o); return ['<b>' + esc(o.no) + '</b>', esc(E.supName(o)), money(-c.diff), esc(o.due || ''), ib('📨', 'ord-relance', { id: o.id }, 'Préparer')]; })) : '<p>✅ Aucune relance à préparer aujourd’hui.</p>'), [{ label: 'Fermer' }], true);
 };
 
 /* ================= Paiements ================= */
@@ -42137,11 +42155,11 @@ A['sup-card'] = function(a){
 
 /* ================= Boîte courriel ================= */
 var MFOLD = ['Tous'].concat(E.FOLDERS).concat(['⚠ À risque']);
-T.push({ id: 'mail', label: '✉️ Courriels', render: function(prod){
+T.push({ id: 'mail', label: '✉️ Import de courriels', render: function(prod){
   var f = F(prod, 'mail'), cur = f.folder || 'Tous', all = L('mail');
   function cnt(x){ return x === 'Tous' ? all.length : (x === '⚠ À risque' ? all.filter(function(m){ return (m.risk || []).length; }).length : all.filter(function(m){ return m.folder === x; }).length); }
   var h = ro() + '<div class="ops-act">' + V.fileBtn('Importer des courriels (.eml / .txt)', 'ops-mail-file', '.eml,.txt,.msg', true) + btn('Coller un courriel', 'mail-paste') + btn('+ Courriel manuel', 'mail-new') + btn('Reclasser tout', 'mail-reclass') + '</div>' +
-    '<p class="hint">Importez les courriels de la boîte de l’organisation (fichiers .eml exportés de Gmail, Outlook, Apple Mail… ou texte collé). HelpNaud les classe en sous-dossiers, repère n° de facture, montant, échéance et signale les messages à risque. La connexion directe à une boîte Gmail/Outlook n’est pas encore disponible (elle exige l’autorisation OAuth du fournisseur).</p>';
+    '<p class="hint"><b>Import de courriels</b> : importez les courriels de la boîte de l’organisation (fichiers .eml exportés de Gmail, Outlook, Apple Mail… ou texte collé). HelpNaud les classe en sous-dossiers, repère n° de facture, montant, échéance et signale les messages à risque. Ce n’est pas une collecte automatique : la connexion directe Gmail / Microsoft 365 est prévue (Paramètres › Messageries connectées).</p>';
   h += '<div class="ops-mail"><div class="ops-fold">' + MFOLD.map(function(x){ return '<button type="button" class="' + (cur === x ? 'on' : '') + '" data-act="mail-folder" data-f="' + esc(x) + '">' + esc(x) + ' (' + cnt(x) + ')</button>'; }).join('') + '</div><div><div class="ops-fb"><input data-f="q" type="search" placeholder="Rechercher un courriel" value="' + esc(f.q || '') + '"><select data-f="st"><option value="">Tous les états</option>' + ['nouveau', 'traité', 'archivé'].map(function(s){ return '<option' + (f.st === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div><div class="ops-list">' + TL('mail').list(prod) + '</div></div></div>';
   return h;
 }, list: function(prod){
@@ -42211,7 +42229,10 @@ T.push({ id: 'set', label: '⚙️ Paramètres', render: function(){ return OPS.
 
 /* ---- navigation interne + exemples ---- */
 A['demo-load'] = function(){
-  if(!need()) return; var t = today(), d = function(n){ return U.addDays(t, n); };
+  OPS.d.useDemo().then(demoLoad);
+};
+function demoLoad(){
+  var t = today(), d = function(n){ return U.addDays(t, n); };
   var S = [ ['Papeterie Delta', 'Fournisseur', '1111-2222-3333-4444', 'ventes@papeterie-delta.example'], ['Énergie Nord', 'Fournisseur', '5555-6666-7777-8888', 'facturation@energie-nord.example'], ['Énergie Nord Inc', 'Fournisseur', '5555-6666-7777-8888', 'billing@energie-nord-inc.example'], ['Client Orion', 'Client', '', 'compta@orion.example'], ['Services Pro Conseil', 'Fournisseur', '9999-0000-1111-2222', 'info@pro-conseil.example'] ].map(function(x){ return { id: U.uid(), demo: true, name: x[0], type: x[1], bank: x[2], email: x[3], status: 'actif', termDays: 30, bankHist: x[2] ? [{ at: new Date().toISOString(), bank: x[2] }] : [] }; });
   S[4].bankHist.push({ at: new Date().toISOString(), bank: '0000-1111-9999-8888' }); S[4].bank = '0000-1111-9999-8888';
   var id = function(n){ return S[n].id; };
@@ -42228,11 +42249,9 @@ A['demo-load'] = function(){
   var bank = [{ id: U.uid(), demo: true, date: d(-12), desc: 'DEPOT DIRECT ORION ORI-8841', amount: 1000, mode: 'dépôt direct' }, { id: U.uid(), demo: true, date: d(-38), desc: 'VIREMENT PAPETERIE DELTA PD-1001', amount: -230.5, mode: 'virement' }, { id: U.uid(), demo: true, date: d(-9), desc: 'ACHAT CARTE VISA ELECTRO-PLUS', amount: -849, mode: 'carte' }, { id: U.uid(), demo: true, date: d(-9), desc: 'ACHAT CARTE VISA ELECTRO-PLUS', amount: -849, mode: 'carte' }, { id: U.uid(), demo: true, date: d(-6), desc: 'DEPOT DIRECT INCONNU 5531', amount: 2500, mode: 'dépôt direct' }];
   var mails = [E.addMail({ demo: true, from: 'Services Pro Conseil <comptabilite@pro-conseil-fact.example>', subject: 'Nouvelles coordonnées bancaires — urgent', date: d(-2), body: 'Bonjour,\nNotre banque a changé. Merci de virer immédiatement la facture SPC-79 de 10 000,00 $ sur notre nouveau compte bancaire. Ceci est confidentiel.', atts: [] }), E.addMail({ demo: true, from: 'Papeterie Delta <ventes@papeterie-delta.example>', subject: 'Facture PD-1003 — échéance ' + d(20), date: d(-1), body: 'Voici la facture PD-1003. Montant total : 312,40 $. Échéance : ' + d(20), atts: ['PD-1003.pdf'] })];
   var sp = D.put('sup', S, true), p2 = D.put('inv', inv, true), p3 = D.put('ord', ord, true), p4 = D.put('pay', pay, true), p5 = D.put('bank', bank, true), p6 = D.put('mail', mails, true);
-  Promise.all([sp, p2, p3, p4, p5, p6]).then(function(){ U.toast('Données d’exemple chargées (marquées « exemple »).'); D.audit('demo_load', ''); OPS.render(); }, function(){});
-};
-A['demo-clear'] = function(){ if(!need()) return; if(!confirm('Retirer toutes les données d’exemple ?')) return;
-  var jobs = ['sup', 'inv', 'ord', 'pay', 'bank', 'mail', 'doc'].map(function(c){ var ids = L(c).filter(function(x){ return x.demo; }).map(function(x){ return x.id; }); return ids.length ? D.del(c, ids) : null; });
-  Promise.all(jobs).then(function(){ var al = L('alert').map(function(a){ return a.id; }); if(al.length) D.del('alert', al); U.toast('Exemples retirés.'); OPS.render(); }); };
+  Promise.all([sp, p2, p3, p4, p5, p6]).then(function(){ U.toast('Espace de démonstration chargé (séparé de vos vraies données).'); D.audit('demo_load', ''); OPS.render(); }, function(){});
+}
+A['demo-clear'] = function(){ if(!confirm('Réinitialiser l’espace de démonstration (supprime ses données d’exemple) ?')) return; try{ localStorage.removeItem('hn_ops_demo'); }catch(e){} OPS.d.loadAll().then(function(){ U.toast('Démonstration réinitialisée.'); OPS.render(); }); };
 })();
 
 /* ===================== iTAF — écrans ===================== */
@@ -42302,10 +42321,10 @@ T.push({ id: 'dash', label: '🛡️ Vigilance', render: function(){
   var pend = F0.filter(function(f){ return !al.some(function(a){ return a.key === f.key; }); }).length;
   var score = invs.length ? Math.round(100 - 100 * invs.filter(function(i){ return E.score(F0, 'inv', i.id) >= 40; }).length / invs.length) : 100;
   var h = '<div class="ops-act">' + btn('Lancer l’analyse complète', 'scan', null, 'primary') + '</div>' +
-    '<div class="ops-kg">' + kpi('Alertes critiques ouvertes', crit, 'à traiter en priorité', crit ? 'bad' : 'ok', 'alerts') + kpi('Points à vérifier', att, 'attention', att ? 'warn' : 'ok', 'alerts') +
-    kpi('Nouveaux signaux', pend, pend ? 'lancez l’analyse pour les enregistrer' : 'à jour', pend ? 'warn' : 'ok') + kpi('Factures sans signal critique', score + ' %', invs.length + ' facture(s) analysée(s)', score < 90 ? 'warn' : 'ok') +
+    '<div class="ops-kg">' + kpi('Anomalies prioritaires ouvertes', crit, 'à vérifier en premier', crit ? 'bad' : 'ok', 'alerts') + kpi('Autres points à vérifier', att, 'à confirmer', att ? 'warn' : 'ok', 'alerts') +
+    kpi('Nouveaux signaux', pend, pend ? 'lancez l’analyse pour les enregistrer' : 'à jour', pend ? 'warn' : 'ok') + kpi('Factures sans anomalie prioritaire', score + ' %', invs.length + ' facture(s) analysée(s)', score < 90 ? 'warn' : 'ok') +
     kpi('Pièces analysées', L('doc').length, L('doc').filter(function(d){ return (d.flags || []).length; }).length + ' avec signal', '', 'docs') + kpi('Courriels à risque', L('mail').filter(function(m){ return (m.risk || []).length; }).length, 'changement de coordonnées, urgence…', '', 'alerts') + '</div>';
-  h += '<div class="card"><h3 class="ops-h3" style="margin-top:0">Factures les plus exposées</h3>' + tbl(['Facture', 'Fournisseur', 'Total', 'Score de risque', 'Signaux'], risky.map(function(x){ var n = F0.filter(function(f){ return f.type === 'inv' && f.id === x.i.id; }); return ['<b>' + esc(x.i.no || '—') + '</b>', esc(E.supName(x.i)), money(x.i.total), badge(x.s + ' / 100', x.s >= 40 ? 'bad' : 'warn'), esc(n.map(function(f){ return E.ruleLabel(f.rule); }).join(' · '))]; }), 'Aucune facture à risque détectée.') + '</div>';
+  h += '<div class="card"><h3 class="ops-h3" style="margin-top:0">Factures les plus exposées</h3>' + tbl(['Facture', 'Fournisseur', 'Total', 'Indice de risque', 'Signaux'], risky.map(function(x){ var n = F0.filter(function(f){ return f.type === 'inv' && f.id === x.i.id; }); return ['<b>' + esc(x.i.no || '—') + '</b>', esc(E.supName(x.i)), money(x.i.total), badge(x.s + ' / 100', x.s >= 40 ? 'bad' : 'warn'), esc(n.map(function(f){ return E.ruleLabel(f.rule); }).join(' · '))]; }), 'Aucune facture à risque détectée.') + '</div>';
   h += '<div class="card"><h3 class="ops-h3" style="margin-top:0">⚠ Points de vigilance</h3><ul class="hn-check-list">' +
     ['Une alerte n’est pas une preuve de fraude : vérifiez la pièce (facture, relevé, contrat) avant d’agir.', 'Tout changement de coordonnées bancaires se confirme par un appel à un numéro déjà connu, jamais par le courriel qui le demande.', 'Montants ronds, urgence, confidentialité, nouveaux fournisseurs et factures fractionnées sous le seuil sont les signaux les plus fréquents.', 'Paiements par carte : rapprochez-les du relevé du processeur ; dépôts directs : vérifiez l’origine et la référence avant de les considérer encaissés.', 'Séparez la saisie et l’approbation : deux personnes différentes pour les montants élevés.', 'L’analyse ne remplace pas un audit ni un conseil comptable ; les résultats dépendent de la qualité des données saisies.'].map(function(x){ return '<li class="hn-check-item warn">' + esc(x) + '</li>'; }).join('') + '</ul></div>';
   if(!invs.length && !L('bank').length && D.canEdit()) h += '<p class="hint">iTAF analyse les factures, paiements, courriels et lignes bancaires saisis dans l’espace de travail (les mêmes données que TAISO). ' + btn('Charger des données d’exemple', 'demo-load') + '</p>';
@@ -42318,13 +42337,13 @@ A.scan = function(){
 
 /* ================= Alertes ================= */
 var ASTAT = ['nouvelle', 'en revue', 'confirmée', 'fausse alerte', 'résolue'];
-T.push({ id: 'alerts', label: '🚨 Alertes', render: function(prod){
+T.push({ id: 'alerts', label: '🚨 Anomalies à vérifier', render: function(prod){
   return '<div class="ops-act">' + btn('Lancer l’analyse', 'scan', null, 'primary') + btn('Exporter CSV', 'alert-export') + '</div>' +
     V.filterBar(prod, 'alerts', [{ k: 'q', l: 'Rechercher' }, { k: 'sev', l: 'Gravité', t: 'select', opts: [['', 'Toutes'], ['critique', 'Critiques'], ['attention', 'À vérifier']] }, { k: 'st', l: 'Statut', t: 'select', opts: [['open', 'Ouvertes'], ['', 'Tous les statuts']].concat(ASTAT) }, { k: 'type', l: 'Objet', t: 'select', opts: [['', 'Tous les objets'], ['inv', 'Factures'], ['pay', 'Paiements'], ['bank', 'Banque'], ['sup', 'Tiers'], ['mail', 'Courriels'], ['doc', 'Pièces']] }]) + '<div class="ops-list">' + TL('alerts').list(prod) + '</div>';
 }, list: function(prod){
   var f = F(prod, 'alerts'), q = norm(f.q || ''), st = f.st === undefined ? 'open' : f.st;
   var a = L('alert').filter(function(x){ return (!f.sev || x.sev === f.sev) && (st === '' || (st === 'open' ? (x.status === 'nouvelle' || x.status === 'en revue') : x.status === st)) && (!f.type || x.type === f.type) && (!q || norm(x.msg + ' ' + E.ruleLabel(x.rule) + ' ' + E.targetLabel(x.type, x.target)).indexOf(q) > -1); }).sort(function(x, y){ return (x.sev === y.sev ? 0 : x.sev === 'critique' ? -1 : 1) || CMP(y.at, x.at); });
-  return '<p class="hint">' + a.length + ' alerte(s)</p>' + tbl(['Gravité', 'Règle', 'Objet', 'Détail', 'Statut', ''], a.map(function(x){ return [badge(x.sev === 'critique' ? 'Critique' : 'À vérifier', x.sev === 'critique' ? 'bad' : 'warn'), esc(E.ruleLabel(x.rule)), esc(E.targetLabel(x.type, x.target)), esc(x.msg) + (x.note ? '<br><i class="hint" style="margin:0">Note : ' + esc(x.note) + '</i>' : ''), badge(x.status, x.status === 'résolue' || x.status === 'fausse alerte' ? 'ok' : (x.status === 'confirmée' ? 'bad' : '')), ib('📝', 'alert-edit', { id: x.id }, 'Traiter')]; }), 'Aucune alerte. Lancez l’analyse.');
+  return '<p class="hint">' + a.length + ' alerte(s)</p>' + tbl(['Gravité', 'Règle', 'Objet', 'Détail', 'Statut', ''], a.map(function(x){ return [badge(x.sev === 'critique' ? 'Prioritaire' : 'À vérifier', x.sev === 'critique' ? 'bad' : 'warn'), esc(E.ruleLabel(x.rule)), esc(E.targetLabel(x.type, x.target)), esc(x.msg) + (x.note ? '<br><i class="hint" style="margin:0">Note : ' + esc(x.note) + '</i>' : ''), badge(x.status, x.status === 'résolue' || x.status === 'fausse alerte' ? 'ok' : (x.status === 'confirmée' ? 'bad' : '')), ib('📝', 'alert-edit', { id: x.id }, 'Traiter')]; }), 'Aucune anomalie enregistrée. Lancez l’analyse.');
 } });
 A['alert-edit'] = function(a){
   var x = D.byId('alert', a.getAttribute('data-id')); if(!x) return;
@@ -42417,15 +42436,25 @@ OPS.E.docFile = function(input){
 A['doc-text'] = function(){ if(!need()) return;
   M.modal('Texte d’une pièce', '<label class="ops-fl">Nom de la pièce</label><input id="ops-dt-n" placeholder="Facture XYZ.pdf"><label class="ops-fl">Texte copié de la facture</label><textarea id="ops-dt-t" rows="10"></textarea>', [{ label: 'Enregistrer', cls: 'primary', fn: function(d){ var t = d.querySelector('#ops-dt-t').value; if(!t.trim()){ U.toast('Collez le texte.'); return false; } var rec = { id: U.uid(), name: d.querySelector('#ops-dt-n').value || 'Texte collé', size: t.length, at: new Date().toISOString(), meta: {}, text: t.slice(0, 20000) }; rec.flags = docFlags(rec, L('doc')); D.put('doc', rec).then(function(){ OPS.render(); }, function(){}); } }, { label: 'Annuler' }], true); };
 A['doc-del'] = function(a){ if(!need()) return; if(confirm('Supprimer cette pièce ?')) D.del('doc', a.getAttribute('data-id')).then(function(){ OPS.render(); }); };
+function exFields(d){
+  var t = d.text || '', ex = E.extractMail({ subject: '', body: t, from: '' }), x;
+  var ht = (x = /(?:sous-?total|subtotal|avant\s+taxes?|montant\s+ht|\bht\b)[^\d\-\n]{0,20}(\d[\d\s.,]*\d)/i.exec(t)) ? num(x[1]) : '';
+  var tx = (x = /(?:tps|tvq|tva|taxes?|tax|gst|hst)[^\d\n]{0,24}(\d[\d\s.,]*\d)/i.exec(t)) ? num(x[1]) : '';
+  var sup = d.invId && D.byId('inv', d.invId) ? E.supName(D.byId('inv', d.invId)) : (t.split(/\n/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length > 2 && !/\d{4}/.test(l); })[0] || '').slice(0, 60);
+  var rows = [['Fournisseur', 'sup', sup, sup && !d.invId], ['N° de facture', 'no', ex.no || '', !ex.no], ['Date', 'date', ex.date || '', !ex.date], ['Échéance', 'due', ex.due || '', !ex.due], ['HT', 'ht', ht, ht === ''], ['Taxes', 'tax', tx, tx === ''], ['Total', 'total', ex.amount || '', !ex.amount]];
+  if(!t) return '<div class="ops-note">Aucun texte lisible : collez le texte de la facture ci-dessous pour extraire les champs. (Les factures numérisées ou photographiées demandent une reconnaissance de caractères, pas encore disponible.)</div>';
+  return '<h3 class="ops-h3">Champs repérés (à corriger avant de valider)</h3><div class="ops-form" id="ops-ex">' + rows.map(function(r){ return '<div class="ops-fw"><label class="ops-fl">' + r[0] + (r[3] ? ' — <b class="ops-sev-a">à vérifier</b>' : '') + '</label><input data-ex="' + r[1] + '" value="' + esc(r[2]) + '"></div>'; }).join('') + '</div>';
+}
 A['doc-open'] = function(a){
   var d = D.byId('doc', a.getAttribute('data-id')), mt = d.meta || {};
   var inv = [['', '— aucune —']].concat(L('inv').map(function(i){ return [i.id, (i.no || '—') + ' · ' + E.supName(i) + ' · ' + money(i.total)]; }));
   var h = '<p class="hint">Empreinte SHA-256 : ' + esc(d.hash || '—') + '</p>' + (mt.producer || mt.creator || mt.created ? '<p class="hint">Producteur : ' + esc(mt.producer || '—') + ' · Créateur : ' + esc(mt.creator || '—') + ' · Créé : ' + (mt.created ? esc(new Date(mt.created).toISOString().slice(0, 16).replace('T', ' ')) : '—') + ' · Modifié : ' + (mt.modified ? esc(new Date(mt.modified).toISOString().slice(0, 16).replace('T', ' ')) : '—') + ' · Révisions : ' + (mt.revisions || '—') + (mt.signed ? ' · signé' : '') + '</p>' : '') +
-    ((d.flags || []).length ? '<ul class="hn-check-list">' + d.flags.map(function(f){ return '<li class="hn-check-item warn"><b class="' + (f.sev === 'critique' ? 'ops-sev-c' : 'ops-sev-a') + '">' + (f.sev === 'critique' ? 'Critique' : 'À vérifier') + '</b> — ' + esc(f.msg) + '</li>'; }).join('') + '</ul>' : '<p>✅ Aucun signal.</p>') +
-    '<label class="ops-fl">Facture liée (active la comparaison)</label><select id="ops-dl">' + inv.map(function(o){ return '<option value="' + esc(o[0]) + '"' + (o[0] === d.invId ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
+    ((d.flags || []).length ? '<ul class="hn-check-list">' + d.flags.map(function(f){ return '<li class="hn-check-item warn"><b class="' + (f.sev === 'critique' ? 'ops-sev-c' : 'ops-sev-a') + '">' + (f.sev === 'critique' ? 'Prioritaire' : 'À vérifier') + '</b> — ' + esc(f.msg) + '</li>'; }).join('') + '</ul>' : '<p>✅ Aucun signal.</p>') +
+    exFields(d) +     '<label class="ops-fl">Facture liée (active la comparaison)</label><select id="ops-dl">' + inv.map(function(o){ return '<option value="' + esc(o[0]) + '"' + (o[0] === d.invId ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
     '<label class="ops-fl">Texte de la pièce' + (d.text ? '' : ' (non lisible automatiquement : collez-le)') + '</label><textarea id="ops-dtx" rows="7">' + esc(d.text || '') + '</textarea>' + (d.ai ? '<h3 class="ops-h3">Analyse IA</h3><div class="ops-pre">' + esc(d.ai) + '</div>' : '') + '<p class="hint" id="ops-ai-st"></p>';
   M.modal('Pièce — ' + d.name, h, [
     { label: 'Enregistrer et recontrôler', cls: 'primary', fn: function(m){ if(!need()) return false; d.invId = m.querySelector('#ops-dl').value; d.text = m.querySelector('#ops-dtx').value.slice(0, 20000); d.flags = docFlags(d, L('doc')); D.put('doc', d).then(function(){ OPS.render(); }, function(){}); } },
+    { label: 'Créer la facture avec ces champs', fn: function(m){ if(!need()) return false; var g = function(k){ var e = m.querySelector('[data-ex="' + k + '"]'); return e ? e.value : ''; }; if(!m.querySelector('#ops-ex')){ U.toast('Aucun champ repéré.'); return false; } E.invForm({ no: g('no'), supName: g('sup'), date: U.normDate(g('date')) || today(), due: U.normDate(g('due')), ht: g('ht') === '' ? '' : num(g('ht')), tax: g('tax') === '' ? '' : num(g('tax')), total: g('total') === '' ? '' : num(g('total')), status: 'reçue' }, true); return false; } },
     { label: 'Analyse IA du texte (crédit IA)', fn: function(m){
       if(!need()) return false; var txt = m.querySelector('#ops-dtx').value.trim(), st = m.querySelector('#ops-ai-st'); if(!txt){ st.textContent = 'Collez d’abord le texte de la pièce.'; return false; }
       var iv = D.byId('inv', m.querySelector('#ops-dl').value), ctx = iv ? 'Données saisies : fournisseur ' + E.supName(iv) + ', n° ' + iv.no + ', date ' + iv.date + ', total ' + iv.total + ', HT ' + iv.ht + ', taxes ' + iv.tax + '.' : '';
@@ -42488,6 +42517,7 @@ OPS.settingsTab = function(prod){
   var it = '<div class="card"><h2>iTAF — seuils et règles de contrôle</h2><div class="ops-form">' + row('Montant rond à signaler dès', 'roundMin', S.roundMin, 'number') + row('Seuil d’approbation', 'apprThr', S.apprThr, 'number', 'Sert au fractionnement, aux paiements sans pièce et à la séparation des tâches.') + row('Seuil anti-fractionnement', 'splitThr', S.splitThr, 'number') + row('Montant élevé d’un nouveau tiers', 'bigNewSup', S.bigNewSup, 'number') + row('Taux de taxe attendus (%)', 'taxRates', S.taxRates, 'text', 'Séparés par des virgules.') + '</div>' +
     '<h3 class="ops-h3">Règles actives</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px">' + E.RULES.map(function(r){ return '<label class="ops-ck"><input type="checkbox" data-sf-off="' + r[0] + '"' + (S.off && S.off[r[0]] ? '' : ' checked') + '> ' + esc(r[1]) + '</label>'; }).join('') + '</div></div>';
   h += prod === 'taiso' ? tx + it : it + tx;
+  h += '<div class="card"><h2>Messageries connectées <span class="ops-b">bientôt</span></h2><p class="hint">La collecte automatique des factures depuis la boîte de l’organisation n’est pas encore disponible : elle demande l’enregistrement officiel de HelpNaud chez Google et Microsoft. Prévu : connexion autorisée par l’administrateur, choix des dossiers à analyser, permission d’envoi distincte de la lecture, déconnexion à tout moment. En attendant, utilisez « Import de courriels » (fichiers .eml ou texte collé).</p><div class="ops-act"><button type="button" class="btn" disabled>Connecter Microsoft 365</button><button type="button" class="btn" disabled>Connecter Gmail / Google Workspace</button></div><p class="hint">Les adresses professionnelles hébergées ailleurs (OVH, Zoho, Hostinger…) passeront par l’import ou, plus tard, un connecteur IMAP.</p></div>';
   h += '<p>' + V.btn('Enregistrer les paramètres', 'set-save', null, 'primary') + '</p>';
   h += '<div class="card"><h2>Données</h2><p class="hint">' + (D.isCloud() ? 'Les données sont partagées par toute l’organisation. Seul le contenu de cet espace est exporté.' : 'Mode local : les données sont stockées dans ce navigateur. Exportez-les régulièrement.') + '</p><div class="ops-act">' + V.btn('Exporter une sauvegarde (JSON)', 'data-export') + V.fileBtn('Restaurer une sauvegarde', 'ops-restore', '.json') + (D.isCloud() ? '' : V.btn('Effacer les données locales', 'data-wipe')) + '</div></div>';
   return h;
