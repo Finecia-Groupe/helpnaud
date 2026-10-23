@@ -4303,6 +4303,43 @@
           <span class="cowork-card-title">Modèles marketing</span>
           <span class="cowork-card-desc">Messages prêts à l'emploi pour vos communications automatisées et vos réseaux sociaux.</span>
         </button>
+        <button type="button" class="cowork-card" data-hntool="taiso">
+          <span class="cowork-icon">⚙️</span>
+          <span class="cowork-card-title">TAISO</span>
+          <span class="cowork-card-desc">Traitement automatique intelligent des services et des opérations : factures, paiements, fournisseurs, appariements.</span>
+        </button>
+        <button type="button" class="cowork-card" data-hntool="itaf">
+          <span class="cowork-icon">🧾</span>
+          <span class="cowork-card-title">iTAF</span>
+          <span class="cowork-card-desc">Intelligence et traitement automatique des factures : erreurs, fraudes, paiements par carte et dépôts directs.</span>
+        </button>
+      </div>
+
+      <div class="card hn-panel" id="hn-panel-taiso" hidden>
+        <h2>TAISO — Traitement automatique intelligent des services et des opérations</h2>
+        <p class="hint">TAISO est l’agent IA spécialisé de HelpNaud qui accompagne les organisations, les sociétés et les entreprises dans leurs services financiers et leurs opérations financières : gestion des commandes et des factures, identification et codage des factures fournisseurs, filtre et classement des opérations, gestion des fournisseurs, des boîtes de courriels et des paiements, détection des doublons, appariements et suivi automatique des commandes (montant attendu, encaissement bancaire, statut confirmé).</p>
+        <h3 style="margin:14px 0 4px;font-size:14px;">Factures et commandes</h3><ul class="hn-check-list"><li class="hn-check-item ok">Détection des doublons (même date, description et montant) <span class="hint" style="margin:0;">— actif aujourd’hui</span></li><li class="hn-check-item warn">Identification des factures fournisseurs et codage de la facture <span class="hint" style="margin:0;">— à venir</span></li><li class="hn-check-item warn">Filtre et classement des factures et des opérations <span class="hint" style="margin:0;">— à venir</span></li><li class="hn-check-item warn">Gestion des commandes : suivi automatique, commande non payée, montant attendu <span class="hint" style="margin:0;">— à venir</span></li></ul>
+        <h3 style="margin:14px 0 4px;font-size:14px;">Paiements et rapprochements</h3><ul class="hn-check-list"><li class="hn-check-item ok">Contrôle de la tenue des opérations (descriptions manquantes, montants nuls) <span class="hint" style="margin:0;">— actif aujourd’hui</span></li><li class="hn-check-item warn">Appariement des paiements aux commandes et aux factures, écart entre montant attendu et paiements enregistrés (déficit ou excédent) <span class="hint" style="margin:0;">— à venir</span></li><li class="hn-check-item warn">Vérification des dépôts directs et de l’encaissement bancaire <span class="hint" style="margin:0;">— à venir</span></li><li class="hn-check-item warn">Reçu associé à chaque paiement, date de confirmation, statut confirmé, référence prestataire <span class="hint" style="margin:0;">— à venir</span></li></ul>
+        <h3 style="margin:14px 0 4px;font-size:14px;">Fournisseurs, comptes et courriels</h3><ul class="hn-check-list"><li class="hn-check-item warn">Gestion des fournisseurs et vérification des factures <span class="hint" style="margin:0;">— à venir</span></li><li class="hn-check-item warn">Comptes opérationnels : fournisseurs, clients, tiers <span class="hint" style="margin:0;">— à venir</span></li><li class="hn-check-item warn">Gestion des boîtes de courriels de l’organisation et des sous-dossiers : opérations, factures, paiements, relevés, gestion des comptes <span class="hint" style="margin:0;">— à venir</span></li><li class="hn-check-item warn">Classement des paiements et statut des opérations <span class="hint" style="margin:0;">— à venir</span></li></ul>
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;"><button class="btn primary" id="hn-taiso-run" type="button">Lancer le contrôle des opérations du dossier ouvert</button></div>
+        <div id="hn-taiso-result" style="margin-top:14px;"></div>
+        <p class="hint" style="margin-top:10px;">Le contrôle ci-dessus est calculé dans votre navigateur, sans crédit IA. Les fonctions « à venir » seront activées progressivement ; les analyses assistées par l’IA utiliseront votre forfait et votre crédit IA.</p>
+      </div>
+
+      <div class="card hn-panel" id="hn-panel-itaf" hidden>
+        <h2>iTAF — Intelligence et traitement automatique des factures</h2>
+        <p class="hint">iTAF (aussi : traitement intelligent automatique des factures) aide à détecter automatiquement et intelligemment les erreurs et les fraudes, à analyser les paiements par carte de crédit et par dépôt direct reçus sur le compte bancaire d’une entreprise, d’une société ou d’une organisation, et à rapprocher intelligemment les opérations.</p>
+        <h3 style="margin:14px 0 4px;font-size:14px;">Fonctions</h3><ul class="hn-check-list"><li class="hn-check-item ok">Détection automatique des erreurs et des anomalies (montants atypiques, doublons, montants ronds) <span class="hint" style="margin:0;">— actif aujourd’hui</span></li><li class="hn-check-item ok">Analyse des paiements par carte de crédit sur le compte bancaire (repérage par description) <span class="hint" style="margin:0;">— actif aujourd’hui</span></li><li class="hn-check-item ok">Analyse des paiements par dépôt direct sur le compte bancaire (repérage par description) <span class="hint" style="margin:0;">— actif aujourd’hui</span></li><li class="hn-check-item ok">Points de vigilance automatiques sur les transactions du dossier <span class="hint" style="margin:0;">— actif aujourd’hui</span></li><li class="hn-check-item warn">Détection intelligente des fraudes à partir des pièces (factures, relevés) <span class="hint" style="margin:0;">— à venir</span></li><li class="hn-check-item warn">Rapprochement intelligent des opérations (factures, paiements, relevés) <span class="hint" style="margin:0;">— à venir</span></li></ul>
+        <h3 style="margin:14px 0 4px;font-size:14px;">⚠ Points de vigilance</h3>
+        <ul class="hn-check-list">
+          <li class="hn-check-item warn">Une alerte n’est pas une preuve de fraude : vérifiez toujours la pièce (facture, relevé, contrat) avant d’agir.</li>
+          <li class="hn-check-item warn">Montants inhabituels, factures en double, montants ronds, nouveaux fournisseurs ou changement de coordonnées bancaires : à confirmer auprès du fournisseur par un canal connu.</li>
+          <li class="hn-check-item warn">Paiements par carte : rapprochez-les des relevés du processeur de paiement ; dépôts directs : vérifiez l’origine et la référence avant de les considérer comme encaissés.</li>
+          <li class="hn-check-item warn">Les résultats dépendent de la qualité des descriptions saisies ; l’analyse ne remplace pas un audit ni un conseil comptable.</li>
+        </ul>
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;"><button class="btn primary" id="hn-itaf-run" type="button">Analyser le dossier ouvert</button></div>
+        <div id="hn-itaf-result" style="margin-top:14px;"></div>
+        <p class="hint" style="margin-top:10px;">L’analyse est calculée dans votre navigateur, sans crédit IA. Les fonctions assistées par l’IA utiliseront votre forfait et votre crédit IA.</p>
       </div>
 
       <div class="card hn-panel" id="hn-panel-perf" hidden>
@@ -16411,7 +16448,7 @@
   wireDownloadMenu('ctb-code-toggle', 'ctb-code-menu');
 
   /* ================= Outils HelpNaud (7 sous-outils) ================= */
-  var HN_TOOLS = ['perf','eco','fin','compta','quick','plan','compte','quickcalc','marketing'];
+  var HN_TOOLS = ['perf','eco','fin','compta','quick','plan','compte','quickcalc','marketing','taiso','itaf'];
   var hnActiveTool = null;
   function selectHnTool(tool, opts){
     var hnGrid = document.getElementById('hn-grid');
@@ -30576,6 +30613,43 @@
   }
   var hnComptaRunBtn = document.getElementById('hn-compta-run');
   if(hnComptaRunBtn) hnComptaRunBtn.addEventListener('click', runHnCompta);
+
+  /* ---- TAISO / iTAF : contrôles locaux (sans IA) sur le dossier ouvert ---- */
+  function hnTxLine(t){ return escapeHtml((t.date || '') + ' · ' + (t.description || '(sans description)') + ' · ' + fmtMoney(t.montant)); }
+  function hnList(rows, max){ max = max || 8; return '<ul class="hn-check-list">' + rows.slice(0, max).map(function(r){ return '<li class="hn-check-item warn">' + r + '</li>'; }).join('') + (rows.length > max ? '<li class="hint">… et ' + (rows.length - max) + ' autre(s).</li>' : '') + '</ul>'; }
+  function runHnTaiso(){
+    var el = document.getElementById('hn-taiso-result'); if(!el) return;
+    var tx = getActiveTx(), folder = getFolder(), out = '';
+    var groups = {};
+    tx.forEach(function(t){ var k = t.date + '|' + t.description + '|' + t.montant; (groups[k] = groups[k] || []).push(t); });
+    var dups = Object.keys(groups).filter(function(k){ return groups[k].length > 1; });
+    var noDesc = tx.filter(function(t){ return !String(t.description || '').trim(); });
+    var zero = tx.filter(function(t){ return !t.montant || t.montant <= 0; });
+    out += '<h3 style="margin:0 0 4px;font-size:14px;">Doublons possibles : ' + dups.length + '</h3>' + (dups.length ? hnList(dups.map(function(k){ return hnTxLine(groups[k][0]) + ' — saisie ' + groups[k].length + ' fois'; })) : '<ul class="hn-check-list"><li class="hn-check-item ok">Aucun doublon exact repéré.</li></ul>');
+    out += '<h3 style="margin:12px 0 4px;font-size:14px;">Opérations sans description : ' + noDesc.length + '</h3>' + (noDesc.length ? hnList(noDesc.map(hnTxLine)) : '<ul class="hn-check-list"><li class="hn-check-item ok">Toutes les opérations ont une description.</li></ul>');
+    out += '<h3 style="margin:12px 0 4px;font-size:14px;">Montants nuls ou négatifs : ' + zero.length + '</h3>' + (zero.length ? hnList(zero.map(hnTxLine)) : '<ul class="hn-check-list"><li class="hn-check-item ok">Tous les montants sont positifs.</li></ul>');
+    el.innerHTML = out + '<p class="hint" style="margin:8px 0 0;">Contrôle de ' + tx.length + ' opération(s) du dossier « ' + escapeHtml(folder.nom) + ' ». À confirmer manuellement avant toute correction.</p>';
+  }
+  function runHnItaf(){
+    var el = document.getElementById('hn-itaf-result'); if(!el) return;
+    var tx = getActiveTx(), folder = getFolder(), out = '';
+    var an = detectAnomalies(tx);
+    var crit = an.filter(function(a){ return a.severite === 'critique'; }), att = an.filter(function(a){ return a.severite !== 'critique'; });
+    function line(a){ return hnTxLine(a.tx) + ' — ' + escapeHtml(a.motif); }
+    out += '<h3 style="margin:0 0 4px;font-size:14px;">Alertes critiques : ' + crit.length + '</h3>' + (crit.length ? hnList(crit.map(line)) : '<ul class="hn-check-list"><li class="hn-check-item ok">Aucune alerte critique.</li></ul>');
+    out += '<h3 style="margin:12px 0 4px;font-size:14px;">Points de vigilance : ' + att.length + '</h3>' + (att.length ? hnList(att.map(line)) : '<ul class="hn-check-list"><li class="hn-check-item ok">Aucun point de vigilance.</li></ul>');
+    var reCard = /carte|visa|mastercard|master card|amex|american express|cr[ée]dit|stripe|square|paypal|tpv|terminal/i;
+    var reDD = /d[ée]p[oô]t direct|direct deposit|virement|interac|\beft\b|\bach\b|pr[ée]l[èe]vement|salaire|paie\b/i;
+    function grp(re){ var rows = tx.filter(function(t){ return re.test(String(t.description || '')); }), tot = 0; rows.forEach(function(t){ tot += t.montant || 0; }); return { rows: rows, total: tot }; }
+    var c = grp(reCard), d = grp(reDD);
+    out += '<h3 style="margin:12px 0 4px;font-size:14px;">Paiements par carte et dépôts directs (repérés par description)</h3><ul class="hn-check-list">' +
+      '<li class="hn-check-item ' + (c.rows.length ? 'ok' : 'warn') + '">Carte de crédit : ' + c.rows.length + ' opération(s), total ' + fmtMoney(c.total) + '</li>' +
+      '<li class="hn-check-item ' + (d.rows.length ? 'ok' : 'warn') + '">Dépôt direct / virement : ' + d.rows.length + ' opération(s), total ' + fmtMoney(d.total) + '</li></ul>' +
+      '<p class="hint" style="margin:0;">Le repérage repose sur les mots de la description (carte, Visa, dépôt direct, virement, Interac…) : ajoutez ces mots à vos descriptions pour une analyse plus fiable.</p>';
+    el.innerHTML = out + '<p class="hint" style="margin:8px 0 0;">Analyse de ' + tx.length + ' opération(s) du dossier « ' + escapeHtml(folder.nom) + ' ». Une alerte n’est pas une preuve de fraude.</p>';
+  }
+  var hnTaisoBtn = document.getElementById('hn-taiso-run'); if(hnTaisoBtn) hnTaisoBtn.addEventListener('click', runHnTaiso);
+  var hnItafBtn = document.getElementById('hn-itaf-run'); if(hnItafBtn) hnItafBtn.addEventListener('click', runHnItaf);
 
   /* ---- 5. Évaluation Rapide (diagnostic feu vert/jaune/rouge) ---- */
   function runHnQuick(){
