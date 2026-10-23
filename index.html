@@ -41053,10 +41053,11 @@ var H = window.__hn || {};
 var OPS = window.__ops = { tabs:{ taiso:[], itaf:[] }, A:{}, E:{} };
 var COLLS = ['inv','ord','pay','sup','mail','bank','alert','doc','set'];
 var PNAME = { taiso:'TAISO', itaf:'iTAF' };
-var ST = { orgs:[], invites:[], demo:false, org:null, sb:null, email:'', err:'', ready:false, cache:{}, prod:'taiso', loading:false };
+var ST = { usage:null, orgs:[], invites:[], demo:false, org:null, sb:null, email:'', err:'', ready:false, cache:{}, prod:'taiso', loading:false };
 var UI = { taiso:{ tab:'dash', f:{} }, itaf:{ tab:'dash', f:{} } };
 var LSK = 'hn_ops_local', DEMOK = 'hn_ops_demo', ORGK = 'hn_ops_org', AUDK = 'hn_ops_audit';
-var PRICE_NOTE = 'Tarifs de départ (hypothèses, avant taxes, en dollars US, facturés annuellement) : TAISO dès 199 $/mois, iTAF dès 149 $/mois, TAISO + iTAF dès 299 $/mois — par exemple 250 documents par mois et 5 utilisateurs inclus ; dépassements par lots. Institutions et grandes organisations : sur devis.';
+var PRICE_NOTE = 'Tarifs de départ (hypothèses à tester avec des clients pilotes, avant taxes, en dollars US, facturés annuellement) : TAISO dès 199 $/mois, iTAF dès 149 $/mois, TAISO + iTAF dès 299 $/mois. Inclus : 250 unités de traitement documentaire par mois et 5 utilisateurs. Chaque fichier consomme une unité par tranche de 3 pages commencée ; le décompte est affiché avant confirmation. Analyses IA : 50 par mois incluses (1 par analyse, annoncée avant). Dépassements par lots supplémentaires. Institutions et grandes organisations : sur devis.';
+var UNIT_RULES = ['Un fichier (PDF ou image) de 1 à 3 pages = 1 unité ; 1 unité de plus par tranche de 3 pages commencée (5 pages = 2, 7 = 3, 12 = 4, 30 = 10).', 'Le corps d’un courriel n’est pas décompté ; chaque pièce jointe traitée suit la règle des fichiers.', 'Un fichier identique déjà traité (même empreinte) n’est jamais décompté une seconde fois, même s’il sert à TAISO et à iTAF dans la même organisation.', 'Un traitement échoué ne consomme aucune unité.', 'Les CSV, textes collés, saisies manuelles et analyses sans IA ne consomment pas d’unité (stockage et synchronisation inclus, avec des limites adaptées).', 'Une analyse IA supplémentaire a son propre compteur : 1 analyse IA par demande, annoncée avant la confirmation, en plus du crédit IA HelpNaud.', 'Deux abonnements distincts (organisations séparées) comptent chacun leurs unités.'];
 var PLANS = [
   ['trial', 'Essai gratuit de 14 jours', 'TAISO + iTAF, sans engagement', 'Gratuit'],
   ['taiso', 'TAISO', 'Gestion et rapprochement des opérations', 'dès 199 $ US/mois*'],
@@ -41201,7 +41202,29 @@ function audit(action, detail){
   if(isCloud()){ rpc('ops_audit_add', { p_org: ST.org.id, p_product: ST.prod, p_action: action, p_detail: detail || '' }).catch(function(){}); return; }
   var a = J(AUDK, []); a.unshift({ at: new Date().toISOString(), who: 'cet appareil', product: ST.prod, action: action, detail: detail || '' }); S(AUDK, a.slice(0, 200));
 }
-function loadAll(){
+function loadAll(){ return loadData().then(loadUsage); }
+var USK = 'hn_ops_usage';
+function usageKey(){ return ST.demo ? USK + '_demo' : USK; }
+function perNow(){ return new Date().toISOString().slice(0, 7); }
+function loadUsage(){
+  if(isCloud()){ if(lvl(ST.prod) === 'none'){ ST.usage = null; return Promise.resolve(); } return rpc('ops_usage_status', { p_org: ST.org.id }).then(function(u){ ST.usage = { enforced: true, period: u.period, docs_used: u.docs_used, docs_quota: u.docs_quota, ai_used: u.ai_used, ai_quota: u.ai_quota }; }).catch(function(){ ST.usage = null; }); }
+  var led = J(usageKey(), { log: {} }), per = perNow(), d = 0, a = 0;
+  Object.keys(led.log).forEach(function(k){ var e = led.log[k]; if(e.p === per){ if(e.k === 'doc') d += e.u; else a += e.u; } });
+  ST.usage = { enforced: false, period: per, docs_used: d, docs_quota: 250, ai_used: a, ai_quota: 50 };
+  return Promise.resolve();
+}
+function usageCharge(kind, key, units, label){
+  if(isCloud()) return rpc('ops_usage_charge', { p_org: ST.org.id, p_product: ST.prod, p_kind: kind, p_key: key, p_units: units, p_label: label || '' }).then(function(r){ ST.usage = { enforced: true, period: r.period, docs_used: r.docs_used, docs_quota: r.docs_quota, ai_used: r.ai_used, ai_quota: r.ai_quota }; return r; });
+  var led = J(usageKey(), { log: {} }), ek = kind + '|' + key; if(led.log[ek]) return Promise.resolve({ ok: true, reused: true, charged: 0 });
+  led.log[ek] = { k: kind, u: units, p: perNow() }; S(usageKey(), led);
+  return loadUsage().then(function(){ return { ok: true, reused: false, charged: units }; });
+}
+function usageLine(){
+  var u = ST.usage; if(!u) return '';
+  var warn = u.enforced && (u.docs_used >= u.docs_quota * 0.9 || u.ai_used >= u.ai_quota * 0.9);
+  return '<div class="ops-note' + (warn ? ' warn' : '') + '">Unités de traitement documentaire ce mois-ci : <b>' + u.docs_used + ' / ' + u.docs_quota + '</b> · Analyses IA : <b>' + u.ai_used + ' / ' + u.ai_quota + '</b>' + (u.enforced ? '' : ' (mode local : suivi sans plafond)') + '</div>';
+}
+function loadData(){
   if(!isCloud()){ localLoad(); return Promise.resolve(); }
   var prod = ST.prod, o = ST.org; ST.loadedProd = prod;
   if(lvl(prod) === 'none'){ COLLS.forEach(function(c){ ST.cache[c] = []; }); return Promise.resolve(); }
@@ -41225,7 +41248,8 @@ function init(force){
   ST.loading = true; render();
   loadOrgs().then(function(){ pickOrg(); return loadAll(); }).then(function(){ ST.ready = true; ST.loading = false; render(); }, function(){ ST.ready = true; ST.loading = false; render(); });
 }
-OPS.d = { L:L, byId:byId, put:put, del:del, audit:audit, SET:SET, money:money, rpc:rpc, errTxt:errTxt, isCloud:isCloud, canEdit:canEdit, lvl:lvl, ST:ST, UI:UI, loadAll:loadAll, init:init };
+OPS.UNIT_RULES = UNIT_RULES; OPS.d = { L:L, byId:byId, put:put, del:del, audit:audit, SET:SET, money:money, rpc:rpc, errTxt:errTxt, isCloud:isCloud, canEdit:canEdit, lvl:lvl, ST:ST, UI:UI, loadAll:loadAll, init:init };
+OPS.d.usage = { charge: usageCharge, get: function(){ return ST.usage; }, reload: loadUsage };
 
 /* ---------- fenêtre de saisie ---------- */
 function modal(title, html, buttons, wide){
@@ -41328,7 +41352,7 @@ function render(){
     var h = '<div class="ops-wrap"><div class="ops-head"><div><h1 class="ops-h1">' + PNAME[prod] + '</h1><p class="hint" style="margin:2px 0 0;">' + esc(INTRO[prod]) + '</p></div>' + ctxBar(prod) + '</div>';
     if(ST.loading){ el.innerHTML = h + '<p class="hint">Chargement…</p></div>'; return; }
     if(ST.err && !ST.orgs.length && ST.err.indexOf('SQL') > -1) h += '<div class="ops-note warn">' + esc(ST.err) + ' Le mode local reste utilisable.</div>';
-    h += statusLine(prod);
+    h += statusLine(prod) + usageLine();
     (ST.invites || []).forEach(function(iv){ h += '<div class="ops-note warn">Invitation de l’organisation « ' + esc(iv.org) + ' » (' + (iv.role === 'admin' ? 'administrateur' : 'employé') + ') — valable jusqu’au ' + esc(String(iv.expires).slice(0, 10)) + '. ' + btn('Accepter', 'invite-accept', { id: iv.id }, 'primary ops-sm') + ' ' + btn('Refuser', 'invite-decline', { id: iv.id }, 'ops-sm') + '</div>'; });
     if(isCloud() && lvl(prod) === 'none'){ el.innerHTML = h + lockScreen(prod) + '</div>'; bindCtx(el); return; }
     h += '<nav class="ops-tabs">' + tabs.map(function(t){ return '<button type="button" class="' + (u.tab === t.id ? 'on' : '') + '" data-act="tab" data-tab="' + t.id + '">' + t.label + '</button>'; }).join('') + '</nav>';
@@ -41376,7 +41400,7 @@ OPS.A['org-new'] = function(){
   }
   var h = '<div class="ops-form"><div class="ops-fw w2"><label class="ops-fl">1. Nom de l’entreprise ou de l’institution *</label><input id="ops-on" placeholder="Ex. Entreprise Alpha inc."></div></div>' +
     '<p class="ops-fl" style="margin-top:12px">2. Votre choix</p>' + PLANS.map(function(p, i){ return '<label class="ops-note" style="display:block;cursor:pointer"><input type="radio" name="ops-plan" value="' + p[0] + '"' + (i === 0 ? ' checked' : '') + '> <b>' + esc(p[1]) + '</b> — ' + esc(p[3]) + '<br><span class="hint" style="margin:0">' + esc(p[2]) + '</span></label>'; }).join('') +
-    '<p class="hint">* ' + esc(PRICE_NOTE) + '</p><p class="hint">Dans tous les cas, l’organisation démarre avec 14 jours d’essai, et vous en êtes l’administrateur. Pour un abonnement, le paiement en ligne automatique n’est pas encore ouvert : votre choix est enregistré et HelpNaud confirme l’activation après paiement. Une page « paiement réussi » ne débloque jamais les accès à elle seule.</p>';
+    '<p class="hint">* ' + esc(PRICE_NOTE) + '</p><p class="hint"><b>Règles de décompte :</b></p><ul class="hint" style="margin:0 0 8px 18px">' + UNIT_RULES.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join('') + '</ul><p class="hint">Dans tous les cas, l’organisation démarre avec 14 jours d’essai, et vous en êtes l’administrateur. Pour un abonnement, le paiement en ligne automatique n’est pas encore ouvert : votre choix est enregistré et HelpNaud confirme l’activation après paiement. Une page « paiement réussi » ne débloque jamais les accès à elle seule.</p>';
   modal('Organisation et abonnement', h, [{ label: 'Créer l’organisation', cls: 'primary', fn: function(d){
     var name = d.querySelector('#ops-on').value.trim(), plan = (d.querySelector('input[name=ops-plan]:checked') || {}).value || 'trial';
     if(name.length < 2){ toast('Nom requis.'); return false; }
@@ -42356,6 +42380,7 @@ A['alert-export'] = function(){ V.exportCsv('alertes-itaf', ['Gravité', 'Règle
 /* ================= Pièces justificatives ================= */
 var EDITORS = /photoshop|gimp|canva|illustrator|paint\.net|pixlr|inkscape|ilovepdf|smallpdf|sejda|pdf24|pdfescape|foxit.*(editor|phantom)|nitro|snapseed|microsoft.{0,12}word|libreoffice|openoffice|wps office/i;
 function bin(u8){ var s = '', i, n = u8.length; for(i = 0; i < n; i += 32768) s += String.fromCharCode.apply(null, u8.subarray(i, Math.min(n, i + 32768))); return s; }
+function pdfPages(b){ var m = b.match(/\/Type\s*\/Page(?![s\w])/g), n = m ? m.length : 0, c = 0, re = /\/Type\s*\/Pages[^>]*?\/Count\s+(\d+)|\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages/g, x; while((x = re.exec(b))) c = Math.max(c, +(x[1] || x[2])); return Math.max(n, c, 1); }
 function pdfMeta(b){
   var g = function(k){ var m = new RegExp('/' + k + '\\s*\\(([^)]{0,120})\\)').exec(b); return m ? m[1].replace(/[^\x20-\x7e]/g, '') : ''; };
   var d = function(k){ var m = new RegExp('/' + k + '\\s*\\(D:(\\d{14})').exec(b); if(m){ var s = m[1]; return Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8), +s.slice(8, 10), +s.slice(10, 12), +s.slice(12, 14)); } return null; };
@@ -42415,24 +42440,49 @@ T.push({ id: 'docs', label: '📎 Pièces', render: function(){
 OPS.E.docFile = function(input){
   if(!need()){ input.value = ''; return; }
   var files = Array.prototype.slice.call(input.files || []), left = files.length, done = [];
-  if(!left) return; U.toast('Analyse en cours…');
-  function fin(){ if(--left === 0){ input.value = ''; done.forEach(function(d, k){ var prior = L('doc').concat(done.slice(0, k)); d.flags = docFlags(d, prior); }); D.put('doc', done).then(function(){ D.audit('doc_analyse', done.length + ' pièces'); U.toast(done.length + ' pièce(s) analysée(s).'); OPS.render(); }, function(){}); } }
+  if(!left) return; U.toast('Lecture des fichiers…');
+  function fin(){ if(--left === 0){ input.value = ''; if(!done.length){ U.toast('Aucun fichier exploitable : rien n’est décompté.'); return; } confirmDocs(done); } }
   files.forEach(function(f){
-    if(f.size > 15e6){ U.toast(f.name + ' : fichier trop volumineux (15 Mo max).'); fin(); return; }
+    if(f.size > 15e6){ U.toast(f.name + ' : fichier trop volumineux (15 Mo max) — non traité, non décompté.'); fin(); return; }
     var fr = new FileReader();
     fr.onload = function(){
-      var buf = fr.result, u8 = new Uint8Array(buf), d = { id: U.uid(), name: f.name, size: f.size, at: new Date().toISOString(), meta: {}, text: '' };
+      var buf = fr.result, u8 = new Uint8Array(buf), d = { id: U.uid(), name: f.name, size: f.size, at: new Date().toISOString(), meta: {}, text: '', pages: 0 };
       U.sha256(buf).then(function(h){
         d.hash = h; var head = bin(u8.subarray(0, Math.min(u8.length, 120000)));
         var isPdf = /^%PDF/.test(head), txt = /\.(txt|eml|csv|html?)$/i.test(f.name) || /^text\//.test(f.type);
-        if(isPdf){ d.meta = pdfMeta(bin(u8)); return pdfText(u8).then(function(t){ d.text = t.slice(0, 20000); }); }
+        if(isPdf){ var full = bin(u8); d.meta = pdfMeta(full); d.pages = pdfPages(full); return pdfText(u8).then(function(t){ d.text = t.slice(0, 20000); }); }
         if(txt){ d.text = new TextDecoder('utf-8').decode(u8).slice(0, 20000); if(/\.html?$/i.test(f.name)) d.text = d.text.replace(/<[^>]+>/g, ' '); return null; }
-        var sw = /(photoshop|adobe|gimp|canva|paint\.net|pixlr|snapseed|lightroom)/i.exec(head); if(sw) d.meta.software = sw[1]; d.meta.image = true; return null;
-      }).then(function(){ done.push(d); fin(); }, function(){ done.push(d); fin(); });
+        var sw = /(photoshop|adobe|gimp|canva|paint\.net|pixlr|snapseed|lightroom)/i.exec(head); if(sw) d.meta.software = sw[1]; d.meta.image = true; d.pages = 1; return null;
+      }).then(function(){ done.push(d); fin(); }, function(){ U.toast(f.name + ' : traitement échoué — aucune unité consommée.'); fin(); });
     };
-    fr.onerror = function(){ fin(); }; fr.readAsArrayBuffer(f);
+    fr.onerror = function(){ U.toast(f.name + ' : lecture impossible — aucune unité consommée.'); fin(); }; fr.readAsArrayBuffer(f);
   });
 };
+/* décompte affiché AVANT confirmation : 1 unité par tranche de 3 pages commencée ; fichier déjà traité = 0 */
+function confirmDocs(done){
+  var seen = {}; L('doc').forEach(function(d){ if(d.hash) seen[d.hash] = 1; });
+  var total = 0;
+  done.forEach(function(d){ d.units = d.pages ? Math.ceil(d.pages / 3) : 0; d.reuse = false; if(d.hash && seen[d.hash]){ d.units = 0; d.reuse = true; } if(d.hash) seen[d.hash] = 1; total += d.units; });
+  var us = D.usage.get(), left = us ? us.docs_quota - us.docs_used : null, over = us && us.enforced && total > left;
+  var h = '<p class="hint">Règle : 1 unité par tranche de 3 pages commencée (1 à 3 pages = 1, 5 pages = 2, 12 pages = 4). Les pages sont détectées automatiquement dans le fichier.</p>' +
+    tbl(['Fichier', 'Pages', 'Unités'], done.map(function(d){ return [esc(d.name), d.pages ? d.pages : '—', d.reuse ? '<b>0</b> <span class="hint" style="margin:0">fichier identique déjà traité : résultat réutilisé</span>' : (d.pages ? '<b>' + d.units + '</b>' : '<b>0</b> <span class="hint" style="margin:0">texte / CSV non décompté</span>')]; })) +
+    '<p><b>Total à consommer : ' + total + ' unité(s)</b>' + (us ? ' · il vous en reste ' + left + ' ce mois-ci sur ' + us.docs_quota : '') + '</p>' + (over ? '<div class="ops-note warn">Quota insuffisant : ' + (total - left) + ' unité(s) manquent. Seuls les fichiers qui rentrent dans le quota seront traités ; contactez HelpNaud pour un lot supplémentaire.</div>' : '');
+  M.modal('Confirmer le traitement', h, [{ label: total ? 'Confirmer (' + total + ' unité' + (total > 1 ? 's' : '') + ')' : 'Confirmer', cls: 'primary', fn: function(){ runDocs(done); } }, { label: 'Annuler — rien n’est décompté' }], true);
+}
+function runDocs(done){
+  var saved = [], skipped = 0, stop = false, used = 0, chain = Promise.resolve();
+  done.forEach(function(d){
+    chain = chain.then(function(){
+      if(stop){ skipped++; return; }
+      var p = d.units > 0 ? D.usage.charge('doc', 'doc:' + (d.hash || d.id), d.units, d.name) : Promise.resolve({ ok: true });
+      return p.then(function(r){ if(r && r.ok === false){ stop = true; skipped++; return; } if(r && r.charged) used += r.charged; saved.push(d); }, function(e){ stop = true; skipped++; U.toast(D.errTxt(e)); });
+    });
+  });
+  chain.then(function(){
+    saved.forEach(function(d, k){ var prior = L('doc').concat(saved.slice(0, k)); d.flags = docFlags(d, prior); delete d.reuse; });
+    return saved.length ? D.put('doc', saved) : null;
+  }).then(function(){ if(saved.length) D.audit('doc_analyse', saved.length + ' pièces, ' + used + ' unités'); U.toast(saved.length + ' pièce(s) analysée(s), ' + used + ' unité(s) consommée(s)' + (skipped ? ' · ' + skipped + ' non traitée(s) : quota atteint' : '') + '.'); OPS.render(); }, function(){});
+}
 A['doc-text'] = function(){ if(!need()) return;
   M.modal('Texte d’une pièce', '<label class="ops-fl">Nom de la pièce</label><input id="ops-dt-n" placeholder="Facture XYZ.pdf"><label class="ops-fl">Texte copié de la facture</label><textarea id="ops-dt-t" rows="10"></textarea>', [{ label: 'Enregistrer', cls: 'primary', fn: function(d){ var t = d.querySelector('#ops-dt-t').value; if(!t.trim()){ U.toast('Collez le texte.'); return false; } var rec = { id: U.uid(), name: d.querySelector('#ops-dt-n').value || 'Texte collé', size: t.length, at: new Date().toISOString(), meta: {}, text: t.slice(0, 20000) }; rec.flags = docFlags(rec, L('doc')); D.put('doc', rec).then(function(){ OPS.render(); }, function(){}); } }, { label: 'Annuler' }], true); };
 A['doc-del'] = function(a){ if(!need()) return; if(confirm('Supprimer cette pièce ?')) D.del('doc', a.getAttribute('data-id')).then(function(){ OPS.render(); }); };
@@ -42457,9 +42507,12 @@ A['doc-open'] = function(a){
     { label: 'Créer la facture avec ces champs', fn: function(m){ if(!need()) return false; var g = function(k){ var e = m.querySelector('[data-ex="' + k + '"]'); return e ? e.value : ''; }; if(!m.querySelector('#ops-ex')){ U.toast('Aucun champ repéré.'); return false; } E.invForm({ no: g('no'), supName: g('sup'), date: U.normDate(g('date')) || today(), due: U.normDate(g('due')), ht: g('ht') === '' ? '' : num(g('ht')), tax: g('tax') === '' ? '' : num(g('tax')), total: g('total') === '' ? '' : num(g('total')), status: 'reçue' }, true); return false; } },
     { label: 'Analyse IA du texte (crédit IA)', fn: function(m){
       if(!need()) return false; var txt = m.querySelector('#ops-dtx').value.trim(), st = m.querySelector('#ops-ai-st'); if(!txt){ st.textContent = 'Collez d’abord le texte de la pièce.'; return false; }
+      var us = D.usage.get();
+      if(us && us.enforced && us.ai_used >= us.ai_quota){ st.textContent = 'Quota d’analyses IA du mois atteint (' + us.ai_quota + '). Contactez HelpNaud pour un lot supplémentaire.'; return false; }
+      if(!confirm('Cette analyse compte pour 1 analyse IA' + (us ? ' (il en reste ' + (us.ai_quota - us.ai_used) + ' ce mois-ci sur ' + us.ai_quota + ')' : '') + ' et utilise aussi votre crédit IA HelpNaud. Si elle échoue, rien n’est décompté. Continuer ?')) return false;
       var iv = D.byId('inv', m.querySelector('#ops-dl').value), ctx = iv ? 'Données saisies : fournisseur ' + E.supName(iv) + ', n° ' + iv.no + ', date ' + iv.date + ', total ' + iv.total + ', HT ' + iv.ht + ', taxes ' + iv.tax + '.' : '';
       H().requireSample(st).then(function(cap){ if(!cap) return; st.textContent = 'Analyse IA en cours…';
-        cap('Tu es un analyste de contrôle des factures. Voici le texte d\'une pièce justificative. ' + ctx + '\nRelève en 3 à 6 puces courtes, en français, les incohérences (totaux, taxes, dates, numéro, coordonnées bancaires, fautes ou formulations inhabituelles) et les signaux de fraude possibles, sans conclure à la fraude. Si tout est cohérent, dis-le en une phrase.\n\nTEXTE :\n' + txt.slice(0, 6000)).then(function(r){ d.ai = String(r && r.text || '').slice(0, 4000); st.textContent = 'Analyse enregistrée.'; D.put('doc', d).then(function(){ A['doc-open']({ getAttribute: function(){ return d.id; } }); }, function(){}); }, function(e){ st.textContent = 'Analyse IA indisponible : ' + (e && e.message || ''); });
+        cap('Tu es un analyste de contrôle des factures. Voici le texte d\'une pièce justificative. ' + ctx + '\nRelève en 3 à 6 puces courtes, en français, les incohérences (totaux, taxes, dates, numéro, coordonnées bancaires, fautes ou formulations inhabituelles) et les signaux de fraude possibles, sans conclure à la fraude. Si tout est cohérent, dis-le en une phrase.\n\nTEXTE :\n' + txt.slice(0, 6000)).then(function(r){ d.ai = String(r && r.text || '').slice(0, 4000); st.textContent = 'Analyse enregistrée.'; D.usage.charge('ai', 'ai:' + U.uid(), 1, d.name).catch(function(){}); D.put('doc', d).then(function(){ A['doc-open']({ getAttribute: function(){ return d.id; } }); }, function(){}); }, function(e){ st.textContent = 'Analyse IA indisponible : ' + (e && e.message || ''); });
       }); return false;
     } }, { label: 'Fermer' }], true);
 };
@@ -42517,6 +42570,7 @@ OPS.settingsTab = function(prod){
   var it = '<div class="card"><h2>iTAF — seuils et règles de contrôle</h2><div class="ops-form">' + row('Montant rond à signaler dès', 'roundMin', S.roundMin, 'number') + row('Seuil d’approbation', 'apprThr', S.apprThr, 'number', 'Sert au fractionnement, aux paiements sans pièce et à la séparation des tâches.') + row('Seuil anti-fractionnement', 'splitThr', S.splitThr, 'number') + row('Montant élevé d’un nouveau tiers', 'bigNewSup', S.bigNewSup, 'number') + row('Taux de taxe attendus (%)', 'taxRates', S.taxRates, 'text', 'Séparés par des virgules.') + '</div>' +
     '<h3 class="ops-h3">Règles actives</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px">' + E.RULES.map(function(r){ return '<label class="ops-ck"><input type="checkbox" data-sf-off="' + r[0] + '"' + (S.off && S.off[r[0]] ? '' : ' checked') + '> ' + esc(r[1]) + '</label>'; }).join('') + '</div></div>';
   h += prod === 'taiso' ? tx + it : it + tx;
+  h += '<div class="card"><h2>Unités de traitement documentaire</h2><p class="hint">Quota inclus (proposition) : 250 unités par mois et 5 utilisateurs ; 50 analyses IA par mois. Le décompte est affiché avant chaque traitement.</p><ul class="hint" style="margin:0 0 0 18px">' + OPS.UNIT_RULES.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join('') + '</ul></div>';
   h += '<div class="card"><h2>Messageries connectées <span class="ops-b">bientôt</span></h2><p class="hint">La collecte automatique des factures depuis la boîte de l’organisation n’est pas encore disponible : elle demande l’enregistrement officiel de HelpNaud chez Google et Microsoft. Prévu : connexion autorisée par l’administrateur, choix des dossiers à analyser, permission d’envoi distincte de la lecture, déconnexion à tout moment. En attendant, utilisez « Import de courriels » (fichiers .eml ou texte collé).</p><div class="ops-act"><button type="button" class="btn" disabled>Connecter Microsoft 365</button><button type="button" class="btn" disabled>Connecter Gmail / Google Workspace</button></div><p class="hint">Les adresses professionnelles hébergées ailleurs (OVH, Zoho, Hostinger…) passeront par l’import ou, plus tard, un connecteur IMAP.</p></div>';
   h += '<p>' + V.btn('Enregistrer les paramètres', 'set-save', null, 'primary') + '</p>';
   h += '<div class="card"><h2>Données</h2><p class="hint">' + (D.isCloud() ? 'Les données sont partagées par toute l’organisation. Seul le contenu de cet espace est exporté.' : 'Mode local : les données sont stockées dans ce navigateur. Exportez-les régulièrement.') + '</p><div class="ops-act">' + V.btn('Exporter une sauvegarde (JSON)', 'data-export') + V.fileBtn('Restaurer une sauvegarde', 'ops-restore', '.json') + (D.isCloud() ? '' : V.btn('Effacer les données locales', 'data-wipe')) + '</div></div>';
