@@ -41220,7 +41220,7 @@ function usageCharge(kind, key, units, label){
   return loadUsage().then(function(){ return { ok: true, reused: false, charged: units }; });
 }
 function usageLine(){
-  var u = ST.usage; if(!u) return '';
+  var u = ST.usage; if(!u || typeof u.docs_used !== 'number') return '';
   var warn = u.enforced && (u.docs_used >= u.docs_quota * 0.9 || u.ai_used >= u.ai_quota * 0.9);
   return '<div class="ops-note' + (warn ? ' warn' : '') + '">Unités de traitement documentaire ce mois-ci : <b>' + u.docs_used + ' / ' + u.docs_quota + '</b> · Analyses IA : <b>' + u.ai_used + ' / ' + u.ai_quota + '</b>' + (u.enforced ? '' : ' (mode local : suivi sans plafond)') + '</div>';
 }
@@ -41228,7 +41228,19 @@ function loadData(){
   if(!isCloud()){ localLoad(); return Promise.resolve(); }
   var prod = ST.prod, o = ST.org; ST.loadedProd = prod;
   if(lvl(prod) === 'none'){ COLLS.forEach(function(c){ ST.cache[c] = []; }); return Promise.resolve(); }
-  return Promise.all(COLLS.map(function(c){ return rpc('ops_rec_list', { p_org: o.id, p_product: prod, p_coll: c }).then(function(d){ ST.cache[c] = Array.isArray(d) ? d : []; }); })).catch(function(e){ ST.err = errTxt(e); });
+  function page(c, off, acc){
+    return rpc('ops_rec_page', { p_org: o.id, p_product: prod, p_coll: c, p_offset: off, p_limit: 1000 }).then(function(d){
+      d = Array.isArray(d) ? d : []; acc = acc.concat(d);
+      return d.length === 1000 ? page(c, off + 1000, acc) : acc;
+    });
+  }
+  function one(c){
+    return page(c, 0, []).catch(function(e){
+      if(/ops_rec_page|schema cache|does not exist|PGRST202|42883/i.test(String(e && e.message || e))) return rpc('ops_rec_list', { p_org: o.id, p_product: prod, p_coll: c });
+      throw e;
+    }).then(function(d){ ST.cache[c] = Array.isArray(d) ? d : []; });
+  }
+  return Promise.all(COLLS.map(one)).catch(function(e){ ST.err = errTxt(e); });
 }
 function loadOrgs(){
   return (H.session ? H.session() : Promise.resolve(null)).then(function(x){
@@ -41340,7 +41352,7 @@ function lockScreen(prod){
 }
 function statusLine(prod){
   if(ST.demo) return '<div class="ops-note warn">Espace de démonstration : données d’exemple séparées de vos vraies données. ' + btn('Réinitialiser la démonstration', 'demo-clear', null, 'ops-sm') + '</div>';
-  if(!isCloud()) return '<div class="ops-note">Mode local : vos données restent sur cet appareil. Pour travailler à plusieurs (comptes administrateurs et employés), créez une organisation avec « + Organisation / Abonnement ».</div>';
+  if(!isCloud()) return '<div class="ops-note warn"><b>Mode local = essai personnel.</b> Les données restent uniquement dans ce navigateur : elles peuvent être perdues (navigateur vidé, autre appareil) et ne sont partagées avec personne. <b>Pour une utilisation professionnelle, créez une organisation</b> (données sauvegardées sur le serveur, comptes administrateurs et employés) avec « + Organisation / Abonnement ».</div>';
   var o = ST.org, until = o.paid_until && new Date(o.paid_until) > new Date() ? 'Abonnement actif jusqu’au ' + String(o.paid_until).slice(0, 10) : (new Date(o.trial_until) > new Date() ? 'Essai gratuit jusqu’au ' + String(o.trial_until).slice(0, 10) : 'Essai terminé');
   return '<div class="ops-note">Organisation « ' + esc(o.name) + ' » · ' + (o.role === 'admin' ? 'administrateur' : 'employé (' + (lvl(prod) === 'edit' ? 'modification' : 'lecture seule') + ')') + ' · ' + esc(until) + ' · ' + o.members + ' compte(s)</div>';
 }
@@ -41400,7 +41412,7 @@ OPS.A['org-new'] = function(){
   }
   var h = '<div class="ops-form"><div class="ops-fw w2"><label class="ops-fl">1. Nom de l’entreprise ou de l’institution *</label><input id="ops-on" placeholder="Ex. Entreprise Alpha inc."></div></div>' +
     '<p class="ops-fl" style="margin-top:12px">2. Votre choix</p>' + PLANS.map(function(p, i){ return '<label class="ops-note" style="display:block;cursor:pointer"><input type="radio" name="ops-plan" value="' + p[0] + '"' + (i === 0 ? ' checked' : '') + '> <b>' + esc(p[1]) + '</b> — ' + esc(p[3]) + '<br><span class="hint" style="margin:0">' + esc(p[2]) + '</span></label>'; }).join('') +
-    '<p class="hint">* ' + esc(PRICE_NOTE) + '</p><p class="hint"><b>Règles de décompte :</b></p><ul class="hint" style="margin:0 0 8px 18px">' + UNIT_RULES.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join('') + '</ul><p class="hint">Dans tous les cas, l’organisation démarre avec 14 jours d’essai, et vous en êtes l’administrateur. Pour un abonnement, le paiement en ligne automatique n’est pas encore ouvert : votre choix est enregistré et HelpNaud confirme l’activation après paiement. Une page « paiement réussi » ne débloque jamais les accès à elle seule.</p>';
+    '<p class="hint">* ' + esc(PRICE_NOTE) + '</p><p class="hint"><b>Règles de décompte :</b></p><ul class="hint" style="margin:0 0 8px 18px">' + UNIT_RULES.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join('') + '</ul><p class="hint"><b>Entreprises et institutions : utilisez une organisation.</b> Ses données sont enregistrées sur le serveur, séparées de celles des autres clients et accessibles selon les droits de chaque compte ; le mode local, lui, est réservé à l’essai personnel.</p><p class="hint">Dans tous les cas, l’organisation démarre avec 14 jours d’essai, et vous en êtes l’administrateur. Pour un abonnement, le paiement en ligne automatique n’est pas encore ouvert : votre choix est enregistré et HelpNaud confirme l’activation après paiement. Une page « paiement réussi » ne débloque jamais les accès à elle seule.</p>';
   modal('Organisation et abonnement', h, [{ label: 'Créer l’organisation', cls: 'primary', fn: function(d){
     var name = d.querySelector('#ops-on').value.trim(), plan = (d.querySelector('input[name=ops-plan]:checked') || {}).value || 'trial';
     if(name.length < 2){ toast('Nom requis.'); return false; }
@@ -42573,7 +42585,8 @@ OPS.settingsTab = function(prod){
   h += '<div class="card"><h2>Unités de traitement documentaire</h2><p class="hint">Quota inclus (proposition) : 250 unités par mois et 5 utilisateurs ; 25 analyses IA par mois. Le décompte est affiché avant chaque traitement.</p><ul class="hint" style="margin:0 0 0 18px">' + OPS.UNIT_RULES.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join('') + '</ul></div>';
   h += '<div class="card"><h2>Messageries connectées <span class="ops-b">bientôt</span></h2><p class="hint">La collecte automatique des factures depuis la boîte de l’organisation n’est pas encore disponible : elle demande l’enregistrement officiel de HelpNaud chez Google et Microsoft. Prévu : connexion autorisée par l’administrateur, choix des dossiers à analyser, permission d’envoi distincte de la lecture, déconnexion à tout moment. En attendant, utilisez « Import de courriels » (fichiers .eml ou texte collé).</p><div class="ops-act"><button type="button" class="btn" disabled>Connecter Microsoft 365</button><button type="button" class="btn" disabled>Connecter Gmail / Google Workspace</button></div><p class="hint">Les adresses professionnelles hébergées ailleurs (OVH, Zoho, Hostinger…) passeront par l’import ou, plus tard, un connecteur IMAP.</p></div>';
   h += '<p>' + V.btn('Enregistrer les paramètres', 'set-save', null, 'primary') + '</p>';
-  h += '<div class="card"><h2>Données</h2><p class="hint">' + (D.isCloud() ? 'Les données sont partagées par toute l’organisation. Seul le contenu de cet espace est exporté.' : 'Mode local : les données sont stockées dans ce navigateur. Exportez-les régulièrement.') + '</p><div class="ops-act">' + V.btn('Exporter une sauvegarde (JSON)', 'data-export') + V.fileBtn('Restaurer une sauvegarde', 'ops-restore', '.json') + (D.isCloud() ? '' : V.btn('Effacer les données locales', 'data-wipe')) + '</div></div>';
+  var cnt = ['inv', 'ord', 'pay', 'sup', 'mail', 'bank', 'alert', 'doc'].map(function(c){ return D.L(c).length + ' ' + ({ inv: 'factures', ord: 'commandes', pay: 'paiements', sup: 'tiers', mail: 'courriels', bank: 'lignes bancaires', alert: 'anomalies', doc: 'pièces' })[c]; }).join(' · ');
+  h += '<div class="card"><h2>Données</h2><p class="hint">' + (D.isCloud() ? 'Les données de l’organisation sont enregistrées sur le serveur et partagées selon les droits de chaque compte. L’exportation complète vous permet de repartir avec toutes vos données à tout moment.' : '<b>Mode local : essai personnel.</b> Les données sont stockées uniquement dans ce navigateur (risque de perte, une seule personne). Pour une utilisation professionnelle, créez une organisation ; exportez dans tous les cas une sauvegarde régulièrement.') + '</p><p class="hint">Contenu actuel : ' + cnt + '.</p><div class="ops-act">' + V.btn(D.isCloud() ? 'Exporter toute l’organisation (JSON)' : 'Exporter une sauvegarde (JSON)', 'data-export') + V.btn('Exporter en CSV (un fichier par type)', 'data-export-csv') + V.fileBtn('Restaurer une sauvegarde', 'ops-restore', '.json') + (D.isCloud() ? '' : V.btn('Effacer les données locales', 'data-wipe')) + '</div></div>';
   return h;
 };
 A['set-save'] = function(a, prod){
@@ -42585,8 +42598,18 @@ A['set-save'] = function(a, prod){
   D.put('set', r).then(function(){ D.audit('settings', ''); U.toast('Paramètres enregistrés.'); OPS.render(); }, function(){});
 };
 A['data-export'] = function(){
-  var o = { app: 'helpnaud-ops', v: 1, at: new Date().toISOString() }; ['inv', 'ord', 'pay', 'sup', 'mail', 'bank', 'alert', 'doc', 'set'].forEach(function(c){ o[c] = D.L(c); });
-  U.download('taiso-itaf-sauvegarde-' + U.today() + '.json', JSON.stringify(o), 'application/json');
+  var o = { app: 'helpnaud-ops', v: 1, at: new Date().toISOString(), org: D.isCloud() ? D.ST.org.name : 'local' }; ['inv', 'ord', 'pay', 'sup', 'mail', 'bank', 'alert', 'doc', 'set'].forEach(function(c){ o[c] = D.L(c); });
+  var extra = [];
+  if(D.isCloud() && D.ST.org.role === 'admin'){
+    var id = D.ST.org.id;
+    extra = [D.rpc('ops_members_list', { p_org: id }).then(function(x){ o.members = x; }), D.rpc('ops_audit_list', { p_org: id, p_limit: 500 }).then(function(x){ o.audit = x; }), D.rpc('ops_usage_list', { p_org: id }).then(function(x){ o.usage = x; })].map(function(p){ return p.catch(function(){}); });
+  }
+  Promise.all(extra).then(function(){ U.download('taiso-itaf-' + (D.isCloud() ? 'organisation' : 'local') + '-' + U.today() + '.json', JSON.stringify(o), 'application/json'); D.audit('export', 'JSON complet'); U.toast('Exportation prête.'); });
+};
+A['data-export-csv'] = function(){
+  var defs = { inv: ['Factures', ['no', 'supName', 'date', 'due', 'ht', 'tax', 'total', 'status', 'code', 'cat', 'notes']], ord: ['Commandes', ['no', 'type', 'supName', 'date', 'due', 'amount', 'cancelled', 'dispute']], pay: ['Paiements', ['date', 'supName', 'dir', 'mode', 'amount', 'ref', 'receiptNo', 'confirmDate', 'status']], sup: ['Tiers', ['name', 'type', 'email', 'taxNo', 'bank', 'termDays', 'status', 'code', 'cat', 'nextFollow']], bank: ['Banque', ['date', 'desc', 'amount', 'mode']], mail: ['Courriels', ['date', 'from', 'subject', 'folder', 'status']], alert: ['Anomalies', ['sev', 'rule', 'msg', 'status', 'note', 'at']] };
+  var n = 0; Object.keys(defs).forEach(function(c){ var d = defs[c], rows = D.L(c); if(!rows.length) return; n++; setTimeout(function(){ U.download(d[0].toLowerCase() + '-' + U.today() + '.csv', U.csvOut([d[1]].concat(rows.map(function(r){ return d[1].map(function(k){ return r[k]; }); })))); }, n * 400); });
+  if(!n) U.toast('Aucune donnée à exporter.'); else { D.audit('export_csv', n + ' fichiers'); U.toast(n + ' fichier(s) CSV en préparation.'); }
 };
 A['data-wipe'] = function(){ if(!confirm('Effacer toutes les données TAISO / iTAF de cet appareil ?')) return; try{ localStorage.removeItem('hn_ops_local'); }catch(e){} OPS.d.loadAll().then(function(){ OPS.render(); U.toast('Données locales effacées.'); }); };
 var prevFile = OPS.E.file;
