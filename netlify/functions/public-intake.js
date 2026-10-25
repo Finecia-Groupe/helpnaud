@@ -178,13 +178,16 @@ async function scheduleReminder(info, slotId, name, email, motif, confirmedOk){
   } catch (e) { console.error('[rdv-reminder] planification impossible : ' + (e && e.message) + ' ' + ((e && e.detail) || '')); return 'error'; }
 }
 async function confirmationStatus(slotIds){
+  const ids = (Array.isArray(slotIds) ? slotIds : []).filter(okId).slice(0, 100);
+  if (!ids.length) return { confirmed: {}, hint: 'ok' };
   try {
-    const ids = (Array.isArray(slotIds) ? slotIds : []).filter(okId).slice(0, 100);
-    if (!ids.length) return {};
     const rows = await sbRest('GET', 'fgh_rdv_reminders?select=slot_id,confirmed_at&confirmed_at=not.is.null&slot_id=in.(' + ids.map(encodeURIComponent).join(',') + ')');
     const out = {}; (Array.isArray(rows) ? rows : []).forEach(r => { out[r.slot_id] = r.confirmed_at; });
-    return out;
-  } catch (e) { console.error('[rdv-status] lecture impossible : ' + (e && e.message)); return {}; }
+    return { confirmed: out, hint: 'ok' };
+  } catch (e) {
+    console.error('[rdv-status] lecture impossible : ' + (e && e.message) + ' ' + ((e && e.detail) || ''));
+    return { confirmed: {}, hint: e && e.status === 400 ? 'no_column' : (e && e.status === 404 ? 'no_table' : 'error') };
+  }
 }
 async function cancelReminder(slotId){
   try { if (!okId(slotId)) return false; await sbRest('PATCH', 'fgh_rdv_reminders?slot_id=eq.' + encodeURIComponent(slotId), { canceled: true }, { Prefer: 'return=minimal' }); return true; }
@@ -417,7 +420,7 @@ exports.handler = async function(event){
       const auth3 = String((h.authorization || h.Authorization || '')).replace(/^Bearer\s+/i, '');
       if (!(await verifyUser(auth3))) return out(401, { error: 'Connexion requise.' });
       if (limited(ip + ':st', 120, 60 * 60 * 1000)) return out(429, { error: 'Trop de demandes. Réessayez plus tard.' });
-      return out(200, { ok: true, confirmed: await confirmationStatus(p.slotIds) });
+      { const st = await confirmationStatus(p.slotIds); return out(200, { ok: true, confirmed: st.confirmed, hint: st.hint }); }
     }
     if (action === 'rdv-cancel') {
       const auth2 = String((h.authorization || h.Authorization || '')).replace(/^Bearer\s+/i, '');
