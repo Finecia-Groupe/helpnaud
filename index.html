@@ -619,8 +619,6 @@
   .chat-mic-btn{ position:absolute; right:38px; bottom:4px; padding:6px 7px; }
   .chat-mic-btn svg{ width:15px; height:15px; }
 
-  /* Co-work : une seule bannière « IA indisponible » (celle du haut) quand les deux seraient affichées. */
-  #view-cowork:has(#cowork-ai-status-banner:not([hidden])) #cowork-discuss-ai-status-banner{ display:none !important; }
   /* Barre d'actions de saisie : micro · ondes (mode vocal) · envoyer · arrêter */
   .chat-input-wrap.has-actions textarea{ padding-right:118px; }
   .chat-form.is-generating .chat-input-wrap.has-actions textarea{ padding-right:154px; }
@@ -1005,10 +1003,10 @@
      réduite de 320px à 260px pour redonner cet espace au fil de discussion. */
   #view-assistant .chat-shell{ height:clamp(400px, calc(100dvh - 260px), 900px); }
   #cowork-panel-discuss .chat-shell{ height:clamp(400px, calc(100dvh - 290px), 900px); }
-  /* F-i-Stat (FGH-Colab) utilise le même balisage .chat-shell que H-Start (barre de domaine
+  /* H-Statis (FGH-Colab) utilise le même balisage .chat-shell que H-Start (barre de domaine
      compacte + mini-barre crédits) mais sans Mode vocal/Hmodel dans sa mini-barre, donc un chrome
      au-dessus un peu plus léger — règle de base alignée sur le même calcul que les trois autres
-     (jusque-là absente : F-i-Stat retombait sur height:min(560px, 66dvh) de la règle générique
+     (jusque-là absente : H-Statis retombait sur height:min(560px, 66dvh) de la règle générique
      .chat-shell, non ajustée à son propre en-tête). */
   #fghlab-panel-hstatis .chat-shell{ height:clamp(400px, calc(100dvh - 230px), 900px); }
 
@@ -1055,7 +1053,7 @@
   }
 
   /* Allègement du chrome au-dessus de .chat-shell sur mobile/tablette (≤860px), pour Assistant,
-     Co-work Discussion, H-Start Consultation IA et F-i-Stat uniquement — jamais sur desktop, et
+     Co-work Discussion, H-Start Consultation IA et H-Statis uniquement — jamais sur desktop, et
      jamais sur les autres vues (Tableau, Docs...), qui gardent leur présentation habituelle.
      Rien n'est supprimé fonctionnellement : le sous-titre descriptif fait doublon avec le bouton
      (i)/l'infobulle déjà présent à côté du titre de chaque vue ; les autres réglages ne font que
@@ -1597,7 +1595,7 @@
        haut RÉEL de l'élément, sans tenir compte de la barre du haut fixe (.sidebar en mode mobile,
        position:fixed) — contrairement au flux normal de la page, où le padding-top de .main
        au-dessus réserve déjà la place pour elle. Résultat (bogue pré-existant, rendu plus visible
-       par l'allègement du chrome d'Assistant/Co-work Discussion/H-Start/F-i-Stat ci-dessous : le
+       par l'allègement du chrome d'Assistant/Co-work Discussion/H-Start/H-Statis ci-dessous : le
        contenu qui suit immédiatement tombe alors plus près du haut de l'écran) : les premières
        lignes de la vue/du panneau fraîchement affiché pouvaient se retrouver cachées sous cette
        barre fixe. scroll-margin-top (même valeur que le padding-top de .main ci-dessus) indique au
@@ -16587,7 +16585,7 @@
       '<rect x="63" y="148" width="16" height="44" rx="3" fill="#C89B3C"/>' +
       '<rect x="92" y="122" width="16" height="70" rx="3" fill="#C89B3C"/>' +
       '<rect x="121" y="92" width="16" height="100" rx="3" fill="#C89B3C"/>' +
-      '</svg>', title:'F-i-Stat', desc:"Agent IA statistique interne de FINECIA GROUPE — statistiques avancées, économétrie, finance quantitative et méthodes scientifiques." }
+      '</svg>', title:'H-Statis', desc:"Agent IA statistique interne de FINECIA GROUPE — statistiques avancées, économétrie, finance quantitative et méthodes scientifiques." }
   };
   function getFghlabVisibleTools(){
     // Si un membre d'équipe est "connecté" (simulation locale, voir plus haut), il ne voit que ses
@@ -16714,9 +16712,9 @@
     }
     return (lo + hi) / 2;
   }
-  /* ================= FGH-Lab — Moteur de calcul statistique de F-i-Stat =================
+  /* ================= FGH-Lab — Moteur de calcul statistique de H-Statis =================
      Bibliothèque de matrices + estimateurs (corrélation, MCO, khi²), ajoutée en complément du
-     chat IA existant de F-i-Stat (inchangé). Toutes les fonctions sont génériques (réutilisables
+     chat IA existant de H-Statis (inchangé). Toutes les fonctions sont génériques (réutilisables
      par de futures phases : 2SLS, panel). Réutilise fghlabIncompleteBeta/fghlabLogGamma/
      fghlabTDistTwoTailedP ci-dessus plutôt que de les dupliquer. Une matrice est représentée
      comme un tableau de tableaux-lignes (number[][]). */
@@ -17068,8 +17066,8 @@
     }
     return { chi2: chi2, pValue: fghlabChiSquareUpperP(chi2, df) };
   }
-  /* ================= FGH-Lab — F-i-Stat : base de données importée + analyses statistiques =================
-     Complément additif à F-i-Stat (chat IA inchangé ci-dessus) : une vraie base de données importée
+  /* ================= FGH-Lab — H-Statis : base de données importée + analyses statistiques =================
+     Complément additif à H-Statis (chat IA inchangé ci-dessus) : une vraie base de données importée
      (Excel/CSV) gardée UNIQUEMENT en mémoire (jamais dans fghlabState/localStorage — cohérent avec
      hstatisHistory ci-dessus, également non persisté ; les jeux de données peuvent être volumineux et
      cette zone est un espace de travail ponctuel), plus 6 analyses réelles (corrélation, MCO, 2SLS,
@@ -17378,7 +17376,7 @@
     return stage2;
   }
 
-  /* ================= FGH-Lab — F-i-Stat, lot additif : modèles spatiaux SAR / SEM =================
+  /* ================= FGH-Lab — H-Statis, lot additif : modèles spatiaux SAR / SEM =================
      Estimateurs simplifiés (S2SLS / Kelejian-Prucha pour SAR, filtre spatial en deux étapes de type
      Cochrane-Orcutt pour SEM) — DES ALTERNATIVES STANDARD ET RECONNUES au maximum de vraisemblance
      complet, choisies ici car elles se construisent entièrement sur fghlabOLS/fghlabTwoStageLeastSquares/
@@ -17434,7 +17432,7 @@
     return finalOls;
   }
 
-  /* ================= FGH-Lab — F-i-Stat, lot additif : données de panel (FE/RE/Hausman),
+  /* ================= FGH-Lab — H-Statis, lot additif : données de panel (FE/RE/Hausman),
      causalité de Granger, régression à seuil (recherche en grille) =================
      Toujours construit sur fghlabOLS/fghlabMatInverse/fghlabMatVecMultiply/fghlabFDistP/
      fghlabChiSquareUpperP ci-dessus (jamais réimplémentés). */
@@ -27399,8 +27397,8 @@
     fghlabTouttestCandidateRenderIdentification(container, payload, record);
   }
 
-  /* ================= FGH-Lab — F-i-Stat (agent IA statistique interne de FINECIA GROUPE) =================
-     F-i-Stat est un outil bespoke FGH-Colab (comme CO-PROJET | COPROJECT/TOUTTEST — PAS un des 25/8 outils
+  /* ================= FGH-Lab — H-Statis (agent IA statistique interne de FINECIA GROUPE) =================
+     H-Statis est un outil bespoke FGH-Colab (comme CO-PROJET | COPROJECT/TOUTTEST — PAS un des 25/8 outils
      tracker/relevé génériques) : une consultation IA avancée en statistiques, économétrie, finance
      quantitative et méthodes scientifiques, réservée à l'équipe FINECIA GROUPE (jamais exposée aux
      abonnés HelpNaud.ai ordinaires, qui ont déjà H-Start — voir hstat-tab-consult plus haut — comme
@@ -27441,10 +27439,10 @@
       '<div class="cowork-panel-head">' +
         '<h2 style="margin:0; display:flex; align-items:center; gap:9px;"><span style="display:inline-flex;">'+info.icon+'</span>'+escapeHtml(info.title)+'</h2>' +
         '<div class="chat-info-wrap">' +
-          '<button class="btn icon-only" id="hstatis-info-btn" type="button" aria-label="À propos de F-i-Stat" title="Aide">' +
+          '<button class="btn icon-only" id="hstatis-info-btn" type="button" aria-label="À propos de H-Statis" title="Aide">' +
             '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.15" fill="currentColor" stroke-width="2.4"/></svg>' +
           '</button>' +
-          '<div class="chat-info-popover" id="hstatis-info-popover" hidden role="tooltip" style="left:auto; right:0; bottom:auto; top:calc(100% + 6px); margin-bottom:0; width:320px;">F-i-Stat est l’agent statistique interne de FINECIA GROUPE dans FGH-Colab : consultation IA avancée en statistiques, économétrie, finance quantitative et méthodes scientifiques, pour les mandats et analyses internes. Outil réservé à l’équipe FINECIA GROUPE — distinct de H-Start (accessible à tous les utilisateurs de HelpNaud.ai).</div>' +
+          '<div class="chat-info-popover" id="hstatis-info-popover" hidden role="tooltip" style="left:auto; right:0; bottom:auto; top:calc(100% + 6px); margin-bottom:0; width:320px;">H-Statis est l’agent statistique interne de FINECIA GROUPE dans FGH-Colab : consultation IA avancée en statistiques, économétrie, finance quantitative et méthodes scientifiques, pour les mandats et analyses internes. Outil réservé à l’équipe FINECIA GROUPE — distinct de H-Start (accessible à tous les utilisateurs de HelpNaud.ai).</div>' +
         '</div>' +
       '</div>' +
       '<p class="hint" style="margin:0 0 10px;">'+escapeHtml(info.desc)+'</p>' +
@@ -27512,7 +27510,7 @@
       '</div>' +
     '</details>';
   }
-  /* ================= FGH-Lab — F-i-Stat, lot additif : barre d'actions (« workflow ») par analyse,
+  /* ================= FGH-Lab — H-Statis, lot additif : barre d'actions (« workflow ») par analyse,
      export/impression/graphique/interprétation IA =================
      Après chaque analyse exécutée avec succès, l'appelant (chaque gestionnaire de clic « Lancer le
      test ») appelle fghlabHstatisSetRunResult(id, title, lines, significant, chartSpec) avec les
@@ -27543,7 +27541,7 @@
   }
   function fghlabHstatisAnalysisExportText(id){
     var run = fghlabHstatisRuns[id];
-    var title = 'F-i-Stat — ' + (run ? run.title : id);
+    var title = 'H-Statis — ' + (run ? run.title : id);
     if(!run) return { title: title, text: 'Aucun résultat pour cette analyse.' };
     var lines = [];
     lines.push(title);
@@ -27554,8 +27552,8 @@
     lines.push('');
     lines.push(fghlabHstatisSummarizeResult(id));
     if(run.notesText){ lines.push(''); lines.push('Instructions / notes additionnelles de l\'utilisateur :'); lines.push(run.notesText); }
-    if(run.aiInterpretation){ lines.push(''); lines.push('Interprétation IA (F-i-Stat) :'); lines.push(run.aiInterpretation); }
-    if(run.aiDiscussion){ lines.push(''); lines.push('Discussion académique/praticien (IA, F-i-Stat) :'); lines.push(run.aiDiscussion); }
+    if(run.aiInterpretation){ lines.push(''); lines.push('Interprétation IA (H-Statis) :'); lines.push(run.aiInterpretation); }
+    if(run.aiDiscussion){ lines.push(''); lines.push('Discussion académique/praticien (IA, H-Statis) :'); lines.push(run.aiDiscussion); }
     return { title: title, text: lines.join('\n') };
   }
   function fghlabHstatisScatterSvg(points, xLabel, yLabel, color){
@@ -27740,11 +27738,11 @@
     fghlabHstatisWireWorkflowToolbar(id);
   }
   function fghlabHstatisAiPromptPrefix(){
-    return "Tu es F-i-Stat, l'agent statistique interne de FINECIA GROUPE (via HelpNaud.ai). ";
+    return "Tu es H-Statis, l'agent statistique interne de FINECIA GROUPE (via HelpNaud.ai). ";
   }
   function fghlabHstatisRunAiBox(id, kind){
     // kind: 'interpret' ou 'discuss'. Réutilise EXACTEMENT le même mécanisme sampleCap.json(...) /
-    // sampleReady que le reste de F-i-Stat (submitHstatis) — même dégradation gracieuse, jamais de
+    // sampleReady que le reste de H-Statis (submitHstatis) — même dégradation gracieuse, jamais de
     // second chemin d'appel IA créé.
     var run = fghlabHstatisRuns[id];
     var aiBox = document.getElementById('hstatis-wf-aibox-' + id);
@@ -28217,7 +28215,7 @@
 
     if(!hstatisLog.dataset.ready){
       hstatisLog.dataset.ready = '1';
-      addHstatisMsg("Bonjour, je suis F-i-Stat — l'agent statistique interne de FINECIA GROUPE. Choisissez un domaine ci-dessus pour une consultation avancée orientée, ou posez directement votre question.", 'bot');
+      addHstatisMsg("Bonjour, je suis H-Statis — l'agent statistique interne de FINECIA GROUPE. Choisissez un domaine ci-dessus pour une consultation avancée orientée, ou posez directement votre question.", 'bot');
       fillHstatisSuggestRow(HSTATIS_DEFAULT_SUGGESTIONS);
     }
 
@@ -28240,7 +28238,7 @@
           return;
         }
         var domainPart = hstatisDomain ? (', avec un accent particulier sur : ' + hstatisDomain.label.toLowerCase()) : '';
-        var prefix = "Tu es F-i-Stat, l'agent statistique interne avancé de FINECIA GROUPE (via HelpNaud.ai). Réponds avec rigueur technique, niveau expert, en statistiques, économétrie, finance quantitative et méthodes scientifiques" + domainPart + ". Réponds en français, de façon professionnelle, claire et structurée. FORMAT : pour une question simple, donne d'abord le résultat et le calcul essentiel (quelques lignes), puis une explication courte (3 à 5 phrases), et termine par une phrase proposant les détails avancés (dispersion, quartiles, valeurs aberrantes, hypothèses) si l'utilisateur les souhaite ; ne les développe pas d'emblée. Pour une question complexe, structure en sections mais reste concis. RIGUEUR : dans une moyenne arithmétique simple, chaque observation a le même poids (c'est sa valeur élevée qui tire la moyenne, pas un poids supérieur) ; quand tu donnes des quartiles ou des valeurs aberrantes, nomme la méthode (ex. charnières de Tukey, interpolation linéaire, règle 1,5×IQR) et rappelle que le résultat peut dépendre de la convention ; distingue écart-type d'échantillon (n−1) et de population (n) ; vérifie tes calculs avant de répondre.";
+        var prefix = "Tu es H-Statis, l'agent statistique interne avancé de FINECIA GROUPE (via HelpNaud.ai). Réponds avec rigueur technique, niveau expert, en statistiques, économétrie, finance quantitative et méthodes scientifiques" + domainPart + ". Réponds en français, de façon professionnelle, claire et structurée. FORMAT : pour une question simple, donne d'abord le résultat et le calcul essentiel (quelques lignes), puis une explication courte (3 à 5 phrases), et termine par une phrase proposant les détails avancés (dispersion, quartiles, valeurs aberrantes, hypothèses) si l'utilisateur les souhaite ; ne les développe pas d'emblée. Pour une question complexe, structure en sections mais reste concis. RIGUEUR : dans une moyenne arithmétique simple, chaque observation a le même poids (c'est sa valeur élevée qui tire la moyenne, pas un poids supérieur) ; quand tu donnes des quartiles ou des valeurs aberrantes, nomme la méthode (ex. charnières de Tukey, interpolation linéaire, règle 1,5×IQR) et rappelle que le résultat peut dépendre de la convention ; distingue écart-type d'échantillon (n−1) et de population (n) ; vérifie tes calculs avant de répondre.";
         // Texte libre (pas de JSON) : une réponse longue en JSON se tronquait et donnait « bad_json ». L'historique est conservé.
         var hs = hstatisHistory.slice(-12).map(function(h){ return { role:h.role, content:h.content }; });
         if(hs.length && hs[hs.length - 1].role === 'user') hs[hs.length - 1].content = prefix + "\n\nQuestion : " + q;
@@ -28266,7 +28264,7 @@
       var q = hstatisInput.value.trim();
       if(!q) return;
       if(q.length > HSTATIS_MAX_CHARS){
-        addHstatisMsg("Votre message dépasse la limite de " + HSTATIS_MAX_CHARS + " caractères pour F-i-Stat. Raccourcissez-le, ou scindez-le en plusieurs messages.", 'bot');
+        addHstatisMsg("Votre message dépasse la limite de " + HSTATIS_MAX_CHARS + " caractères pour H-Statis. Raccourcissez-le, ou scindez-le en plusieurs messages.", 'bot');
         return;
       }
       addHstatisMsg(q, 'user');
@@ -28285,7 +28283,7 @@
     });
     bindFghlabHstatisDataAndAnalyses();
   }
-  /* --- Onglets « Données » / « Analyses » de F-i-Stat (additif, chat ci-dessus inchangé) --- */
+  /* --- Onglets « Données » / « Analyses » de H-Statis (additif, chat ci-dessus inchangé) --- */
   function bindFghlabHstatisDataAndAnalyses(){
     var tabChat = document.getElementById('hstatis-tab-chat');
     var tabData = document.getElementById('hstatis-tab-data');
