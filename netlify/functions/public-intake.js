@@ -68,6 +68,45 @@ async function sendQueued(mailId){
     await svcRpc('svc_outbox_mark', { p_id: mailId, p_ok: res.ok, p_error: res.ok ? null : ('HTTP ' + res.status) });
   } catch (e) { try { await svcRpc('svc_outbox_mark', { p_id: mailId, p_ok: false, p_error: 'exception' }); } catch (x) {} }
 }
+
+/* Courriels de réservation (envoi direct par Resend ; sans RESEND_API_KEY + expéditeur, rien ne part et la réservation reste valide).
+   - au client : confirmation avec pièce jointe .ics, si son contact est un courriel ;
+   - à l'équipe : avis de nouvelle réservation (MAIL_TO_RDV, sinon contacts@fineciagroupe.com). */
+function esc(t){ return String(t == null ? '' : t).replace(/[<>&"]/g, ''); }
+function icsText(t){ return String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+function makeIcs(info, name, motif){
+  if (!info || !/^\d{4}-\d{2}-\d{2}$/.test(info.date || '') || !/^\d{2}:\d{2}$/.test(info.start || '') || !/^\d{2}:\d{2}$/.test(info.end || '')) return null;
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const dt = (d, t) => d.replace(/-/g, '') + 'T' + t.replace(':', '') + '00';
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//HelpNaud.ai//RDV//FR', 'BEGIN:VEVENT', 'UID:' + esc(info.id) + '@helpnaud.ai', 'DTSTAMP:' + stamp,
+    'DTSTART:' + dt(info.date, info.start), 'DTEND:' + dt(info.date, info.end), 'SUMMARY:' + icsText('Rendez-vous FINECIA GROUPE'),
+    'DESCRIPTION:' + icsText((motif ? 'Motif : ' + motif + '\n' : '') + 'Pour déplacer ou annuler, répondez au courriel de confirmation.'), 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+}
+async function resendSend(payload){
+  const res = await fetch('https://api.resend.com/emails', { method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RESEND_KEY }, body: JSON.stringify(payload) });
+  return res.ok;
+}
+async function notifyBooking(info, name, contact, motif){
+  if (!RESEND_KEY || !FROM_ADDR) return false;
+  const when = info ? (info.date + ' de ' + info.start + ' à ' + info.end) : 'le créneau choisi';
+  const team = process.env.MAIL_TO_RDV || 'contacts@fineciagroupe.com';
+  let sentClient = false;
+  try {
+    await resendSend({ from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [team], subject: 'Nouveau rendez-vous : ' + name + ' — ' + (info ? info.date + ' ' + info.start : ''),
+      text: 'Nouvelle réservation via la page publique.\n\nClient : ' + name + '\nContact : ' + contact + '\nCréneau : ' + when + (motif ? '\nMotif : ' + motif : '') + '\n\nElle apparaît dans FGH-Colab > Rendez-vous (registre et calendrier).' });
+  } catch (e) {}
+  if (isEmail(contact)) {
+    try {
+      const ics = makeIcs(info, name, motif);
+      const payload = { from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [contact], subject: 'Confirmation de votre rendez-vous — FINECIA GROUPE',
+        text: 'Bonjour ' + name + ',\n\nVotre rendez-vous est enregistré : ' + when + (motif ? ' (' + motif + ')' : '') + '.\n\nNotre équipe vous contactera si des précisions sont nécessaires. Pour déplacer ou annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE' };
+      if (ics) payload.attachments = [{ filename: 'rendez-vous.ics', content: Buffer.from(ics, 'utf-8').toString('base64') }];
+      sentClient = await resendSend(payload);
+    } catch (e) {}
+  }
+  return sentClient;
+}
 function okNumber(v){ return /^[0-9]{10}$/.test(v); }
 
 exports.handler = async function(event){
@@ -241,9 +280,12 @@ exports.handler = async function(event){
       const slot = str(p.slotId, 80), name = str(p.name, 120), contact = str(p.contact, 140);
       if (!okId(slot)) return out(400, { error: 'Créneau invalide.' });
       if (name.length < 2 || contact.length < 3) return out(400, { error: 'Indiquez votre nom et un moyen de vous joindre.' });
+      let info = null;
+      try { const all = await svcRpc('svc_public_slots', {}); info = (Array.isArray(all) ? all : []).find(x => x && x.id === slot) || null; } catch (e) { info = null; }
       const r = await svcRpc('svc_book_slot', { p_slot_id: slot, p_name: name, p_contact: contact, p_motif: str(p.motif, 200) });
       if (!r || r.ok !== true) return out(409, { error: r && r.error === 'taken' ? 'Ce créneau vient d’être réservé. Choisissez-en un autre.' : 'Réservation impossible.' });
-      return out(200, { ok: true });
+      const emailed = await notifyBooking(info, name, contact, str(p.motif, 200));
+      return out(200, { ok: true, emailed });
     }
     if (action === 'catalogue') {
       const token = str(p.token, 40);
