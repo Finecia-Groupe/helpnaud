@@ -160,17 +160,31 @@ async function sbRest(method, path, body, extra){
   return data;
 }
 const REMIND_BEFORE_MS = 24 * 3600 * 1000;
-async function scheduleReminder(info, slotId, name, email, motif){
+async function scheduleReminder(info, slotId, name, email, motif, confirmedOk){
   try {
     if (!info || !isEmail(email) || !okId(slotId)) return 'skipped';
     const startMs = zonedToUtcMs(info.date, info.start, RDV_TZ);
-    if (startMs - Date.now() < REMIND_BEFORE_MS) return 'too_soon';       // réservé moins de 24 h avant : la confirmation suffit
-    await sbRest('POST', 'fgh_rdv_reminders?on_conflict=slot_id', {
-      slot_id: slotId, name, email, motif: motif || '', slot_date: info.date, slot_start: info.start, slot_end: info.end,
-      start_utc: new Date(startMs).toISOString(), remind_at: new Date(startMs - REMIND_BEFORE_MS).toISOString(), sent_at: null, canceled: false, error: null
-    }, { Prefer: 'resolution=merge-duplicates,return=minimal' });
-    return 'scheduled';
+    const soon = startMs - Date.now() < REMIND_BEFORE_MS;                  // réservé moins de 24 h avant : la confirmation suffit, pas de rappel
+    const row = { slot_id: slotId, name, email, motif: motif || '', slot_date: info.date, slot_start: info.start, slot_end: info.end,
+      start_utc: new Date(startMs).toISOString(), remind_at: new Date(startMs - REMIND_BEFORE_MS).toISOString(), sent_at: null, canceled: false, error: null };
+    const pref = { Prefer: 'resolution=merge-duplicates,return=minimal' };
+    try {
+      await sbRest('POST', 'fgh_rdv_reminders?on_conflict=slot_id', Object.assign({}, row, { confirmed_at: confirmedOk ? new Date().toISOString() : null, skip_reminder: soon }), pref);
+    } catch (e) {
+      if (e && e.status === 400 && !soon) { await sbRest('POST', 'fgh_rdv_reminders?on_conflict=slot_id', row, pref); }   // colonnes confirmed_at / skip_reminder pas encore créées
+      else throw e;
+    }
+    return soon ? 'too_soon' : 'scheduled';
   } catch (e) { console.error('[rdv-reminder] planification impossible : ' + (e && e.message) + ' ' + ((e && e.detail) || '')); return 'error'; }
+}
+async function confirmationStatus(slotIds){
+  try {
+    const ids = (Array.isArray(slotIds) ? slotIds : []).filter(okId).slice(0, 100);
+    if (!ids.length) return {};
+    const rows = await sbRest('GET', 'fgh_rdv_reminders?select=slot_id,confirmed_at&confirmed_at=not.is.null&slot_id=in.(' + ids.map(encodeURIComponent).join(',') + ')');
+    const out = {}; (Array.isArray(rows) ? rows : []).forEach(r => { out[r.slot_id] = r.confirmed_at; });
+    return out;
+  } catch (e) { console.error('[rdv-status] lecture impossible : ' + (e && e.message)); return {}; }
 }
 async function cancelReminder(slotId){
   try { if (!okId(slotId)) return false; await sbRest('PATCH', 'fgh_rdv_reminders?slot_id=eq.' + encodeURIComponent(slotId), { canceled: true }, { Prefer: 'return=minimal' }); return true; }
@@ -192,7 +206,7 @@ async function notifyBooking(info, name, email, phone, motif, country, city, slo
       text: 'Nouvelle réservation via la page publique.\n\nClient : ' + name + '\nCourriel : ' + (email || '—') + '\nTéléphone : ' + (phone || '—') + '\nPays : ' + (country || '—') + '\nVille : ' + (city || '—') + '\nCréneau : ' + when + (motif ? '\nMotif : ' + motif : '') + '\n\nElle apparaît dans FGH-Colab > Rendez-vous (registre et calendrier).' });
   }
   const client = isEmail(email) ? await sendClientConfirmation(info, name, email, motif) : 'no_email';
-  const reminder = await scheduleReminder(info, slotId, name, email, motif);
+  const reminder = await scheduleReminder(info, slotId, name, email, motif, client === 'ok');
   console.log('[rdv-mail] client=' + client + ' team=' + teamRes + ' rappel=' + reminder);
   return { client, team: teamRes, reminder };
 }
@@ -396,8 +410,14 @@ exports.handler = async function(event){
       const sid = okId(str(p.slotId, 80)) ? str(p.slotId, 80) : ('conf-' + Date.now().toString(36));
       const info2 = { id: sid, date, start, end };
       const res = await sendClientConfirmation(info2, cname, to, cmotif);
-      const reminder = (/^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{2}:\d{2}$/.test(start) && /^\d{2}:\d{2}$/.test(end) && str(p.slotId, 80)) ? await scheduleReminder(info2, sid, cname, to, cmotif) : 'skipped';
+      const reminder = (/^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{2}:\d{2}$/.test(start) && /^\d{2}:\d{2}$/.test(end) && str(p.slotId, 80)) ? await scheduleReminder(info2, sid, cname, to, cmotif, res === 'ok') : 'skipped';
       return out(200, { ok: res === 'ok', mail: res, reminder });
+    }
+    if (action === 'rdv-status') {
+      const auth3 = String((h.authorization || h.Authorization || '')).replace(/^Bearer\s+/i, '');
+      if (!(await verifyUser(auth3))) return out(401, { error: 'Connexion requise.' });
+      if (limited(ip + ':st', 120, 60 * 60 * 1000)) return out(429, { error: 'Trop de demandes. Réessayez plus tard.' });
+      return out(200, { ok: true, confirmed: await confirmationStatus(p.slotIds) });
     }
     if (action === 'rdv-cancel') {
       const auth2 = String((h.authorization || h.Authorization || '')).replace(/^Bearer\s+/i, '');
