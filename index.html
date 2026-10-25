@@ -25666,6 +25666,7 @@
         '<p class="hint" style="margin:0 0 8px; font-size:12px;">Les heures publiées sont lues et annoncées aux clients en <strong>heure de Toronto</strong>. Les courriels et fichiers d’agenda en tiennent compte.</p>' +
         '<p class="hint" style="margin:0 0 8px; font-size:12px;">⏰ Un <strong>rappel est envoyé automatiquement au client 24 h avant</strong> le rendez-vous (s’il a donné son courriel et réservé plus d’un jour à l’avance). Retirer un créneau réservé annule son rappel.</p>' +
         '<p class="hint" data-fgh-sync-status style="margin:0 0 8px; font-size:12px;"></p>' +
+        '<p class="hint" id="rdv-status-hint" style="margin:0 0 8px; font-size:12px;"></p>' +
         '<div id="rdv-slot-list"></div>' +
       '</div></div>';
     return head + tabs + '<div id="rdv-tab-gestion">' + inner + '</div>' + prendre + cal + '</div>';
@@ -25876,11 +25877,45 @@
         acts += '<button type="button" class="btn" data-cal-ics1="'+escapeHtml(s.id)+'" style="'+BTN+'">.ics</button> ';
         acts += '<button type="button" class="btn danger" data-rdv-del="'+escapeHtml(s.id)+'" style="'+BTN+'">Retirer</button>';
         return '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; border:1px solid var(--line); border-radius:9px; padding:6px 10px; margin-top:5px; background:var(--surface); font-size:12.5px;">' +
-          '<span>'+escapeHtml(slotLabel(s))+(s.booking ? ' — <strong>réservé par '+escapeHtml(s.booking.name)+'</strong> ('+escapeHtml(bookingText(s.booking))+')'+(s.booking.mailedOn ? ' · <span style="color:var(--accent);">✓ confirmation envoyée</span>' : '') : ' — libre')+'</span>' +
+          '<span>'+escapeHtml(slotLabel(s))+(s.booking ? ' — <strong>réservé par '+escapeHtml(s.booking.name)+'</strong> ('+escapeHtml(bookingText(s.booking))+')'+(s.booking.mailedOn ? ' · <span style="color:var(--accent); font-weight:600;">✓ Confirmation envoyée' + (fmtSent(s.booking.mailedOn) ? ' le ' + escapeHtml(fmtSent(s.booking.mailedOn)) : '') + '</span>' : '') : ' — libre')+'</span>' +
           '<span style="display:flex; gap:4px;">' + acts + '</span></div>';
       }).join('') : '<p class="hint" style="margin:0;">Aucune disponibilité publiée.</p>';
     }
+    /* Confirmations envoyées par le serveur (réservations de la page publique) : on lit leur état pour afficher « Confirmation envoyée ». */
+    var statusAt = 0;
+    function statusHint(t, bad){ var h = $('rdv-status-hint'); if(h){ h.textContent = t; h.style.color = bad ? 'var(--warn)' : 'var(--muted)'; } }
+    function pullStatuses(force){
+      try{
+        var any = slots().some(function(x){ return x.booking && !x.booking.mailedOn; });
+        if(!fghlabSyncActive()){ if(any) statusHint('État des confirmations : connectez-vous (propriétaire ou membre) pour le voir.', true); return; }
+        var ids = slots().filter(function(x){ return x.booking && !x.booking.mailedOn; }).map(function(x){ return x.id; }).slice(0, 100);
+        if(!ids.length){ statusHint(''); return; }
+        if(!force && Date.now() - statusAt < 20000) return;
+        statusAt = Date.now();
+        fghlabSb.auth.getSession().then(function(res){
+          var sess = res && res.data && res.data.session; if(!sess) return;
+          return fetch('/.netlify/functions/public-intake', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + sess.access_token }, body: JSON.stringify({ action:'rdv-status', slotIds: ids }) })
+            .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return { st:r.status, j:j }; }); }).then(function(o){
+              var j = o.j || {};
+              if(!j.ok){
+                statusHint(o.st === 400 || o.st === 404 ? 'État des confirmations indisponible : la fonction serveur n’est pas à jour (téléversez public-intake.js).' : 'État des confirmations indisponible pour le moment.', true); return;
+              }
+              if(j.hint === 'no_column') statusHint('État des confirmations indisponible : exécutez supabase-rdv-confirm-status.sql dans Supabase.', true);
+              else if(j.hint === 'no_table') statusHint('État des confirmations indisponible : exécutez supabase-rdv-reminders.sql dans Supabase.', true);
+              else if(j.hint === 'error') statusHint('État des confirmations indisponible pour le moment.', true);
+              else statusHint('État des confirmations lu à ' + new Date().toLocaleTimeString('fr-CA', { hour:'2-digit', minute:'2-digit' }) + '. Une réservation sans « Confirmation envoyée » est antérieure à cette fonction ou n’a pas pu être confirmée : utilisez « Envoyer ».');
+              var c = j.confirmed || {}, changed = false;
+              slots().forEach(function(x){ if(x.booking && !x.booking.mailedOn && c[x.id]){ x.booking.mailedOn = c[x.id]; changed = true; } });
+              if(changed){ persistFghlabState(); if(current === 'prendre') draw(); if(current === 'cal') drawCal(); }
+            });
+        }).catch(function(){ statusHint('État des confirmations indisponible pour le moment.', true); });
+      }catch(e){}
+    }
+    function fmtSent(iso){
+      try{ return new Date(iso).toLocaleString('fr-CA', { timeZone: RDV_TZ, day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hourCycle:'h23' }); }catch(e){ return ''; }
+    }
     function refresh(){
+      pullStatuses(false);
       var n = syncRegistry();
       if(current === 'prendre') draw();
       if(current === 'cal') drawCal();
@@ -25893,7 +25928,7 @@
         $('rdv-tabbtn-' + t).className = 'btn' + (which === t ? ' primary' : '');
       });
       if(which === 'gestion'){ syncRegistry(); try{ renderFghlabTrackerList('rdv'); }catch(e){} }
-      if(which === 'prendre') { syncRegistry(); draw(); }
+      if(which === 'prendre') { syncRegistry(); draw(); pullStatuses(true); }
       if(which === 'cal') { syncRegistry(); drawCal(); }
     }
     fghlabSyncRedraw.rdv = refresh;
@@ -25980,6 +26015,7 @@
     });
     syncRegistry();
     draw();
+    pullStatuses(true);
   }
 
   /* ================= FGH-Lab — TOUTTEST (tests de recrutement pour FINECIA GROUPE) =================
