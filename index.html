@@ -25645,8 +25645,11 @@
       '<div id="rdv-book-form" hidden style="display:none; gap:8px; flex-wrap:wrap; margin-top:10px; border-top:1px solid var(--line); padding-top:10px;">' +
         '<div id="rdv-book-slot" class="hint" style="flex:1 1 100%; margin:0;"></div>' +
         '<input type="text" id="rdv-book-name" maxlength="120" placeholder="Nom et prénom" style="flex:1; min-width:180px; '+st+'">' +
-        '<input type="text" id="rdv-book-contact" maxlength="140" placeholder="Courriel ou téléphone" style="flex:1; min-width:180px; '+st+'">' +
-        '<input type="text" id="rdv-book-motif" maxlength="200" placeholder="Motif du rendez-vous" style="flex:1 1 100%; '+st+'">' +
+        '<input type="email" id="rdv-book-email" maxlength="140" placeholder="Courriel" autocomplete="off" style="flex:1; min-width:180px; '+st+'">' +
+        '<input type="tel" id="rdv-book-phone" maxlength="40" placeholder="Téléphone (facultatif)" autocomplete="off" style="flex:1; min-width:150px; '+st+'">' +
+        '<input type="text" id="rdv-book-country" maxlength="80" placeholder="Pays de résidence" autocomplete="off" style="flex:1; min-width:150px; '+st+'">' +
+        '<input type="text" id="rdv-book-city" maxlength="80" placeholder="Ville de résidence" autocomplete="off" style="flex:1; min-width:150px; '+st+'">' +
+        '<input type="text" id="rdv-book-motif" maxlength="100" placeholder="Motif du rendez-vous" style="flex:1 1 100%; '+st+'">' +
         '<button type="button" class="btn primary" id="rdv-book-confirm">Confirmer le rendez-vous</button>' +
         '<span class="copy-status" id="rdv-book-status"></span>' +
       '</div>' +
@@ -25679,6 +25682,24 @@
     function ymd(y, m, d){ return y + '-' + pad(m + 1) + '-' + pad(d); }
     function todayStr(){ var t = new Date(); return ymd(t.getFullYear(), t.getMonth(), t.getDate()); }
     function isMail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim()); }
+    /* Réservation : contact = « courriel · téléphone », motif = « motif · Pays : … · Ville : … » (même format que la page publique). */
+    function packBooking(f){
+      var contact = [f.email, f.phone].filter(Boolean).join(' · ');
+      var place = (f.country || f.city) ? 'Pays : ' + f.country + ' · Ville : ' + f.city : '';
+      return { contact: contact.slice(0, 140), motif: [f.motif, place].filter(Boolean).join(' · ').slice(0, 200) };
+    }
+    function parseBooking(b){
+      var c = String((b && b.contact) || ''), m = String((b && b.motif) || '');
+      var em = /[^\s@·]+@[^\s@·]+\.[^\s@·]{2,}/.exec(c), email = em ? em[0] : '';
+      var phone = c.replace(email, '').replace(/^[\s·]+|[\s·]+$/g, '').replace(/\s*·\s*/g, ' ').trim();
+      var pl = /(?:^|\s·\s)Pays : (.*?) · Ville : (.*)$/.exec(m), country = '', city = '', motif = m;
+      if(pl){ country = pl[1]; city = pl[2]; motif = m.slice(0, pl.index); }
+      return { email: email, phone: phone, country: country, city: city, motif: motif.trim() };
+    }
+    function bookingText(b){
+      var p = parseBooking(b);
+      return [p.email, p.phone].filter(Boolean).join(' · ') + (p.motif ? ' · ' + p.motif : '') + ((p.city || p.country) ? ' · ' + [p.city, p.country].filter(Boolean).join(', ') : '');
+    }
 
     /* --- Réservation → ligne du registre --- */
     function doneIds(){ try{ return JSON.parse(localStorage.getItem('helpnaud_rdv_regdone') || '[]') || []; }catch(e){ return []; } }
@@ -25689,14 +25710,14 @@
       slots().forEach(function(s){
         if(!s.booking || done.indexOf(s.id) !== -1) return;
         if(items.some(function(i){ return i.slotId === s.id; })){ done.push(s.id); return; }
-        var b = s.booking;
+        var b = s.booking, pb = parseBooking(b);
         items.push({
           id: makeFghlabTrackerId(),
-          titre: ('RDV — ' + b.name + (b.motif ? ' · ' + b.motif : '')).slice(0, 140),
+          titre: ('RDV — ' + b.name + (pb.motif ? ' · ' + pb.motif : '')).slice(0, 140),
           statut: b.manual ? 'confirme' : 'propose',
           echeance: s.date,
           responsable: '',
-          notes: ('Créneau : ' + s.start + '–' + s.end + (s.note ? ' (' + s.note + ')' : '') + '\nClient : ' + b.name + '\nContact : ' + b.contact + (b.motif ? '\nMotif : ' + b.motif : '') + '\nRéservé le : ' + String(b.on || '').slice(0, 10) + (b.manual ? ' (saisi par l’équipe)' : ' (page publique)')).slice(0, 45000),
+          notes: ('Créneau : ' + s.start + '–' + s.end + (s.note ? ' (' + s.note + ')' : '') + '\nClient : ' + b.name + (pb.email ? '\nCourriel : ' + pb.email : '') + (pb.phone ? '\nTéléphone : ' + pb.phone : '') + (pb.country ? '\nPays : ' + pb.country : '') + (pb.city ? '\nVille : ' + pb.city : '') + (pb.motif ? '\nMotif : ' + pb.motif : '') + '\nRéservé le : ' + String(b.on || '').slice(0, 10) + (b.manual ? ' (saisi par l’équipe)' : ' (page publique)')).slice(0, 45000),
           slotId: s.id,
           createdOn: new Date().toISOString()
         });
@@ -25738,7 +25759,7 @@
       var b = s.booking;
       return { uid: 'slot-' + s.id, date: s.date, start: s.start, end: s.end,
         title: b ? ('RDV — ' + b.name) : ('Créneau libre' + (s.note ? ' — ' + s.note : '')),
-        desc: b ? ('Contact : ' + b.contact + (b.motif ? '\nMotif : ' + b.motif : '')) : (s.note || '') };
+        desc: b ? ('Contact : ' + bookingText(b)) : (s.note || '') };
     }
 
     /* --- Événements du calendrier --- */
@@ -25747,7 +25768,7 @@
       slots().forEach(function(s){
         if(!s.date || !s.start) return;
         ev.push({ date: s.date, time: s.start, kind: s.booking ? 'booked' : 'free',
-          label: s.booking ? s.booking.name : 'Libre', full: slotLabel(s) + (s.booking ? ' — réservé par ' + s.booking.name + ' (' + s.booking.contact + ')' + (s.booking.motif ? ' · ' + s.booking.motif : '') : ' — libre'), slot: s });
+          label: s.booking ? s.booking.name : 'Libre', full: slotLabel(s) + (s.booking ? ' — réservé par ' + s.booking.name + ' (' + bookingText(s.booking) + ')' : ' — libre'), slot: s });
       });
       regItems().forEach(function(i){
         if(!i.echeance || i.slotId || i.exemple) return;
@@ -25792,10 +25813,29 @@
     }
 
     /* --- Listes --- */
-    function mailtoFor(s){
-      var b = s.booking, sub = 'Confirmation de votre rendez-vous — FINECIA GROUPE';
-      var body = 'Bonjour ' + b.name + ',\n\nNous confirmons votre rendez-vous le ' + s.date + ' de ' + s.start + ' à ' + s.end + (b.motif ? ' (' + b.motif + ')' : '') + '.\n\nSi vous devez le déplacer ou l’annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE';
-      return 'mailto:' + encodeURIComponent(b.contact.trim()) + '?subject=' + encodeURIComponent(sub) + '&body=' + encodeURIComponent(body);
+    function confirmText(s, p){
+      var b = s.booking;
+      return 'Bonjour ' + b.name + ',\n\nNous confirmons votre rendez-vous le ' + s.date + ' de ' + s.start + ' à ' + s.end + (p.motif ? ' (' + p.motif + ')' : '') + '.\n\nSi vous devez le déplacer ou l’annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE';
+    }
+    function copyText(t){ try{ if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(function(){ return true; }, function(){ return false; }); }catch(e){} return Promise.resolve(false); }
+    function sendConfirm(id, btn){
+      var s = null; slots().forEach(function(x){ if(x.id === id) s = x; });
+      if(!s || !s.booking) return;
+      var p = parseBooking(s.booking), old = btn.textContent;
+      function say(t, ms){ btn.textContent = t; btn.disabled = false; setTimeout(function(){ btn.textContent = old; draw(); }, ms || 3500); }
+      if(!p.email){ say('Aucun courriel', 2500); return; }
+      function fallback(why){ copyText(confirmText(s, p)).then(function(ok){ say(why + (ok ? ' Message copié.' : ''), 6000); }); }
+      if(!fghlabSyncActive()){ fallback('Connexion requise pour envoyer.'); return; }
+      btn.disabled = true; btn.textContent = 'Envoi…';
+      fghlabSb.auth.getSession().then(function(res){
+        var sess = res && res.data && res.data.session; if(!sess) throw new Error('nosession');
+        return fetch('/.netlify/functions/public-intake', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + sess.access_token },
+          body: JSON.stringify({ action:'rdv-confirm', to:p.email, name:s.booking.name, date:s.date, start:s.start, end:s.end, motif:p.motif }) });
+      }).then(function(r){ return r.json().catch(function(){ return {}; }); }).then(function(j){
+        if(j && j.ok){ s.booking.mailedOn = new Date().toISOString(); persistFghlabState(); say('Envoyé ✓', 3000); return; }
+        var m = j && j.mail;
+        fallback(m === 'no_key' || m === 'no_from' ? 'Service d’envoi non configuré (Netlify).' : (m && /^resend_/.test(m) ? 'Le service d’envoi a refusé le message (' + m.replace('resend_', 'code ') + ').' : 'Envoi impossible.'));
+      }).catch(function(){ fallback('Envoi impossible.'); });
     }
     function draw(){
       var free = sorted().filter(function(s){ return !s.booking; });
@@ -25807,11 +25847,11 @@
       var sl = $('rdv-slot-list');
       sl.innerHTML = sorted().length ? sorted().map(function(s){
         var acts = '';
-        if(s.booking && isMail(s.booking.contact)) acts += '<a class="btn" href="'+escapeHtml(mailtoFor(s))+'" style="'+BTN+' text-decoration:none;">✉ Confirmer</a> ';
+        if(s.booking && parseBooking(s.booking).email) acts += '<button type="button" class="btn" data-rdv-send="'+escapeHtml(s.id)+'" style="'+BTN+'">' + (s.booking.mailedOn ? '✉ Renvoyer' : '✉ Envoyer') + '</button> ';
         acts += '<button type="button" class="btn" data-cal-ics1="'+escapeHtml(s.id)+'" style="'+BTN+'">.ics</button> ';
         acts += '<button type="button" class="btn danger" data-rdv-del="'+escapeHtml(s.id)+'" style="'+BTN+'">Retirer</button>';
         return '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; border:1px solid var(--line); border-radius:9px; padding:6px 10px; margin-top:5px; background:var(--surface); font-size:12.5px;">' +
-          '<span>'+escapeHtml(slotLabel(s))+(s.booking ? ' — <strong>réservé par '+escapeHtml(s.booking.name)+'</strong> ('+escapeHtml(s.booking.contact)+')'+(s.booking.motif ? ' · '+escapeHtml(s.booking.motif) : '') : ' — libre')+'</span>' +
+          '<span>'+escapeHtml(slotLabel(s))+(s.booking ? ' — <strong>réservé par '+escapeHtml(s.booking.name)+'</strong> ('+escapeHtml(bookingText(s.booking))+')'+(s.booking.mailedOn ? ' · <span style="color:var(--accent);">✓ confirmation envoyée</span>' : '') : ' — libre')+'</span>' +
           '<span style="display:flex; gap:4px;">' + acts + '</span></div>';
       }).join('') : '<p class="hint" style="margin:0;">Aucune disponibilité publiée.</p>';
     }
@@ -25873,6 +25913,8 @@
       var pick = e.target.closest ? e.target.closest('[data-rdv-pick]') : null;
       var del = e.target.closest ? e.target.closest('[data-rdv-del]') : null;
       var one = e.target.closest ? e.target.closest('[data-cal-ics1]') : null;
+      var snd = e.target.closest ? e.target.closest('[data-rdv-send]') : null;
+      if(snd){ sendConfirm(snd.getAttribute('data-rdv-send'), snd); return; }
       if(one){ icsOne(one.getAttribute('data-cal-ics1')); return; }
       if(pick){
         chosen = pick.getAttribute('data-rdv-pick');
@@ -25891,16 +25933,21 @@
     $('rdv-book-confirm').addEventListener('click', function(){
       var st = $('rdv-book-status');
       function say(t){ st.textContent = t; setTimeout(function(){ st.textContent = ''; }, 3000); }
-      var name = ($('rdv-book-name').value || '').trim(), contact = ($('rdv-book-contact').value || '').trim();
+      var name = ($('rdv-book-name').value || '').trim(), email = ($('rdv-book-email').value || '').trim(), phone = ($('rdv-book-phone').value || '').trim();
+      var country = ($('rdv-book-country').value || '').trim(), city = ($('rdv-book-city').value || '').trim();
       if(!chosen){ say('Choisissez un créneau.'); return; }
-      if(!name || !contact){ say('Indiquez votre nom et un contact.'); return; }
+      if(!name){ say('Indiquez le nom et prénom.'); return; }
+      if(email && !isMail(email)){ say('Courriel invalide.'); return; }
+      if(!email && !phone){ say('Indiquez un courriel ou un téléphone.'); return; }
+      if(!country || !city){ say('Indiquez le pays et la ville de résidence.'); return; }
       var s = null; slots().forEach(function(x){ if(x.id === chosen) s = x; });
       if(!s || s.booking){ say('Ce créneau n’est plus libre.'); draw(); return; }
-      s.booking = { name: name, contact: contact, motif: ($('rdv-book-motif').value || '').trim(), on: new Date().toISOString(), manual: true };
+      var pk = packBooking({ email: email, phone: phone, country: country, city: city, motif: ($('rdv-book-motif').value || '').trim().slice(0, 100) });
+      s.booking = { name: name, contact: pk.contact, motif: pk.motif, on: new Date().toISOString(), manual: true };
       persistFghlabState();
       chosen = null;
       $('rdv-book-form').hidden = true; $('rdv-book-form').style.display = 'none';
-      ['rdv-book-name','rdv-book-contact','rdv-book-motif'].forEach(function(i){ $(i).value = ''; });
+      ['rdv-book-name','rdv-book-email','rdv-book-phone','rdv-book-country','rdv-book-city','rdv-book-motif'].forEach(function(i){ $(i).value = ''; });
       syncRegistry();
       draw();
       say('Rendez-vous confirmé ✓ — ajouté au registre');

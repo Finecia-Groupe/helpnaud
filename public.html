@@ -373,8 +373,11 @@
       app.innerHTML = '<div class="card"><h1>Prendre mon rendez-vous</h1><p class="hint">Choisissez un créneau disponible.</p><div id="slots"></div></div>' +
         '<div class="card" id="bookbox" style="display:none;"><div id="picked" class="hint"></div>' +
         '<label for="b-name">Nom et prénom</label><input id="b-name" maxlength="120">' +
-        '<label for="b-contact">Courriel ou téléphone</label><input id="b-contact" maxlength="140">' +
-        '<label for="b-motif">Motif du rendez-vous</label><input id="b-motif" maxlength="200">' + HONEY +
+        '<label for="b-email">Courriel</label><input id="b-email" type="email" inputmode="email" autocomplete="email" maxlength="140">' +
+        '<label for="b-phone">Téléphone (facultatif)</label><input id="b-phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="40">' +
+        '<label for="b-country">Pays de résidence</label><input id="b-country" autocomplete="country-name" maxlength="80">' +
+        '<label for="b-city">Ville de résidence</label><input id="b-city" autocomplete="address-level2" maxlength="80">' +
+        '<label for="b-motif">Motif du rendez-vous</label><input id="b-motif" maxlength="100">' + HONEY +
         '<button id="b-send">Confirmer le rendez-vous</button><div id="b-out" class="msg"></div></div>';
       document.getElementById('slots').innerHTML = slots.map(function(s){
         return '<div class="row" style="padding:7px 0; border-top:1px solid var(--line);"><span>' + esc(s.date) + ' · ' + esc(s.start) + '–' + esc(s.end) + (s.note ? ' · ' + esc(s.note) : '') + '</span><button class="light" data-slot="' + esc(s.id) + '" data-label="' + esc(s.date + ' · ' + s.start + '–' + s.end) + '">Choisir</button></div>';
@@ -389,9 +392,14 @@
       document.getElementById('b-send').addEventListener('click', function(){
         var btn = this, out = document.getElementById('b-out'); out.className = 'msg'; out.textContent = '';
         if(!chosen){ out.className = 'msg err'; out.textContent = 'Choisissez un créneau.'; return; }
+        var em = val('b-email').trim();
+        if(val('b-name').trim().length < 2){ out.className = 'msg err'; out.textContent = 'Indiquez votre nom et prénom.'; return; }
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){ out.className = 'msg err'; out.textContent = 'Indiquez un courriel valide (la confirmation vous y sera envoyée).'; return; }
+        if(val('b-country').trim().length < 2){ out.className = 'msg err'; out.textContent = 'Indiquez votre pays de résidence.'; return; }
+        if(val('b-city').trim().length < 2){ out.className = 'msg err'; out.textContent = 'Indiquez votre ville de résidence.'; return; }
         btn.disabled = true;
-        call({ action:'book', slotId: chosen, name: val('b-name'), contact: val('b-contact'), motif: val('b-motif'), website: hv() }).then(function(r){
-          app.innerHTML = '<div class="card"><h1>Rendez-vous confirmé</h1><p class="ok">Merci ! Votre créneau est réservé.</p><p class="hint">' + (r && r.emailed ? 'Un courriel de confirmation vient de vous être envoyé (avec un fichier à ajouter à votre agenda). Pensez à vérifier vos courriers indésirables.' : 'FINECIA GROUPE vous contactera pour confirmer les détails.') + '</p></div>';
+        call({ action:'book', slotId: chosen, name: val('b-name'), email: em, phone: val('b-phone'), country: val('b-country'), city: val('b-city'), motif: val('b-motif'), website: hv() }).then(function(r){
+          app.innerHTML = '<div class="card"><h1>Rendez-vous confirmé</h1><p class="ok">Merci ! Votre créneau est réservé.</p><p class="hint">' + (r && r.emailed ? 'Un courriel de confirmation vient de vous être envoyé (avec un fichier à ajouter à votre agenda). Pensez à vérifier vos courriers indésirables.' : 'Le courriel de confirmation n’a pas pu être envoyé pour l’instant : FINECIA GROUPE vous écrira pour confirmer les détails.') + '</p></div>';
         }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; btn.disabled = false; });
       });
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
