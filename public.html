@@ -366,11 +366,35 @@
   function val(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; }
 
   /* ---------- Prendre mon rendez-vous ---------- */
+  /* Fuseaux : les heures publiées sont en heure de Toronto (ou RDV_TZ) ; on montre aussi l'heure chez le visiteur s'il est ailleurs. */
+  function tzOffMin(ms, tz){
+    var f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle:'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }).formatToParts(new Date(ms));
+    function g(t){ for(var i = 0; i < f.length; i++) if(f[i].type === t) return +f[i].value; return 0; }
+    return (Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second')) - ms) / 60000;
+  }
+  function zonedMs(date, time, tz){
+    var d = date.split('-').map(Number), t = time.split(':').map(Number), guess = Date.UTC(d[0], d[1] - 1, d[2], t[0], t[1]);
+    var off = tzOffMin(guess, tz), r = guess - off * 60000, off2 = tzOffMin(r, tz);
+    if(off2 !== off) r = guess - off2 * 60000;
+    return r;
+  }
+  function visitorHint(s, tz){
+    try{
+      var mine = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if(!mine || !/^\d{4}-\d{2}-\d{2}$/.test(s.date) || !/^\d{2}:\d{2}$/.test(s.start)) return '';
+      var ms = zonedMs(s.date, s.start, tz);
+      if(tzOffMin(ms, tz) === tzOffMin(ms, mine)) return '';
+      var me = zonedMs(s.date, s.end, tz);
+      var day = new Intl.DateTimeFormat('fr-CA', { timeZone: mine, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date(ms));
+      var hm = new Intl.DateTimeFormat('fr-CA', { timeZone: mine, hour:'2-digit', minute:'2-digit', hourCycle:'h23' });
+      return ' (chez vous : ' + day + ' ' + hm.format(new Date(ms)) + '–' + hm.format(new Date(me)) + ', ' + mine.replace(/_/g, ' ') + ')';
+    }catch(e){ return ''; }
+  }
   function viewRdv(){
     call({ action:'slots' }).then(function(r){
-      var slots = r.slots || [], chosen = null;
+      var slots = r.slots || [], chosen = null, tz = r.tz || 'America/Toronto', tzLabel = r.tzLabel || 'heure de Toronto';
       if(!slots.length){ app.innerHTML = '<div class="card"><h1>Prendre mon rendez-vous</h1><p class="hint">Aucun créneau n’est disponible pour le moment. Revenez bientôt.</p></div>'; return; }
-      app.innerHTML = '<div class="card"><h1>Prendre mon rendez-vous</h1><p class="hint">Choisissez un créneau disponible.</p><div id="slots"></div></div>' +
+      app.innerHTML = '<div class="card"><h1>Prendre mon rendez-vous</h1><p class="hint">Choisissez un créneau disponible.</p><p class="hint" style="margin-top:-6px;">Toutes les heures sont en <strong>' + esc(tzLabel) + '</strong>.</p><div id="slots"></div></div>' +
         '<div class="card" id="bookbox" style="display:none;"><div id="picked" class="hint"></div>' +
         '<label for="b-name">Nom et prénom</label><input id="b-name" maxlength="120">' +
         '<label for="b-email">Courriel</label><input id="b-email" type="email" inputmode="email" autocomplete="email" maxlength="140">' +
@@ -380,7 +404,7 @@
         '<label for="b-motif">Motif du rendez-vous</label><input id="b-motif" maxlength="100">' + HONEY +
         '<button id="b-send">Confirmer le rendez-vous</button><div id="b-out" class="msg"></div></div>';
       document.getElementById('slots').innerHTML = slots.map(function(s){
-        return '<div class="row" style="padding:7px 0; border-top:1px solid var(--line);"><span>' + esc(s.date) + ' · ' + esc(s.start) + '–' + esc(s.end) + (s.note ? ' · ' + esc(s.note) : '') + '</span><button class="light" data-slot="' + esc(s.id) + '" data-label="' + esc(s.date + ' · ' + s.start + '–' + s.end) + '">Choisir</button></div>';
+        return '<div class="row" style="padding:7px 0; border-top:1px solid var(--line);"><span>' + esc(s.date) + ' · ' + esc(s.start) + '–' + esc(s.end) + (s.note ? ' · ' + esc(s.note) : '') + '<span class="hint" style="display:block; margin:0;">' + esc(visitorHint(s, tz).replace(/^ \(|\)$/g, '')) + '</span></span><button class="light" data-slot="' + esc(s.id) + '" data-label="' + esc(s.date + ' · ' + s.start + '–' + s.end + ' (' + tzLabel + ')') + '">Choisir</button></div>';
       }).join('');
       app.addEventListener('click', function(e){
         var b = e.target.closest ? e.target.closest('[data-slot]') : null;

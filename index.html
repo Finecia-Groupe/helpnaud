@@ -25663,6 +25663,8 @@
           '<button type="button" class="btn" id="rdv-slot-add">Publier ce créneau</button>' +
           '<span class="copy-status" id="rdv-slot-status" style="align-self:center;"></span></div>' +
         '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:8px;"><button type="button" class="btn" id="rdv-copy-public" style="padding:4px 10px; font-size:12px;">Copier le lien public de prise de rendez-vous</button><span class="copy-status" id="rdv-copy-status"></span></div>' +
+        '<p class="hint" style="margin:0 0 8px; font-size:12px;">Les heures publiées sont lues et annoncées aux clients en <strong>heure de Toronto</strong>. Les courriels et fichiers d’agenda en tiennent compte.</p>' +
+        '<p class="hint" style="margin:0 0 8px; font-size:12px;">⏰ Un <strong>rappel est envoyé automatiquement au client 24 h avant</strong> le rendez-vous (s’il a donné son courriel et réservé plus d’un jour à l’avance). Retirer un créneau réservé annule son rappel.</p>' +
         '<p class="hint" data-fgh-sync-status style="margin:0 0 8px; font-size:12px;"></p>' +
         '<div id="rdv-slot-list"></div>' +
       '</div></div>';
@@ -25678,6 +25680,18 @@
     function slots(){ if(!Array.isArray(fghlabState.rdvSlots)) fghlabState.rdvSlots = []; return fghlabState.rdvSlots; }
     function slotLabel(s){ return s.date + ' · ' + s.start + '–' + s.end + (s.note ? ' · ' + s.note : ''); }
     function sorted(){ return slots().slice().sort(function(a, b){ return (a.date + a.start).localeCompare(b.date + b.start); }); }
+    var RDV_TZ = 'America/Toronto', RDV_TZ_LABEL = 'heure de Toronto';   /* doit correspondre à RDV_TZ côté Netlify (par défaut America/Toronto) */
+    function tzOff(ms){
+      var f = new Intl.DateTimeFormat('en-US', { timeZone: RDV_TZ, hourCycle:'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }).formatToParts(new Date(ms));
+      function g(t){ for(var i = 0; i < f.length; i++) if(f[i].type === t) return +f[i].value; return 0; }
+      return (Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second')) - ms) / 60000;
+    }
+    function zonedUtc(d, t){
+      var a = d.split('-').map(Number), b = t.split(':').map(Number), guess = Date.UTC(a[0], a[1] - 1, a[2], b[0], b[1]);
+      var off = tzOff(guess), r = guess - off * 60000, off2 = tzOff(r);
+      if(off2 !== off) r = guess - off2 * 60000;
+      return new Date(r).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+    }
     function pad(n){ return (n < 10 ? '0' : '') + n; }
     function ymd(y, m, d){ return y + '-' + pad(m + 1) + '-' + pad(d); }
     function todayStr(){ var t = new Date(); return ymd(t.getFullYear(), t.getMonth(), t.getDate()); }
@@ -25726,6 +25740,17 @@
       if(added){ saveDone(done); persistFghlabState(); try{ renderFghlabTrackerList('rdv'); }catch(e){} }
       return added;
     }
+    /* Annule le rappel 24 h avant côté serveur (si connecté) quand on retire un créneau réservé. */
+    function cancelReminderRemote(slotId){
+      try{
+        var had = false; slots().forEach(function(x){ if(x.id === slotId && x.booking) had = true; });
+        if(!had || !fghlabSyncActive()) return;
+        fghlabSb.auth.getSession().then(function(res){
+          var sess = res && res.data && res.data.session; if(!sess) return;
+          return fetch('/.netlify/functions/public-intake', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + sess.access_token }, body: JSON.stringify({ action:'rdv-cancel', slotId:slotId }) });
+        }).catch(function(){});
+      }catch(e){}
+    }
     function cancelInRegistry(slotId){
       var hit = false;
       regItems().forEach(function(i){
@@ -25736,7 +25761,7 @@
 
     /* --- .ics --- */
     function icsEsc(t){ return String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
-    function icsDt(d, t){ return d.replace(/-/g, '') + 'T' + t.replace(':', '') + '00'; }
+    function icsDt(d, t){ try{ return zonedUtc(d, t); }catch(e){ return d.replace(/-/g, '') + 'T' + t.replace(':', '') + '00'; } }
     function icsEvent(e){
       var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
       var l = ['BEGIN:VEVENT', 'UID:' + e.uid + '@helpnaud.ai', 'DTSTAMP:' + stamp];
@@ -25815,7 +25840,7 @@
     /* --- Listes --- */
     function confirmText(s, p){
       var b = s.booking;
-      return 'Bonjour ' + b.name + ',\n\nNous confirmons votre rendez-vous le ' + s.date + ' de ' + s.start + ' à ' + s.end + (p.motif ? ' (' + p.motif + ')' : '') + '.\n\nSi vous devez le déplacer ou l’annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE';
+      return 'Bonjour ' + b.name + ',\n\nNous confirmons votre rendez-vous le ' + s.date + ' de ' + s.start + ' à ' + s.end + ' (' + RDV_TZ_LABEL + ')' + (p.motif ? ' (' + p.motif + ')' : '') + '.\n\nSi vous devez le déplacer ou l’annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE';
     }
     function copyText(t){ try{ if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(function(){ return true; }, function(){ return false; }); }catch(e){} return Promise.resolve(false); }
     function sendConfirm(id, btn){
@@ -25830,7 +25855,7 @@
       fghlabSb.auth.getSession().then(function(res){
         var sess = res && res.data && res.data.session; if(!sess) throw new Error('nosession');
         return fetch('/.netlify/functions/public-intake', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + sess.access_token },
-          body: JSON.stringify({ action:'rdv-confirm', to:p.email, name:s.booking.name, date:s.date, start:s.start, end:s.end, motif:p.motif }) });
+          body: JSON.stringify({ action:'rdv-confirm', slotId:s.id, to:p.email, name:s.booking.name, date:s.date, start:s.start, end:s.end, motif:p.motif }) });
       }).then(function(r){ return r.json().catch(function(){ return {}; }); }).then(function(j){
         if(j && j.ok){ s.booking.mailedOn = new Date().toISOString(); persistFghlabState(); say('Envoyé ✓', 3000); return; }
         var m = j && j.mail;
@@ -25926,6 +25951,7 @@
       if(del){
         var id = del.getAttribute('data-rdv-del');
         cancelInRegistry(id);
+        cancelReminderRemote(id);
         fghlabState.rdvSlots = slots().filter(function(x){ return x.id !== id; });
         persistFghlabState(); draw();
       }
