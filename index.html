@@ -2635,7 +2635,7 @@
                 <button type="button" class="attach-menu-opt" id="attach-opt-image"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span data-i18n="btn.chooseImage">Choisir une image</span></button>
                 <button type="button" class="attach-menu-opt" id="attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span data-i18n="btn.attachFile">Joindre un PDF/Excel/CSV</span></button>
               </div>
-              <input type="file" id="attach-file-input" hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
+              <input type="file" id="attach-file-input" multiple hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
             </div>
             <div class="symbols-menu-wrap" id="symbols-menu-wrap">
               <button class="btn icon-only" id="symbols-btn" type="button" aria-label="Insérer un caractère spécial" title="Caractères spéciaux" aria-haspopup="true" aria-expanded="false">
@@ -2809,7 +2809,7 @@
                 <button type="button" class="attach-menu-opt" id="cowork-discuss-attach-opt-image"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span>Choisir une image</span></button>
                 <button type="button" class="attach-menu-opt" id="cowork-discuss-attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un PDF/Excel/CSV</span></button>
               </div>
-              <input type="file" id="cowork-discuss-file-input" hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
+              <input type="file" id="cowork-discuss-file-input" multiple hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
             </div>
             <div class="symbols-menu-wrap" id="cowork-discuss-symbols-menu-wrap">
               <button class="btn icon-only" id="cowork-discuss-symbols-btn" type="button" aria-label="Insérer un caractère spécial" title="Caractères spéciaux" aria-haspopup="true" aria-expanded="false">
@@ -3059,7 +3059,7 @@
                 <button type="button" class="attach-menu-opt" id="hstat-attach-opt-image"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span>Choisir une image</span></button>
                 <button type="button" class="attach-menu-opt" id="hstat-attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un PDF/Excel/CSV</span></button>
               </div>
-              <input type="file" id="hstat-file-input" hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
+              <input type="file" id="hstat-file-input" multiple hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
             </div>
             <div class="symbols-menu-wrap" id="hstat-symbols-menu-wrap">
               <button class="btn icon-only" id="hstat-symbols-btn" type="button" aria-label="Insérer un caractère spécial" title="Caractères spéciaux" aria-haspopup="true" aria-expanded="false">
@@ -13354,7 +13354,7 @@
   function clearAssistantLog(){
     chatLog.innerHTML = '';
     chatLog.dataset.ready = '';
-    pendingAttachment = null;
+    pendingAttachment = [];
     renderAttachChip();
     renderAssistantIntro();
   }
@@ -13473,14 +13473,15 @@
   function aiServerCall(input, opts, wantJson){
     opts = opts || {};
     var tier = (typeof opts.modelTier === 'string' && getHmodelTierDef(opts.modelTier)) ? opts.modelTier : 'mediane';
-    var imgP = (opts.images && typeof Blob !== 'undefined' && opts.images instanceof Blob) ? aiServerFile(opts.images) : Promise.resolve(null);
+    var imgList = !opts.images ? [] : (Array.isArray(opts.images) ? opts.images : [opts.images]).filter(function(b){ return typeof Blob !== 'undefined' && b instanceof Blob; }).slice(0, 6);
+    var imgP = Promise.all(imgList.map(aiServerFile));
     return Promise.all([aiServerToken(), imgP]).then(function(a){
       if(!a[0]) throw Object.assign(new Error('auth'), { code:'auth' });
       var body = { tier:tier, json:!!wantJson };
       try{ var cv = document.querySelector('.view:not([hidden])'); if(cv && cv.id) body.tool = cv.id.replace(/^view-/, ''); }catch(e){}
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
-      if(a[1]) body.image = a[1];
+      if(a[1] && a[1].length){ body.image = a[1][0]; if(a[1].length > 1) body.images = a[1]; }
       return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) })
         .catch(function(){ throw Object.assign(new Error('Impossible de joindre le serveur IA (réseau ou déploiement).'), { code:'network' }); });
     }).then(function(res){
@@ -14638,20 +14639,14 @@
   if(window.pdfjsLib && pdfjsLib.GlobalWorkerOptions){
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/legacy/build/pdf.worker.min.js';
   }
-  var pendingAttachment = null; // { kind:'image'|'pdf'|'sheet', file?, name, text?, truncated? }
+  var pendingAttachment = []; // { kind:'image'|'pdf'|'sheet', file?, name, text?, truncated? }
   var attachFileInput = document.getElementById('attach-file-input');
   var attachChipRow = document.getElementById('attach-chip-row');
   var btnAttach = document.getElementById('btn-attach');
   var ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Aide à rédiger un document à partir de ce fichier"];
 
   function renderAttachChip(){
-    if(!pendingAttachment){ attachChipRow.hidden = true; attachChipRow.innerHTML = ''; return; }
-    attachChipRow.hidden = false;
-    var icon = pendingAttachment.kind === 'image' ? '🖼️' : (pendingAttachment.kind === 'pdf' ? '📄' : '📊');
-    attachChipRow.innerHTML = '<span class="attach-chip">' + icon + ' ' + escapeHtml(pendingAttachment.name) +
-      '<button type="button" id="attach-remove" title="Retirer">✕</button></span>';
-    var rm = document.getElementById('attach-remove');
-    if(rm) rm.addEventListener('click', function(){ pendingAttachment = null; renderAttachChip(); resetSuggestRow(); });
+    window.hnAttChips(attachChipRow, pendingAttachment, function(){ renderAttachChip(); if(!pendingAttachment.length) resetSuggestRow();});
   }
 
   function extractPdfText(file){
@@ -14758,9 +14753,9 @@
   });
 
   attachFileInput.addEventListener('change', function(e){
-    var file = e.target.files && e.target.files[0];
+    var fl = Array.prototype.slice.call(e.target.files || []);
     attachFileInput.value = '';
-    if(!file) return;
+    fl.forEach(function(file){
     var name = file.name;
     var lower = name.toLowerCase();
     if(/^image\//.test(file.type)){
@@ -14770,7 +14765,7 @@
           addMsg("Les images ne sont pas prises en charge par l'assistant dans cette vue.", 'bot');
           return;
         }
-        pendingAttachment = { kind:'image', file:file, name:name };
+        if(!window.hnAttAdd(pendingAttachment, { kind:'image', file:file, name:name })) return;
         renderAttachChip();
         saveImageToMediaLibrary(file, 'Chat');
         addMsg('📎 Image jointe : ' + name + ' — décrivez ce que vous voulez savoir, ou envoyez directement pour un résumé.', 'bot');
@@ -14779,7 +14774,7 @@
     } else if(/\.pdf$/i.test(lower)){
       addMsg('Lecture de « ' + name + ' »…', 'bot');
       extractPdfText(file).then(function(res){
-        pendingAttachment = { kind:'pdf', name:name, text:res.text, truncated:res.truncated };
+        if(!window.hnAttAdd(pendingAttachment, { kind:'pdf', name:name, text:res.text, truncated:res.truncated })) return;
         renderAttachChip();
         addMsg('📎 PDF joint : ' + name + (res.truncated ? ' (texte tronqué — document long)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
         fillSuggestRow(ATTACH_SUGGESTIONS);
@@ -14789,7 +14784,7 @@
     } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
       addMsg('Lecture de « ' + name + ' »…', 'bot');
       extractSheetText(file).then(function(res){
-        pendingAttachment = { kind:'sheet', name:name, text:res.text, truncated:res.truncated };
+        if(!window.hnAttAdd(pendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderAttachChip();
         addMsg('📎 Fichier joint : ' + name + (res.truncated ? ' (contenu tronqué — fichier volumineux)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
         fillSuggestRow(ATTACH_SUGGESTIONS);
@@ -14799,6 +14794,7 @@
     } else {
       addMsg('Format non pris en charge. Utilisez un PDF, un fichier Excel/CSV, ou une image (JPG/PNG/WebP/GIF).', 'bot');
     }
+    });
   });
 
   /* ================= Note vocale (micro) =================
@@ -14992,8 +14988,8 @@
     researchAnnounce('assistant', function(t){ addMsg(t, 'bot'); });
     var thinkingEl = addMsg('Réflexion…', 'bot');
     var gen = beginGen('chat-form', thinkingEl, function(t){ chatHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); assistantConvUI.persistCurrent(); });
-    var attachment = pendingAttachment;
-    pendingAttachment = null;
+    var attachment = pendingAttachment.slice();
+    pendingAttachment = [];
     renderAttachChip();
     resetSuggestRow();
     sampleReady.then(function(){
@@ -15009,8 +15005,8 @@
       var msgs = recent.map(function(h, i){
         var content = h.content;
         if(i === 0 && h.role === 'user') content = ASSISTANT_SYSTEM + "\n\n" + hmodelPromptInstruction('assistant') + researchPromptInstruction('assistant') + "\n\n" + content;
-        if(i === recent.length - 1 && h.role === 'user' && attachment && (attachment.kind === 'pdf' || attachment.kind === 'sheet')){
-          content += "\n\n[Contenu extrait du fichier joint « " + attachment.name + " »" + (attachment.truncated ? " — tronqué" : "") + "]\n" + attachment.text;
+        if(i === recent.length - 1 && h.role === 'user' && attachment && attachment.length){
+          content += window.hnAttText(attachment);
         }
         return { role:h.role, content:content };
       });
@@ -15020,7 +15016,7 @@
         tools: buildAssistantTools(),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); chatLog.scrollTop = chatLog.scrollHeight; }
       };
-      if(attachment && attachment.kind === 'image') sampleOpts.images = attachment.file;
+      var hnImgs = window.hnAttImages(attachment); if(hnImgs) sampleOpts.images = hnImgs;
       sampleCap(msgs, sampleOpts).then(function(res){
         if(gen.cancelled) return;
         gen.end();
@@ -32867,7 +32863,7 @@
   var coworkDiscussSuggestRow = document.getElementById('cowork-discuss-suggest-row');
   var coworkDiscussAttachChipRow = document.getElementById('cowork-discuss-attach-chip-row');
   var coworkDiscussHistory = []; // {role:'user'|'assistant', content:string}
-  var coworkDiscussPendingAttachment = null; // { kind, file?, name, text?, truncated? }
+  var coworkDiscussPendingAttachment = []; // { kind, file?, name, text?, truncated? }
   var coworkDiscussConvId = 'default';
   var COWORK_DISCUSS_SUGGESTIONS = ["Quel est le solde net ?", "Résume les dépenses", "Combien d'anomalies ?", "Total pour Salaires", "Une autre idée à me proposer ?", "Peux-tu m'aider sur un sujet hors finances ?"];
   var COWORK_DISCUSS_ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Qu'en penses-tu ?"];
@@ -33089,7 +33085,7 @@
   function clearCoworkDiscussLog(){
     coworkDiscussLog.innerHTML = '';
     coworkDiscussLog.dataset.ready = '';
-    coworkDiscussPendingAttachment = null;
+    coworkDiscussPendingAttachment = [];
     renderCoworkDiscussAttachChip();
     renderCoworkDiscussIntro();
   }
@@ -33125,13 +33121,7 @@
     clearLog: clearCoworkDiscussLog
   });
   function renderCoworkDiscussAttachChip(){
-    if(!coworkDiscussPendingAttachment){ coworkDiscussAttachChipRow.hidden = true; coworkDiscussAttachChipRow.innerHTML = ''; return; }
-    coworkDiscussAttachChipRow.hidden = false;
-    var icon = coworkDiscussPendingAttachment.kind === 'image' ? '🖼️' : (coworkDiscussPendingAttachment.kind === 'pdf' ? '📄' : '📊');
-    coworkDiscussAttachChipRow.innerHTML = '<span class="attach-chip">' + icon + ' ' + escapeHtml(coworkDiscussPendingAttachment.name) +
-      '<button type="button" id="cowork-discuss-attach-remove" title="Retirer">✕</button></span>';
-    var rm = document.getElementById('cowork-discuss-attach-remove');
-    if(rm) rm.addEventListener('click', function(){ coworkDiscussPendingAttachment = null; renderCoworkDiscussAttachChip(); resetCoworkDiscussSuggestRow(); });
+    window.hnAttChips(coworkDiscussAttachChipRow, coworkDiscussPendingAttachment, function(){ renderCoworkDiscussAttachChip(); if(!coworkDiscussPendingAttachment.length) resetCoworkDiscussSuggestRow();});
   }
 
   /* Envoi de la question : identique dans l'esprit à submitToAssistant() du Chat — mêmes outils de
@@ -33147,8 +33137,8 @@
     researchAnnounce('cowork', function(t){ addCoworkDiscussMsg(t, 'bot'); });
     var thinkingEl = addCoworkDiscussMsg('Réflexion…', 'bot');
     var gen = beginGen('cowork-discuss-form', thinkingEl, function(t){ coworkDiscussHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); coworkDiscussConvUI.persistCurrent(); });
-    var attachment = coworkDiscussPendingAttachment;
-    coworkDiscussPendingAttachment = null;
+    var attachment = coworkDiscussPendingAttachment.slice();
+    coworkDiscussPendingAttachment = [];
     renderCoworkDiscussAttachChip();
     resetCoworkDiscussSuggestRow();
     sampleReady.then(function(){
@@ -33164,8 +33154,8 @@
       var msgs = recent.map(function(h, i){
         var content = h.content;
         if(i === 0 && h.role === 'user') content = COWORK_SYSTEM + "\n\n" + hmodelPromptInstruction('cowork') + researchPromptInstruction('cowork') + "\n\n" + content;
-        if(i === recent.length - 1 && h.role === 'user' && attachment && (attachment.kind === 'pdf' || attachment.kind === 'sheet')){
-          content += "\n\n[Contenu extrait du fichier joint « " + attachment.name + " »" + (attachment.truncated ? " — tronqué" : "") + "]\n" + attachment.text;
+        if(i === recent.length - 1 && h.role === 'user' && attachment && attachment.length){
+          content += window.hnAttText(attachment);
         }
         return { role:h.role, content:content };
       });
@@ -33175,7 +33165,7 @@
         tools: buildAssistantTools(),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); coworkDiscussLog.scrollTop = coworkDiscussLog.scrollHeight; }
       };
-      if(attachment && attachment.kind === 'image') sampleOpts.images = attachment.file;
+      var hnImgs = window.hnAttImages(attachment); if(hnImgs) sampleOpts.images = hnImgs;
       // Repli si l'assistant met trop de temps, pour rester rapide même en cas de lenteur réseau.
       var timedOut = false;
       var timeoutId = setTimeout(function(){
@@ -33188,7 +33178,7 @@
         coworkDiscussConvUI.persistCurrent();
         fillCoworkDiscussSuggestRow(COWORK_DISCUSS_SUGGESTIONS);
         if(opts.voiceReply) autoSpeakBubble(thinkingEl);
-      }, 15000);
+      }, attachment.length ? 45000 : 15000);
       sampleCap(msgs, sampleOpts).then(function(res){
         if(timedOut || gen.cancelled) return;
         clearTimeout(timeoutId);
@@ -33307,7 +33297,7 @@
           addCoworkDiscussMsg("Les images ne sont pas prises en charge par l'assistant dans cette vue pour le moment. Vous pouvez tout de même joindre un PDF/Excel/CSV, ou continuer par texte.", 'bot');
           return;
         }
-        coworkDiscussPendingAttachment = { kind:'image', file:file, name:name };
+        if(!window.hnAttAdd(coworkDiscussPendingAttachment, { kind:'image', file:file, name:name })) return;
         renderCoworkDiscussAttachChip();
         incCoworkDiscussFileCount();
         saveImageToMediaLibrary(file, 'Co-work — Discussion');
@@ -33317,7 +33307,7 @@
     } else if(/\.pdf$/i.test(lower)){
       addCoworkDiscussMsg('Lecture de « ' + name + ' »…', 'bot');
       extractPdfText(file).then(function(res){
-        coworkDiscussPendingAttachment = { kind:'pdf', name:name, text:res.text, truncated:res.truncated };
+        if(!window.hnAttAdd(coworkDiscussPendingAttachment, { kind:'pdf', name:name, text:res.text, truncated:res.truncated })) return;
         renderCoworkDiscussAttachChip();
         incCoworkDiscussFileCount();
         addCoworkDiscussMsg('+ PDF joint : ' + name + (res.truncated ? ' (texte tronqué — document long)' : '') + '. Posez une question, ou utilisez une des suggestions ci-dessous.', 'bot');
@@ -33328,7 +33318,7 @@
     } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
       addCoworkDiscussMsg('Lecture de « ' + name + ' »…', 'bot');
       extractSheetText(file).then(function(res){
-        coworkDiscussPendingAttachment = { kind:'sheet', name:name, text:res.text, truncated:res.truncated };
+        if(!window.hnAttAdd(coworkDiscussPendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderCoworkDiscussAttachChip();
         incCoworkDiscussFileCount();
         addCoworkDiscussMsg('+ Fichier joint : ' + name + (res.truncated ? ' (contenu tronqué — fichier volumineux)' : '') + '. Posez une question, ou utilisez une des suggestions ci-dessous.', 'bot');
@@ -33341,11 +33331,11 @@
     }
   }
   coworkDiscussFileInput.addEventListener('change', function(e){
-    var file = e.target.files && e.target.files[0];
+    var fl = Array.prototype.slice.call(e.target.files || []);
     coworkDiscussFileInput.value = '';
-    handleCoworkDiscussFile(file);
+    fl.forEach(handleCoworkDiscussFile);
   });
-  wireCoworkDropZone(document.getElementById('cowork-panel-discuss'), function(files){ handleCoworkDiscussFile(files[0]); });
+  wireCoworkDropZone(document.getElementById('cowork-panel-discuss'), function(files){ Array.prototype.slice.call(files).forEach(handleCoworkDiscussFile); });
 
   /* Note vocale : même principe que dans le Chat — mémo audio joint au fil, téléchargeable, et
      transcrite/envoyée/répondue automatiquement à l'oral quand la reconnaissance vocale du
@@ -36859,20 +36849,14 @@
      Même composant et même logique que le Chat / Co-work Discussion (voir attach-menu-wrap du Chat
      et cowork-discuss-attach-menu-wrap) : photo (appareil photo), image, ou PDF/Excel/CSV — adapté
      ici pour alimenter la conversation H-Start (hstatHistory/submitHstat) plutôt que celle du Chat. */
-  var hstatPendingAttachment = null; // { kind:'image'|'pdf'|'sheet', file?, name, text?, truncated? }
+  var hstatPendingAttachment = []; // { kind:'image'|'pdf'|'sheet', file?, name, text?, truncated? }
   var hstatAttachChipRow = document.getElementById('hstat-attach-chip-row');
   var hstatFileInput = document.getElementById('hstat-file-input');
   var hstatAttachMenu = document.getElementById('hstat-attach-menu');
   var hstatBtnAttach = document.getElementById('hstat-btn-attach');
   var HSTAT_ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Qu'en penses-tu ?"];
   function renderHstatAttachChip(){
-    if(!hstatPendingAttachment){ hstatAttachChipRow.hidden = true; hstatAttachChipRow.innerHTML = ''; return; }
-    hstatAttachChipRow.hidden = false;
-    var icon = hstatPendingAttachment.kind === 'image' ? '🖼️' : (hstatPendingAttachment.kind === 'pdf' ? '📄' : '📊');
-    hstatAttachChipRow.innerHTML = '<span class="attach-chip">' + icon + ' ' + escapeHtml(hstatPendingAttachment.name) +
-      '<button type="button" id="hstat-attach-remove" title="Retirer">✕</button></span>';
-    var rm = document.getElementById('hstat-attach-remove');
-    if(rm) rm.addEventListener('click', function(){ hstatPendingAttachment = null; renderHstatAttachChip(); });
+    window.hnAttChips(hstatAttachChipRow, hstatPendingAttachment, function(){ renderHstatAttachChip(); });
   }
   function openHstatFilePickerFor(mode){
     if(mode === 'camera'){
@@ -36900,9 +36884,9 @@
     hstatAttachMenu.hidden = true;
   });
   hstatFileInput.addEventListener('change', function(e){
-    var file = e.target.files && e.target.files[0];
+    var fl = Array.prototype.slice.call(e.target.files || []);
     hstatFileInput.value = '';
-    if(!file) return;
+    fl.forEach(function(file){
     var name = file.name;
     var lower = name.toLowerCase();
     if(/^image\//.test(file.type)){
@@ -36912,7 +36896,7 @@
           addHstatMsg("Les images ne sont pas prises en charge par l'assistant dans cette vue pour le moment.", 'bot');
           return;
         }
-        hstatPendingAttachment = { kind:'image', file:file, name:name };
+        if(!window.hnAttAdd(hstatPendingAttachment, { kind:'image', file:file, name:name })) return;
         renderHstatAttachChip();
         saveImageToMediaLibrary(file, 'H-Start');
         addHstatMsg('📎 Image jointe : ' + name + ' — décrivez ce que vous voulez savoir, ou envoyez directement pour un résumé.', 'bot');
@@ -36921,7 +36905,7 @@
     } else if(/\.pdf$/i.test(lower)){
       addHstatMsg('Lecture de « ' + name + ' »…', 'bot');
       extractPdfText(file).then(function(res){
-        hstatPendingAttachment = { kind:'pdf', name:name, text:res.text, truncated:res.truncated };
+        if(!window.hnAttAdd(hstatPendingAttachment, { kind:'pdf', name:name, text:res.text, truncated:res.truncated })) return;
         renderHstatAttachChip();
         addHstatMsg('📎 PDF joint : ' + name + (res.truncated ? ' (texte tronqué — document long)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
         fillHstatSuggestRow(HSTAT_ATTACH_SUGGESTIONS);
@@ -36931,7 +36915,7 @@
     } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
       addHstatMsg('Lecture de « ' + name + ' »…', 'bot');
       extractSheetText(file).then(function(res){
-        hstatPendingAttachment = { kind:'sheet', name:name, text:res.text, truncated:res.truncated };
+        if(!window.hnAttAdd(hstatPendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderHstatAttachChip();
         addHstatMsg('📎 Fichier joint : ' + name + (res.truncated ? ' (contenu tronqué — fichier volumineux)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
         fillHstatSuggestRow(HSTAT_ATTACH_SUGGESTIONS);
@@ -36941,6 +36925,7 @@
     } else {
       addHstatMsg('Format non pris en charge. Utilisez un PDF, un fichier Excel/CSV, ou une image (JPG/PNG/WebP/GIF).', 'bot');
     }
+    });
   });
 
   // Caractères spéciaux H-Start : mêmes composant/mécanique que le Chat (wireSymbolsMenu), mais avec
@@ -37046,8 +37031,8 @@
     var thinkingEl = addHstatMsg('Réflexion…', 'bot');
     var gen = beginGen('hstat-form', thinkingEl, function(t){ hstatHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); });
     var suggestionsAfter = hstatDomain ? hstatDomain.suggestions : HSTAT_DEFAULT_SUGGESTIONS;
-    var attachment = hstatPendingAttachment;
-    hstatPendingAttachment = null;
+    var attachment = hstatPendingAttachment.slice();
+    hstatPendingAttachment = [];
     renderHstatAttachChip();
     sampleReady.then(function(){
       if(gen.cancelled) return;
@@ -37070,8 +37055,8 @@
       var msgs = recent.map(function(h, i){
         var content = h.content;
         if(i === 0 && h.role === 'user') content = systemPrompt + "\n\n" + content;
-        if(i === recent.length - 1 && h.role === 'user' && attachment && (attachment.kind === 'pdf' || attachment.kind === 'sheet')){
-          content += "\n\n[Contenu extrait du fichier joint « " + attachment.name + " »" + (attachment.truncated ? " — tronqué" : "") + "]\n" + attachment.text;
+        if(i === recent.length - 1 && h.role === 'user' && attachment && attachment.length){
+          content += window.hnAttText(attachment);
         }
         return { role:h.role, content:content };
       });
@@ -37080,7 +37065,7 @@
         modelTier: getHmodelTier('hstat'),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); hstatLog.scrollTop = hstatLog.scrollHeight; }
       };
-      if(attachment && attachment.kind === 'image') sampleOpts.images = attachment.file;
+      var hnImgs = window.hnAttImages(attachment); if(hnImgs) sampleOpts.images = hnImgs;
       sampleCap(msgs, sampleOpts).then(function(res){
         if(gen.cancelled) return;
         gen.end();
@@ -37089,10 +37074,13 @@
         try{ if(window.__hnHstatChanged) window.__hnHstatChanged(); }catch(e){}
         fillHstatSuggestRow(suggestionsAfter);
         if(opts.voiceReply) autoSpeakBubble(thinkingEl);
-      }).catch(function(){
+      }).catch(function(err){
         if(gen.cancelled) return;
         gen.end();
-        setMsgText(thinkingEl, "Erreur : la réponse n'a pas pu être complétée. Réessayez dans un instant.");
+        var hc = err && err.code;
+        setMsgText(thinkingEl, hc === 'images_unavailable' ? "Les images ne sont pas prises en charge par l'assistant dans cette vue."
+          : hc === 'image_rejected' ? "Les images jointes n'ont pas pu être analysées (format, taille ou fichier invalide). Retirez-les (✕) ou joignez-en de plus petites."
+          : "Erreur : la réponse n'a pas pu être complétée. Réessayez dans un instant.");
       });
     });
   }
@@ -43698,6 +43686,206 @@ html.hn-incognito .hn-nd-slot{ display:none !important; }
     var c = w.querySelector('input'); c.checked = !state.off;
     c.addEventListener('change', function(){ state.off = !c.checked; save(); if(state.off) clearCurrent(); });
   })();
+})();
+</script>
+
+<style id="hn-att-css">
+html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat{ outline:2px dashed var(--accent); outline-offset:-6px; }
+.hn-att-toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(92px + env(safe-area-inset-bottom)); background:var(--ink); color:var(--surface); padding:9px 14px; border-radius:10px; font-size:13px; z-index:9999; max-width:min(92vw,520px); box-shadow:0 4px 16px rgba(0,0,0,.25); }
+</style>
+<script id="hn-att-js">
+(function(){
+  'use strict';
+  /* ===== Coller / glisser des captures et documents dans Assistant, Co-work (Discussion) et H-Start =====
+     - Ctrl+V (ou Cmd+V) dans le champ de saisie : une capture d'écran, une image, un PDF, un fichier Excel ou CSV copié est joint,
+       exactement comme avec le bouton « Joindre ».
+     - Glisser-déposer un fichier sur Assistant ou H-Start (Co-work Discussion le faisait déjà).
+     - Grandes images : réduites automatiquement (le serveur refuse les images trop lourdes).
+     - PDF scanné (sans texte) : les 3 premières pages sont jointes comme une image, lue visuellement par l'IA (pas une vraie reconnaissance OCR).
+     Jusqu'à 4 fichiers par message, chacun retirable séparément (✕). Tout passe par les champs fichier existants : mêmes règles, mêmes messages. */
+  var INPUT_BY_FORM = { 'chat-form':'attach-file-input', 'cowork-discuss-form':'cowork-discuss-file-input', 'hstat-form':'hstat-file-input' };
+  var INPUT_IDS = { 'attach-file-input':1, 'cowork-discuss-file-input':1, 'hstat-file-input':1, 'cowork-query-file-input':1 };
+  var VIEW_INPUT = { assistant:'attach-file-input', hstat:'hstat-file-input' };   // glisser-déposer (Co-work Discussion a déjà le sien)
+  var MAX_BYTES = 900000, MAX_SIDE = 1800, MAX_FILES = 4;
+  function $(id){ return document.getElementById(id); }
+  function toast(t){
+    var d = document.createElement('div'); d.className = 'hn-att-toast'; d.setAttribute('role', 'status'); d.textContent = t;
+    document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 5200);
+  }
+  function stamp(){ var d = new Date(), p = function(n){ return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); }
+  function isAccepted(f){
+    if(!f) return false;
+    var n = String(f.name || '').toLowerCase(), t = String(f.type || '');
+    return /^image\/(png|jpeg|webp|gif)$/.test(t) || t === 'application/pdf' || /\.(pdf|xlsx|xls|csv)$/.test(n);
+  }
+  function deliver(input, files, processed){
+    try{
+      var dt = new DataTransfer(); (Array.isArray(files) ? files : [files]).forEach(function(f){ dt.items.add(f); }); input.files = dt.files;
+      input.__hnSkip = !!processed;           // fichier déjà traité (réduit / converti) : l'interception ne le reprend pas
+      input.dispatchEvent(new Event('change', { bubbles:true }));
+    }catch(e){ input.__hnSkip = false; toast('Ce navigateur ne permet pas de joindre ce fichier par collage. Utilisez le bouton « Joindre ».'); }
+  }
+
+  /* ----- Réduction des grandes images ----- */
+  function loadImg(file){
+    return new Promise(function(res, rej){
+      var u = URL.createObjectURL(file), im = new Image();
+      im.onload = function(){ URL.revokeObjectURL(u); res(im); };
+      im.onerror = function(){ URL.revokeObjectURL(u); rej(new Error('img')); };
+      im.src = u;
+    });
+  }
+  function toBlob(canvas, type, q){ return new Promise(function(res){ canvas.toBlob(function(b){ res(b); }, type, q); }); }
+  function shrinkImage(file){
+    return loadImg(file).then(function(im){
+      var w = im.naturalWidth, h = im.naturalHeight;
+      if(Math.min(1, MAX_SIDE / Math.max(w, h)) >= 1 && file.size <= MAX_BYTES) return file;
+      var steps = [[MAX_SIDE, 0.86], [1400, 0.75], [1000, 0.7], [800, 0.6]], i = 0;
+      function attempt(){
+        var st = steps[i], k = Math.min(1, st[0] / Math.max(w, h));
+        var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        return toBlob(c, 'image/jpeg', st[1]).then(function(b){
+          if(!b) return file;
+          if(b.size > MAX_BYTES && ++i < steps.length) return attempt();
+          var base = String(file.name || 'image').replace(/\.[^.]+$/, '');
+          return new File([b], base + '.jpg', { type:'image/jpeg' });
+        });
+      }
+      return attempt();
+    }).catch(function(){ return file; });
+  }
+
+  /* ----- PDF scanné : pages rendues en image ----- */
+  function pdfScanToImage(file){
+    var lib = window.pdfjsLib;
+    if(!lib || !lib.getDocument) return Promise.resolve(null);
+    return file.arrayBuffer().then(function(buf){
+      return lib.getDocument({ data: buf }).promise.then(function(pdf){
+        var probe = Math.min(2, pdf.numPages), jobs = [];
+        for(var i = 1; i <= probe; i++) jobs.push(pdf.getPage(i).then(function(p){ return p.getTextContent().then(function(tc){ return (tc.items || []).map(function(it){ return it.str || ''; }).join('').trim().length; }); }));
+        return Promise.all(jobs).then(function(lens){
+          var total = lens.reduce(function(a, b){ return a + b; }, 0);
+          if(total >= 40) return null;                 // le PDF a un vrai texte : traitement normal
+          var n = Math.min(3, pdf.numPages), pages = [];
+          for(var j = 1; j <= n; j++) pages.push(pdf.getPage(j));
+          return Promise.all(pages).then(function(ps){
+            var W = 1100, canv = [], H = 0;
+            return ps.reduce(function(chain, p){
+              return chain.then(function(){
+                var v1 = p.getViewport({ scale:1 }), sc = W / v1.width, vp = p.getViewport({ scale:sc });
+                var c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+                return p.render({ canvasContext:c.getContext('2d'), viewport:vp }).promise.then(function(){ canv.push(c); H += c.height; });
+              });
+            }, Promise.resolve()).then(function(){
+              var out = document.createElement('canvas'); out.width = W; out.height = H;
+              var g = out.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+              var y = 0; canv.forEach(function(c){ g.drawImage(c, 0, y); y += c.height; });
+              return toBlob(out, 'image/jpeg', 0.82).then(function(b){
+                if(!b) return null;
+                var base = String(file.name || 'document').replace(/\.pdf$/i, '');
+                return { file: new File([b], base + ' (scan).jpg', { type:'image/jpeg' }), pages:n, total:pdf.numPages };
+              });
+            });
+          });
+        });
+      });
+    }).catch(function(){ return null; });
+  }
+
+  /* ----- Interception des fichiers choisis (bouton, collage ou glisser-déposer) ----- */
+  function processOne(f){
+    var isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '');
+    var bigImg = /^image\/(png|jpeg|webp)$/.test(f.type || '') && f.size > MAX_BYTES;
+    if(isPdf){
+      return pdfScanToImage(f).then(function(r){
+        if(!r) return f;
+        toast('PDF scanné détecté : ' + (r.pages > 1 ? 'les ' + r.pages + ' premières pages' : 'la première page') + (r.total > r.pages ? ' (sur ' + r.total + ')' : '') + (r.pages > 1 ? ' sont jointes' : ' est jointe') + ' comme image, lue visuellement par l’IA.');
+        return shrinkImage(r.file);
+      });
+    }
+    return bigImg ? shrinkImage(f) : Promise.resolve(f);
+  }
+  document.addEventListener('change', function(e){
+    var t = e.target;
+    if(!t || !INPUT_IDS[t.id]) return;
+    if(t.__hnSkip){ t.__hnSkip = false; return; }
+    var list = Array.prototype.slice.call(t.files || []); if(!list.length) return;
+    var needs = list.some(function(f){ return f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '') || (/^image\/(png|jpeg|webp)$/.test(f.type || '') && f.size > MAX_BYTES); });
+    if(list.length <= 1 && !needs) return;
+    e.stopImmediatePropagation(); e.stopPropagation();
+    Promise.all(list.map(processOne)).then(function(out){ deliver(t, out, true); });
+  }, true);
+
+  /* ----- Aides communes aux trois vues (liste de pièces jointes) ----- */
+  window.hnAttAdd = function(arr, item){
+    if(arr.length >= MAX_FILES){ toast('Maximum ' + MAX_FILES + ' fichiers par message : retirez-en un (✕) pour en ajouter un autre.'); return false; }
+    arr.push(item); return true;
+  };
+  window.hnAttChips = function(row, arr, onChange){
+    if(!arr.length){ row.hidden = true; row.innerHTML = ''; return; }
+    row.hidden = false; row.innerHTML = '';
+    arr.forEach(function(a, i){
+      var sp = document.createElement('span'); sp.className = 'attach-chip';
+      sp.appendChild(document.createTextNode((a.kind === 'image' ? '🖼️' : (a.kind === 'pdf' ? '📄' : '📊')) + ' ' + a.name));
+      var b = document.createElement('button'); b.type = 'button'; b.title = 'Retirer ce fichier'; b.setAttribute('aria-label', 'Retirer ' + a.name); b.textContent = '✕';
+      b.addEventListener('click', function(){ arr.splice(i, 1); onChange(); });
+      sp.appendChild(b); row.appendChild(sp);
+    });
+  };
+  window.hnAttText = function(list){
+    var out = '';
+    (list || []).forEach(function(a){
+      if(a.kind === 'pdf' || a.kind === 'sheet') out += "\n\n[Contenu extrait du fichier joint « " + a.name + " »" + (a.truncated ? " — tronqué" : "") + "]\n" + a.text;
+    });
+    var imgs = (list || []).filter(function(a){ return a.kind === 'image'; });
+    if(imgs.length) out += "\n\n[" + imgs.length + " image" + (imgs.length > 1 ? "s jointes" : " jointe") + " à ce message : " + imgs.map(function(a){ return '« ' + a.name + ' »'; }).join(', ') + ". Analyse-" + (imgs.length > 1 ? "les" : "la") + " visuellement.]";
+    return out;
+  };
+  window.hnAttImages = function(list){
+    var f = (list || []).filter(function(a){ return a.kind === 'image'; }).map(function(a){ return a.file; });
+    return f.length ? (f.length === 1 ? f[0] : f) : null;
+  };
+
+  /* ----- Coller (Ctrl+V) ----- */
+  document.addEventListener('paste', function(e){
+    var cd = e.clipboardData; if(!cd) return;
+    var form = e.target && e.target.closest ? e.target.closest('#chat-form, #cowork-discuss-form, #hstat-form') : null;
+    if(!form) return;
+    var files = [];
+    if(cd.files && cd.files.length){ files = Array.prototype.slice.call(cd.files); }
+    else if(cd.items){ Array.prototype.forEach.call(cd.items, function(it){ if(it.kind === 'file'){ var f = it.getAsFile(); if(f) files.push(f); } }); }
+    files = files.filter(isAccepted);
+    if(!files.length) return;                                  // simple texte : comportement normal
+    e.preventDefault();
+    var input = $(INPUT_BY_FORM[form.id]); if(!input) return;
+    files = files.map(function(f, i){
+      if(/^image\//.test(f.type) && (!f.name || /^image\.(png|jpe?g|webp|gif)$/i.test(f.name))){
+        var ext = (f.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+        try{ return new File([f], 'capture-' + stamp() + (i ? '-' + (i + 1) : '') + '.' + ext, { type:f.type }); }catch(x){}
+      }
+      return f;
+    });
+    deliver(input, files);
+  }, true);
+
+  /* ----- Glisser-déposer sur Assistant et H-Start ----- */
+  function activeView(){ var v = document.querySelector('section.view:not([hidden])'); return v ? v.id.replace(/^view-/, '') : ''; }
+  function hasFiles(e){ var dt = e.dataTransfer; if(!dt) return false; return Array.prototype.indexOf.call(dt.types || [], 'Files') !== -1; }
+  var dragT = null;
+  document.addEventListener('dragover', function(e){
+    if(!hasFiles(e) || !VIEW_INPUT[activeView()]) return;
+    e.preventDefault(); document.documentElement.classList.add('hn-dragfile');
+    clearTimeout(dragT); dragT = setTimeout(function(){ document.documentElement.classList.remove('hn-dragfile'); }, 400);
+  });
+  document.addEventListener('drop', function(e){
+    document.documentElement.classList.remove('hn-dragfile');
+    var v = activeView(); if(!VIEW_INPUT[v] || !hasFiles(e)) return;
+    e.preventDefault();
+    var files = Array.prototype.filter.call(e.dataTransfer.files || [], isAccepted);
+    if(!files.length){ toast('Format non pris en charge. Utilisez une image, un PDF, un fichier Excel ou un CSV.'); return; }
+    deliver($(VIEW_INPUT[v]), files);
+  });
 })();
 </script>
 
