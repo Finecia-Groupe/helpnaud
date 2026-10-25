@@ -5964,7 +5964,8 @@
   })();
   function fmtFghlabShortDate(iso){
     if(!iso) return '';
-    var d = new Date(iso);
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
+    var d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(iso);
     if(isNaN(d.getTime())) return '';
     return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
   }
@@ -25610,15 +25611,32 @@
     });
   }
 
-  /* ================= FGH-Lab — Rendez-vous : disponibilités + onglet « Prendre mon rendez-vous » ================= */
+  /* ================= FGH-Lab — Rendez-vous : disponibilités + « Prendre mon rendez-vous » + Calendrier =================
+     Les réservations (page publique ou saisie ici) sont recopiées automatiquement dans le registre
+     (fghlabState.genericTools.rdv, champ slotId = id du créneau). L'onglet Calendrier affiche créneaux libres,
+     rendez-vous réservés et échéances du registre, et exporte un fichier .ics (Google, Outlook, Apple). */
   function fghlabRdvWrapPanel(trackerHtml){
     var st = academieSelStyle();
     var head = '<div class="card hn-panel" id="fghlab-panel-rdv" hidden>';
     if(trackerHtml.indexOf(head) !== 0 || trackerHtml.slice(-6) !== '</div>') return trackerHtml;
     var inner = trackerHtml.slice(head.length, -6);
-    var tabs = '<div style="display:flex; gap:6px; margin:0 0 12px;">' +
+    var tabs = '<div style="display:flex; gap:6px; margin:0 0 12px; flex-wrap:wrap;">' +
       '<button type="button" class="btn primary" id="rdv-tabbtn-gestion" style="padding:5px 12px; font-size:12.5px;">Gestion des rendez-vous</button>' +
-      '<button type="button" class="btn" id="rdv-tabbtn-prendre" style="padding:5px 12px; font-size:12.5px;">Prendre mon rendez-vous</button></div>';
+      '<button type="button" class="btn" id="rdv-tabbtn-prendre" style="padding:5px 12px; font-size:12.5px;">Prendre mon rendez-vous</button>' +
+      '<button type="button" class="btn" id="rdv-tabbtn-cal" style="padding:5px 12px; font-size:12.5px;">📆 Calendrier</button></div>';
+    var cal = '<div id="rdv-tab-cal" hidden>' +
+      '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:0 0 8px;">' +
+        '<button type="button" class="btn" id="rdv-cal-prev" aria-label="Mois précédent" style="padding:3px 10px;">‹</button>' +
+        '<strong id="rdv-cal-title" style="min-width:150px; text-align:center; font-size:14px;"></strong>' +
+        '<button type="button" class="btn" id="rdv-cal-next" aria-label="Mois suivant" style="padding:3px 10px;">›</button>' +
+        '<button type="button" class="btn" id="rdv-cal-today" style="padding:3px 10px; font-size:12px;">Aujourd’hui</button>' +
+        '<button type="button" class="btn" id="rdv-cal-ics" style="padding:3px 10px; font-size:12px; margin-left:auto;">Exporter (.ics)</button></div>' +
+      '<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:11.5px; margin:0 0 6px; color:var(--muted);">' +
+        '<span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--accent);"></span> réservé</span>' +
+        '<span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;border:1.5px solid var(--accent);"></span> créneau libre</span>' +
+        '<span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--muted);"></span> échéance du registre</span></div>' +
+      '<div id="rdv-cal-grid"></div>' +
+      '<div id="rdv-cal-day" style="margin-top:10px;"></div></div>';
     var prendre = '<div id="rdv-tab-prendre" hidden>' +
       '<h3 style="margin:0 0 6px; font-size:14.5px;">Prendre mon rendez-vous</h3>' +
       '<p class="hint" style="margin:0 0 8px;">Choisissez un créneau libre, indiquez vos coordonnées et le motif.</p>' +
@@ -25638,20 +25656,146 @@
           '<input type="time" id="rdv-slot-start" style="'+st+'">' +
           '<input type="time" id="rdv-slot-end" style="'+st+'">' +
           '<input type="text" id="rdv-slot-note" maxlength="120" placeholder="Précision (facultatif)" style="flex:1; min-width:160px; '+st+'">' +
-          '<button type="button" class="btn" id="rdv-slot-add">Publier ce créneau</button></div>' +
+          '<button type="button" class="btn" id="rdv-slot-add">Publier ce créneau</button>' +
+          '<span class="copy-status" id="rdv-slot-status" style="align-self:center;"></span></div>' +
         '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:8px;"><button type="button" class="btn" id="rdv-copy-public" style="padding:4px 10px; font-size:12px;">Copier le lien public de prise de rendez-vous</button><span class="copy-status" id="rdv-copy-status"></span></div>' +
         '<p class="hint" data-fgh-sync-status style="margin:0 0 8px; font-size:12px;"></p>' +
         '<div id="rdv-slot-list"></div>' +
       '</div></div>';
-    return head + tabs + '<div id="rdv-tab-gestion">' + inner + '</div>' + prendre + '</div>';
+    return head + tabs + '<div id="rdv-tab-gestion">' + inner + '</div>' + prendre + cal + '</div>';
   }
   function bindFghlabRdvExtras(){
     var $ = function(id){ return document.getElementById(id); };
     if(!$('rdv-tabbtn-gestion')) return;
-    var chosen = null;
+    var chosen = null, current = 'gestion';
+    var calY = new Date().getFullYear(), calM = new Date().getMonth(), calSel = null;
+    var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    var BTN = 'padding:2px 8px; font-size:11.5px;';
     function slots(){ if(!Array.isArray(fghlabState.rdvSlots)) fghlabState.rdvSlots = []; return fghlabState.rdvSlots; }
     function slotLabel(s){ return s.date + ' · ' + s.start + '–' + s.end + (s.note ? ' · ' + s.note : ''); }
     function sorted(){ return slots().slice().sort(function(a, b){ return (a.date + a.start).localeCompare(b.date + b.start); }); }
+    function pad(n){ return (n < 10 ? '0' : '') + n; }
+    function ymd(y, m, d){ return y + '-' + pad(m + 1) + '-' + pad(d); }
+    function todayStr(){ var t = new Date(); return ymd(t.getFullYear(), t.getMonth(), t.getDate()); }
+    function isMail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim()); }
+
+    /* --- Réservation → ligne du registre --- */
+    function doneIds(){ try{ return JSON.parse(localStorage.getItem('helpnaud_rdv_regdone') || '[]') || []; }catch(e){ return []; } }
+    function saveDone(a){ try{ localStorage.setItem('helpnaud_rdv_regdone', JSON.stringify(a.slice(-500))); }catch(e){} }
+    function regItems(){ return fghlabTrackerItems('rdv'); }
+    function syncRegistry(){
+      var items = regItems(), done = doneIds(), added = 0;
+      slots().forEach(function(s){
+        if(!s.booking || done.indexOf(s.id) !== -1) return;
+        if(items.some(function(i){ return i.slotId === s.id; })){ done.push(s.id); return; }
+        var b = s.booking;
+        items.push({
+          id: makeFghlabTrackerId(),
+          titre: ('RDV — ' + b.name + (b.motif ? ' · ' + b.motif : '')).slice(0, 140),
+          statut: b.manual ? 'confirme' : 'propose',
+          echeance: s.date,
+          responsable: '',
+          notes: ('Créneau : ' + s.start + '–' + s.end + (s.note ? ' (' + s.note + ')' : '') + '\nClient : ' + b.name + '\nContact : ' + b.contact + (b.motif ? '\nMotif : ' + b.motif : '') + '\nRéservé le : ' + String(b.on || '').slice(0, 10) + (b.manual ? ' (saisi par l’équipe)' : ' (page publique)')).slice(0, 45000),
+          slotId: s.id,
+          createdOn: new Date().toISOString()
+        });
+        done.push(s.id); added++;
+      });
+      if(added){ saveDone(done); persistFghlabState(); try{ renderFghlabTrackerList('rdv'); }catch(e){} }
+      return added;
+    }
+    function cancelInRegistry(slotId){
+      var hit = false;
+      regItems().forEach(function(i){
+        if(i.slotId === slotId && i.statut !== 'termine' && i.statut !== 'annule'){ i.statut = 'annule'; i.notes = (i.notes ? i.notes + '\n' : '') + 'Créneau retiré le ' + todayStr() + '.'; hit = true; }
+      });
+      if(hit){ persistFghlabState(); try{ renderFghlabTrackerList('rdv'); }catch(e){} }
+    }
+
+    /* --- .ics --- */
+    function icsEsc(t){ return String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+    function icsDt(d, t){ return d.replace(/-/g, '') + 'T' + t.replace(':', '') + '00'; }
+    function icsEvent(e){
+      var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+      var l = ['BEGIN:VEVENT', 'UID:' + e.uid + '@helpnaud.ai', 'DTSTAMP:' + stamp];
+      if(e.start){ l.push('DTSTART:' + icsDt(e.date, e.start)); l.push('DTEND:' + icsDt(e.date, e.end || e.start)); }
+      else { var d2 = new Date(e.date + 'T12:00:00'); d2.setDate(d2.getDate() + 1); l.push('DTSTART;VALUE=DATE:' + e.date.replace(/-/g, '')); l.push('DTEND;VALUE=DATE:' + ymd(d2.getFullYear(), d2.getMonth(), d2.getDate()).replace(/-/g, '')); }
+      l.push('SUMMARY:' + icsEsc(e.title)); if(e.desc) l.push('DESCRIPTION:' + icsEsc(e.desc));
+      l.push('END:VEVENT'); return l.join('\r\n');
+    }
+    function downloadIcs(list, name){
+      if(!list.length) return false;
+      var txt = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//HelpNaud.ai//FGH-Colab//FR\r\nCALSCALE:GREGORIAN\r\n' + list.map(icsEvent).join('\r\n') + '\r\nEND:VCALENDAR\r\n';
+      try{
+        var blob = new Blob([txt], { type: 'text/calendar;charset=utf-8' }), a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        return true;
+      }catch(e){ return false; }
+    }
+    function slotEvent(s){
+      var b = s.booking;
+      return { uid: 'slot-' + s.id, date: s.date, start: s.start, end: s.end,
+        title: b ? ('RDV — ' + b.name) : ('Créneau libre' + (s.note ? ' — ' + s.note : '')),
+        desc: b ? ('Contact : ' + b.contact + (b.motif ? '\nMotif : ' + b.motif : '')) : (s.note || '') };
+    }
+
+    /* --- Événements du calendrier --- */
+    function calEvents(){
+      var ev = [];
+      slots().forEach(function(s){
+        if(!s.date || !s.start) return;
+        ev.push({ date: s.date, time: s.start, kind: s.booking ? 'booked' : 'free',
+          label: s.booking ? s.booking.name : 'Libre', full: slotLabel(s) + (s.booking ? ' — réservé par ' + s.booking.name + ' (' + s.booking.contact + ')' + (s.booking.motif ? ' · ' + s.booking.motif : '') : ' — libre'), slot: s });
+      });
+      regItems().forEach(function(i){
+        if(!i.echeance || i.slotId || i.exemple) return;
+        ev.push({ date: String(i.echeance).slice(0, 10), time: '', kind: 'reg', label: i.titre, full: i.titre + (i.responsable ? ' · ' + i.responsable : '') + ' (échéance du registre)', item: i });
+      });
+      return ev.sort(function(a, b){ return (a.date + a.time).localeCompare(b.date + b.time); });
+    }
+    function chipStyle(k){
+      if(k === 'booked') return 'background:var(--accent); color:#fff;';
+      if(k === 'free') return 'border:1.5px solid var(--accent); color:var(--accent);';
+      return 'background:var(--muted); color:#fff;';
+    }
+    function drawCal(){
+      $('rdv-cal-title').textContent = MOIS[calM].charAt(0).toUpperCase() + MOIS[calM].slice(1) + ' ' + calY;
+      var ev = calEvents(), by = {};
+      ev.forEach(function(e){ (by[e.date] = by[e.date] || []).push(e); });
+      var first = new Date(calY, calM, 1), lead = (first.getDay() + 6) % 7, days = new Date(calY, calM + 1, 0).getDate(), tod = todayStr();
+      var h = '<div style="display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px;">';
+      ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'].forEach(function(d){ h += '<div style="text-align:center; font-size:11px; color:var(--muted);">' + d + '</div>'; });
+      for(var i = 0; i < lead; i++) h += '<div></div>';
+      for(var d = 1; d <= days; d++){
+        var ds = ymd(calY, calM, d), list = by[ds] || [];
+        h += '<button type="button" data-cal-day="' + ds + '" style="text-align:left; min-height:62px; padding:3px 4px; border-radius:8px; border:1px solid ' + (ds === calSel ? 'var(--accent)' : 'var(--line)') + '; background:' + (ds === tod ? 'var(--surface-2, var(--surface))' : 'var(--surface)') + '; color:inherit; cursor:pointer; overflow:hidden; font:inherit;">' +
+          '<div style="font-size:11.5px; ' + (ds === tod ? 'font-weight:700; color:var(--accent);' : '') + '">' + d + '</div>';
+        list.slice(0, 2).forEach(function(e){ h += '<div style="font-size:10px; line-height:1.25; margin-top:2px; padding:0 3px; border-radius:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ' + chipStyle(e.kind) + '">' + escapeHtml((e.time ? e.time + ' ' : '') + e.label) + '</div>'; });
+        if(list.length > 2) h += '<div style="font-size:10px; color:var(--muted); margin-top:1px;">+' + (list.length - 2) + '</div>';
+        h += '</button>';
+      }
+      h += '</div>';
+      $('rdv-cal-grid').innerHTML = h;
+      drawDay(by);
+    }
+    function drawDay(by){
+      var box = $('rdv-cal-day');
+      if(!calSel){ box.innerHTML = '<p class="hint" style="margin:0;">Touchez un jour pour voir le détail.</p>'; return; }
+      var list = (by || {})[calSel] || [];
+      box.innerHTML = '<h3 style="margin:0 0 6px; font-size:13.5px;">' + escapeHtml(calSel) + '</h3>' + (list.length ? list.map(function(e, idx){
+        var extra = '';
+        if(e.slot) extra = '<button type="button" class="btn" data-cal-ics1="' + escapeHtml(e.slot.id) + '" style="' + BTN + '">.ics</button>';
+        return '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center; border:1px solid var(--line); border-radius:9px; padding:6px 10px; margin-top:5px; background:var(--surface); font-size:12.5px;"><span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:middle;' + chipStyle(e.kind) + '"></span>' + escapeHtml(e.full) + '</span>' + extra + '</div>';
+      }).join('') : '<p class="hint" style="margin:0;">Rien de prévu ce jour-là.</p>');
+    }
+
+    /* --- Listes --- */
+    function mailtoFor(s){
+      var b = s.booking, sub = 'Confirmation de votre rendez-vous — FINECIA GROUPE';
+      var body = 'Bonjour ' + b.name + ',\n\nNous confirmons votre rendez-vous le ' + s.date + ' de ' + s.start + ' à ' + s.end + (b.motif ? ' (' + b.motif + ')' : '') + '.\n\nSi vous devez le déplacer ou l’annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE';
+      return 'mailto:' + encodeURIComponent(b.contact.trim()) + '?subject=' + encodeURIComponent(sub) + '&body=' + encodeURIComponent(body);
+    }
     function draw(){
       var free = sorted().filter(function(s){ return !s.booking; });
       var fl = $('rdv-free-list');
@@ -25659,22 +25803,34 @@
         return '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center; border:1px solid var(--line); border-radius:9px; padding:6px 10px; margin-top:5px; background:var(--surface); font-size:12.5px;">' +
           '<span>'+escapeHtml(slotLabel(s))+'</span><button type="button" class="btn" data-rdv-pick="'+escapeHtml(s.id)+'" style="padding:3px 10px; font-size:12px;">Choisir</button></div>';
       }).join('') : '<p class="hint" style="margin:0;">Aucun créneau libre pour l’instant.</p>';
-      var canManage = true; // propriétaire ou membre autorisé à cet outil
       var sl = $('rdv-slot-list');
       sl.innerHTML = sorted().length ? sorted().map(function(s){
-        return '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center; border:1px solid var(--line); border-radius:9px; padding:6px 10px; margin-top:5px; background:var(--surface); font-size:12.5px;">' +
+        var acts = '';
+        if(s.booking && isMail(s.booking.contact)) acts += '<a class="btn" href="'+escapeHtml(mailtoFor(s))+'" style="'+BTN+' text-decoration:none;">✉ Confirmer</a> ';
+        acts += '<button type="button" class="btn" data-cal-ics1="'+escapeHtml(s.id)+'" style="'+BTN+'">.ics</button> ';
+        acts += '<button type="button" class="btn danger" data-rdv-del="'+escapeHtml(s.id)+'" style="'+BTN+'">Retirer</button>';
+        return '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; border:1px solid var(--line); border-radius:9px; padding:6px 10px; margin-top:5px; background:var(--surface); font-size:12.5px;">' +
           '<span>'+escapeHtml(slotLabel(s))+(s.booking ? ' — <strong>réservé par '+escapeHtml(s.booking.name)+'</strong> ('+escapeHtml(s.booking.contact)+')'+(s.booking.motif ? ' · '+escapeHtml(s.booking.motif) : '') : ' — libre')+'</span>' +
-          (canManage ? '<button type="button" class="btn danger" data-rdv-del="'+escapeHtml(s.id)+'" style="padding:2px 8px; font-size:11.5px;">Retirer</button>' : '') + '</div>';
+          '<span style="display:flex; gap:4px;">' + acts + '</span></div>';
       }).join('') : '<p class="hint" style="margin:0;">Aucune disponibilité publiée.</p>';
     }
-    function showTab(which){
-      $('rdv-tab-gestion').hidden = (which !== 'gestion');
-      $('rdv-tab-prendre').hidden = (which !== 'prendre');
-      $('rdv-tabbtn-gestion').className = 'btn' + (which === 'gestion' ? ' primary' : '');
-      $('rdv-tabbtn-prendre').className = 'btn' + (which === 'prendre' ? ' primary' : '');
-      if(which === 'prendre') draw();
+    function refresh(){
+      var n = syncRegistry();
+      if(current === 'prendre') draw();
+      if(current === 'cal') drawCal();
+      return n;
     }
-    fghlabSyncRedraw.rdv = draw;
+    function showTab(which){
+      current = which;
+      ['gestion', 'prendre', 'cal'].forEach(function(t){
+        $('rdv-tab-' + t).hidden = (which !== t);
+        $('rdv-tabbtn-' + t).className = 'btn' + (which === t ? ' primary' : '');
+      });
+      if(which === 'gestion'){ syncRegistry(); try{ renderFghlabTrackerList('rdv'); }catch(e){} }
+      if(which === 'prendre') { syncRegistry(); draw(); }
+      if(which === 'cal') { syncRegistry(); drawCal(); }
+    }
+    fghlabSyncRedraw.rdv = refresh;
     fghlabSyncSetStatus(fghlabSync.status, fghlabSync.statusText || fghlabSyncIdleText());
     $('rdv-copy-public').addEventListener('click', function(){
       var st = $('rdv-copy-status'), url = fghlabPublicUrl('rdv', '');
@@ -25683,9 +25839,30 @@
     });
     $('rdv-tabbtn-gestion').addEventListener('click', function(){ showTab('gestion'); });
     $('rdv-tabbtn-prendre').addEventListener('click', function(){ showTab('prendre'); });
+    $('rdv-tabbtn-cal').addEventListener('click', function(){ showTab('cal'); });
+    $('rdv-cal-prev').addEventListener('click', function(){ calM--; if(calM < 0){ calM = 11; calY--; } drawCal(); });
+    $('rdv-cal-next').addEventListener('click', function(){ calM++; if(calM > 11){ calM = 0; calY++; } drawCal(); });
+    $('rdv-cal-today').addEventListener('click', function(){ var t = new Date(); calY = t.getFullYear(); calM = t.getMonth(); calSel = todayStr(); drawCal(); });
+    $('rdv-cal-ics').addEventListener('click', function(){
+      var pre = calY + '-' + pad(calM + 1) + '-';
+      var list = calEvents().filter(function(e){ return e.date.indexOf(pre) === 0 && e.kind !== 'free'; }).map(function(e){
+        if(e.slot) return slotEvent(e.slot);
+        return { uid: 'reg-' + e.item.id, date: e.date, title: e.item.titre, desc: e.item.notes || '' };
+      });
+      if(!downloadIcs(list, 'rendez-vous-' + calY + '-' + pad(calM + 1) + '.ics')){ var b = $('rdv-cal-ics'), t = b.textContent; b.textContent = 'Rien à exporter ce mois-ci'; setTimeout(function(){ b.textContent = t; }, 2200); }
+    });
+    $('rdv-tab-cal').addEventListener('click', function(e){
+      var d = e.target.closest ? e.target.closest('[data-cal-day]') : null;
+      if(d){ calSel = d.getAttribute('data-cal-day'); drawCal(); return; }
+      var one = e.target.closest ? e.target.closest('[data-cal-ics1]') : null;
+      if(one) icsOne(one.getAttribute('data-cal-ics1'));
+    });
+    function icsOne(id){ slots().forEach(function(s){ if(s.id === id) downloadIcs([slotEvent(s)], 'rendez-vous-' + s.date + '.ics'); }); }
     $('rdv-slot-add').addEventListener('click', function(){
-      var d = $('rdv-slot-date').value, a = $('rdv-slot-start').value, b = $('rdv-slot-end').value;
-      if(!d || !a || !b || b <= a) return;
+      var d = $('rdv-slot-date').value, a = $('rdv-slot-start').value, b = $('rdv-slot-end').value, say = $('rdv-slot-status');
+      function msg(t){ say.textContent = t; setTimeout(function(){ say.textContent = ''; }, 3200); }
+      if(!d || !a || !b || b <= a){ msg('Indiquez une date, un début et une fin (après le début).'); return; }
+      if(slots().some(function(s){ return s.date === d && a < s.end && b > s.start; })){ msg('Ce créneau chevauche un créneau déjà publié.'); return; }
       slots().push({ id: 'fghsl-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date: d, start: a, end: b, note: ($('rdv-slot-note').value || '').trim(), booking: null, createdBy: fghlabActor(), createdOn: new Date().toISOString() });
       persistFghlabState();
       $('rdv-slot-note').value = '';
@@ -25694,6 +25871,8 @@
     $('rdv-tab-prendre').addEventListener('click', function(e){
       var pick = e.target.closest ? e.target.closest('[data-rdv-pick]') : null;
       var del = e.target.closest ? e.target.closest('[data-rdv-del]') : null;
+      var one = e.target.closest ? e.target.closest('[data-cal-ics1]') : null;
+      if(one){ icsOne(one.getAttribute('data-cal-ics1')); return; }
       if(pick){
         chosen = pick.getAttribute('data-rdv-pick');
         var s = null; slots().forEach(function(x){ if(x.id === chosen) s = x; });
@@ -25703,6 +25882,7 @@
       }
       if(del){
         var id = del.getAttribute('data-rdv-del');
+        cancelInRegistry(id);
         fghlabState.rdvSlots = slots().filter(function(x){ return x.id !== id; });
         persistFghlabState(); draw();
       }
@@ -25715,14 +25895,16 @@
       if(!name || !contact){ say('Indiquez votre nom et un contact.'); return; }
       var s = null; slots().forEach(function(x){ if(x.id === chosen) s = x; });
       if(!s || s.booking){ say('Ce créneau n’est plus libre.'); draw(); return; }
-      s.booking = { name: name, contact: contact, motif: ($('rdv-book-motif').value || '').trim(), on: new Date().toISOString() };
+      s.booking = { name: name, contact: contact, motif: ($('rdv-book-motif').value || '').trim(), on: new Date().toISOString(), manual: true };
       persistFghlabState();
       chosen = null;
       $('rdv-book-form').hidden = true; $('rdv-book-form').style.display = 'none';
       ['rdv-book-name','rdv-book-contact','rdv-book-motif'].forEach(function(i){ $(i).value = ''; });
+      syncRegistry();
       draw();
-      say('Rendez-vous confirmé ✓');
+      say('Rendez-vous confirmé ✓ — ajouté au registre');
     });
+    syncRegistry();
     draw();
   }
 
@@ -29640,7 +29822,7 @@
     etat: "L'outil d'accompagnement des États, municipalités et administrations offre un appui spécialisé pour ce type de clients publics, aux enjeux différents des entreprises privées (reddition de comptes, cadre réglementaire, budgets publics). Stub « Bientôt disponible ».",
     expert: "L'outil d'analyse niveau expert du cabinet est pensé pour des analyses plus poussées, réservées aux dossiers qui exigent un niveau d'expertise supérieur à l'analyse courante. Il contient les documents CabDocs (14 documents de référence rédigés par Claude), les grilles de notation pays et financière, l'évaluation (DCF, multiples), l'analyse de rapports (Altman, Piotroski, Beneish) et des listes de revue par les pairs.",
     dossiers: "Les outils de réception et de suivi des dossiers couvrent l'arrivée, le classement et le suivi des dossiers entrants pour FINECIA GROUPE — un point d'entrée pour la gouvernance des dossiers avant leur prise en charge par un mandat précis. Stub « Bientôt disponible ».",
-    rdv: "Les outils de prise et de gestion de rendez-vous gèrent la prise et le suivi des rendez-vous internes et avec les clients. Stub « Bientôt disponible » — aucun calendrier ni confirmation automatisée pour l'instant.",
+    rdv: "Les outils de prise et de gestion de rendez-vous gèrent la prise et le suivi des rendez-vous internes et avec les clients. Fonctionnement : registre des rendez-vous (statuts, échéances), créneaux publiés avec lien public de réservation, chaque réservation est recopiée automatiquement dans le registre, courriel de confirmation envoyé au client et à l’équipe (si le service d’envoi est configuré), vue calendrier mensuelle et export .ics.",
     mission: "L'outil de consultation et mission sert au cadrage et au suivi des mandats de consultation (portée, livrables, échéancier). Stub « Bientôt disponible » pour l'instant.",
     admin: "Gestion administrative et financière suit l'administratif et les finances internes de FINECIA GROUPE (à distinguer de Gestion du compte administrateur, dans Réglages, qui gère l'autorisation FGH-Colab elle-même). Stub « Bientôt disponible ».",
     fiscalite: "Fiscalité et douane donne des repères fiscaux et douaniers pour sécuriser les dossiers et opérations des clients. Stub « Bientôt disponible » — pas encore de calcul ou de veille réglementaire automatisés.",

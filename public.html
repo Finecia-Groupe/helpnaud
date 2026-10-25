@@ -390,8 +390,8 @@
         var btn = this, out = document.getElementById('b-out'); out.className = 'msg'; out.textContent = '';
         if(!chosen){ out.className = 'msg err'; out.textContent = 'Choisissez un créneau.'; return; }
         btn.disabled = true;
-        call({ action:'book', slotId: chosen, name: val('b-name'), contact: val('b-contact'), motif: val('b-motif'), website: hv() }).then(function(){
-          app.innerHTML = '<div class="card"><h1>Rendez-vous confirmé</h1><p class="ok">Merci ! Votre créneau est réservé.</p><p class="hint">FINECIA GROUPE vous contactera pour confirmer les détails.</p></div>';
+        call({ action:'book', slotId: chosen, name: val('b-name'), contact: val('b-contact'), motif: val('b-motif'), website: hv() }).then(function(r){
+          app.innerHTML = '<div class="card"><h1>Rendez-vous confirmé</h1><p class="ok">Merci ! Votre créneau est réservé.</p><p class="hint">' + (r && r.emailed ? 'Un courriel de confirmation vient de vous être envoyé (avec un fichier à ajouter à votre agenda). Pensez à vérifier vos courriers indésirables.' : 'FINECIA GROUPE vous contactera pour confirmer les détails.') + '</p></div>';
         }).catch(function(e){ out.className = 'msg err'; out.textContent = e.message; btn.disabled = false; });
       });
     }).catch(function(e){ app.innerHTML = '<div class="card"><p class="err">' + esc(e.message) + '</p></div>'; });
