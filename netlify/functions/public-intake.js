@@ -56,6 +56,14 @@ function replyFor(m){
 }
 /* Expéditeur : MAIL_FROM_FINECIA si le domaine fineciagroupe.com est vérifié dans Resend, sinon MAIL_FROM (noreply@helpnaud.ai). */
 const FROM_ADDR = process.env.MAIL_FROM_FINECIA || process.env.MAIL_FROM || '';
+/* Courriels de rendez-vous : clé et expéditeur propres à FINECIA GROUPE (domaine fineciagroupe.com vérifié dans Resend).
+   Clé : RESEND_API_KEY_FINECIA (sinon RESEND_API_KEY). Expéditeur : MAIL_FROM_FINECIA si défini, sinon « FINECIA GROUPE <noreply@fineciagroupe.com> ». */
+const RDV_KEY = process.env.RESEND_API_KEY_FINECIA || RESEND_KEY;
+const RDV_FROM = (function(){
+  const v = String(process.env.MAIL_FROM_FINECIA || '').trim();
+  if (!v) return 'FINECIA GROUPE <noreply@fineciagroupe.com>';
+  return v.indexOf('<') !== -1 ? v : 'FINECIA GROUPE <' + v + '>';
+})();
 async function sendQueued(mailId){
   if (!mailId || !/^fghml-[a-f0-9]{14}$/.test(mailId)) return;
   try {
@@ -118,7 +126,7 @@ function makeIcs(info, name, motif){
 async function resendTry(payload){
   try {
     const res = await fetch('https://api.resend.com/emails', { method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RESEND_KEY }, body: JSON.stringify(payload) });
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RDV_KEY }, body: JSON.stringify(payload) });
     if (res.ok) return 'ok';
     let msg = ''; try { msg = (await res.text()).slice(0, 300); } catch (e) {}
     console.error('[rdv-mail] Resend HTTP ' + res.status + ' : ' + msg);
@@ -126,11 +134,10 @@ async function resendTry(payload){
   } catch (e) { console.error('[rdv-mail] exception : ' + (e && e.message)); return 'exception'; }
 }
 async function sendClientConfirmation(info, name, email, motif){
-  if (!RESEND_KEY) { console.error('[rdv-mail] RESEND_API_KEY absente'); return 'no_key'; }
-  if (!FROM_ADDR) { console.error('[rdv-mail] expéditeur absent : définir MAIL_FROM (ou MAIL_FROM_FINECIA)'); return 'no_from'; }
+  if (!RDV_KEY) { console.error('[rdv-mail] clé Resend absente : définir RESEND_API_KEY_FINECIA'); return 'no_key'; }
   if (!isEmail(email)) return 'no_email';
   const when = whenText(info);
-  const payload = { from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [email], subject: 'Confirmation de votre rendez-vous — FINECIA GROUPE',
+  const payload = { from: RDV_FROM, reply_to: REPLY_DEFAULT, to: [email], subject: 'Confirmation de votre rendez-vous — FINECIA GROUPE',
     text: 'Bonjour ' + name + ',\n\nVotre rendez-vous est enregistré : ' + when + (motif ? ' (' + motif + ')' : '') + '.\n\nNotre équipe vous contactera si des précisions sont nécessaires. Pour déplacer ou annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE' };
   const ics = makeIcs(info, name, motif);
   if (ics) {
@@ -180,8 +187,8 @@ async function notifyBooking(info, name, email, phone, motif, country, city, slo
   const when = whenText(info);
   const team = process.env.MAIL_TO_RDV || 'contacts@fineciagroupe.com';
   let teamRes = 'skipped';
-  if (RESEND_KEY && FROM_ADDR) {
-    teamRes = await resendTry({ from: FROM_ADDR, reply_to: isEmail(email) ? email : REPLY_DEFAULT, to: [team], subject: 'Nouveau rendez-vous : ' + name + ' — ' + (info ? info.date + ' ' + info.start : ''),
+  if (RDV_KEY) {
+    teamRes = await resendTry({ from: RDV_FROM, reply_to: isEmail(email) ? email : REPLY_DEFAULT, to: [team], subject: 'Nouveau rendez-vous : ' + name + ' — ' + (info ? info.date + ' ' + info.start : ''),
       text: 'Nouvelle réservation via la page publique.\n\nClient : ' + name + '\nCourriel : ' + (email || '—') + '\nTéléphone : ' + (phone || '—') + '\nPays : ' + (country || '—') + '\nVille : ' + (city || '—') + '\nCréneau : ' + when + (motif ? '\nMotif : ' + motif : '') + '\n\nElle apparaît dans FGH-Colab > Rendez-vous (registre et calendrier).' });
   }
   const client = isEmail(email) ? await sendClientConfirmation(info, name, email, motif) : 'no_email';
@@ -424,4 +431,4 @@ exports.handler = async function(event){
 
 /* Utilisé par la fonction planifiée rdv-reminders.js */
 exports._rdv = { sbRest, makeIcs, whenText, resendTry, isEmail, zonedToUtcMs, RDV_TZ, RDV_TZ_LABEL,
-  get FROM_ADDR(){ return FROM_ADDR; }, get RESEND_KEY(){ return RESEND_KEY; }, REPLY_DEFAULT };
+  get FROM_ADDR(){ return RDV_FROM; }, get RESEND_KEY(){ return RDV_KEY; }, REPLY_DEFAULT };
