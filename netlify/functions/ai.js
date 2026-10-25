@@ -89,6 +89,8 @@ const TIERS = {
 };
 const MAX_PROMPT_CHARS = 60000;
 const MAX_IMAGE_B64 = 4500000;
+const MAX_IMAGES = 6;
+const MAX_IMAGES_TOTAL_B64 = 5200000;   // la requête entière doit rester sous ~6 Mo (limite des fonctions Netlify)
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 24000;
 
@@ -176,8 +178,8 @@ async function postJson(url, headers, payload, signal){
 const ADAPTERS = {
   async anthropic(o){
     const msgs = o.messages.map(m => ({ role: m.role, content: m.content }));
-    if (o.image) { const last = msgs[msgs.length - 1];
-      last.content = [{ type: 'image', source: { type: 'base64', media_type: o.image.type, data: o.image.data } }, { type: 'text', text: last.content }]; }
+    if (o.images && o.images.length) { const last = msgs[msgs.length - 1];
+      last.content = o.images.map(im => ({ type: 'image', source: { type: 'base64', media_type: im.type, data: im.data } })).concat([{ type: 'text', text: last.content }]); }
     const p = { model: o.model, max_tokens: o.max, messages: msgs }; if (o.system) p.system = o.system;
     const j = await postJson('https://api.anthropic.com/v1/messages', { 'x-api-key': KEYS.anthropic, 'anthropic-version': '2023-06-01' }, p, o.signal);
     const text = (Array.isArray(j.content) ? j.content : []).filter(b => b && b.type === 'text').map(b => b.text).join('').trim();
@@ -187,7 +189,7 @@ const ADAPTERS = {
   async mistral(o){ return openaiLike(o, 'https://api.mistral.ai/v1/chat/completions', KEYS.mistral, false); },
   async google(o){
     const contents = o.messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
-    if (o.image) contents[contents.length - 1].parts.unshift({ inline_data: { mime_type: o.image.type, data: o.image.data } });
+    if (o.images && o.images.length) contents[contents.length - 1].parts.unshift(...o.images.map(im => ({ inline_data: { mime_type: im.type, data: im.data } })));
     const p = { contents, generationConfig: { maxOutputTokens: o.max } };
     if (o.system) p.systemInstruction = { parts: [{ text: o.system }] };
     const j = await postJson('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(o.model) + ':generateContent', { 'x-goog-api-key': KEYS.google }, p, o.signal);
@@ -200,8 +202,8 @@ async function openaiLike(o, url, key, images){
   const msgs = [];
   if (o.system) msgs.push({ role: 'system', content: o.system });
   o.messages.forEach(m => msgs.push({ role: m.role, content: m.content }));
-  if (o.image && images) { const last = msgs[msgs.length - 1];
-    last.content = [{ type: 'text', text: last.content }, { type: 'image_url', image_url: { url: 'data:' + o.image.type + ';base64,' + o.image.data } }]; }
+  if (o.images && o.images.length && images) { const last = msgs[msgs.length - 1];
+    last.content = [{ type: 'text', text: last.content }].concat(o.images.map(im => ({ type: 'image_url', image_url: { url: 'data:' + im.type + ';base64,' + im.data } }))); }
   const j = await postJson(url, { Authorization: 'Bearer ' + key }, { model: o.model, max_tokens: o.max, messages: msgs }, o.signal);
   const c = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
   const u = j.usage || {};
@@ -243,13 +245,20 @@ exports.handler = async function(event){
   if (!msgs.length) return reply(400, { error: 'bad_request', message: 'Message vide.' });
   if (total(msgs) > MAX_PROMPT_CHARS) return reply(413, { error: 'too_long', message: 'Le message est trop long.' });
 
-  let image = null;
-  if (body.image) {
-    const d = body.image && typeof body.image.data === 'string' ? body.image.data : '';
-    const t = body.image && body.image.type;
+  /* Images jointes : `images` (liste, 6 max) ou, pour les anciennes versions de l'application, `image` (une seule). */
+  let images = [];
+  const rawImgs = Array.isArray(body.images) ? body.images : (body.image ? [body.image] : []);
+  if (rawImgs.length > MAX_IMAGES) return reply(400, { error: 'image_rejected', message: 'Trop d\u2019images jointes (maximum ' + MAX_IMAGES + ').' });
+  let totalB64 = 0;
+  for (const im of rawImgs) {
+    const d = im && typeof im.data === 'string' ? im.data : '';
+    const t = im && im.type;
     if (!IMG_TYPES.includes(t) || !d || d.length > MAX_IMAGE_B64 || !/^[A-Za-z0-9+/=]+$/.test(d)) return reply(400, { error: 'image_rejected', message: 'Image refusée (format ou taille).' });
-    image = { type: t, data: d };
+    totalB64 += d.length;
+    images.push({ type: t, data: d });
   }
+  if (totalB64 > MAX_IMAGES_TOTAL_B64) return reply(413, { error: 'image_rejected', message: 'Les images jointes sont trop lourdes au total. Joignez-en moins ou des images plus petites.' });
+  const image = images.length ? images : null;
   const wantJson = body.json === true;
 
   /* Choix du fournisseur (avant de toucher aux crédits) : principal de la gamme, puis secours éventuel. */
@@ -330,7 +339,7 @@ exports.handler = async function(event){
     const left = deadline - Date.now(); if (left < 3000) break;
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), left);
     try {
-      const out = await ADAPTERS[provider]({ model, max: tier.max, system, messages: msgs, image, signal: ctl.signal });
+      const out = await ADAPTERS[provider]({ model, max: tier.max, system, messages: msgs, images, signal: ctl.signal });
       if (!out.text) { lastErr = { code: 'empty', status: 502, message: 'Réponse vide.' }; continue; }
       let data;
       if (wantJson) { data = parseJson(out.text); if (data === undefined) { lastErr = { code: 'bad_json', status: 502, message: 'Réponse illisible, réessayez.' }; continue; } }
