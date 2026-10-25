@@ -14768,25 +14768,20 @@
         if(!window.hnAttAdd(pendingAttachment, { kind:'image', file:file, name:name })) return;
         renderAttachChip();
         saveImageToMediaLibrary(file, 'Chat');
-        addMsg('📎 Image jointe : ' + name + ' — décrivez ce que vous voulez savoir, ou envoyez directement pour un résumé.', 'bot');
         fillSuggestRow(ATTACH_SUGGESTIONS);
       });
     } else if(/\.pdf$/i.test(lower)){
-      addMsg('Lecture de « ' + name + ' »…', 'bot');
       extractPdfText(file).then(function(res){
         if(!window.hnAttAdd(pendingAttachment, { kind:'pdf', name:name, text:res.text, truncated:res.truncated })) return;
         renderAttachChip();
-        addMsg('📎 PDF joint : ' + name + (res.truncated ? ' (texte tronqué — document long)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
         fillSuggestRow(ATTACH_SUGGESTIONS);
       }).catch(function(){
         addMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot');
       });
     } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
-      addMsg('Lecture de « ' + name + ' »…', 'bot');
       extractSheetText(file).then(function(res){
         if(!window.hnAttAdd(pendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderAttachChip();
-        addMsg('📎 Fichier joint : ' + name + (res.truncated ? ' (contenu tronqué — fichier volumineux)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
         fillSuggestRow(ATTACH_SUGGESTIONS);
       }).catch(function(){
         addMsg("Ce fichier n'a pas pu être lu.", 'bot');
@@ -28664,23 +28659,18 @@
             if(!sampleCap || !limits || !limits.images){ addHstatisMsg("Les images ne sont pas prises en charge par l'assistant dans cette vue pour le moment.", 'bot'); return; }
             if(!window.hnAttAdd(hstatisPending, { kind:'image', file:file, name:name })) return;
             renderHstatisChips();
-            addHstatisMsg('📎 Image jointe : ' + name + ' — décrivez ce que vous voulez savoir, ou envoyez directement pour un résumé.', 'bot');
             fillHstatisSuggestRow(HSTATIS_ATTACH_SUGGESTIONS);
           });
         } else if(/\.pdf$/i.test(lower)){
-          addHstatisMsg('Lecture de « ' + name + ' »…', 'bot');
           extractPdfText(file).then(function(res){
             if(!window.hnAttAdd(hstatisPending, { kind:'pdf', name:name, text:res.text, truncated:res.truncated })) return;
             renderHstatisChips();
-            addHstatisMsg('📎 PDF joint : ' + name + (res.truncated ? ' (texte tronqué — document long)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
             fillHstatisSuggestRow(HSTATIS_ATTACH_SUGGESTIONS);
           }).catch(function(){ addHstatisMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot'); });
         } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
-          addHstatisMsg('Lecture de « ' + name + ' »…', 'bot');
           extractSheetText(file).then(function(res){
             if(!window.hnAttAdd(hstatisPending, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
             renderHstatisChips();
-            addHstatisMsg('📎 Fichier joint : ' + name + (res.truncated ? ' (contenu tronqué — fichier volumineux)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
             fillHstatisSuggestRow(HSTATIS_ATTACH_SUGGESTIONS);
           }).catch(function(){ addHstatisMsg("Ce fichier n'a pas pu être lu.", 'bot'); });
         } else {
@@ -33376,27 +33366,22 @@
         renderCoworkDiscussAttachChip();
         incCoworkDiscussFileCount();
         saveImageToMediaLibrary(file, 'Co-work — Discussion');
-        addCoworkDiscussMsg('+ Image jointe : ' + name + ' — décrivez ce que vous voulez savoir, ou envoyez directement pour un résumé.', 'bot');
         fillCoworkDiscussSuggestRow(COWORK_DISCUSS_ATTACH_SUGGESTIONS);
       });
     } else if(/\.pdf$/i.test(lower)){
-      addCoworkDiscussMsg('Lecture de « ' + name + ' »…', 'bot');
       extractPdfText(file).then(function(res){
         if(!window.hnAttAdd(coworkDiscussPendingAttachment, { kind:'pdf', name:name, text:res.text, truncated:res.truncated })) return;
         renderCoworkDiscussAttachChip();
         incCoworkDiscussFileCount();
-        addCoworkDiscussMsg('+ PDF joint : ' + name + (res.truncated ? ' (texte tronqué — document long)' : '') + '. Posez une question, ou utilisez une des suggestions ci-dessous.', 'bot');
         fillCoworkDiscussSuggestRow(COWORK_DISCUSS_ATTACH_SUGGESTIONS);
       }).catch(function(){
         addCoworkDiscussMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot');
       });
     } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
-      addCoworkDiscussMsg('Lecture de « ' + name + ' »…', 'bot');
       extractSheetText(file).then(function(res){
         if(!window.hnAttAdd(coworkDiscussPendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderCoworkDiscussAttachChip();
         incCoworkDiscussFileCount();
-        addCoworkDiscussMsg('+ Fichier joint : ' + name + (res.truncated ? ' (contenu tronqué — fichier volumineux)' : '') + '. Posez une question, ou utilisez une des suggestions ci-dessous.', 'bot');
         fillCoworkDiscussSuggestRow(COWORK_DISCUSS_ATTACH_SUGGESTIONS);
       }).catch(function(){
         addCoworkDiscussMsg("Ce fichier n'a pas pu être lu.", 'bot');
@@ -36974,25 +36959,20 @@
         if(!window.hnAttAdd(hstatPendingAttachment, { kind:'image', file:file, name:name })) return;
         renderHstatAttachChip();
         saveImageToMediaLibrary(file, 'H-Start');
-        addHstatMsg('📎 Image jointe : ' + name + ' — décrivez ce que vous voulez savoir, ou envoyez directement pour un résumé.', 'bot');
         fillHstatSuggestRow(HSTAT_ATTACH_SUGGESTIONS);
       });
     } else if(/\.pdf$/i.test(lower)){
-      addHstatMsg('Lecture de « ' + name + ' »…', 'bot');
       extractPdfText(file).then(function(res){
         if(!window.hnAttAdd(hstatPendingAttachment, { kind:'pdf', name:name, text:res.text, truncated:res.truncated })) return;
         renderHstatAttachChip();
-        addHstatMsg('📎 PDF joint : ' + name + (res.truncated ? ' (texte tronqué — document long)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
         fillHstatSuggestRow(HSTAT_ATTACH_SUGGESTIONS);
       }).catch(function(){
         addHstatMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot');
       });
     } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
-      addHstatMsg('Lecture de « ' + name + ' »…', 'bot');
       extractSheetText(file).then(function(res){
         if(!window.hnAttAdd(hstatPendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderHstatAttachChip();
-        addHstatMsg('📎 Fichier joint : ' + name + (res.truncated ? ' (contenu tronqué — fichier volumineux)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
         fillHstatSuggestRow(HSTAT_ATTACH_SUGGESTIONS);
       }).catch(function(){
         addHstatMsg("Ce fichier n'a pas pu être lu.", 'bot');
@@ -43770,6 +43750,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
 .attach-chip-row .attach-chip button{ min-width:28px; min-height:28px; font-size:14px; cursor:pointer; border-radius:6px; }
 .attach-chip-row .attach-chip button:focus-visible, #hstatis-btn-attach:focus-visible, #hstatis-attach-menu .attach-menu-opt:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
 @media (max-width:640px){ .attach-chip-row .attach-chip button{ min-width:36px; min-height:36px; } }
+.hn-att-hint{ flex-basis:100%; font-size:12.5px; color:var(--muted); padding:2px 4px; }
 .hn-att-toast{ font-size:14px; line-height:1.4; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(92px + env(safe-area-inset-bottom)); background:var(--ink); color:var(--surface); padding:9px 14px; border-radius:10px; font-size:13px; z-index:9999; max-width:min(92vw,520px); box-shadow:0 4px 16px rgba(0,0,0,.25); }
 </style>
 <script id="hn-att-js">
@@ -43902,16 +43883,25 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     arr.push(item); return true;
   };
   window.hnAttChips = function(row, arr, onChange){
+    (row.__urls || []).forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(x){} }); row.__urls = [];
     row.setAttribute('role', 'list'); row.setAttribute('aria-label', 'Fichiers joints au message');
     if(!arr.length){ row.hidden = true; row.innerHTML = ''; return; }
     row.hidden = false; row.innerHTML = '';
     arr.forEach(function(a, i){
       var sp = document.createElement('span'); sp.className = 'attach-chip'; sp.setAttribute('role', 'listitem');
-      sp.appendChild(document.createTextNode((a.kind === 'image' ? '🖼️' : (a.kind === 'pdf' ? '📄' : '📊')) + ' ' + a.name));
+      if(a.kind === 'image' && a.file && window.URL && URL.createObjectURL){
+        var im = document.createElement('img'); im.className = 'hn-att-thumb'; im.alt = 'Aperçu de ' + a.name;
+        try{ im.src = URL.createObjectURL(a.file); (row.__urls = row.__urls || []).push(im.src); }catch(x){}
+        sp.appendChild(im);
+      }
+      sp.appendChild(document.createTextNode((a.kind === 'image' ? (a.file ? '' : '🖼️') : (a.kind === 'pdf' ? '📄' : '📊')) + ' ' + a.name + (a.truncated ? ' (contenu tronqué)' : '')));
       var b = document.createElement('button'); b.type = 'button'; b.title = 'Retirer ce fichier'; b.setAttribute('aria-label', 'Retirer ' + a.name); b.textContent = '✕';
       b.addEventListener('click', function(){ arr.splice(i, 1); onChange(); });
       sp.appendChild(b); row.appendChild(sp);
     });
+    var h = document.createElement('span'); h.className = 'hn-att-hint'; h.setAttribute('role', 'status');
+    h.textContent = (arr.length > 1 ? arr.length + ' fichiers prêts' : '1 fichier prêt') + ' — rien n’est encore envoyé : écrivez votre question, puis appuyez sur Envoyer.';
+    row.appendChild(h);
   };
   window.hnAttText = function(list){
     var out = '';
@@ -43973,5 +43963,59 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
   });
 })();
 </script>
+
+<style id="hn-cl-css">
+/* ===== Espaces de travail façon Claude : grande zone de lecture, texte plus grand, moins de cadres superposés =====
+   Concerne les 4 conversations : Assistant, Co-work (Discussion), H-Start (Consultation IA), F-i-Stat (Consultation IA). */
+#chat-log, #cowork-discuss-log, #hstat-log, #hstatis-log{
+  padding: 22px max(14px, calc((100% - 840px) / 2)) 16px;
+  gap: 18px;
+  scroll-padding-bottom: 24px;
+}
+/* Réponses de l'IA : texte directement sur la page, sans cadre, grande taille et interligne confortable */
+#chat-log .msg.bot, #cowork-discuss-log .msg.bot, #hstat-log .msg.bot, #hstatis-log .msg.bot{
+  max-width:100%; width:100%; align-self:stretch;
+  background:transparent; border:0; box-shadow:none; border-radius:0; padding:2px 0 4px;
+  font-size:16.5px; line-height:1.72; gap:8px;
+}
+#chat-log .msg.bot p, #cowork-discuss-log .msg.bot p, #hstat-log .msg.bot p, #hstatis-log .msg.bot p{ margin:0 0 .85em; }
+#chat-log .msg.bot li, #cowork-discuss-log .msg.bot li, #hstat-log .msg.bot li, #hstatis-log .msg.bot li{ margin:.25em 0; }
+#chat-log .msg.bot table, #cowork-discuss-log .msg.bot table, #hstat-log .msg.bot table, #hstatis-log .msg.bot table{ font-size:15px; }
+/* Messages de l'utilisateur : bulle à droite, même taille de texte */
+#chat-log .msg.user, #cowork-discuss-log .msg.user, #hstat-log .msg.user, #hstatis-log .msg.user{
+  max-width:min(85%, 640px); font-size:16.5px; line-height:1.6; padding:11px 16px; border-radius:18px;
+}
+/* Petites icônes d'action (copier, lire, évaluer…) : zones de toucher plus confortables */
+#chat-log .msg-action-btn, #cowork-discuss-log .msg-action-btn, #hstat-log .msg-action-btn, #hstatis-log .msg-action-btn{ min-width:32px; min-height:32px; }
+/* Zone de saisie : colonne centrée de la même largeur que la lecture, texte 16 px (évite aussi le zoom automatique sur iPhone) */
+#chat-form, #cowork-discuss-form, #hstat-form, #hstatis-form{ max-width:840px; margin-left:auto; margin-right:auto; width:100%; border-top:0; padding-top:8px; }
+#chat-form textarea, #cowork-discuss-form textarea, #hstat-form textarea, #hstatis-form textarea{ font-size:16px !important; line-height:1.5; min-height:48px; }
+#attach-chip-row, #cowork-discuss-attach-chip-row, #hstat-attach-chip-row, #hstatis-attach-chip-row{ max-width:840px; margin-left:auto; margin-right:auto; width:100%; }
+/* Moins de cadres imbriqués : la carte qui entoure la conversation disparaît visuellement */
+#view-assistant > .card, #view-hstat #hstat-tab-consult > .card, #cowork-panel-discuss > .card{ border:0; box-shadow:none; background:transparent; padding-left:0; padding-right:0; }
+/* La conversation occupe toute la hauteur disponible de l'écran */
+html body #view-assistant .chat-shell{ height:calc(100dvh - 255px) !important; min-height:420px; }
+html body #cowork-panel-discuss .chat-shell{ height:calc(100dvh - 320px) !important; min-height:420px; }
+html body #hstat-tab-consult .chat-shell{ height:calc(100dvh - 325px) !important; min-height:420px; }
+html body #fghlab-panel-hstatis .chat-shell, html body #hstatis-panel-chat .chat-shell{ height:calc(100dvh - 335px) !important; min-height:420px; }
+/* Une fois la conversation commencée, les bandeaux promotionnels au-dessus de la zone de travail se replient */
+#view-assistant:has(#chat-log .msg.user) .hn-nd, #cowork-panel-discuss:has(#cowork-discuss-log .msg.user) .hn-nd, #hstat-tab-consult:has(#hstat-log .msg.user) .hn-nd{ display:none; }
+#chat-form textarea::placeholder, #cowork-discuss-form textarea::placeholder, #hstat-form textarea::placeholder, #hstatis-form textarea::placeholder{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Aperçu des images dans le brouillon */
+.attach-chip-row .attach-chip .hn-att-thumb{ width:40px; height:40px; object-fit:cover; border-radius:7px; vertical-align:middle; margin-right:6px; border:1px solid var(--line); background:var(--surface); }
+@media (max-width:860px){
+  html body #view-assistant .chat-shell, html body #cowork-panel-discuss .chat-shell, html body #hstat-tab-consult .chat-shell, html body #fghlab-panel-hstatis .chat-shell, html body #hstatis-panel-chat .chat-shell{ height:calc(100dvh - 170px) !important; min-height:360px; }
+  #view-assistant .topbar .sub, #view-hstat .topbar .sub{ display:none; }
+}
+@media (max-width:640px){
+  #chat-log, #cowork-discuss-log, #hstat-log, #hstatis-log{ padding:14px 12px 10px; gap:14px; }
+  #chat-log .msg.bot, #cowork-discuss-log .msg.bot, #hstat-log .msg.bot, #hstatis-log .msg.bot, #chat-log .msg.user, #cowork-discuss-log .msg.user, #hstat-log .msg.user, #hstatis-log .msg.user{ font-size:16px; }
+  #chat-log .msg.user, #cowork-discuss-log .msg.user, #hstat-log .msg.user, #hstatis-log .msg.user{ max-width:90%; }
+  /* Saisie sur toute la largeur ; les boutons « + » et caractères passent sous le champ */
+  #chat-form, #cowork-discuss-form, #hstat-form, #hstatis-form{ flex-wrap:wrap; }
+  #chat-form .chat-input-wrap, #cowork-discuss-form .chat-input-wrap, #hstat-form .chat-input-wrap, #hstatis-form .chat-input-wrap{ order:-1; flex:1 0 100%; }
+}
+@media (prefers-reduced-motion: reduce){ #chat-log *, #cowork-discuss-log *, #hstat-log *, #hstatis-log *{ scroll-behavior:auto !important; } }
+</style>
 
 </body></html>
