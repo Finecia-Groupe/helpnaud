@@ -11,8 +11,10 @@ exports.handler = async function(){
   if (!R.RESEND_KEY || !R.FROM_ADDR) { console.error('[rdv-reminders] clé Resend absente (RESEND_API_KEY_FINECIA) : aucun rappel envoyé'); return out({ ok: false, reason: 'not_configured', sent: 0 }); }
   const nowIso = new Date().toISOString();
   let due;
+  const base = 'fgh_rdv_reminders?select=slot_id,name,email,motif,slot_date,slot_start,slot_end&sent_at=is.null&canceled=is.false&remind_at=lte.' + encodeURIComponent(nowIso) + '&start_utc=gt.' + encodeURIComponent(nowIso) + '&order=remind_at.asc&limit=50';
   try {
-    due = await R.sbRest('GET', 'fgh_rdv_reminders?select=slot_id,name,email,motif,slot_date,slot_start,slot_end&sent_at=is.null&canceled=is.false&remind_at=lte.' + encodeURIComponent(nowIso) + '&start_utc=gt.' + encodeURIComponent(nowIso) + '&order=remind_at.asc&limit=50');
+    try { due = await R.sbRest('GET', base + '&skip_reminder=is.false'); }
+    catch (e0) { if (e0 && e0.status === 400) due = await R.sbRest('GET', base); else throw e0; }   // colonne skip_reminder pas encore créée
   } catch (e) { console.error('[rdv-reminders] lecture impossible : ' + (e && e.message) + ' ' + ((e && e.detail) || '')); return out({ ok: false, reason: 'read_error', sent: 0 }); }
   let sent = 0, failed = 0;
   for (const r of (Array.isArray(due) ? due : [])) {
