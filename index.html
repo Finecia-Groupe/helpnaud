@@ -11299,6 +11299,7 @@
     gen.end = function(){
       if(gen.done) return;
       gen.done = true;
+      try{ window.dispatchEvent(new CustomEvent('hn:genend', { detail:{ formId:formId, cancelled:!!gen.cancelled } })); }catch(e){}
       if(chatGenState[formId] === gen){
         var ff = document.getElementById(formId);
         if(ff) ff.classList.remove('is-generating');
@@ -43346,6 +43347,248 @@ OPS.E.file = function(input, prod){
   bar.querySelector('.incog-bar-title').style.cursor = 'pointer';
   bar.querySelector('.incog-bar-title').title = 'En savoir plus sur la navigation privée';
   bar.querySelector('.incog-bar-title').addEventListener('click', openInfo);
+})();
+</script>
+
+<style id="hn-nd-css">
+.hn-nd-slot{ margin:0 0 10px; }
+.hn-nd-slot:empty{ display:none; }
+.hn-nd{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); font-size:13px; line-height:1.4; box-shadow:0 1px 3px rgba(0,0,0,.06); animation:hn-nd-in .25s ease; }
+@keyframes hn-nd-in{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce){ .hn-nd{ animation:none; } }
+.hn-nd.warn{ border-color:var(--warn); }
+.hn-nd .hn-nd-ic{ flex:0 0 auto; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; background:var(--surface-2, rgba(127,127,127,.12)); font-size:16px; }
+.hn-nd .hn-nd-tx{ flex:1 1 220px; min-width:0; color:var(--muted); }
+.hn-nd .hn-nd-tx strong{ color:var(--ink); font-weight:600; }
+.hn-nd .hn-nd-acts{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-left:auto; }
+.hn-nd .hn-nd-go{ border:0; border-radius:999px; padding:6px 14px; font:inherit; font-weight:600; cursor:pointer; background:var(--accent); color:var(--accent-contrast, #fff); }
+.hn-nd .hn-nd-alt{ border:1px solid var(--line); border-radius:999px; padding:5px 12px; font:inherit; cursor:pointer; background:var(--surface); color:var(--ink); }
+.hn-nd .hn-nd-alt:hover, .hn-nd .hn-nd-go:hover{ filter:brightness(1.08); }
+.hn-nd .hn-nd-x{ border:0; background:none; color:var(--muted); font-size:20px; line-height:1; cursor:pointer; padding:2px 6px; border-radius:8px; }
+.hn-nd .hn-nd-x:hover{ color:var(--ink); background:var(--surface-2, rgba(127,127,127,.12)); }
+.hn-nd .hn-nd-off{ flex:1 1 100%; font-size:11.5px; color:var(--muted); background:none; border:0; text-align:left; padding:0; cursor:pointer; text-decoration:underline; }
+.hn-nd.survey{ display:block; padding:14px 16px; }
+.hn-nd.survey .hn-nd-h{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.hn-nd.survey .hn-nd-q{ font-size:16px; font-weight:700; margin:0 0 10px; color:var(--ink); }
+.hn-nd.survey .hn-nd-scale{ display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:5px; }
+.hn-nd.survey .hn-nd-scale button{ aspect-ratio:1/1; min-width:0; border:1px solid var(--line); border-radius:999px; background:var(--surface); color:var(--accent); font:inherit; font-weight:600; cursor:pointer; }
+.hn-nd.survey .hn-nd-scale button:hover{ background:var(--accent); color:var(--accent-contrast,#fff); }
+.hn-nd.survey .hn-nd-lbl{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px; }
+.hn-nd.survey .hn-nd-help{ margin-top:10px; font-size:12.5px; color:var(--muted); }
+.hn-nd.survey .hn-nd-help a{ color:var(--accent); cursor:pointer; text-decoration:none; font-weight:600; }
+@media (max-width:520px){ .hn-nd .hn-nd-acts{ margin-left:0; } .hn-nd.survey .hn-nd-scale{ grid-template-columns:repeat(5,minmax(0,1fr)); } }
+html.hn-incognito .hn-nd-slot{ display:none !important; }
+</style>
+<script id="hn-nd-js">
+(function(){
+  'use strict';
+  /* ===== Centre de suggestions HelpNaud : bandeaux et petits sondages discrets =====
+     Un seul à la fois, jamais pendant une génération, jamais en mode incogito, toujours fermables.
+     Contextes : ouverture de l'application, accueil (Tableau de bord), travail dans Assistant / Co-work / H-Start.
+     Les réponses aux sondages sont gardées sur cet appareil (clé helpnaud_nudges) ; rien n'est envoyé automatiquement. */
+  var LS = 'helpnaud_nudges', DAY = 864e5;
+  var LOGS = { assistant:'chat-log', cowork:'cowork-discuss-log', hstat:'hstat-log' };
+  var NEWBTN = { assistant:'assistant-conv-new-btn', cowork:'cowork-discuss-conv-new-btn' };
+  var T0 = Date.now(), firstEval = true, sessionShown = 0, lastShownAt = 0, sessionReplies = 0, current = null;
+  var state = { off:false, seen:{}, sessions:0, replies:0, notify:false, ratings:[] };
+  try{ var raw = JSON.parse(localStorage.getItem(LS) || 'null'); if(raw && typeof raw === 'object'){ Object.keys(state).forEach(function(k){ if(raw[k] !== undefined) state[k] = raw[k]; }); } }catch(e){}
+  state.sessions = (state.sessions || 0) + 1;
+  function save(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
+  save();
+  function $(id){ return document.getElementById(id); }
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  function due(id){ var r = state.seen[id]; return !r || Date.now() >= r.until; }
+  function mark(id, days){ state.seen[id] = { until: Date.now() + days * DAY }; save(); }
+  function activeView(){ var v = document.querySelector('section.view:not([hidden])'); return v ? v.id.replace(/^view-/, '') : ''; }
+  function goView(v){ var b = document.querySelector('.nav-btn[data-view="' + v + '"], .mobile-nav [data-view="' + v + '"]'); if(b) b.click(); }
+  function visible(el){ return !!(el && el.offsetParent !== null); }
+
+  /* ----- Actions ----- */
+  function prefillAssistant(text){
+    goView('assistant');
+    setTimeout(function(){
+      var ta = $('chat-input'); if(!ta) return;
+      ta.value = text; try{ ta.dispatchEvent(new Event('input', { bubbles:true })); }catch(e){}
+      ta.focus(); try{ ta.setSelectionRange(text.length, text.length); }catch(e){}
+    }, 250);
+  }
+  function openPlans(){ goView('settings'); setTimeout(function(){ var b = $('btn-abonnements'); if(b) b.click(); }, 300); }
+  function openMarketing(){ goView('fghlab'); setTimeout(function(){ var c = document.querySelector('[data-fghlabtool="mkt"]'); if(c) c.click(); }, 400); }
+  function openFeedback(){ var b = $('btn-feedback'); if(b) b.click(); }
+  function newConv(view){
+    try{
+      if(view === 'hstat'){ if(window.__hnHstat && window.__hnHstat.fresh) window.__hnHstat.fresh(); }
+      else { var b = $(NEWBTN[view]); if(b) b.click(); }
+    }catch(e){}
+  }
+  function askNotify(done){
+    if(!('Notification' in window)){ done(false); return; }
+    try{
+      Promise.resolve(Notification.requestPermission()).then(function(p){ state.notify = (p === 'granted'); save(); done(state.notify); }, function(){ done(false); });
+    }catch(e){ done(false); }
+  }
+  function credits(){
+    var el = document.querySelector('.ai-credits-mini-label'); if(!el) return null;
+    var m = /(\d+)\s*\/\s*(\d+)\s*crédits/.exec(el.textContent || ''); if(!m) return null;
+    var used = +m[1], lim = +m[2]; if(!lim) return null;
+    return { used:used, lim:lim, pct:Math.round(used / lim * 100) };
+  }
+  function msgCount(view){ var l = $(LOGS[view]); return l ? l.querySelectorAll('.msg').length : 0; }
+
+  /* ----- Suggestions (priorité : plus petit = plus important) ----- */
+  var CAMPS = [
+    { id:'camp-email', prio:50, views:['dashboard','assistant'], on:['open','view'], days:14, actDays:60, icon:'✉️',
+      text:'<strong>Rédiger vos courriels :</strong> rédigez, résumez et répondez plus intelligemment.', btn:'Essayer',
+      act:function(){ prefillAssistant('Rédige un courriel professionnel, clair et cordial, à l’intention de [destinataire] à propos de [sujet]. Longueur : court. Ton : poli et direct.'); } },
+    { id:'camp-grow', prio:60, views:['dashboard'], on:['open','view'], days:21, actDays:90, icon:'📣',
+      text:'<strong>Faites connaître votre entreprise</strong> aux personnes qui recherchent des services de proximité et comparent les offres.', btn:'Marketing, Communication et Réseaux',
+      ok:function(){ return visible(document.querySelector('.nav-btn[data-view="fghlab"]')); },
+      act:openMarketing }
+  ];
+  var LIST = [
+    { id:'credits', prio:10, views:['dashboard','assistant','cowork','hstat'], on:['open','view','reply'], days:3, actDays:3, icon:'🪙', warn:true,
+      ok:function(){ var c = credits(); return !!(c && c.pct >= 80); },
+      text:function(){ var c = credits(); return c.pct >= 100 ? '<strong>Limite de crédits IA atteinte</strong> pour ce mois-ci (' + c.used + ' / ' + c.lim + ').' : '<strong>' + c.pct + ' % de vos crédits IA utilisés ce mois-ci</strong> (' + c.used + ' / ' + c.lim + '). Besoin de plus d’utilisation ?'; },
+      btn:'Voir les forfaits', act:openPlans, noOff:true },
+    { id:'longchat', prio:20, views:['assistant','cowork','hstat'], on:['reply'], days:1, actDays:1, icon:'💬', warn:true,
+      ok:function(v){ return msgCount(v) >= 40; },
+      text:function(v){ return '<strong>Cette conversation est longue</strong> (' + msgCount(v) + ' messages). Si les réponses ralentissent ou perdent en précision, démarrez une nouvelle conversation.'; },
+      btn:'Nouvelle conversation', act:function(v){ newConv(v); }, noOff:true },
+    { id:'notify', prio:30, views:['assistant','cowork','hstat'], on:['reply'], days:30, actDays:365, icon:'🔔',
+      ok:function(){ return 'Notification' in window && Notification.permission === 'default' && state.replies >= 1; },
+      text:'<strong>Souhaitez-vous être averti lorsque HelpNaud répond ?</strong> Utile quand vous changez d’onglet pendant une réponse longue.', btn:'Notifier',
+      actAsync:function(card, finish){ askNotify(function(on){ finish(on ? 'Notifications activées ✓' : 'Notifications non autorisées par le navigateur.'); }); } },
+    { id:'session', prio:40, kind:'session', views:['assistant','cowork','hstat'], on:['reply'], days:14, actDays:14,
+      ok:function(){ return sessionReplies >= 4 && Date.now() - T0 > 5 * 60000; } },
+    { id:'nps', prio:45, kind:'nps', views:['dashboard'], on:['open','view'], days:10, actDays:60,
+      ok:function(){ return state.sessions >= 3 && state.replies >= 5; } }
+  ].concat(CAMPS);
+
+  /* ----- Rendu ----- */
+  function slotFor(view){
+    var v = $('view-' + view); if(!v) return null;
+    var s = v.querySelector(':scope > .hn-nd-slot');
+    if(!s){ s = document.createElement('div'); s.className = 'hn-nd-slot'; s.setAttribute('aria-live', 'polite'); var h = v.querySelector(':scope > header.topbar'); if(h && h.parentNode) h.parentNode.insertBefore(s, h.nextSibling); else v.insertBefore(s, v.firstChild); }
+    return s;
+  }
+  function clearCurrent(){ if(current && current.el && current.el.parentNode) current.el.parentNode.removeChild(current.el); current = null; }
+  function dismiss(c, days){ mark(c.id, days == null ? c.days : days); clearCurrent(); }
+  function thanks(c, msg, keepFeedback){
+    if(!current || current.c !== c) return;
+    current.el.className = 'hn-nd';
+    current.el.innerHTML = '<span class="hn-nd-ic">✓</span><div class="hn-nd-tx"><strong>' + esc(msg) + '</strong></div><div class="hn-nd-acts">' + (keepFeedback ? '<button type="button" class="hn-nd-go" data-nd="fb">Envoyer un commentaire</button>' : '') + '<button type="button" class="hn-nd-x" data-nd="x" aria-label="Fermer">×</button></div>';
+    if(!keepFeedback){ var el = current.el; setTimeout(function(){ if(current && current.el === el) clearCurrent(); }, 2800); }
+  }
+  function build(c, view){
+    var el = document.createElement('div'); el.setAttribute('role', 'status');
+    var html;
+    if(c.kind === 'nps'){
+      el.className = 'hn-nd survey';
+      var b = ''; for(var i = 1; i <= 10; i++) b += '<button type="button" data-nd="rate" data-v="' + i + '" aria-label="Note ' + i + ' sur 10">' + i + '</button>';
+      html = '<div class="hn-nd-h"><p class="hn-nd-q">Comment évalueriez-vous HelpNaud ?</p><button type="button" class="hn-nd-x" data-nd="x" aria-label="Fermer">×</button></div>' +
+        '<div class="hn-nd-scale">' + b + '</div><div class="hn-nd-lbl"><span>Médiocre</span><span>Excellent</span></div>' +
+        '<div class="hn-nd-help">Besoin d’aide à la place ? <a data-nd="help">✦ Assistant IA</a></div>';
+    } else if(c.kind === 'session'){
+      el.className = 'hn-nd';
+      html = '<div class="hn-nd-tx" style="color:var(--ink);">Comment se passe cette session avec HelpNaud ?</div><div class="hn-nd-acts">' +
+        '<button type="button" class="hn-nd-alt" data-nd="sess" data-v="mal">Mal</button><button type="button" class="hn-nd-alt" data-nd="sess" data-v="correct">Correct</button><button type="button" class="hn-nd-alt" data-nd="sess" data-v="bien">Bien</button>' +
+        '<button type="button" class="hn-nd-x" data-nd="x" aria-label="Fermer">×</button></div>';
+    } else {
+      el.className = 'hn-nd' + (c.warn ? ' warn' : '');
+      var tx = typeof c.text === 'function' ? c.text(view) : c.text;
+      html = '<span class="hn-nd-ic" aria-hidden="true">' + (c.icon || '✦') + '</span><div class="hn-nd-tx">' + tx + '</div><div class="hn-nd-acts"><button type="button" class="hn-nd-go" data-nd="go">' + esc(c.btn) + '</button><button type="button" class="hn-nd-x" data-nd="x" aria-label="Fermer">×</button></div>' +
+        (c.noOff ? '' : '<button type="button" class="hn-nd-off" data-nd="off">Ne plus afficher ces suggestions</button>');
+    }
+    el.innerHTML = html;
+    el.addEventListener('click', function(e){
+      var t = e.target.closest ? e.target.closest('[data-nd]') : null; if(!t) return;
+      var k = t.getAttribute('data-nd');
+      if(k === 'x'){ dismiss(c); }
+      else if(k === 'off'){ state.off = true; save(); clearCurrent(); syncToggle(); }
+      else if(k === 'go'){
+        if(c.actAsync){ t.disabled = true; c.actAsync(c, function(msg){ mark(c.id, c.actDays); thanks(c, msg, false); }); }
+        else { mark(c.id, c.actDays); clearCurrent(); try{ c.act(activeView()); }catch(x){} }
+      }
+      else if(k === 'help'){ mark(c.id, c.days); clearCurrent(); goView('assistant'); }
+      else if(k === 'fb'){ clearCurrent(); openFeedback(); }
+      else if(k === 'rate'){
+        var n = +t.getAttribute('data-v'); state.ratings.push({ kind:'nps', score:n, on:new Date().toISOString() }); state.ratings = state.ratings.slice(-50); mark(c.id, c.actDays);
+        thanks(c, n <= 6 ? 'Merci. Qu’est-ce qui ne va pas ?' : 'Merci pour votre évaluation !', n <= 6);
+      }
+      else if(k === 'sess'){
+        var v = t.getAttribute('data-v'); state.ratings.push({ kind:'session', value:v, on:new Date().toISOString() }); state.ratings = state.ratings.slice(-50); mark(c.id, c.actDays);
+        thanks(c, v === 'mal' ? 'Désolé. Dites-nous ce qui ne va pas :' : 'Merci pour votre retour !', v === 'mal');
+      }
+    });
+    return el;
+  }
+  function show(c, view){
+    clearCurrent();
+    var slot = slotFor(view); if(!slot) return;
+    var el = build(c, view);
+    slot.appendChild(el);
+    current = { c:c, el:el, view:view };
+    sessionShown++; lastShownAt = Date.now();
+  }
+
+  /* ----- Moteur ----- */
+  function blocked(){
+    if(state.off || window.__hnIncognito || document.hidden) return true;
+    if(document.querySelector('.modal-overlay:not([hidden])')) return true;
+    if(document.querySelector('.chat-form.is-generating')) return true;
+    var ta = $('chat-input'); if(ta && document.activeElement === ta && ta.value.trim()) return true;
+    return false;
+  }
+  function evaluate(trigger){
+    var replace = !!(current && trigger === 'reply' && current.c.prio >= 50 && !current.answered);
+    if(current && !replace) return;
+    if(blocked()){ if(trigger === 'open' && (evaluate.tries = (evaluate.tries || 0) + 1) < 10) setTimeout(function(){ evaluate('open'); }, 4000); return; }
+    var view = activeView(); if(!view) return;
+    var isOpen = firstEval && (trigger === 'open');
+    if(!isOpen && sessionShown >= 3) return;
+    if(!isOpen && !replace && Date.now() - lastShownAt < 90000) return;
+    var cands = LIST.filter(function(c){
+      if(c.views.indexOf(view) === -1 || c.on.indexOf(trigger) === -1 || !due(c.id)) return false;
+      if(replace && c.prio >= current.c.prio) return false;
+      try{ return c.ok ? !!c.ok(view) : true; }catch(e){ return false; }
+    }).sort(function(a, b){ return a.prio - b.prio; });
+    if(trigger === 'open') firstEval = false;
+    if(cands.length) show(cands[0], view);
+  }
+  /* Fin d'une réponse IA (événement émis par beginGen/gen.end) */
+  window.addEventListener('hn:genend', function(e){
+    var d = e.detail || {};
+    if(d.cancelled) return;
+    state.replies = (state.replies || 0) + 1; sessionReplies++; save();
+    if(state.notify && 'Notification' in window && Notification.permission === 'granted' && document.hidden){
+      try{ var n = new Notification('HelpNaud', { body:'HelpNaud a terminé sa réponse.', tag:'helpnaud-reply' }); n.onclick = function(){ window.focus(); n.close(); }; }catch(x){}
+    }
+    setTimeout(function(){ evaluate('reply'); }, 1800);
+  });
+  /* Changement de vue : on déplace ou on retire la suggestion, puis on réévalue après un court temps d'arrêt */
+  var lastView = '', viewT = null;
+  setInterval(function(){
+    var v = activeView();
+    if(v === lastView) return;
+    lastView = v;
+    if(current){
+      if(current.c.views.indexOf(v) !== -1){ var s = slotFor(v); if(s){ s.appendChild(current.el); current.view = v; } }
+      else clearCurrent();
+    }
+    clearTimeout(viewT); viewT = setTimeout(function(){ evaluate('view'); }, 3500);
+  }, 800);
+  setTimeout(function(){ evaluate('open'); }, 2800);
+
+  /* ----- Réglage : activer / désactiver les suggestions ----- */
+  function syncToggle(){ var c = $('hn-nd-toggle'); if(c) c.checked = !state.off; }
+  (function addToggle(){
+    var fb = $('btn-feedback'); if(!fb || !fb.parentNode || $('hn-nd-toggle-wrap')) return;
+    var w = document.createElement('label'); w.id = 'hn-nd-toggle-wrap'; w.style.cssText = 'display:flex; align-items:center; gap:8px; margin:10px 0 0; font-size:13px; cursor:pointer;';
+    w.innerHTML = '<input type="checkbox" id="hn-nd-toggle"> <span>Afficher les suggestions et petits sondages de HelpNaud</span>';
+    fb.parentNode.parentNode.appendChild(w);
+    var c = w.querySelector('input'); c.checked = !state.off;
+    c.addEventListener('change', function(){ state.off = !c.checked; save(); if(state.off) clearCurrent(); });
+  })();
 })();
 </script>
 
