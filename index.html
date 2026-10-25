@@ -624,6 +624,7 @@
   /* Barre d'actions de saisie : micro · ondes (mode vocal) · envoyer · arrêter */
   .chat-input-wrap.has-actions textarea{ padding-right:118px; }
   .chat-form.is-generating .chat-input-wrap.has-actions textarea{ padding-right:154px; }
+  .hn-ai-note{ margin:6px 0 0; text-align:center; font-size:11.5px; line-height:1.4; color:var(--muted); }
   .chat-actions{ position:absolute; right:4px; bottom:4px; display:flex; align-items:center; gap:4px; }
   .chat-actions .chat-mic-btn, .chat-actions .chat-send-btn{ position:static; }
   .chat-wave-btn, .chat-stop-btn{ border-radius:50%; width:32px; height:32px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:var(--accent); border-color:var(--accent); color:#fff; flex:none; }
@@ -5760,7 +5761,7 @@
         </details>
       </div>
     </section>
-    <footer id="hn-contact-foot" style="text-align:center; font-size:12px; color:var(--muted); padding:18px 12px 28px;">HelpNaud.ai — Powered by FINECIA GROUPE · <a href="mailto:contact@helpnaud.ai">contact@helpnaud.ai</a> · <a href="mailto:support@helpnaud.ai">support@helpnaud.ai</a></footer>
+    <footer id="hn-contact-foot" style="text-align:center; font-size:12px; color:var(--muted); padding:18px 12px 28px;"><div style="margin-bottom:4px;">HelpNaud est une IA qui vous aide au quotidien et peut faire des erreurs.</div>HelpNaud.ai — Powered by FINECIA GROUPE · <a href="mailto:contact@helpnaud.ai">contact@helpnaud.ai</a> · <a href="mailto:support@helpnaud.ai">support@helpnaud.ai</a></footer>
   </main>
 </div>
 
@@ -11338,6 +11339,12 @@
     var send = form.querySelector('.chat-send-btn') || form.querySelector('button[type="submit"]');
     if(!send) return;
     form.dataset.barReady = '1';
+    if(!(form.nextElementSibling && form.nextElementSibling.classList.contains('hn-ai-note'))){
+      var note = document.createElement('p');
+      note.className = 'hn-ai-note';
+      note.textContent = 'HelpNaud est une IA qui vous aide au quotidien et peut faire des erreurs. Vérifiez les informations importantes.';
+      form.parentNode.insertBefore(note, form.nextSibling);
+    }
     var wave = document.createElement('button');
     wave.type = 'button'; wave.className = 'btn icon-only chat-wave-btn';
     wave.setAttribute('data-wave', key); wave.setAttribute('aria-pressed', 'false');
@@ -29659,6 +29666,145 @@
     touttest: "TOUTTEST est fonctionnel : c'est un outil pilote de tests de recrutement permettant à FINECIA GROUPE d'évaluer des candidats à l'embauche pour le compte d'entreprises ou d'organisations clientes. Il couvre 5 modules (psychométrique, jugement, raisonnement, mise en situation, analyse) et une liste de niveaux de poste (Commis, Technicien, Analyste comptable et financier, Analyste de crédit, Analyste de risque, Médecin, Directeur, Gestionnaire, Économiste, Juriste, Agent en administration, Fonctionnaire d'État, Haut fonctionnaire/gouvernement, Employé généraliste). On crée une session pour un candidat, qui répond directement à un petit questionnaire (banque de questions d'exemple), puis un score sur 100 est calculé automatiquement et conservé dans l'historique des sessions. Ce n'est pas un instrument psychométrique validé ou certifié — un avertissement le rappelle dans la carte.",
     pese: "PESE (Programme d'évaluation du Staff et des employés) est fonctionnel : il sert à évaluer la performance du personnel déjà en poste (à distinguer de TOUTTEST, qui teste des candidats à l'embauche). On y tient une liste d'employés (nom, poste), puis on enregistre pour chacun des évaluations datées (évaluateur, note de 1 à 5 sur 5 critères standards, commentaire), avec un score global calculé automatiquement et un historique chronologique par employé. Outil réservé au propriétaire, en création comme en consultation — une session membre y voit un message d'accès restreint plutôt que les données."
   };
+  /* ================= FGH-Colab — Service Informatique et TI + Marketing, Communication et Réseaux =================
+     Deux nouveaux outils construits sur la même fabrique que les autres : registre de suivi (statut,
+     échéance, responsable, notes), repères professionnels, export/import, versions, et un panneau
+     « Fonctions avancées » (calculateurs, listes de contrôle, modèles de documents) propre à chaque métier.
+     Les calculs sont indicatifs et se font dans le navigateur ; rien n'est transmis à un tiers. */
+  function svcNormCdf(z){ var t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2), p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - p : p; }
+  function svcMoney(n){ return advNum(n, 2); }
+  function svcDiv(a, b){ return b ? a / b : NaN; }
+
+  FGHLAB_TOOLS.push('ti', 'mkt');
+  FGHLAB_INFO.ti = { icon:'💻', title:'Service Informatique et TI', desc:"Suivi des demandes et incidents TI, disponibilité et SLA, coût total de possession, sécurité, sauvegardes et continuité, avec modèles de politiques et de procédures." };
+  FGHLAB_INFO.mkt = { icon:'📣', title:'Marketing, Communication et Réseaux', desc:"Suivi des campagnes et publications, performance et ROI, coût d'acquisition et valeur client, budget par canal, réseaux sociaux, tests A/B et plans de communication." };
+  FGHLAB_GROUPS.push({ key:'services', label:'Services internes : informatique, marketing et communication',
+    icon:'<rect x="2" y="3" width="16" height="11" rx="2" fill="none" stroke="#16304A" stroke-width="2"/><line x1="7" y1="17" x2="13" y2="17" stroke="#C89B3C" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="10" y2="17" stroke="#2D9C93" stroke-width="2"/>',
+    tools:['ti','mkt'] });
+
+  FGHLAB_TRACKER_CONFIG.ti = { itemLabel:'demande ou incident TI',
+    statuses:[{key:'demande',label:'Demande reçue'},{key:'analyse',label:'En analyse'},{key:'encours',label:'En cours'},{key:'test',label:'En test'},{key:'resolu',label:'Résolu / clôturé'}],
+    reperes:["Classer chaque demande par impact et urgence (onglet Priorisation) avant de l'assigner.", "Appliquer le moindre privilège : un accès par besoin réel, révisé au moins une fois par an.", "Sauvegardes 3-2-1 : 3 copies, 2 supports différents, 1 copie hors site — et tester la restauration.", "Correctifs de sécurité appliqués dans un délai défini (critique : quelques jours) avec une trace.", "Authentification multifacteur sur la messagerie, les accès à distance et les comptes administrateur.", "Tenir à jour l'inventaire des équipements, licences et fournisseurs, avec dates d'expiration.", "Documenter chaque incident majeur (cause, correctif, prévention) et en tirer une amélioration.", "Départ ou arrivée d'un employé : suivre une liste de contrôle d'accès, ne jamais laisser un compte actif sans titulaire."] };
+  FGHLAB_TRACKER_CONFIG.mkt = { itemLabel:'campagne ou action',
+    statuses:[{key:'idee',label:'Idée'},{key:'planifie',label:'Planifiée'},{key:'production',label:'En production'},{key:'publie',label:'Publiée / lancée'},{key:'analyse',label:'Analysée'}],
+    reperes:["Fixer un objectif SMART (chiffré, daté) et un indicateur principal avant de produire quoi que ce soit.", "Définir le public cible et le message unique de chaque campagne.", "Étiqueter chaque lien avec des paramètres UTM pour mesurer ce qui fonctionne réellement.", "Courriels et SMS : consentement valide, désinscription simple et identification de l'expéditeur (loi canadienne anti-pourriel, Loi 25, RGPD selon le public).", "Tenir un calendrier éditorial partagé : un responsable, une date, un canal par publication.", "Tester avant de généraliser : un seul élément modifié à la fois dans un test A/B.", "Répondre aux commentaires et messages dans un délai annoncé ; prévoir un plan de gestion de crise.", "Analyser chaque campagne après coup et consigner ce qui est à reproduire ou à abandonner."] };
+  ADV.has.ti = 1; ADV.has.mkt = 1;
+
+  /* ---------- Service Informatique et TI ---------- */
+  function svcTiSla(){
+    return advCalcHtml('ti', { id:'dispo', title:'Disponibilité et SLA', hint:'Convertit un objectif de disponibilité en arrêt toléré, ou mesure la disponibilité réelle à partir des arrêts constatés.', makeItem:true,
+      fields:[ advF('obj', 'Objectif de disponibilité (%)', 99.9), advF('per', 'Période mesurée (jours)', 30), advF('arret', 'Arrêts constatés sur la période (minutes)', 25), advF('nb', 'Nombre d’incidents', 3), advF('rep', 'Temps total de réparation (minutes)', 90) ],
+      compute:function(v){ var tot = v.per * 1440, tol = tot * (1 - v.obj / 100), real = (1 - v.arret / tot) * 100, mttr = svcDiv(v.rep, v.nb), mtbf = svcDiv((tot - v.arret) / 60, v.nb);
+        return [ advRow('Arrêt toléré par l’objectif', advNum(tol, 1) + ' min', 'ok', 'sur ' + advNum(v.per) + ' jours'), advRow('Disponibilité réelle', advPct(real, 3), real >= v.obj ? 'ok' : 'bad', real >= v.obj ? 'objectif respecté' : 'objectif non atteint'), advRow('Marge restante', advNum(tol - v.arret, 1) + ' min', tol - v.arret >= 0 ? 'ok' : 'bad'), advRow('MTTR (temps moyen de réparation)', isFinite(mttr) ? advNum(mttr, 1) + ' min' : '—'), advRow('MTBF (temps moyen entre pannes)', isFinite(mtbf) ? advNum(mtbf, 1) + ' h' : '—') ]; } }) +
+    advCalcHtml('ti', { id:'incident', title:'Coût d’un incident ou d’une interruption', hint:'Estime la perte de productivité et de revenus d’une panne.', makeItem:true,
+      fields:[ advF('emp', 'Employés touchés', 25), advF('h', 'Durée (heures)', 3), advF('cout', 'Coût horaire chargé par employé', 45), advF('rev', 'Revenu perdu par heure', 400), advF('rep', 'Coût de réparation ou de support', 600) ],
+      compute:function(v){ var prod = v.emp * v.h * v.cout, rev = v.h * v.rev, tot = prod + rev + v.rep; return [ advRow('Productivité perdue', svcMoney(prod)), advRow('Revenu perdu', svcMoney(rev)), advRow('Réparation / support', svcMoney(v.rep)), advRow('Coût total estimé', svcMoney(tot), tot > 5000 ? 'warn' : 'ok', 'à comparer au coût d’une mesure préventive') ]; } });
+  }
+  function svcTiPriorite(){
+    var IMP = [[3, '3 – Critique (service ou organisation entière)'], [2, '2 – Important (équipe ou service)'], [1, '1 – Limité (un utilisateur)']];
+    return advCalcHtml('ti', { id:'prio', title:'Priorisation d’un ticket : impact × urgence', hint:'Matrice classique de gestion des incidents. Les délais cibles sont des repères à adapter à votre contrat de service.', makeItem:true,
+      fields:[ advF('imp', 'Impact', 2, { opts:IMP }), advF('urg', 'Urgence (retard tolérable)', 2, { opts:[[3, '3 – Immédiate (bloquant)'], [2, '2 – Dans la journée'], [1, '1 – Peut attendre']] }) ],
+      compute:function(v){ var s = v.imp * v.urg, p = s >= 9 ? ['P1 – Critique', 'bad', 'prise en charge immédiate, résolution visée sous 4 h'] : s >= 6 ? ['P2 – Haute', 'bad', 'prise en charge sous 1 h, résolution visée sous 8 h'] : s >= 3 ? ['P3 – Normale', 'warn', 'prise en charge sous 4 h, résolution sous 3 jours ouvrables'] : ['P4 – Basse', 'ok', 'planifiée, résolution sous 10 jours ouvrables'];
+        return [ advRow('Score', advNum(s)), advRow('Priorité', p[0], p[1]), advRow('Délais cibles', p[2]) ]; } }) +
+    advCalcHtml('ti', { id:'capacite', title:'Capacité de l’équipe TI', hint:'Compare la charge de travail à la capacité disponible.', fields:[ advF('tech', 'Techniciens', 3), advF('j', 'Jours ouvrables dans la période', 20), advF('dispo', 'Part du temps consacrée aux tickets (%)', 70), advF('tick', 'Tickets à traiter', 180), advF('moy', 'Durée moyenne par ticket (heures)', 1.5) ],
+      compute:function(v){ var cap = v.tech * v.j * 7.5 * v.dispo / 100, ch = v.tick * v.moy, tx = svcDiv(ch, cap) * 100; return [ advRow('Capacité (heures)', advNum(cap, 1)), advRow('Charge (heures)', advNum(ch, 1)), advRow('Taux de charge', advPct(tx, 0), tx > 100 ? 'bad' : tx > 85 ? 'warn' : 'ok', tx > 100 ? 'surcharge : renfort ou report nécessaire' : 'sous contrôle'), advRow('Techniciens nécessaires', advNum(Math.ceil(ch / (v.j * 7.5 * v.dispo / 100)), 0)) ]; } });
+  }
+  function svcTiTco(){
+    return advCalcHtml('ti', { id:'tco', title:'Coût total de possession (TCO) sur site', hint:'Additionne l’achat, les licences, le support et l’énergie sur la durée de vie.', makeItem:true,
+      fields:[ advF('mat', 'Achat du matériel', 24000), advF('lic', 'Licences par an', 6000), advF('sup', 'Support et maintenance par an', 3500), advF('ener', 'Énergie, hébergement, refroidissement par an', 1200), advF('adm', 'Administration (heures par an × taux)', 4000), advF('ans', 'Durée de vie (années)', 4), advF('u', 'Utilisateurs', 30) ],
+      compute:function(v){ var tot = v.mat + v.ans * (v.lic + v.sup + v.ener + v.adm); return [ advRow('TCO sur la durée', svcMoney(tot)), advRow('Par an', svcMoney(tot / v.ans)), advRow('Par utilisateur et par an', svcMoney(tot / v.ans / Math.max(v.u, 1))) ]; } }) +
+    advCalcHtml('ti', { id:'cloud', title:'Infonuagique ou sur site : comparaison', hint:'Compare un abonnement mensuel à un achat sur site pour la même période.', makeItem:true,
+      fields:[ advF('abo', 'Abonnement nuagique par mois', 1800), advF('mig', 'Coût de migration unique', 5000), advF('hausse', 'Hausse annuelle des prix (%)', 5), advF('site', 'Coût annuel sur site (équivalent)', 15000), advF('inv', 'Investissement initial sur site', 24000), advF('ans', 'Horizon (années)', 5) ],
+      compute:function(v){ var cl = v.mig, y; for(y = 0; y < v.ans; y++) cl += v.abo * 12 * Math.pow(1 + v.hausse / 100, y); var st = v.inv + v.site * v.ans; return [ advRow('Total nuagique', svcMoney(cl)), advRow('Total sur site', svcMoney(st)), advRow('Option la moins chère', cl <= st ? 'Infonuagique' : 'Sur site', 'ok', 'écart de ' + svcMoney(Math.abs(cl - st))), advRow('Non chiffré ici', 'flexibilité, sécurité, conformité, dépendance au fournisseur', 'warn') ]; } });
+  }
+  function svcTiSecu(){
+    return advChecklistHtml('ti', { id:'hygiene', title:'Hygiène de sécurité de base', items:['Authentification multifacteur sur la messagerie et les accès à distance', 'Mots de passe uniques, gestionnaire de mots de passe', 'Correctifs appliqués sur postes et serveurs (délai défini)', 'Antivirus / détection sur chaque poste, mis à jour', 'Chiffrement des ordinateurs portables et des téléphones', 'Sauvegarde 3-2-1 avec test de restauration récent', 'Comptes administrateur séparés des comptes quotidiens', 'Revue des accès au moins une fois par an', 'Sensibilisation à l’hameçonnage pour tout le personnel', 'Inventaire à jour du matériel et des logiciels', 'Pare-feu configuré et accès Wi-Fi invités séparé', 'Plan écrit de réponse aux incidents et liste de contacts'] }) +
+    advCalcHtml('ti', { id:'risque', title:'Risque informatique : exposition annuelle', hint:'Méthode quantitative simple : perte par événement × fréquence annuelle.', makeItem:true,
+      fields:[ advF('val', 'Valeur de l’actif ou des données', 200000), advF('exp', 'Part perdue lors d’un événement (%)', 30), advF('freq', 'Fréquence annuelle estimée (événements par an)', 0.2), advF('mes', 'Coût annuel de la mesure de protection', 6000), advF('red', 'Réduction du risque grâce à la mesure (%)', 70) ],
+      compute:function(v){ var sle = v.val * v.exp / 100, ale = sle * v.freq, gain = ale * v.red / 100 - v.mes; return [ advRow('Perte par événement', svcMoney(sle)), advRow('Exposition annuelle', svcMoney(ale)), advRow('Gain net de la mesure', svcMoney(gain), gain > 0 ? 'ok' : 'warn', gain > 0 ? 'la mesure se justifie financièrement' : 'à justifier autrement (conformité, image)') ]; } });
+  }
+  function svcTiContinuite(){
+    return advCalcHtml('ti', { id:'restore', title:'Sauvegarde et temps de restauration (RTO / RPO)', hint:'Estime la durée de restauration et la capacité de stockage selon la règle 3-2-1.', makeItem:true,
+      fields:[ advF('go', 'Volume de données à restaurer (Go)', 800), advF('mbps', 'Débit de restauration réel (Mb/s)', 200), advF('rto', 'RTO visé : reprise maximale (heures)', 8), advF('freq', 'Fréquence de sauvegarde (heures)', 24), advF('rpo', 'RPO visé : perte de données maximale (heures)', 24), advF('crois', 'Croissance annuelle des données (%)', 25) ],
+      compute:function(v){ var h = svcDiv(v.go * 8 * 1024, v.mbps) / 3600; return [ advRow('Durée de restauration estimée', advNum(h, 1) + ' h', h <= v.rto ? 'ok' : 'bad', h <= v.rto ? 'compatible avec le RTO' : 'dépasse le RTO : augmenter le débit ou segmenter'), advRow('Perte de données maximale réelle', advNum(v.freq) + ' h', v.freq <= v.rpo ? 'ok' : 'bad', v.freq <= v.rpo ? 'compatible avec le RPO' : 'sauvegarder plus souvent'), advRow('Stockage requis (règle 3-2-1)', advNum(v.go * 3) + ' Go', null, 'trois copies'), advRow('Dans trois ans', advNum(v.go * Math.pow(1 + v.crois / 100, 3)) + ' Go', null, 'par copie, avant rétention') ]; } }) +
+    advChecklistHtml('ti', { id:'pra', title:'Plan de continuité et de reprise après sinistre', items:['Applications critiques identifiées et classées par ordre de reprise', 'RTO et RPO définis pour chaque application', 'Copie de sauvegarde hors site ou isolée (protection contre les rançongiciels)', 'Test de restauration réalisé au cours des 6 derniers mois', 'Liste de contacts d’urgence (équipe, fournisseurs, assureur)', 'Procédure écrite accessible hors ligne', 'Alimentation de secours et connexion de secours prévues', 'Exercice de simulation annuel et rapport d’amélioration'] });
+  }
+  function svcTiProjet(){
+    return advCalcHtml('ti', { id:'roi', title:'Projet TI : rentabilité et récupération', hint:'Délai de récupération et rendement d’un investissement informatique.', makeItem:true,
+      fields:[ advF('inv', 'Investissement initial', 40000), advF('gain', 'Gain annuel (économies ou revenus)', 18000), advF('cout', 'Coûts annuels récurrents', 3000), advF('ans', 'Durée (années)', 5), advF('t', 'Taux d’actualisation (%)', 8) ],
+      compute:function(v){ var net = v.gain - v.cout, van = -v.inv, y; for(y = 1; y <= v.ans; y++) van += net / Math.pow(1 + v.t / 100, y); var pb = svcDiv(v.inv, net); return [ advRow('Gain net annuel', svcMoney(net)), advRow('Délai de récupération', isFinite(pb) && pb > 0 ? advNum(pb, 1) + ' an(s)' : '—', pb > 0 && pb <= v.ans ? 'ok' : 'bad'), advRow('Valeur actuelle nette', svcMoney(van), van > 0 ? 'ok' : 'bad'), advRow('Rendement simple', advPct(svcDiv(net, v.inv) * 100, 1)) ]; } });
+  }
+  function svcTiDocs(){
+    var D = function(id, icon, title, summary, sections){ return advDocHtml('ti', { id:id, icon:icon, title:title, summary:summary, sections:sections }); };
+    return D('politique', '📜', 'Politique d’utilisation acceptable', 'Cadre l’usage des équipements, des comptes et des données de l’organisation.', [ { h:'Objet et portée', text:'Cette politique s’applique à tout le personnel, aux stagiaires et aux prestataires qui utilisent les systèmes de l’organisation.' }, { h:'Règles', items:['Les comptes sont personnels : ne jamais partager un mot de passe.', 'Les données de l’organisation restent sur les outils approuvés.', 'Tout logiciel installé doit être approuvé par le service TI.', 'Signaler immédiatement un courriel suspect ou la perte d’un appareil.', 'L’usage personnel est toléré s’il est limité et sans risque.'] }, { h:'Sanctions et révision', text:'Les manquements peuvent entraîner des mesures disciplinaires. La politique est revue chaque année.' } ]) +
+      D('incident', '🚨', 'Procédure de gestion des incidents de sécurité', 'Étapes à suivre de la détection à l’amélioration.', [ { h:'1. Détecter et signaler', text:'Tout employé signale l’incident au service TI par le canal d’urgence défini.' }, { h:'2. Contenir', items:['Isoler l’appareil ou le compte touché.', 'Changer les mots de passe concernés.', 'Préserver les journaux et les preuves.'] }, { h:'3. Éradiquer et rétablir', text:'Supprimer la cause, restaurer depuis une sauvegarde saine, vérifier le bon fonctionnement.' }, { h:'4. Informer', text:'Aviser la direction et, s’il y a des renseignements personnels en cause, évaluer l’obligation d’aviser les personnes et l’autorité compétente.' }, { h:'5. Apprendre', text:'Rapport écrit : cause, impact, correctifs, prévention.' } ]) +
+      D('onboard', '🧑‍💻', 'Arrivée et départ d’un employé : accès TI', 'Liste de contrôle pour ouvrir et fermer les accès sans oubli.', [ { h:'Arrivée', items:['Créer le compte et activer l’authentification multifacteur.', 'Attribuer les accès selon le poste (moindre privilège).', 'Remettre et enregistrer le matériel.', 'Faire signer la politique d’utilisation acceptable.'] }, { h:'Départ', items:['Désactiver le compte le dernier jour (ne pas le supprimer immédiatement).', 'Récupérer matériel, clés et badges.', 'Transférer les fichiers et la messagerie au responsable.', 'Révoquer les accès aux outils externes.'] } ]) +
+      D('reprise', '🛟', 'Plan de reprise après sinistre (modèle)', 'Squelette à compléter avec vos applications et vos contacts.', [ { h:'Applications critiques', text:'Nom, propriétaire, RTO, RPO, dépendances, emplacement des sauvegardes.' }, { h:'Rôles', text:'Responsable du plan, remplaçant, porte-parole, contacts des fournisseurs.' }, { h:'Étapes de reprise', items:['Évaluer l’étendue du sinistre.', 'Activer l’équipe de crise.', 'Restaurer par ordre de priorité.', 'Valider avec les utilisateurs clés.', 'Communiquer, puis analyser l’événement.'] } ]);
+  }
+  ADV.tabs.ti = [
+    { id:'sla', label:'Disponibilité et SLA', html:svcTiSla },
+    { id:'prio', label:'Priorisation et capacité', html:svcTiPriorite },
+    { id:'tco', label:'Coûts et nuage', html:svcTiTco },
+    { id:'secu', label:'Sécurité', html:svcTiSecu },
+    { id:'cont', label:'Sauvegarde et continuité', html:svcTiContinuite },
+    { id:'proj', label:'Projets TI', html:svcTiProjet },
+    { id:'docs', label:'Modèles de documents', html:svcTiDocs }
+  ];
+
+  /* ---------- Marketing, Communication et Réseaux ---------- */
+  function svcMkPerf(){
+    return advCalcHtml('mkt', { id:'perf', title:'Performance d’une campagne : coûts et ROI', hint:'Saisissez ce que la campagne a coûté et produit ; les indicateurs se calculent seuls.', makeItem:true,
+      fields:[ advF('bud', 'Budget dépensé', 5000), advF('imp', 'Impressions', 250000), advF('clk', 'Clics', 6200), advF('lead', 'Prospects (leads)', 310), advF('cli', 'Nouveaux clients', 42), advF('rev', 'Revenu généré', 18900), advF('marge', 'Marge brute (%)', 55) ],
+      compute:function(v){ var cpm = svcDiv(v.bud, v.imp) * 1000, ctr = svcDiv(v.clk, v.imp) * 100, cpc = svcDiv(v.bud, v.clk), cpl = svcDiv(v.bud, v.lead), cac = svcDiv(v.bud, v.cli), conv = svcDiv(v.cli, v.lead) * 100, roas = svcDiv(v.rev, v.bud), roi = svcDiv(v.rev * v.marge / 100 - v.bud, v.bud) * 100;
+        return [ advRow('CPM (coût pour mille impressions)', svcMoney(cpm)), advRow('Taux de clic (CTR)', advPct(ctr, 2), ctr >= 1 ? 'ok' : 'warn', 'repère courant : 1 % ou plus en affichage'), advRow('Coût par clic (CPC)', svcMoney(cpc)), advRow('Coût par prospect (CPL)', svcMoney(cpl)), advRow('Prospect → client', advPct(conv, 1)), advRow('Coût d’acquisition client (CAC)', svcMoney(cac)), advRow('ROAS (revenu / dépense)', advNum(roas, 2) + ' ×', roas >= 3 ? 'ok' : roas >= 1.5 ? 'warn' : 'bad'), advRow('ROI sur la marge', advPct(roi, 0), roi > 0 ? 'ok' : 'bad', roi > 0 ? 'la campagne dégage un profit' : 'la campagne coûte plus qu’elle ne rapporte') ]; } });
+  }
+  function svcMkLtv(){
+    return advCalcHtml('mkt', { id:'ltv', title:'Valeur vie client (LTV) et rentabilité', hint:'Compare ce que rapporte un client à ce que coûte son acquisition.', makeItem:true,
+      fields:[ advF('panier', 'Panier moyen', 85), advF('freq', 'Achats par an', 4), advF('marge', 'Marge brute (%)', 50), advF('ret', 'Rétention annuelle (%)', 70), advF('cac', 'Coût d’acquisition (CAC)', 60) ],
+      compute:function(v){ var an = v.panier * v.freq * v.marge / 100, churn = 1 - v.ret / 100, ltv = svcDiv(an, churn), ratio = svcDiv(ltv, v.cac), pb = svcDiv(v.cac, an) * 12; return [ advRow('Marge annuelle par client', svcMoney(an)), advRow('Durée de vie moyenne', advNum(svcDiv(1, churn), 1) + ' an(s)'), advRow('LTV (marge sur la vie du client)', svcMoney(ltv)), advRow('Ratio LTV / CAC', isFinite(ratio) ? advNum(ratio, 1) + ' ×' : '—', ratio >= 3 ? 'ok' : ratio >= 1.5 ? 'warn' : 'bad', 'repère : 3 × ou plus'), advRow('Récupération du CAC', isFinite(pb) ? advNum(pb, 1) + ' mois' : '—', pb <= 12 ? 'ok' : 'warn') ]; } }) +
+    advCalcHtml('mkt', { id:'funnel', title:'Entonnoir de conversion', hint:'Repérez l’étape où vous perdez le plus de personnes.', fields:[ advF('vis', 'Visiteurs', 20000), advF('lead', 'Prospects', 800), advF('opp', 'Occasions qualifiées', 240), advF('cli', 'Clients', 60) ],
+      compute:function(v){ var a = svcDiv(v.lead, v.vis) * 100, b = svcDiv(v.opp, v.lead) * 100, c = svcDiv(v.cli, v.opp) * 100, g = svcDiv(v.cli, v.vis) * 100; var m = Math.min(a, b, c); return [ advRow('Visiteur → prospect', advPct(a, 2), a === m ? 'warn' : 'ok'), advRow('Prospect → occasion', advPct(b, 1), b === m ? 'warn' : 'ok'), advRow('Occasion → client', advPct(c, 1), c === m ? 'warn' : 'ok'), advRow('Taux global', advPct(g, 2)), advRow('Étape la plus faible', a === m ? 'Visiteur → prospect' : b === m ? 'Prospect → occasion' : 'Occasion → client', 'warn', 'priorité d’amélioration') ]; } });
+  }
+  function svcMkBudget(){
+    return advCalcHtml('mkt', { id:'budget', title:'Budget marketing et répartition par canal', hint:'Part du chiffre d’affaires et ventilation en pourcentages (le total devrait faire 100 %).', makeItem:true,
+      fields:[ advF('ca', 'Chiffre d’affaires annuel visé', 600000), advF('pct', 'Part consacrée au marketing (%)', 7), advF('c1', 'Publicité en ligne (%)', 35), advF('c2', 'Réseaux sociaux et contenu (%)', 25), advF('c3', 'Courriel et automatisation (%)', 10), advF('c4', 'Événements et partenariats (%)', 15), advF('c5', 'Outils, création, agence (%)', 15) ],
+      compute:function(v){ var b = v.ca * v.pct / 100, s = v.c1 + v.c2 + v.c3 + v.c4 + v.c5; return [ advRow('Budget annuel', svcMoney(b)), advRow('Par mois', svcMoney(b / 12)), advRow('Publicité en ligne', svcMoney(b * v.c1 / 100)), advRow('Réseaux sociaux et contenu', svcMoney(b * v.c2 / 100)), advRow('Courriel et automatisation', svcMoney(b * v.c3 / 100)), advRow('Événements et partenariats', svcMoney(b * v.c4 / 100)), advRow('Outils, création, agence', svcMoney(b * v.c5 / 100)), advRow('Total des pourcentages', advPct(s, 0), Math.abs(s - 100) < 0.01 ? 'ok' : 'bad', Math.abs(s - 100) < 0.01 ? '' : 'ajuster pour atteindre 100 %') ]; } });
+  }
+  function svcMkReseaux(){
+    return advCalcHtml('mkt', { id:'engage', title:'Réseaux sociaux : engagement et croissance', hint:'Taux d’engagement et croissance d’une page sur une période.', makeItem:true,
+      fields:[ advF('abo0', 'Abonnés au début', 4200), advF('abo1', 'Abonnés à la fin', 4650), advF('post', 'Publications sur la période', 16), advF('inter', 'Interactions totales (j’aime, commentaires, partages)', 1380), advF('port', 'Portée totale', 52000), advF('clic', 'Clics vers votre site', 640) ],
+      compute:function(v){ var eng = svcDiv(v.inter, v.port) * 100, cr = svcDiv(v.abo1 - v.abo0, v.abo0) * 100; return [ advRow('Croissance de l’audience', advPct(cr, 1), cr > 0 ? 'ok' : 'warn'), advRow('Taux d’engagement (sur la portée)', advPct(eng, 2), eng >= 2 ? 'ok' : 'warn', 'repère indicatif : 2 % ou plus'), advRow('Interactions par publication', advNum(svcDiv(v.inter, v.post), 1)), advRow('Portée par publication', advNum(svcDiv(v.port, v.post), 0)), advRow('Taux de clic vers le site', advPct(svcDiv(v.clic, v.port) * 100, 2)) ]; } }) +
+    advCalcHtml('mkt', { id:'cadence', title:'Cadence de publication', hint:'Répartit un volume de contenu par canal selon le temps disponible.', fields:[ advF('h', 'Heures de production par semaine', 10), advF('t1', 'Heures par publication courte', 0.75), advF('t2', 'Heures par article ou vidéo', 4), advF('part', 'Part du temps pour les articles/vidéos (%)', 40) ],
+      compute:function(v){ var longH = v.h * v.part / 100, shortH = v.h - longH; return [ advRow('Publications courtes par semaine', advNum(Math.floor(shortH / v.t1))), advRow('Articles ou vidéos par semaine', advNum(longH / v.t2, 1)), advRow('Total mensuel (approx.)', advNum(Math.floor(shortH / v.t1) * 4.33 + longH / v.t2 * 4.33, 0) + ' contenus') ]; } });
+  }
+  function svcMkAb(){
+    return advCalcHtml('mkt', { id:'ab', title:'Test A/B : la différence est-elle réelle ?', hint:'Test z sur deux proportions. Un résultat significatif demande un échantillon suffisant et un seul changement testé.', makeItem:true,
+      fields:[ advF('nA', 'Visiteurs — version A', 4000), advF('cA', 'Conversions — version A', 120), advF('nB', 'Visiteurs — version B', 4000), advF('cB', 'Conversions — version B', 152), advF('conf', 'Niveau de confiance exigé (%)', 95, { opts:[[90, '90 %'], [95, '95 %'], [99, '99 %']] }) ],
+      compute:function(v){ var pA = svcDiv(v.cA, v.nA), pB = svcDiv(v.cB, v.nB), p = svcDiv(v.cA + v.cB, v.nA + v.nB), se = Math.sqrt(p * (1 - p) * (1 / v.nA + 1 / v.nB)), z = svcDiv(pB - pA, se), pv = 2 * (1 - svcNormCdf(Math.abs(z))), ok = pv < 1 - v.conf / 100; return [ advRow('Taux A', advPct(pA * 100, 2)), advRow('Taux B', advPct(pB * 100, 2)), advRow('Écart relatif', advPct(svcDiv(pB - pA, pA) * 100, 1)), advRow('Valeur p', advNum(pv, 4), ok ? 'ok' : 'warn'), advRow('Verdict', ok ? 'Différence significative' : 'Non concluant', ok ? 'ok' : 'warn', ok ? 'la meilleure version peut être déployée' : 'poursuivre le test ou accepter qu’il n’y a pas d’écart') ]; } });
+  }
+  function svcMkLists(){
+    return advChecklistHtml('mkt', { id:'lancement', title:'Lancement d’une campagne', items:['Objectif SMART et indicateur principal définis', 'Public cible et message unique écrits', 'Budget, calendrier et responsables validés', 'Pages d’atterrissage testées sur mobile', 'Liens avec paramètres UTM et suivi des conversions en place', 'Consentement et désinscription vérifiés pour les courriels et SMS', 'Visuels et textes relus et approuvés', 'Plan de réponse aux commentaires et questions', 'Date de bilan fixée'] }) +
+      advChecklistHtml('mkt', { id:'publication', title:'Avant de publier un contenu', items:['Orthographe et chiffres vérifiés', 'Droits des images, musiques et citations confirmés', 'Identité visuelle et ton de la marque respectés', 'Appel à l’action clair', 'Heure de publication et canal choisis', 'Personnes citées ou identifiées informées si nécessaire', 'Accessibilité : texte alternatif et sous-titres'] });
+  }
+  function svcMkDocs(){
+    var D = function(id, icon, title, summary, sections){ return advDocHtml('mkt', { id:id, icon:icon, title:title, summary:summary, sections:sections }); };
+    return D('plan', '🗺️', 'Plan de communication (modèle)', 'Structure d’un plan annuel ou d’un plan de projet.', [ { h:'1. Contexte et objectifs', text:'Situation, enjeux, objectifs chiffrés et datés.' }, { h:'2. Publics', text:'Segments prioritaires, besoins, canaux préférés.' }, { h:'3. Messages', text:'Message principal, preuves, ton.' }, { h:'4. Canaux et actions', items:['Site web et référencement', 'Réseaux sociaux', 'Courriel et infolettre', 'Relations médias', 'Événements et partenariats'] }, { h:'5. Calendrier et budget', text:'Actions, responsables, dates, coûts.' }, { h:'6. Mesure', text:'Indicateurs, fréquence de suivi, bilan.' } ]) +
+      D('editorial', '🗓️', 'Charte éditoriale et calendrier de contenu', 'Rend la production régulière et cohérente.', [ { h:'Piliers de contenu', items:['Expertise (conseils, guides)', 'Preuves (études de cas, témoignages)', 'Coulisses (équipe, valeurs)', 'Offres et actualités'] }, { h:'Ton et style', text:'Voix de la marque, vocabulaire à privilégier ou à éviter, niveau de langue.' }, { h:'Calendrier', text:'Une ligne par publication : date, canal, sujet, responsable, statut, lien.' } ]) +
+      D('crise', '⚠️', 'Gestion de crise de communication', 'Réagir vite, avec une seule voix.', [ { h:'Avant', items:['Désigner un porte-parole et un remplaçant', 'Préparer des messages types', 'Surveiller les mentions de la marque'] }, { h:'Pendant', items:['Vérifier les faits avant de répondre', 'Répondre rapidement, avec empathie et sans spéculer', 'Une seule voix officielle sur tous les canaux', 'Suspendre les publications promotionnelles'] }, { h:'Après', text:'Bilan écrit, mesures correctives, mise à jour des procédures.' } ]) +
+      D('brief', '🎯', 'Brief créatif', 'Document d’une page remis à l’agence ou à l’équipe de création.', [ { h:'Contenu', items:['Contexte et problème à résoudre', 'Objectif et indicateur', 'Public cible', 'Message clé et ton', 'Livrables, formats, dates', 'Budget et contraintes', 'Références et exemples'] } ]);
+  }
+  ADV.tabs.mkt = [
+    { id:'perf', label:'Performance et ROI', html:svcMkPerf },
+    { id:'ltv', label:'Valeur client et entonnoir', html:svcMkLtv },
+    { id:'budget', label:'Budget par canal', html:svcMkBudget },
+    { id:'reseaux', label:'Réseaux sociaux', html:svcMkReseaux },
+    { id:'ab', label:'Test A/B', html:svcMkAb },
+    { id:'listes', label:'Listes de contrôle', html:svcMkLists },
+    { id:'docs', label:'Plans et modèles', html:svcMkDocs }
+  ];
+
+  FGHLAB_DOC_CONTENT.ti = "Service Informatique et TI sert à suivre les demandes et incidents informatiques (statut, échéance, responsable, notes) et à appuyer les décisions du service. Le panneau « Fonctions avancées » propose : disponibilité et SLA (arrêt toléré, MTTR, MTBF, coût d'un incident), priorisation impact × urgence et capacité de l'équipe, coût total de possession et comparaison nuage/sur site, listes de contrôle de sécurité et exposition au risque, sauvegarde et continuité (RTO/RPO, règle 3-2-1), rentabilité des projets TI, et des modèles de politiques et de procédures (utilisation acceptable, incidents, arrivée/départ, reprise après sinistre). Les calculs sont indicatifs et faits dans le navigateur.";
+  FGHLAB_DOC_CONTENT.mkt = "Marketing, Communication et Réseaux sert à suivre les campagnes et publications (statut, échéance, responsable, notes) et à mesurer leur effet. Le panneau « Fonctions avancées » propose : performance et ROI d'une campagne (CPM, CTR, CPC, CPL, CAC, ROAS, ROI), valeur vie client (LTV) et entonnoir de conversion, budget et répartition par canal, indicateurs de réseaux sociaux et cadence de publication, test A/B (test z sur deux proportions), listes de contrôle (lancement, publication) et modèles (plan de communication, charte éditoriale, gestion de crise, brief créatif). Les calculs sont indicatifs et faits dans le navigateur.";
   function fghlabTodayStr(){ return new Date().toISOString().slice(0, 10); }
   var fghlabDocOpenVisit = null;
   function fghlabDocCloseCurrentVisit(){
@@ -41305,7 +41451,13 @@ var DEF = {
   off: {}
 };
 function SET(){ var r = L('set').filter(function(x){ return x.id === 'main'; })[0] || {}; var o = {}, k; for(k in DEF) o[k] = DEF[k]; for(k in r) if(k !== 'id' && r[k] !== undefined && r[k] !== '') o[k] = r[k]; return o; }
-function money(n){ return (Math.round((+n || 0) * 100) / 100).toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + SET().cur; }
+var CURS = [['CAD', 'Dollar canadien (CAD)', 'fr-CA'], ['USD', 'Dollar américain (USD)', 'en-US'], ['EUR', 'Euro (EUR)', 'fr-FR'], ['GBP', 'Livre sterling (GBP)', 'en-GB'], ['CHF', 'Franc suisse (CHF)', 'fr-CH'], ['XOF', 'Franc CFA — UEMOA (XOF)', 'fr-SN'], ['XAF', 'Franc CFA — CEMAC (XAF)', 'fr-CM'], ['MAD', 'Dirham marocain (MAD)', 'fr-MA'], ['DZD', 'Dinar algérien (DZD)', 'fr-DZ'], ['TND', 'Dinar tunisien (TND)', 'fr-TN'], ['INR', 'Roupie indienne (INR)', 'en-IN'], ['AUD', 'Dollar australien (AUD)', 'en-AU'], ['MXN', 'Peso mexicain (MXN)', 'es-MX'], ['BRL', 'Real brésilien (BRL)', 'pt-BR'], ['JPY', 'Yen japonais (JPY)', 'ja-JP'], ['CNY', 'Yuan chinois (CNY)', 'zh-CN']];
+function curLoc(code){ for(var i = 0; i < CURS.length; i++) if(CURS[i][0] === code) return CURS[i][2]; return 'fr-CA'; }
+function money(n){
+  var S = SET(), v = Math.round((+n || 0) * 100) / 100;
+  if(S.curCode){ try{ return v.toLocaleString(curLoc(S.curCode), { style: 'currency', currency: S.curCode }); }catch(e){} }
+  return v.toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + S.cur;
+}
 
 /* ---------- données (local ou organisation) ---------- */
 function L(c){ return ST.cache[c] || []; }
@@ -41414,7 +41566,7 @@ function init(force){
   ST.loading = true; render();
   loadOrgs().then(function(){ pickOrg(); return loadAll(); }).then(function(){ ST.ready = true; ST.loading = false; render(); }, function(){ ST.ready = true; ST.loading = false; render(); });
 }
-OPS.UNIT_RULES = UNIT_RULES; OPS.d = { L:L, byId:byId, put:put, del:del, audit:audit, SET:SET, money:money, rpc:rpc, errTxt:errTxt, isCloud:isCloud, canEdit:canEdit, lvl:lvl, ST:ST, UI:UI, loadAll:loadAll, init:init };
+OPS.UNIT_RULES = UNIT_RULES; OPS.CURS = CURS; OPS.d = { L:L, byId:byId, put:put, del:del, audit:audit, SET:SET, money:money, rpc:rpc, errTxt:errTxt, isCloud:isCloud, canEdit:canEdit, lvl:lvl, ST:ST, UI:UI, loadAll:loadAll, init:init };
 OPS.d.usage = { charge: usageCharge, get: function(){ return ST.usage; }, reload: loadUsage };
 
 /* ---------- fenêtre de saisie ---------- */
@@ -41495,6 +41647,10 @@ function ctxBar(prod){
   var h = '<div class="ops-ctx"><label>Espace de travail&nbsp;<select id="ops-org-' + prod + '" data-orgsel>';
   h += '<option value="">Local — sur cet appareil</option><option value="__demo__"' + (ST.demo ? ' selected' : '') + '>Démonstration — données d’exemple (séparées)</option>';
   ST.orgs.forEach(function(o){ h += '<option value="' + esc(o.id) + '"' + (ST.org && ST.org.id === o.id ? ' selected' : '') + '>' + esc(o.name) + (o.role === 'admin' ? ' (admin)' : '') + '</option>'; });
+  h += '</select></label> ';
+  var curSel = SET().curCode || 'CAD', curRo = lvl(prod) !== 'edit';
+  h += '<label title="Devise d’affichage des montants. Aucune conversion de taux n’est appliquée aux données saisies.">Devise&nbsp;<select data-cursel' + (curRo ? ' disabled' : '') + '>';
+  CURS.forEach(function(c){ h += '<option value="' + c[0] + '"' + (c[0] === curSel ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; });
   h += '</select></label> ' + btn('+ Organisation / Abonnement', 'org-new', null, 'ops-sm') + ' ' + btn('↻', 'reload', null, 'ops-sm') + '</div>';
   return h;
 }
@@ -41547,6 +41703,12 @@ function curProd(el){ var v = el.closest ? el.closest('.view') : null; return v 
   });
   var flt = function(e){
     var t = e.target; ST.prod = prod;
+    if(t.hasAttribute('data-cursel')){
+      if(lvl(prod) !== 'edit'){ toast('Lecture seule.'); render(); return; }
+      var cr = byId('set', 'main') || { id: 'main' }; cr.curCode = t.value;
+      put('set', cr).then(function(){ audit('settings', 'devise ' + t.value); toast('Devise d’affichage : ' + t.value); render(); }, function(){});
+      return;
+    }
     if(t.hasAttribute('data-orgsel')){ J(ORGK, ''); S(ORGK, t.value); pickOrg(); ST.loading = true; render(); loadAll().then(function(){ ST.loading = false; render(); }); return; }
     if(t.hasAttribute('data-f')){ var f = F(prod, UI[prod].tab); f[t.getAttribute('data-f')] = t.type === 'checkbox' ? t.checked : t.value; refreshList(); }
   };
@@ -42729,7 +42891,7 @@ var esc = U.esc, SET = D.SET;
 function row(label, key, val, type, hint){ return '<div class="ops-fw"><label class="ops-fl">' + esc(label) + '</label><input data-sf="' + key + '" type="' + (type || 'text') + '"' + (type === 'number' ? ' step="any"' : '') + ' value="' + esc(val) + '">' + (hint ? '<span class="hint" style="margin:0">' + esc(hint) + '</span>' : '') + '</div>'; }
 OPS.settingsTab = function(prod){
   var S = SET(), h = '';
-  h += '<div class="card"><h2>Paramètres généraux</h2><div class="ops-form">' + row('Devise (symbole)', 'cur', S.cur) + row('Tolérance d’arrondi (écart accepté)', 'tol', S.tol, 'number') + '</div></div>';
+  h += '<div class="card"><h2>Paramètres généraux</h2><div class="ops-form">' + '<div class="ops-fw"><label class="ops-fl">Devise d’affichage des montants</label><select data-sf="curCode">' + OPS.CURS.map(function(c){ return '<option value="' + c[0] + '"' + (c[0] === (S.curCode || 'CAD') ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">Aucune conversion de taux n’est appliquée aux montants saisis.</span></div>' + row('Tolérance d’arrondi (écart accepté)', 'tol', S.tol, 'number') + '</div></div>';
   var tx = '<div class="card"><h2>TAISO — suivi, relances et courriels</h2><div class="ops-form">' + row('Relancer après X jours d’échéance', 'relDays', S.relDays, 'number') + row('Intervalle entre relances (jours)', 'relEvery', S.relEvery, 'number') + row('Nombre maximal de relances', 'relMax', S.relMax, 'number') + '</div>' +
     '<label class="ops-fl">Codification des factures — une règle par ligne : mots-clés séparés par des virgules = code libellé</label><textarea data-sf="codeRules" rows="8">' + esc(S.codeRules) + '</textarea>' +
     '<h3 class="ops-h3">Classement de la boîte courriel (mots-clés par sous-dossier)</h3><div class="ops-form">' + E.FOLDERS.filter(function(f){ return f !== 'Autres'; }).map(function(f){ return '<div class="ops-fw w2"><label class="ops-fl">' + esc(f) + '</label><input data-sf-mail="' + esc(f) + '" value="' + esc((S.mailRules || {})[f] || '') + '"></div>'; }).join('') + '</div></div>';
@@ -42816,6 +42978,12 @@ OPS.E.file = function(input, prod){
   #incog-info p{ font-size:13.5px; line-height:1.6; margin:6px 0; }
   #incog-info .incog-note{ background:var(--warn-soft); border:1px solid var(--warn); border-radius:10px; padding:10px 12px; font-size:13px; margin-top:14px; }
   #incog-info kbd{ border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12px; background:var(--bg); }
+  .incog-opts{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; width:min(560px,100%); margin-top:14px; }
+  .incog-opts-right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .incog-pill{ display:inline-flex; align-items:center; gap:6px; border:1px dashed var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:5px 12px; font:inherit; font-size:12.5px; cursor:pointer; }
+  .incog-pill[disabled]{ opacity:.7; cursor:not-allowed; }
+  .incog-pill select{ border:0; background:transparent; color:inherit; font:inherit; font-size:12.5px; cursor:pointer; max-width:210px; }
+  .incog-pill b{ font-weight:700; }
   @media (max-width:640px){ #incog-bar .incog-bar-quit kbd{ display:none; } }
 </style>
 <div id="incog-bar" hidden role="status" aria-live="polite">
@@ -42826,7 +42994,7 @@ OPS.E.file = function(input, prod){
 </div>
 <div class="modal-overlay" id="incog-info" hidden style="z-index:90;" role="dialog" aria-modal="true" aria-labelledby="incog-info-title">
   <div class="modal-card">
-    <h2 id="incog-info-title">🕶️ Vous êtes en mode incognito</h2>
+    <h2 id="incog-info-title">🕶️ Vous êtes en mode incogito</h2>
     <p class="lead">Une conversation privée : elle disparaît quand vous quittez le mode.</p>
 
     <h4>Ce que fait le mode</h4>
@@ -42834,7 +43002,7 @@ OPS.E.file = function(input, prod){
       <li>Le mode s'applique à l'<b>Assistant</b>, à <b>Co-work (Discussion)</b> et à <b>H-Start (Consultation IA)</b>.</li>
       <li>Vous repartez d'une conversation vierge. Rien de ce que vous écrivez n'est ajouté à votre <b>historique</b> ni à la <b>recherche dans vos conversations</b>.</li>
       <li>Les conversations privées ne sont pas utilisées pour entraîner HelpNaud.</li>
-      <li>Les outils d'organisation (renommer, classer dans un projet, historique) sont masqués pendant le mode, car rien n'est enregistré.</li>
+      <li>Les outils d'organisation (renommer, classer dans un projet, historique) sont masqués pendant le mode, car rien n'est enregistré. La ligne sous le champ de saisie reste disponible : <b>Projet</b> (inactif, rien n'est classé), le <b>palier de réponse IA</b> (Plafond, Médiane…) avec son coût en crédits, et le <b>mode de recherche</b> (Manuel ou options de recherche activées).</li>
     </ul>
 
     <h4>Quand la conversation est effacée</h4>
@@ -42874,15 +43042,47 @@ OPS.E.file = function(input, prod){
   var info = document.getElementById('incog-info');
   window.__hnIncognito = false;
   var VIEWS = [
-    { log:'chat-log',           newBtn:'assistant-conv-new-btn',     view:'view-assistant' },
-    { log:'cowork-discuss-log', newBtn:'cowork-discuss-conv-new-btn', view:'view-cowork' },
-    { log:'hstat-log',          hstat:true,                          view:'view-hstat' }
+    { log:'chat-log',           newBtn:'assistant-conv-new-btn',     view:'view-assistant', rkey:'assistant', hmodel:'assistant-hmodel-select' },
+    { log:'cowork-discuss-log', newBtn:'cowork-discuss-conv-new-btn', view:'view-cowork', rkey:'cowork', hmodel:'cowork-discuss-hmodel-select' },
+    { log:'hstat-log',          hstat:true,                          view:'view-hstat', rkey:'hstat', hmodel:'hstat-hmodel-select' }
   ];
   function freshChat(v){
     try{
       if(v.hstat){ if(window.__hnHstat && window.__hnHstat.fresh) window.__hnHstat.fresh(); }
       else { var b = document.getElementById(v.newBtn); if(b) b.click(); }
     }catch(e){}
+  }
+  function researchLabel(v){
+    try{
+      var r = JSON.parse(localStorage.getItem('helpnaud_research_' + v.rkey) || 'null') || {};
+      var n = (r.deep ? 1 : 0) + (r.multi ? 1 : 0) + ((r.adapted && r.adapted !== 'general') ? 1 : 0);
+      return n ? ('Recherche : ' + n + ' option' + (n > 1 ? 's' : '')) : 'Manuel';
+    }catch(e){ return 'Manuel'; }
+  }
+  function syncOpts(v){
+    var hero = v.hero; if(!hero) return;
+    var src = document.getElementById(v.hmodel), sel = hero.querySelector('.incog-tier');
+    if(src && sel){
+      if(sel.options.length !== src.options.length){
+        sel.innerHTML = '';
+        Array.prototype.forEach.call(src.options, function(o){ var x = document.createElement('option'); x.value = o.value; x.textContent = o.textContent; sel.appendChild(x); });
+      }
+      sel.value = src.value;
+    }
+    var m = hero.querySelector('.incog-mode'); if(m) m.textContent = researchLabel(v);
+  }
+  function wireOpts(v){
+    var hero = v.hero; if(!hero) return;
+    hero.querySelector('.incog-tier').addEventListener('change', function(e){
+      var src = document.getElementById(v.hmodel); if(!src) return;
+      src.value = e.target.value; src.dispatchEvent(new Event('change', { bubbles:true }));
+    });
+    hero.querySelector('.incog-mode').addEventListener('click', function(){
+      var view = document.getElementById(v.view);
+      var t = view && view.querySelector('.hn-opt-toggle'); if(t) t.click();
+      setTimeout(function(){ var p = view && view.querySelector('.hn-opts-panel'); if(p && p.scrollIntoView) p.scrollIntoView({ block:'nearest' }); syncOpts(v); }, 50);
+    });
+    syncOpts(v);
   }
   function refreshHeroes(){
     VIEWS.forEach(function(v){
@@ -42895,15 +43095,23 @@ OPS.E.file = function(input, prod){
       var hasUser = !!log.querySelector('.msg.user');
       var empty = window.__hnIncognito && !hasUser;
       hero.classList.toggle('show', empty);
+      if(empty) syncOpts(v);
       shell.classList.toggle('incog-empty', empty);
     });
   }
-  function buildHero(shell, log){
+  function buildHero(shell, log, v){
     var hero = document.createElement('div');
     hero.className = 'incog-hero';
-    hero.innerHTML = '<h3><span class="incog-mark" aria-hidden="true">H</span><span>Vous êtes en mode incognito</span></h3>' +
-      '<p>Les sessions incognito n’apparaissent ni dans votre historique ni dans la recherche, et ne sont pas utilisées pour entraîner HelpNaud.</p>' +
-      '<button type="button" class="incog-more">En savoir plus</button>';
+    hero.innerHTML = '<h3><span class="incog-mark" aria-hidden="true">H</span><span>Vous êtes en mode incogito</span></h3>' +
+      '<p>Les sessions incogito n’apparaissent ni dans votre historique ni dans la recherche, et ne sont pas utilisées pour entraîner HelpNaud.</p>' +
+      '<button type="button" class="incog-more">En savoir plus</button>' +
+      '<div class="incog-opts">' +
+        '<button type="button" class="incog-pill incog-proj" disabled title="Aucun classement en projet : rien n’est enregistré en mode incogito">📁 Projet ▾</button>' +
+        '<div class="incog-opts-right">' +
+          '<label class="incog-pill" title="Palier de réponse IA et coût en crédits"><b>Plafond</b><select class="incog-tier" aria-label="Palier de réponse IA"></select></label>' +
+          '<button type="button" class="incog-pill incog-mode" title="Options de recherche (approfondie, sources multiples, recherche adaptée)">Manuel</button>' +
+        '</div>' +
+      '</div>';
     hero.querySelector('.incog-more').addEventListener('click', openInfo);
     shell.insertBefore(hero, log.nextSibling);   // après le fil : le script d'allègement déplace tout ce qui précède le fil
     return hero;
@@ -42929,7 +43137,8 @@ OPS.E.file = function(input, prod){
   VIEWS.forEach(function(v){
     var log = document.getElementById(v.log); if(!log) return;
     var shell = log.parentNode;
-    v.hero = buildHero(shell, log);
+    v.hero = buildHero(shell, log, v);
+    wireOpts(v);
     new MutationObserver(refreshHeroes).observe(log, { childList:true });
     var header = document.querySelector('#' + v.view + ' > header.topbar');
     if(header){
