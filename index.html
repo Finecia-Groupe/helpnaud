@@ -27818,7 +27818,17 @@
           '<div class="suggest-row" id="hstatis-suggest-row"></div>' +
           '<div class="chat-log" id="hstatis-log" style="flex:1 1 auto;"></div>' +
           '<p class="voicemode-status-line" id="hstatis-voicemode-status" hidden></p>' +
+          '<div class="attach-chip-row" id="hstatis-attach-chip-row" hidden></div>' +
           '<form class="chat-form" id="hstatis-form">' +
+            '<div class="attach-menu-wrap" id="hstatis-attach-menu-wrap">' +
+              '<button class="btn icon-only" id="hstatis-btn-attach" type="button" title="Joindre une photo ou un fichier" aria-label="Joindre une photo ou un fichier" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>' +
+              '<div class="attach-menu" id="hstatis-attach-menu" hidden>' +
+                '<button type="button" class="attach-menu-opt" id="hstatis-attach-opt-camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h3.2L9 5h6l1.8 2.5H20v12H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span>Prendre une photo</span></button>' +
+                '<button type="button" class="attach-menu-opt" id="hstatis-attach-opt-image"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span>Choisir une image</span></button>' +
+                '<button type="button" class="attach-menu-opt" id="hstatis-attach-opt-file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un PDF/Excel/CSV</span></button>' +
+              '</div>' +
+              '<input type="file" id="hstatis-file-input" multiple hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">' +
+            '</div>' +
             '<span class="mic-timer" id="hstatis-mic-timer" hidden></span>' +
             '<div class="chat-input-wrap">' +
               '<textarea id="hstatis-input" rows="1" placeholder="Posez votre question statistique, économétrique, financière ou scientifique…" style="flex:1; resize:none; border:1px solid var(--line); border-radius:9px; padding:9px 11px; background:var(--surface); color:var(--ink); font-size:13.5px; font-family:inherit; max-height:168px;"></textarea>' +
@@ -28580,6 +28590,9 @@
     function submitHstatis(q, opts){
       opts = opts || {};
       hstatisHistory.push({ role:'user', content:q });
+      var attachment = hstatisPending.slice();
+      hstatisPending = [];
+      renderHstatisChips();
       incrementAiCredits(function(t){ addHstatisMsg(t, 'bot'); }, 1);
       var thinkingEl = addHstatisMsg('Réflexion…', 'bot');
       var gen = beginGen('hstatis-form', thinkingEl, function(t){ hstatisHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); });
@@ -28595,10 +28608,13 @@
         var prefix = "Tu es F-i-Stat, l'agent statistique interne avancé de FINECIA GROUPE (via HelpNaud.ai). Réponds avec rigueur technique, niveau expert, en statistiques, économétrie, finance quantitative et méthodes scientifiques" + domainPart + ". Réponds en français, de façon professionnelle, claire et structurée. FORMAT : pour une question simple, donne d'abord le résultat et le calcul essentiel (quelques lignes), puis une explication courte (3 à 5 phrases), et termine par une phrase proposant les détails avancés (dispersion, quartiles, valeurs aberrantes, hypothèses) si l'utilisateur les souhaite ; ne les développe pas d'emblée. Pour une question complexe, structure en sections mais reste concis. RIGUEUR : dans une moyenne arithmétique simple, chaque observation a le même poids (c'est sa valeur élevée qui tire la moyenne, pas un poids supérieur) ; quand tu donnes des quartiles ou des valeurs aberrantes, nomme la méthode (ex. charnières de Tukey, interpolation linéaire, règle 1,5×IQR) et rappelle que le résultat peut dépendre de la convention ; distingue écart-type d'échantillon (n−1) et de population (n) ; vérifie tes calculs avant de répondre.";
         // Texte libre (pas de JSON) : une réponse longue en JSON se tronquait et donnait « bad_json ». L'historique est conservé.
         var hs = hstatisHistory.slice(-12).map(function(h){ return { role:h.role, content:h.content }; });
-        if(hs.length && hs[hs.length - 1].role === 'user') hs[hs.length - 1].content = prefix + "\n\nQuestion : " + q;
-        else hs.push({ role:'user', content: prefix + "\n\nQuestion : " + q });
+        var attText = window.hnAttText(attachment);
+        if(hs.length && hs[hs.length - 1].role === 'user') hs[hs.length - 1].content = prefix + "\n\nQuestion : " + q + attText;
+        else hs.push({ role:'user', content: prefix + "\n\nQuestion : " + q + attText });
         while(hs.length && hs[0].role !== 'user') hs.shift();
-        sampleCap(hs, { modelTier:'default', cache:false }).then(function(res){
+        var hsOpts = { modelTier:'default', cache:false };
+        var hsImgs = window.hnAttImages(attachment); if(hsImgs) hsOpts.images = hsImgs;
+        sampleCap(hs, hsOpts).then(function(res){
           if(gen.cancelled) return;
           gen.end();
           var reponse = (res && typeof res.text === 'string' && res.text.trim()) ? res.text.trim() : "Je n'ai pas pu formuler de réponse claire à cette question.";
@@ -28609,10 +28625,69 @@
         }).catch(function(err){
           if(gen.cancelled) return;
           gen.end();
-          setMsgText(thinkingEl, "Erreur : la réponse n'a pas pu être complétée (" + ((err && err.code) || 'inconnue') + "). Réessayez dans un instant.");
+          var ec = err && err.code;
+          setMsgText(thinkingEl, ec === 'images_unavailable' ? "Les images ne sont pas prises en charge par l'assistant dans cette vue."
+            : ec === 'image_rejected' ? "Les images jointes n'ont pas pu être analysées (format, taille ou fichier invalide). Retirez-les (✕) ou joignez-en de plus petites."
+            : "Erreur : la réponse n'a pas pu être complétée (" + (ec || 'inconnue') + "). Réessayez dans un instant.");
         });
       });
     }
+    /* Pièces jointes de F-i-Stat : mêmes règles que H-Start (images, PDF, Excel/CSV ; plusieurs fichiers, chacun retirable). */
+    var hstatisPending = [];
+    var hstatisChipRow = document.getElementById('hstatis-attach-chip-row');
+    var hstatisFileInput = document.getElementById('hstatis-file-input');
+    var hstatisAttachMenu = document.getElementById('hstatis-attach-menu');
+    var hstatisBtnAttach = document.getElementById('hstatis-btn-attach');
+    var HSTATIS_ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Qu'en penses-tu ?"];
+    function renderHstatisChips(){ window.hnAttChips(hstatisChipRow, hstatisPending, renderHstatisChips); }
+    function openHstatisPicker(mode){
+      if(mode === 'camera'){ hstatisFileInput.setAttribute('accept', 'image/*'); hstatisFileInput.setAttribute('capture', 'environment'); }
+      else if(mode === 'image'){ hstatisFileInput.setAttribute('accept', 'image/png,image/jpeg,image/webp,image/gif'); hstatisFileInput.removeAttribute('capture'); }
+      else { hstatisFileInput.setAttribute('accept', '.pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif'); hstatisFileInput.removeAttribute('capture'); }
+      hstatisFileInput.click();
+    }
+    function setHstatisMenu(open){ hstatisAttachMenu.hidden = !open; hstatisBtnAttach.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    hstatisBtnAttach.addEventListener('click', function(e){ e.stopPropagation(); setHstatisMenu(hstatisAttachMenu.hidden); });
+    document.getElementById('hstatis-attach-opt-camera').addEventListener('click', function(){ setHstatisMenu(false); openHstatisPicker('camera'); });
+    document.getElementById('hstatis-attach-opt-image').addEventListener('click', function(){ setHstatisMenu(false); openHstatisPicker('image'); });
+    document.getElementById('hstatis-attach-opt-file').addEventListener('click', function(){ setHstatisMenu(false); openHstatisPicker('file'); });
+    document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('#hstatis-attach-menu-wrap')) return; if(hstatisAttachMenu && !hstatisAttachMenu.hidden) setHstatisMenu(false); });
+    hstatisAttachMenu.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ setHstatisMenu(false); hstatisBtnAttach.focus(); } });
+    hstatisFileInput.addEventListener('change', function(e){
+      var fl = Array.prototype.slice.call(e.target.files || []);
+      hstatisFileInput.value = '';
+      fl.forEach(function(file){
+        var name = file.name, lower = name.toLowerCase();
+        if(/^image\//.test(file.type)){
+          var lp = (sampleCap && sampleCap.limits) ? sampleCap.limits().catch(function(){ return null; }) : Promise.resolve(null);
+          lp.then(function(limits){
+            if(!sampleCap || !limits || !limits.images){ addHstatisMsg("Les images ne sont pas prises en charge par l'assistant dans cette vue pour le moment.", 'bot'); return; }
+            if(!window.hnAttAdd(hstatisPending, { kind:'image', file:file, name:name })) return;
+            renderHstatisChips();
+            addHstatisMsg('📎 Image jointe : ' + name + ' — décrivez ce que vous voulez savoir, ou envoyez directement pour un résumé.', 'bot');
+            fillHstatisSuggestRow(HSTATIS_ATTACH_SUGGESTIONS);
+          });
+        } else if(/\.pdf$/i.test(lower)){
+          addHstatisMsg('Lecture de « ' + name + ' »…', 'bot');
+          extractPdfText(file).then(function(res){
+            if(!window.hnAttAdd(hstatisPending, { kind:'pdf', name:name, text:res.text, truncated:res.truncated })) return;
+            renderHstatisChips();
+            addHstatisMsg('📎 PDF joint : ' + name + (res.truncated ? ' (texte tronqué — document long)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
+            fillHstatisSuggestRow(HSTATIS_ATTACH_SUGGESTIONS);
+          }).catch(function(){ addHstatisMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot'); });
+        } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
+          addHstatisMsg('Lecture de « ' + name + ' »…', 'bot');
+          extractSheetText(file).then(function(res){
+            if(!window.hnAttAdd(hstatisPending, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
+            renderHstatisChips();
+            addHstatisMsg('📎 Fichier joint : ' + name + (res.truncated ? ' (contenu tronqué — fichier volumineux)' : '') + '. Posez une question, ou utilisez un des boutons ci-dessous.', 'bot');
+            fillHstatisSuggestRow(HSTATIS_ATTACH_SUGGESTIONS);
+          }).catch(function(){ addHstatisMsg("Ce fichier n'a pas pu être lu.", 'bot'); });
+        } else {
+          addHstatisMsg('Format non pris en charge. Utilisez un PDF, un fichier Excel/CSV, ou une image (JPG/PNG/WebP/GIF).', 'bot');
+        }
+      });
+    });
     hstatisForm.addEventListener('submit', function(e){
       e.preventDefault();
       var q = hstatisInput.value.trim();
@@ -43690,8 +43765,12 @@ html.hn-incognito .hn-nd-slot{ display:none !important; }
 </script>
 
 <style id="hn-att-css">
-html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat{ outline:2px dashed var(--accent); outline-offset:-6px; }
-.hn-att-toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(92px + env(safe-area-inset-bottom)); background:var(--ink); color:var(--surface); padding:9px 14px; border-radius:10px; font-size:13px; z-index:9999; max-width:min(92vw,520px); box-shadow:0 4px 16px rgba(0,0,0,.25); }
+html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile #hstatis-panel-chat{ outline:2px dashed var(--accent); outline-offset:-6px; }
+.attach-chip-row .attach-chip{ font-size:13.5px; line-height:1.35; max-width:100%; }
+.attach-chip-row .attach-chip button{ min-width:28px; min-height:28px; font-size:14px; cursor:pointer; border-radius:6px; }
+.attach-chip-row .attach-chip button:focus-visible, #hstatis-btn-attach:focus-visible, #hstatis-attach-menu .attach-menu-opt:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+@media (max-width:640px){ .attach-chip-row .attach-chip button{ min-width:36px; min-height:36px; } }
+.hn-att-toast{ font-size:14px; line-height:1.4; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(92px + env(safe-area-inset-bottom)); background:var(--ink); color:var(--surface); padding:9px 14px; border-radius:10px; font-size:13px; z-index:9999; max-width:min(92vw,520px); box-shadow:0 4px 16px rgba(0,0,0,.25); }
 </style>
 <script id="hn-att-js">
 (function(){
@@ -43703,13 +43782,13 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat{ outline:2px dash
      - Grandes images : réduites automatiquement (le serveur refuse les images trop lourdes).
      - PDF scanné (sans texte) : les 3 premières pages sont jointes comme une image, lue visuellement par l'IA (pas une vraie reconnaissance OCR).
      Jusqu'à 4 fichiers par message, chacun retirable séparément (✕). Tout passe par les champs fichier existants : mêmes règles, mêmes messages. */
-  var INPUT_BY_FORM = { 'chat-form':'attach-file-input', 'cowork-discuss-form':'cowork-discuss-file-input', 'hstat-form':'hstat-file-input' };
-  var INPUT_IDS = { 'attach-file-input':1, 'cowork-discuss-file-input':1, 'hstat-file-input':1, 'cowork-query-file-input':1 };
+  var INPUT_BY_FORM = { 'hstatis-form':'hstatis-file-input', 'chat-form':'attach-file-input', 'cowork-discuss-form':'cowork-discuss-file-input', 'hstat-form':'hstat-file-input' };
+  var INPUT_IDS = { 'hstatis-file-input':1, 'attach-file-input':1, 'cowork-discuss-file-input':1, 'hstat-file-input':1, 'cowork-query-file-input':1 };
   var VIEW_INPUT = { assistant:'attach-file-input', hstat:'hstat-file-input' };   // glisser-déposer (Co-work Discussion a déjà le sien)
   var MAX_BYTES = 900000, MAX_SIDE = 1800, MAX_FILES = 4;
   function $(id){ return document.getElementById(id); }
   function toast(t){
-    var d = document.createElement('div'); d.className = 'hn-att-toast'; d.setAttribute('role', 'status'); d.textContent = t;
+    var d = document.createElement('div'); d.className = 'hn-att-toast'; d.setAttribute('role', 'status'); d.setAttribute('aria-live', 'polite'); d.textContent = t;
     document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 5200);
   }
   function stamp(){ var d = new Date(), p = function(n){ return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); }
@@ -43823,10 +43902,11 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat{ outline:2px dash
     arr.push(item); return true;
   };
   window.hnAttChips = function(row, arr, onChange){
+    row.setAttribute('role', 'list'); row.setAttribute('aria-label', 'Fichiers joints au message');
     if(!arr.length){ row.hidden = true; row.innerHTML = ''; return; }
     row.hidden = false; row.innerHTML = '';
     arr.forEach(function(a, i){
-      var sp = document.createElement('span'); sp.className = 'attach-chip';
+      var sp = document.createElement('span'); sp.className = 'attach-chip'; sp.setAttribute('role', 'listitem');
       sp.appendChild(document.createTextNode((a.kind === 'image' ? '🖼️' : (a.kind === 'pdf' ? '📄' : '📊')) + ' ' + a.name));
       var b = document.createElement('button'); b.type = 'button'; b.title = 'Retirer ce fichier'; b.setAttribute('aria-label', 'Retirer ' + a.name); b.textContent = '✕';
       b.addEventListener('click', function(){ arr.splice(i, 1); onChange(); });
@@ -43850,7 +43930,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat{ outline:2px dash
   /* ----- Coller (Ctrl+V) ----- */
   document.addEventListener('paste', function(e){
     var cd = e.clipboardData; if(!cd) return;
-    var form = e.target && e.target.closest ? e.target.closest('#chat-form, #cowork-discuss-form, #hstat-form') : null;
+    var form = e.target && e.target.closest ? e.target.closest('#chat-form, #cowork-discuss-form, #hstat-form, #hstatis-form') : null;
     if(!form) return;
     var files = [];
     if(cd.files && cd.files.length){ files = Array.prototype.slice.call(cd.files); }
@@ -43873,18 +43953,23 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat{ outline:2px dash
   function activeView(){ var v = document.querySelector('section.view:not([hidden])'); return v ? v.id.replace(/^view-/, '') : ''; }
   function hasFiles(e){ var dt = e.dataTransfer; if(!dt) return false; return Array.prototype.indexOf.call(dt.types || [], 'Files') !== -1; }
   var dragT = null;
+  function dropTarget(){
+    var v = activeView();
+    if(v === 'fghlab'){ var pc = $('hstatis-panel-chat'), inp = $('hstatis-file-input'); return (pc && inp && pc.offsetParent !== null) ? 'hstatis-file-input' : ''; }
+    return VIEW_INPUT[v] || '';
+  }
   document.addEventListener('dragover', function(e){
-    if(!hasFiles(e) || !VIEW_INPUT[activeView()]) return;
+    if(!hasFiles(e) || !dropTarget()) return;
     e.preventDefault(); document.documentElement.classList.add('hn-dragfile');
     clearTimeout(dragT); dragT = setTimeout(function(){ document.documentElement.classList.remove('hn-dragfile'); }, 400);
   });
   document.addEventListener('drop', function(e){
     document.documentElement.classList.remove('hn-dragfile');
-    var v = activeView(); if(!VIEW_INPUT[v] || !hasFiles(e)) return;
+    var tid = dropTarget(); if(!tid || !hasFiles(e)) return;
     e.preventDefault();
     var files = Array.prototype.filter.call(e.dataTransfer.files || [], isAccepted);
     if(!files.length){ toast('Format non pris en charge. Utilisez une image, un PDF, un fichier Excel ou un CSV.'); return; }
-    deliver($(VIEW_INPUT[v]), files);
+    deliver($(tid), files);
   });
 })();
 </script>
