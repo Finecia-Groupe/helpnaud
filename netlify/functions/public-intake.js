@@ -74,18 +74,46 @@ async function sendQueued(mailId){
    - à l'équipe : avis de nouvelle réservation (MAIL_TO_RDV, sinon contacts@fineciagroupe.com). */
 function esc(t){ return String(t == null ? '' : t).replace(/[<>&"]/g, ''); }
 function icsText(t){ return String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+/* Fuseau des rendez-vous : les heures publiées dans FGH-Colab sont lues dans ce fuseau (modifiable : variables Netlify RDV_TZ et RDV_TZ_LABEL). */
+const RDV_TZ = process.env.RDV_TZ || 'America/Toronto';
+const RDV_TZ_LABEL = process.env.RDV_TZ_LABEL || 'heure de Toronto';
+function tzOffsetMin(utcMs, tz){
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(utcMs));
+  const g = t => +parts.find(x => x.type === t).value;
+  return (Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second')) - utcMs) / 60000;
+}
+function zonedToUtcMs(date, time, tz){
+  const d = date.split('-').map(Number), t = time.split(':').map(Number);
+  const guess = Date.UTC(d[0], d[1] - 1, d[2], t[0], t[1]);
+  const off = tzOffsetMin(guess, tz);
+  let r = guess - off * 60000;
+  const off2 = tzOffsetMin(r, tz);
+  if (off2 !== off) r = guess - off2 * 60000;
+  return r;
+}
+function icsUtc(ms){ return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z'); }
+function frTime(t){ const h = +t.slice(0, 2), m = t.slice(3, 5); return h + ' h' + (m === '00' ? '' : ' ' + m); }
+function whenText(info){
+  if (!info || !/^\d{4}-\d{2}-\d{2}$/.test(info.date || '')) return 'le créneau choisi';
+  const d = info.date.split('-').map(Number);
+  let day = new Intl.DateTimeFormat('fr-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(d[0], d[1] - 1, d[2])));
+  day = day.charAt(0).toUpperCase() + day.slice(1);
+  return day + ', de ' + frTime(info.start) + ' à ' + frTime(info.end) + ' — ' + RDV_TZ_LABEL;
+}
+function icsFold(line){
+  const out = []; let cur = '';
+  for (const ch of line) { if (Buffer.byteLength(cur + ch) > 73) { out.push(cur); cur = ' ' + ch; } else cur += ch; }
+  out.push(cur); return out.join('\r\n');
+}
 function makeIcs(info, name, motif){
   if (!info || !/^\d{4}-\d{2}-\d{2}$/.test(info.date || '') || !/^\d{2}:\d{2}$/.test(info.start || '') || !/^\d{2}:\d{2}$/.test(info.end || '')) return null;
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
-  const dt = (d, t) => d.replace(/-/g, '') + 'T' + t.replace(':', '') + '00';
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//HelpNaud.ai//RDV//FR', 'BEGIN:VEVENT', 'UID:' + esc(info.id) + '@helpnaud.ai', 'DTSTAMP:' + stamp,
-    'DTSTART:' + dt(info.date, info.start), 'DTEND:' + dt(info.date, info.end), 'SUMMARY:' + icsText('Rendez-vous FINECIA GROUPE'),
-    'DESCRIPTION:' + icsText((motif ? 'Motif : ' + motif + '\n' : '') + 'Pour déplacer ou annuler, répondez au courriel de confirmation.'), 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-}
-async function resendSend(payload){
-  const res = await fetch('https://api.resend.com/emails', { method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RESEND_KEY }, body: JSON.stringify(payload) });
-  return res.ok;
+  let start, end;
+  try { start = icsUtc(zonedToUtcMs(info.date, info.start, RDV_TZ)); end = icsUtc(zonedToUtcMs(info.date, info.end, RDV_TZ)); } catch (e) { return null; }
+  const stamp = icsUtc(Date.now());
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//HelpNaud.ai//RDV//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-TIMEZONE:' + RDV_TZ,
+    'BEGIN:VEVENT', 'UID:' + esc(info.id) + '@helpnaud.ai', 'DTSTAMP:' + stamp, 'DTSTART:' + start, 'DTEND:' + end, 'SUMMARY:' + icsText('Rendez-vous FINECIA GROUPE'),
+    'DESCRIPTION:' + icsText((motif ? 'Motif : ' + motif + '\n' : '') + whenText(info) + '\nPour déplacer ou annuler, répondez au courriel de confirmation.'), 'STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR'];
+  return lines.map(icsFold).join('\r\n') + '\r\n';
 }
 async function resendTry(payload){
   try {
@@ -101,7 +129,7 @@ async function sendClientConfirmation(info, name, email, motif){
   if (!RESEND_KEY) { console.error('[rdv-mail] RESEND_API_KEY absente'); return 'no_key'; }
   if (!FROM_ADDR) { console.error('[rdv-mail] expéditeur absent : définir MAIL_FROM (ou MAIL_FROM_FINECIA)'); return 'no_from'; }
   if (!isEmail(email)) return 'no_email';
-  const when = info && info.date ? (info.date + ' de ' + info.start + ' à ' + info.end) : 'le créneau choisi';
+  const when = whenText(info);
   const payload = { from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [email], subject: 'Confirmation de votre rendez-vous — FINECIA GROUPE',
     text: 'Bonjour ' + name + ',\n\nVotre rendez-vous est enregistré : ' + when + (motif ? ' (' + motif + ')' : '') + '.\n\nNotre équipe vous contactera si des précisions sont nécessaires. Pour déplacer ou annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE' };
   const ics = makeIcs(info, name, motif);
@@ -112,17 +140,54 @@ async function sendClientConfirmation(info, name, email, motif){
   }
   return await resendTry(payload);
 }
-async function notifyBooking(info, name, email, phone, motif, country, city){
-  const when = info ? (info.date + ' de ' + info.start + ' à ' + info.end) : 'le créneau choisi';
+/* ----- Rappels 24 h avant (table fgh_rdv_reminders : voir supabase-rdv-reminders.sql) ----- */
+function restHeaders(extra){
+  const hd = Object.assign({ 'Content-Type': 'application/json', apikey: SB_SECRET }, extra || {});
+  if (!SB_SECRET.startsWith('sb_secret_')) hd.Authorization = 'Bearer ' + SB_SECRET;
+  return hd;
+}
+async function sbRest(method, path, body, extra){
+  const res = await fetch(SB_URL + '/rest/v1/' + path, { method, headers: restHeaders(extra), body: body === undefined ? undefined : JSON.stringify(body) });
+  const text = await res.text(); let data = null; try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+  if (!res.ok) { const err = new Error('rest ' + path.split('?')[0]); err.status = res.status; err.detail = String(text).slice(0, 200); throw err; }
+  return data;
+}
+const REMIND_BEFORE_MS = 24 * 3600 * 1000;
+async function scheduleReminder(info, slotId, name, email, motif){
+  try {
+    if (!info || !isEmail(email) || !okId(slotId)) return 'skipped';
+    const startMs = zonedToUtcMs(info.date, info.start, RDV_TZ);
+    if (startMs - Date.now() < REMIND_BEFORE_MS) return 'too_soon';       // réservé moins de 24 h avant : la confirmation suffit
+    await sbRest('POST', 'fgh_rdv_reminders?on_conflict=slot_id', {
+      slot_id: slotId, name, email, motif: motif || '', slot_date: info.date, slot_start: info.start, slot_end: info.end,
+      start_utc: new Date(startMs).toISOString(), remind_at: new Date(startMs - REMIND_BEFORE_MS).toISOString(), sent_at: null, canceled: false, error: null
+    }, { Prefer: 'resolution=merge-duplicates,return=minimal' });
+    return 'scheduled';
+  } catch (e) { console.error('[rdv-reminder] planification impossible : ' + (e && e.message) + ' ' + ((e && e.detail) || '')); return 'error'; }
+}
+async function cancelReminder(slotId){
+  try { if (!okId(slotId)) return false; await sbRest('PATCH', 'fgh_rdv_reminders?slot_id=eq.' + encodeURIComponent(slotId), { canceled: true }, { Prefer: 'return=minimal' }); return true; }
+  catch (e) { console.error('[rdv-reminder] annulation impossible : ' + (e && e.message)); return false; }
+}
+async function verifyUser(auth){
+  if (!auth) return false;
+  try {
+    const ur = await fetch(SB_URL + '/auth/v1/user', { headers: { apikey: process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_5ZLQ6FIGJMATE6YslnS_Dw_D9x8TL7P', Authorization: 'Bearer ' + auth } });
+    return ur.ok;
+  } catch (e) { return false; }
+}
+async function notifyBooking(info, name, email, phone, motif, country, city, slotId){
+  const when = whenText(info);
   const team = process.env.MAIL_TO_RDV || 'contacts@fineciagroupe.com';
   let teamRes = 'skipped';
   if (RESEND_KEY && FROM_ADDR) {
-    teamRes = await resendTry({ from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [team], subject: 'Nouveau rendez-vous : ' + name + ' — ' + (info ? info.date + ' ' + info.start : ''),
+    teamRes = await resendTry({ from: FROM_ADDR, reply_to: isEmail(email) ? email : REPLY_DEFAULT, to: [team], subject: 'Nouveau rendez-vous : ' + name + ' — ' + (info ? info.date + ' ' + info.start : ''),
       text: 'Nouvelle réservation via la page publique.\n\nClient : ' + name + '\nCourriel : ' + (email || '—') + '\nTéléphone : ' + (phone || '—') + '\nPays : ' + (country || '—') + '\nVille : ' + (city || '—') + '\nCréneau : ' + when + (motif ? '\nMotif : ' + motif : '') + '\n\nElle apparaît dans FGH-Colab > Rendez-vous (registre et calendrier).' });
   }
   const client = isEmail(email) ? await sendClientConfirmation(info, name, email, motif) : 'no_email';
-  console.log('[rdv-mail] client=' + client + ' team=' + teamRes);
-  return { client, team: teamRes };
+  const reminder = await scheduleReminder(info, slotId, name, email, motif);
+  console.log('[rdv-mail] client=' + client + ' team=' + teamRes + ' rappel=' + reminder);
+  return { client, team: teamRes, reminder };
 }
 function okNumber(v){ return /^[0-9]{10}$/.test(v); }
 
@@ -292,7 +357,7 @@ exports.handler = async function(event){
       if (!r || r.ok !== true) return out(400, { error: r && r.error === 'busy' ? 'Trop d\u2019inscriptions en attente, réessayez plus tard.' : 'Vérifiez les informations saisies.' });
       return out(200, { ok: true });
     }
-    if (action === 'slots') return out(200, { ok: true, slots: await svcRpc('svc_public_slots', {}) });
+    if (action === 'slots') return out(200, { ok: true, slots: await svcRpc('svc_public_slots', {}), tz: RDV_TZ, tzLabel: RDV_TZ_LABEL });
     if (action === 'book') {
       const slot = str(p.slotId, 80), name = str(p.name, 120);
       let email = str(p.email, 140).toLowerCase(), phone = str(p.phone, 40);
@@ -310,7 +375,7 @@ exports.handler = async function(event){
       try { const all = await svcRpc('svc_public_slots', {}); info = (Array.isArray(all) ? all : []).find(x => x && x.id === slot) || null; } catch (e) { info = null; }
       const r = await svcRpc('svc_book_slot', { p_slot_id: slot, p_name: name, p_contact: contact, p_motif: motifFull });
       if (!r || r.ok !== true) return out(409, { error: r && r.error === 'taken' ? 'Ce créneau vient d’être réservé. Choisissez-en un autre.' : 'Réservation impossible.' });
-      const mail = await notifyBooking(info, name, email, phone, motif, country, city);
+      const mail = await notifyBooking(info, name, email, phone, motif, country, city, slot);
       return out(200, { ok: true, emailed: mail.client === 'ok', mail: mail.client });
     }
     if (action === 'rdv-confirm') {
@@ -318,17 +383,20 @@ exports.handler = async function(event){
       const auth = String((h.authorization || h.Authorization || '')).replace(/^Bearer\s+/i, '');
       if (!auth) return out(401, { error: 'Connexion requise.' });
       if (limited(ip + ':cf', 30, 60 * 60 * 1000)) return out(429, { error: 'Trop d’envois. Réessayez plus tard.' });
-      let okUser = false;
-      try {
-        const ur = await fetch(SB_URL + '/auth/v1/user', { headers: { apikey: process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_5ZLQ6FIGJMATE6YslnS_Dw_D9x8TL7P', Authorization: 'Bearer ' + auth } });
-        okUser = ur.ok;
-      } catch (e) { okUser = false; }
-      if (!okUser) return out(401, { error: 'Connexion requise.' });
+      if (!(await verifyUser(auth))) return out(401, { error: 'Connexion requise.' });
       const to = str(p.to, 140).toLowerCase(), cname = str(p.name, 120), date = str(p.date, 10), start = str(p.start, 5), end = str(p.end, 5), cmotif = str(p.motif, 200);
       if (!isEmail(to) || cname.length < 2) return out(400, { error: 'Courriel ou nom invalide.' });
-      const info2 = { id: 'conf-' + Date.now().toString(36), date, start, end };
+      const sid = okId(str(p.slotId, 80)) ? str(p.slotId, 80) : ('conf-' + Date.now().toString(36));
+      const info2 = { id: sid, date, start, end };
       const res = await sendClientConfirmation(info2, cname, to, cmotif);
-      return out(200, { ok: res === 'ok', mail: res });
+      const reminder = (/^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{2}:\d{2}$/.test(start) && /^\d{2}:\d{2}$/.test(end) && str(p.slotId, 80)) ? await scheduleReminder(info2, sid, cname, to, cmotif) : 'skipped';
+      return out(200, { ok: res === 'ok', mail: res, reminder });
+    }
+    if (action === 'rdv-cancel') {
+      const auth2 = String((h.authorization || h.Authorization || '')).replace(/^Bearer\s+/i, '');
+      if (!(await verifyUser(auth2))) return out(401, { error: 'Connexion requise.' });
+      if (limited(ip + ':cc', 60, 60 * 60 * 1000)) return out(429, { error: 'Trop de demandes. Réessayez plus tard.' });
+      return out(200, { ok: await cancelReminder(str(p.slotId, 80)) });
     }
     if (action === 'catalogue') {
       const token = str(p.token, 40);
@@ -353,3 +421,7 @@ exports.handler = async function(event){
     return out(502, { error: 'Service momentanément indisponible.' });
   }
 };
+
+/* Utilisé par la fonction planifiée rdv-reminders.js */
+exports._rdv = { sbRest, makeIcs, whenText, resendTry, isEmail, zonedToUtcMs, RDV_TZ, RDV_TZ_LABEL,
+  get FROM_ADDR(){ return FROM_ADDR; }, get RESEND_KEY(){ return RESEND_KEY; }, REPLY_DEFAULT };
