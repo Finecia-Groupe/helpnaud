@@ -87,25 +87,42 @@ async function resendSend(payload){
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RESEND_KEY }, body: JSON.stringify(payload) });
   return res.ok;
 }
-async function notifyBooking(info, name, contact, motif){
-  if (!RESEND_KEY || !FROM_ADDR) return false;
+async function resendTry(payload){
+  try {
+    const res = await fetch('https://api.resend.com/emails', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + RESEND_KEY }, body: JSON.stringify(payload) });
+    if (res.ok) return 'ok';
+    let msg = ''; try { msg = (await res.text()).slice(0, 300); } catch (e) {}
+    console.error('[rdv-mail] Resend HTTP ' + res.status + ' : ' + msg);
+    return 'resend_' + res.status;
+  } catch (e) { console.error('[rdv-mail] exception : ' + (e && e.message)); return 'exception'; }
+}
+async function sendClientConfirmation(info, name, email, motif){
+  if (!RESEND_KEY) { console.error('[rdv-mail] RESEND_API_KEY absente'); return 'no_key'; }
+  if (!FROM_ADDR) { console.error('[rdv-mail] expéditeur absent : définir MAIL_FROM (ou MAIL_FROM_FINECIA)'); return 'no_from'; }
+  if (!isEmail(email)) return 'no_email';
+  const when = info && info.date ? (info.date + ' de ' + info.start + ' à ' + info.end) : 'le créneau choisi';
+  const payload = { from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [email], subject: 'Confirmation de votre rendez-vous — FINECIA GROUPE',
+    text: 'Bonjour ' + name + ',\n\nVotre rendez-vous est enregistré : ' + when + (motif ? ' (' + motif + ')' : '') + '.\n\nNotre équipe vous contactera si des précisions sont nécessaires. Pour déplacer ou annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE' };
+  const ics = makeIcs(info, name, motif);
+  if (ics) {
+    const r1 = await resendTry(Object.assign({}, payload, { attachments: [{ filename: 'rendez-vous.ics', content: Buffer.from(ics, 'utf-8').toString('base64') }] }));
+    if (r1 === 'ok') return 'ok';
+    return await resendTry(payload);   // nouvel essai sans la pièce jointe
+  }
+  return await resendTry(payload);
+}
+async function notifyBooking(info, name, email, phone, motif, country, city){
   const when = info ? (info.date + ' de ' + info.start + ' à ' + info.end) : 'le créneau choisi';
   const team = process.env.MAIL_TO_RDV || 'contacts@fineciagroupe.com';
-  let sentClient = false;
-  try {
-    await resendSend({ from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [team], subject: 'Nouveau rendez-vous : ' + name + ' — ' + (info ? info.date + ' ' + info.start : ''),
-      text: 'Nouvelle réservation via la page publique.\n\nClient : ' + name + '\nContact : ' + contact + '\nCréneau : ' + when + (motif ? '\nMotif : ' + motif : '') + '\n\nElle apparaît dans FGH-Colab > Rendez-vous (registre et calendrier).' });
-  } catch (e) {}
-  if (isEmail(contact)) {
-    try {
-      const ics = makeIcs(info, name, motif);
-      const payload = { from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [contact], subject: 'Confirmation de votre rendez-vous — FINECIA GROUPE',
-        text: 'Bonjour ' + name + ',\n\nVotre rendez-vous est enregistré : ' + when + (motif ? ' (' + motif + ')' : '') + '.\n\nNotre équipe vous contactera si des précisions sont nécessaires. Pour déplacer ou annuler, répondez simplement à ce courriel.\n\nCordialement,\nFINECIA GROUPE' };
-      if (ics) payload.attachments = [{ filename: 'rendez-vous.ics', content: Buffer.from(ics, 'utf-8').toString('base64') }];
-      sentClient = await resendSend(payload);
-    } catch (e) {}
+  let teamRes = 'skipped';
+  if (RESEND_KEY && FROM_ADDR) {
+    teamRes = await resendTry({ from: FROM_ADDR, reply_to: REPLY_DEFAULT, to: [team], subject: 'Nouveau rendez-vous : ' + name + ' — ' + (info ? info.date + ' ' + info.start : ''),
+      text: 'Nouvelle réservation via la page publique.\n\nClient : ' + name + '\nCourriel : ' + (email || '—') + '\nTéléphone : ' + (phone || '—') + '\nPays : ' + (country || '—') + '\nVille : ' + (city || '—') + '\nCréneau : ' + when + (motif ? '\nMotif : ' + motif : '') + '\n\nElle apparaît dans FGH-Colab > Rendez-vous (registre et calendrier).' });
   }
-  return sentClient;
+  const client = isEmail(email) ? await sendClientConfirmation(info, name, email, motif) : 'no_email';
+  console.log('[rdv-mail] client=' + client + ' team=' + teamRes);
+  return { client, team: teamRes };
 }
 function okNumber(v){ return /^[0-9]{10}$/.test(v); }
 
@@ -277,15 +294,41 @@ exports.handler = async function(event){
     }
     if (action === 'slots') return out(200, { ok: true, slots: await svcRpc('svc_public_slots', {}) });
     if (action === 'book') {
-      const slot = str(p.slotId, 80), name = str(p.name, 120), contact = str(p.contact, 140);
+      const slot = str(p.slotId, 80), name = str(p.name, 120);
+      let email = str(p.email, 140).toLowerCase(), phone = str(p.phone, 40);
+      const country = str(p.country, 80), city = str(p.city, 80);
+      if (!email && !phone && str(p.contact, 140)) { const c = str(p.contact, 140); if (isEmail(c.toLowerCase())) email = c.toLowerCase(); else phone = c; } // ancienne page en cache
       if (!okId(slot)) return out(400, { error: 'Créneau invalide.' });
-      if (name.length < 2 || contact.length < 3) return out(400, { error: 'Indiquez votre nom et un moyen de vous joindre.' });
+      if (name.length < 2) return out(400, { error: 'Indiquez votre nom et prénom.' });
+      if (!isEmail(email) && phone.length < 5) return out(400, { error: 'Indiquez un courriel valide.' });
+      if (str(p.contact, 140) === '' && (country.length < 2 || city.length < 2)) return out(400, { error: 'Indiquez votre pays et votre ville de résidence.' });
+      const contact = [email, phone].filter(Boolean).join(' · ').slice(0, 140);
+      const place = (country || city) ? 'Pays : ' + country + ' · Ville : ' + city : '';
+      const motif = str(p.motif, 100);
+      const motifFull = [motif, place].filter(Boolean).join(' · ').slice(0, 200);
       let info = null;
       try { const all = await svcRpc('svc_public_slots', {}); info = (Array.isArray(all) ? all : []).find(x => x && x.id === slot) || null; } catch (e) { info = null; }
-      const r = await svcRpc('svc_book_slot', { p_slot_id: slot, p_name: name, p_contact: contact, p_motif: str(p.motif, 200) });
+      const r = await svcRpc('svc_book_slot', { p_slot_id: slot, p_name: name, p_contact: contact, p_motif: motifFull });
       if (!r || r.ok !== true) return out(409, { error: r && r.error === 'taken' ? 'Ce créneau vient d’être réservé. Choisissez-en un autre.' : 'Réservation impossible.' });
-      const emailed = await notifyBooking(info, name, contact, str(p.motif, 200));
-      return out(200, { ok: true, emailed });
+      const mail = await notifyBooking(info, name, email, phone, motif, country, city);
+      return out(200, { ok: true, emailed: mail.client === 'ok', mail: mail.client });
+    }
+    if (action === 'rdv-confirm') {
+      /* Confirmation envoyée depuis FGH-Colab par un membre connecté (jeton de connexion vérifié auprès de Supabase). */
+      const auth = String((h.authorization || h.Authorization || '')).replace(/^Bearer\s+/i, '');
+      if (!auth) return out(401, { error: 'Connexion requise.' });
+      if (limited(ip + ':cf', 30, 60 * 60 * 1000)) return out(429, { error: 'Trop d’envois. Réessayez plus tard.' });
+      let okUser = false;
+      try {
+        const ur = await fetch(SB_URL + '/auth/v1/user', { headers: { apikey: process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_5ZLQ6FIGJMATE6YslnS_Dw_D9x8TL7P', Authorization: 'Bearer ' + auth } });
+        okUser = ur.ok;
+      } catch (e) { okUser = false; }
+      if (!okUser) return out(401, { error: 'Connexion requise.' });
+      const to = str(p.to, 140).toLowerCase(), cname = str(p.name, 120), date = str(p.date, 10), start = str(p.start, 5), end = str(p.end, 5), cmotif = str(p.motif, 200);
+      if (!isEmail(to) || cname.length < 2) return out(400, { error: 'Courriel ou nom invalide.' });
+      const info2 = { id: 'conf-' + Date.now().toString(36), date, start, end };
+      const res = await sendClientConfirmation(info2, cname, to, cmotif);
+      return out(200, { ok: res === 'ok', mail: res });
     }
     if (action === 'catalogue') {
       const token = str(p.token, 40);
