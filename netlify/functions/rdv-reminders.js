@@ -1,14 +1,14 @@
 /* HelpNaud.ai — rappels de rendez-vous 24 h avant (fonction planifiée Netlify, toutes les heures).
  * Lit la table fgh_rdv_reminders (voir supabase-rdv-reminders.sql), envoie au client un courriel de rappel avec le fichier
  * d'agenda (.ics) puis marque le rappel comme envoyé. Chaque rappel est « réclamé » avant l'envoi : aucun doublon, même si la
- * fonction se déclenche deux fois. Sans RESEND_API_KEY + expéditeur (MAIL_FROM), rien n'est envoyé et rien n'est marqué.
+ * fonction se déclenche deux fois. Sans clé Resend (RESEND_API_KEY_FINECIA), rien n'est envoyé et rien n'est marqué.
  * Planification : voir netlify.toml ([functions."rdv-reminders"] schedule). */
 'use strict';
 const R = require('./public-intake.js')._rdv;
 
 exports.handler = async function(){
   const out = (o) => ({ statusCode: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(o) });
-  if (!R.RESEND_KEY || !R.FROM_ADDR) { console.error('[rdv-reminders] RESEND_API_KEY ou MAIL_FROM absent : aucun rappel envoyé'); return out({ ok: false, reason: 'not_configured', sent: 0 }); }
+  if (!R.RESEND_KEY || !R.FROM_ADDR) { console.error('[rdv-reminders] clé Resend absente (RESEND_API_KEY_FINECIA) : aucun rappel envoyé'); return out({ ok: false, reason: 'not_configured', sent: 0 }); }
   const nowIso = new Date().toISOString();
   let due;
   try {
