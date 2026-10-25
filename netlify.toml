@@ -3,6 +3,9 @@
   publish = "."
 [functions]
   directory = "netlify/functions"  
+# Rappels de rendez-vous : exécution toutes les heures (fuseau UTC)
+[functions."rdv-reminders"]
+  schedule = "@hourly"
 # En-têtes de sécurité de base
 [[headers]]
   for = "/*"
