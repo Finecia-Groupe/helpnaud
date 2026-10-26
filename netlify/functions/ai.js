@@ -89,8 +89,18 @@ const TIERS = {
 };
 const MAX_PROMPT_CHARS = 60000;
 const MAX_IMAGE_B64 = 4500000;
-const MAX_IMAGES = 6;
-const MAX_IMAGES_TOTAL_B64 = 5200000;   // la requête entière doit rester sous ~6 Mo (limite des fonctions Netlify)
+const MAX_IMAGES = 8;
+const MAX_IMAGES_TOTAL_B64 = 5200000;
+/* Pièces jointes : supplément de crédits selon le « Mo équivalent » réellement traité (images envoyées + texte extrait des documents).
+   1 Mo équivalent = 1 Mo d'images = 12 000 caractères de texte de document. 1 crédit par Mo équivalent commencé, jusqu'à 8 ; moins de 0,1 Mo est inclus. */
+const DOC_CHARS_PER_MB = 12000, ATTACH_MIN_MB = 0.1, ATTACH_MAX_EXTRA = 8;
+const DOC_MARK = '[Contenu extrait du fichier joint';
+function attachExtra(images, msgs) {
+  let bytes = 0; for (const im of images || []) bytes += Math.floor(im.data.length * 3 / 4);
+  let chars = 0; for (const m of msgs || []) { const c = String(m.content || ''), i = c.indexOf(DOC_MARK); if (i >= 0) chars += c.length - i; }
+  const mb = bytes / 1048576 + chars / DOC_CHARS_PER_MB;
+  return mb < ATTACH_MIN_MB ? 0 : Math.min(ATTACH_MAX_EXTRA, Math.ceil(mb));
+}   // la requête entière doit rester sous ~6 Mo (limite des fonctions Netlify)
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 24000;
 
@@ -307,7 +317,8 @@ exports.handler = async function(event){
   } catch (e) { /* si la fonction SQL 3q n'est pas installée, les plafonds par compte restent actifs */ }
 
   let r;
-  try { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: tier.cost }); }
+  const extra = attachExtra(images, msgs), cost = tier.cost + extra;   // coût de base du palier + supplément pièces jointes
+  try { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: cost }); }
   catch (e) { return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
   if (!r || r.ok !== true) {
     if (r && r.error === 'quota') return reply(402, { error: 'quota', message: 'Crédits IA épuisés pour ce mois.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
@@ -320,13 +331,13 @@ exports.handler = async function(event){
     return reply(400, { error: 'bad_request', message: 'Demande refusée.' });
   }
 
-  const refund = async () => { try { await svcRpc('svc_ai_refund', { p_uid: uid, p_cost: tier.cost }); } catch (e) {} };
+  const refund = async () => { try { await svcRpc('svc_ai_refund', { p_uid: uid, p_cost: cost }); } catch (e) {} };
   const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const spaceId = typeof body.space === 'string' && uuidRe.test(body.space) ? body.space : null;
   const project = typeof body.project === 'string' ? body.project.slice(0, 80) : '';
   // Consommation identifiée par membre, espace et projet (SQL 3w). Le serveur vérifie l'appartenance à l'espace.
   const log = async (ok, label, tin, tout, micro) => {
-    const base = { p_uid: uid, p_tier: tierId, p_cost: tier.cost, p_model: label, p_in: tin || 0, p_out: tout || 0, p_ok: ok };
+    const base = { p_uid: uid, p_tier: tierId, p_cost: cost, p_model: label, p_in: tin || 0, p_out: tout || 0, p_ok: ok };
     try { await svcRpc('svc_ai_log', Object.assign({}, base, { p_space: spaceId, p_project: project || null, p_micro: micro || 0 })); }
     catch (e) { try { await svcRpc('svc_ai_log', base); } catch (e2) {} }   // 3w pas encore installé : journal simple
   };
@@ -347,7 +358,7 @@ exports.handler = async function(event){
       try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: micro }); } catch (e) {}
       await log(true, label, out.tin, out.tout, micro);
       const finalText = (!wantJson && out.cut) ? out.text + '\n\n…(réponse tronquée par la limite de longueur : écrivez « continue » pour obtenir la suite.)' : out.text;
-      return reply(200, { text: finalText, data, credits: { used: r.used, limit: r.limit, plan: r.plan } });
+      return reply(200, { text: finalText, data, credits: { used: r.used, limit: r.limit, plan: r.plan }, attachExtra: extra });
     } catch (e) {
       lastErr = e && e.name === 'AbortError' ? { code: 'timeout', status: 504, message: 'L’assistant IA a mis trop de temps à répondre.' } : { code: 'upstream', status: 502, message: 'L’assistant IA est momentanément indisponible.' };
     } finally { clearTimeout(timer); }
