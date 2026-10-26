@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+<!doctype html><html><head><script>if(/[?&]private=1(&|$)/.test(location.search)){document.documentElement.classList.add("hn-private-tab");}</script><style>html.hn-private-tab:not(.hn-private-ready) body{visibility:hidden}</style><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
   .fghlab-navbar{ position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:8px; margin:0 0 10px; padding:6px 8px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
   .fghlab-navbar .btn{ padding:5px 12px; font-size:13px; white-space:nowrap; }
   .fghlab-navbar .btn:disabled{ opacity:.4; cursor:default; }
@@ -2635,7 +2635,7 @@
                 <button type="button" class="attach-menu-opt" id="attach-opt-image"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span data-i18n="btn.chooseImage">Choisir une image</span></button>
                 <button type="button" class="attach-menu-opt" id="attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span data-i18n="btn.attachFile">Joindre un PDF/Excel/CSV</span></button>
               </div>
-              <input type="file" id="attach-file-input" multiple hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
+              <input type="file" id="attach-file-input" multiple hidden accept=".pdf,.docx,.pptx,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
             </div>
             <div class="symbols-menu-wrap" id="symbols-menu-wrap">
               <button class="btn icon-only" id="symbols-btn" type="button" aria-label="Insérer un caractère spécial" title="Caractères spéciaux" aria-haspopup="true" aria-expanded="false">
@@ -2807,9 +2807,9 @@
               <div class="attach-menu" id="cowork-discuss-attach-menu" hidden>
                 <button type="button" class="attach-menu-opt" id="cowork-discuss-attach-opt-camera"><svg viewBox="0 0 24 24"><path d="M4 7.5h3.2L9 5h6l1.8 2.5H20v12H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span>Prendre une photo</span></button>
                 <button type="button" class="attach-menu-opt" id="cowork-discuss-attach-opt-image"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span>Choisir une image</span></button>
-                <button type="button" class="attach-menu-opt" id="cowork-discuss-attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un PDF/Excel/CSV</span></button>
+                <button type="button" class="attach-menu-opt" id="cowork-discuss-attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un document (PDF, Word, PowerPoint, Excel, CSV)</span></button>
               </div>
-              <input type="file" id="cowork-discuss-file-input" multiple hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
+              <input type="file" id="cowork-discuss-file-input" multiple hidden accept=".pdf,.docx,.pptx,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
             </div>
             <div class="symbols-menu-wrap" id="cowork-discuss-symbols-menu-wrap">
               <button class="btn icon-only" id="cowork-discuss-symbols-btn" type="button" aria-label="Insérer un caractère spécial" title="Caractères spéciaux" aria-haspopup="true" aria-expanded="false">
@@ -3057,9 +3057,9 @@
               <div class="attach-menu" id="hstat-attach-menu" hidden>
                 <button type="button" class="attach-menu-opt" id="hstat-attach-opt-camera"><svg viewBox="0 0 24 24"><path d="M4 7.5h3.2L9 5h6l1.8 2.5H20v12H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span>Prendre une photo</span></button>
                 <button type="button" class="attach-menu-opt" id="hstat-attach-opt-image"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span>Choisir une image</span></button>
-                <button type="button" class="attach-menu-opt" id="hstat-attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un PDF/Excel/CSV</span></button>
+                <button type="button" class="attach-menu-opt" id="hstat-attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un document (PDF, Word, PowerPoint, Excel, CSV)</span></button>
               </div>
-              <input type="file" id="hstat-file-input" multiple hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
+              <input type="file" id="hstat-file-input" multiple hidden accept=".pdf,.docx,.pptx,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
             </div>
             <div class="symbols-menu-wrap" id="hstat-symbols-menu-wrap">
               <button class="btn icon-only" id="hstat-symbols-btn" type="button" aria-label="Insérer un caractère spécial" title="Caractères spéciaux" aria-haspopup="true" aria-expanded="false">
@@ -3859,7 +3859,7 @@
             <div class="attach-menu menu-below" id="cowork-query-attach-menu" hidden>
               <button type="button" class="attach-menu-opt" id="cowork-query-attach-opt-camera"><svg viewBox="0 0 24 24"><path d="M4 7.5h3.2L9 5h6l1.8 2.5H20v12H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span>Prendre une photo</span></button>
               <button type="button" class="attach-menu-opt" id="cowork-query-attach-opt-image"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span>Choisir une image</span></button>
-              <button type="button" class="attach-menu-opt" id="cowork-query-attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un PDF/Excel/CSV</span></button>
+              <button type="button" class="attach-menu-opt" id="cowork-query-attach-opt-file"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un document (PDF, Word, PowerPoint, Excel, CSV)</span></button>
             </div>
           </div>
           <input type="file" id="cowork-query-file-input" hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">
@@ -8288,6 +8288,7 @@
     }
   }
   function saveImageToMediaLibrary(file, source){
+    if(window.__hnIncognito) return;   // navigation privée : aucune pièce jointe conservée
     if(!file || !/^image\//.test(file.type || '')) return;
     try{
       var reader = new FileReader();
@@ -14706,6 +14707,7 @@
   }
 
   function extractSheetText(file){
+    if(/\.(docx|pptx)$/i.test(file.name)) return window.hnOfficeText(file);
     if(/\.csv$/i.test(file.name)){
       return file.text().then(function(txt){ return { text: txt.slice(0,15000), truncated: txt.length > 15000 }; });
     }
@@ -14737,7 +14739,7 @@
       attachFileInput.setAttribute('accept', 'image/png,image/jpeg,image/webp,image/gif');
       attachFileInput.removeAttribute('capture');
     } else {
-      attachFileInput.setAttribute('accept', '.pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif');
+      attachFileInput.setAttribute('accept', '.pdf,.docx,.pptx,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif');
       attachFileInput.removeAttribute('capture');
     }
     attachFileInput.click();
@@ -14781,7 +14783,7 @@
       }).catch(function(){
         addMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot');
       });
-    } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
+    } else if(/\.(xlsx|xls|csv|docx|pptx)$/i.test(lower)){
       extractSheetText(file).then(function(res){
         if(!window.hnAttAdd(pendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderAttachChip();
@@ -14790,7 +14792,7 @@
         addMsg("Ce fichier n'a pas pu être lu.", 'bot');
       });
     } else {
-      addMsg('Format non pris en charge. Utilisez un PDF, un fichier Excel/CSV, ou une image (JPG/PNG/WebP/GIF).', 'bot');
+      addMsg('Format non pris en charge. Utilisez une image, un PDF, un fichier Excel ou CSV, ou un fichier PowerPoint ou Word.', 'bot');
     }
     });
   });
@@ -14982,7 +14984,7 @@
     chatHistory.push({ role:'user', content:q });
     assistantConvUI.persistCurrent();
     var hmodelAssistant = getHmodelTierDefForView('assistant');
-    incrementAiCredits(function(t){ addMsg(t, 'bot'); }, hmodelAssistant.creditCost + researchExtraCost('assistant'));
+    incrementAiCredits(function(t){ addMsg(t, 'bot'); }, hmodelAssistant.creditCost + researchExtraCost('assistant') + window.hnAttCredit(pendingAttachment).extra);
     researchAnnounce('assistant', function(t){ addMsg(t, 'bot'); });
     var thinkingEl = addMsg('Réflexion…', 'bot');
     var gen = beginGen('chat-form', thinkingEl, function(t){ chatHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); assistantConvUI.persistCurrent(); });
@@ -27825,9 +27827,9 @@
               '<div class="attach-menu" id="hstatis-attach-menu" hidden>' +
                 '<button type="button" class="attach-menu-opt" id="hstatis-attach-opt-camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h3.2L9 5h6l1.8 2.5H20v12H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span>Prendre une photo</span></button>' +
                 '<button type="button" class="attach-menu-opt" id="hstatis-attach-opt-image"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15.5-5-5-9.5 9.5"/></svg><span>Choisir une image</span></button>' +
-                '<button type="button" class="attach-menu-opt" id="hstatis-attach-opt-file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un PDF/Excel/CSV</span></button>' +
+                '<button type="button" class="attach-menu-opt" id="hstatis-attach-opt-file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/></svg><span>Joindre un document (PDF, Word, PowerPoint, Excel, CSV)</span></button>' +
               '</div>' +
-              '<input type="file" id="hstatis-file-input" multiple hidden accept=".pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">' +
+              '<input type="file" id="hstatis-file-input" multiple hidden accept=".pdf,.docx,.pptx,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif">' +
             '</div>' +
             '<span class="mic-timer" id="hstatis-mic-timer" hidden></span>' +
             '<div class="chat-input-wrap">' +
@@ -28595,7 +28597,7 @@
       window.hnAttShow(hstatisLog, attachment);
       hstatisPending = [];
       renderHstatisChips();
-      incrementAiCredits(function(t){ addHstatisMsg(t, 'bot'); }, 1);
+      incrementAiCredits(function(t){ addHstatisMsg(t, 'bot'); }, 1 + window.hnAttCredit(hstatisPending).extra);
       var thinkingEl = addHstatisMsg('Réflexion…', 'bot');
       var gen = beginGen('hstatis-form', thinkingEl, function(t){ hstatisHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); });
       var suggestionsAfter = hstatisDomain ? hstatisDomain.suggestions : HSTATIS_DEFAULT_SUGGESTIONS;
@@ -28650,7 +28652,7 @@
     function openHstatisPicker(mode){
       if(mode === 'camera'){ hstatisFileInput.setAttribute('accept', 'image/*'); hstatisFileInput.setAttribute('capture', 'environment'); }
       else if(mode === 'image'){ hstatisFileInput.setAttribute('accept', 'image/png,image/jpeg,image/webp,image/gif'); hstatisFileInput.removeAttribute('capture'); }
-      else { hstatisFileInput.setAttribute('accept', '.pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif'); hstatisFileInput.removeAttribute('capture'); }
+      else { hstatisFileInput.setAttribute('accept', '.pdf,.docx,.pptx,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif'); hstatisFileInput.removeAttribute('capture'); }
       hstatisFileInput.click();
     }
     function setHstatisMenu(open){ hstatisAttachMenu.hidden = !open; hstatisBtnAttach.setAttribute('aria-expanded', open ? 'true' : 'false'); }
@@ -28679,14 +28681,14 @@
             renderHstatisChips();
             fillHstatisSuggestRow(HSTATIS_ATTACH_SUGGESTIONS);
           }).catch(function(){ addHstatisMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot'); });
-        } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
+        } else if(/\.(xlsx|xls|csv|docx|pptx)$/i.test(lower)){
           extractSheetText(file).then(function(res){
             if(!window.hnAttAdd(hstatisPending, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
             renderHstatisChips();
             fillHstatisSuggestRow(HSTATIS_ATTACH_SUGGESTIONS);
           }).catch(function(){ addHstatisMsg("Ce fichier n'a pas pu être lu.", 'bot'); });
         } else {
-          addHstatisMsg('Format non pris en charge. Utilisez un PDF, un fichier Excel/CSV, ou une image (JPG/PNG/WebP/GIF).', 'bot');
+          addHstatisMsg('Format non pris en charge. Utilisez une image, un PDF, un fichier Excel ou CSV, ou un fichier PowerPoint ou Word.', 'bot');
         }
       });
     });
@@ -33213,7 +33215,7 @@
     coworkDiscussHistory.push({ role:'user', content:q });
     coworkDiscussConvUI.persistCurrent();
     var hmodelCowork = getHmodelTierDefForView('cowork');
-    incrementAiCredits(function(t){ addCoworkDiscussMsg(t, 'bot'); }, hmodelCowork.creditCost + researchExtraCost('cowork'));
+    incrementAiCredits(function(t){ addCoworkDiscussMsg(t, 'bot'); }, hmodelCowork.creditCost + researchExtraCost('cowork') + window.hnAttCredit(coworkDiscussPendingAttachment).extra);
     researchAnnounce('cowork', function(t){ addCoworkDiscussMsg(t, 'bot'); });
     var thinkingEl = addCoworkDiscussMsg('Réflexion…', 'bot');
     var gen = beginGen('cowork-discuss-form', thinkingEl, function(t){ coworkDiscussHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); coworkDiscussConvUI.persistCurrent(); });
@@ -33344,7 +33346,7 @@
       coworkDiscussFileInput.setAttribute('accept', 'image/png,image/jpeg,image/webp,image/gif');
       coworkDiscussFileInput.removeAttribute('capture');
     } else {
-      coworkDiscussFileInput.setAttribute('accept', '.pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif');
+      coworkDiscussFileInput.setAttribute('accept', '.pdf,.docx,.pptx,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif');
       coworkDiscussFileInput.removeAttribute('capture');
     }
     coworkDiscussFileInput.click();
@@ -33394,7 +33396,7 @@
       }).catch(function(){
         addCoworkDiscussMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot');
       });
-    } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
+    } else if(/\.(xlsx|xls|csv|docx|pptx)$/i.test(lower)){
       extractSheetText(file).then(function(res){
         if(!window.hnAttAdd(coworkDiscussPendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderCoworkDiscussAttachChip();
@@ -33404,7 +33406,7 @@
         addCoworkDiscussMsg("Ce fichier n'a pas pu être lu.", 'bot');
       });
     } else {
-      addCoworkDiscussMsg('Format non pris en charge. Utilisez un PDF, un fichier Excel/CSV, ou une image (JPG/PNG/WebP/GIF).', 'bot');
+      addCoworkDiscussMsg('Format non pris en charge. Utilisez une image, un PDF, un fichier Excel ou CSV, ou un fichier PowerPoint ou Word.', 'bot');
     }
   }
   coworkDiscussFileInput.addEventListener('change', function(e){
@@ -36946,7 +36948,7 @@
       hstatFileInput.setAttribute('accept', 'image/png,image/jpeg,image/webp,image/gif');
       hstatFileInput.removeAttribute('capture');
     } else {
-      hstatFileInput.setAttribute('accept', '.pdf,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif');
+      hstatFileInput.setAttribute('accept', '.pdf,.docx,.pptx,.xlsx,.xls,.csv,image/png,image/jpeg,image/webp,image/gif');
       hstatFileInput.removeAttribute('capture');
     }
     hstatFileInput.click();
@@ -36989,7 +36991,7 @@
       }).catch(function(){
         addHstatMsg("Ce PDF n'a pas pu être lu (peut-être un scan sans texte, ou un fichier protégé).", 'bot');
       });
-    } else if(/\.(xlsx|xls|csv)$/i.test(lower)){
+    } else if(/\.(xlsx|xls|csv|docx|pptx)$/i.test(lower)){
       extractSheetText(file).then(function(res){
         if(!window.hnAttAdd(hstatPendingAttachment, { kind:'sheet', name:name, text:res.text, truncated:res.truncated })) return;
         renderHstatAttachChip();
@@ -36998,7 +37000,7 @@
         addHstatMsg("Ce fichier n'a pas pu être lu.", 'bot');
       });
     } else {
-      addHstatMsg('Format non pris en charge. Utilisez un PDF, un fichier Excel/CSV, ou une image (JPG/PNG/WebP/GIF).', 'bot');
+      addHstatMsg('Format non pris en charge. Utilisez une image, un PDF, un fichier Excel ou CSV, ou un fichier PowerPoint ou Word.', 'bot');
     }
     });
   });
@@ -37102,7 +37104,7 @@
     opts = opts || {};
     hstatHistory.push({ role:'user', content:q });
     var hmodelHstat = getHmodelTierDefForView('hstat');
-    incrementAiCredits(function(t){ addHstatMsg(t, 'bot'); }, hmodelHstat.creditCost);
+    incrementAiCredits(function(t){ addHstatMsg(t, 'bot'); }, hmodelHstat.creditCost + window.hnAttCredit(hstatPendingAttachment).extra);
     var thinkingEl = addHstatMsg('Réflexion…', 'bot');
     var gen = beginGen('hstat-form', thinkingEl, function(t){ hstatHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); });
     var suggestionsAfter = hstatDomain ? hstatDomain.suggestions : HSTAT_DEFAULT_SUGGESTIONS;
@@ -43790,7 +43792,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
   var INPUT_BY_FORM = { 'hstatis-form':'hstatis-file-input', 'chat-form':'attach-file-input', 'cowork-discuss-form':'cowork-discuss-file-input', 'hstat-form':'hstat-file-input' };
   var INPUT_IDS = { 'hstatis-file-input':1, 'attach-file-input':1, 'cowork-discuss-file-input':1, 'hstat-file-input':1, 'cowork-query-file-input':1 };
   var VIEW_INPUT = { assistant:'attach-file-input', hstat:'hstat-file-input' };   // glisser-déposer (Co-work Discussion a déjà le sien)
-  var MAX_BYTES = 1000000, MAX_SIDE = 2000, MAX_FILES = 8, MAX_IMAGES = 6, REQ_BUDGET = 5400000, IMG_B64_CAP = 5000000, TEXT_LIMIT = 60000, TEXT_RESERVE = 6000;
+  var MAX_BYTES = 1000000, MAX_SIDE = 2000, MAX_FILES = 8, MAX_IMAGES = 8, REQ_BUDGET = 5400000, IMG_B64_CAP = 5000000, TEXT_LIMIT = 60000, TEXT_RESERVE = 6000;
   function $(id){ return document.getElementById(id); }
   function toast(t){
     var d = document.createElement('div'); d.className = 'hn-att-toast'; d.setAttribute('role', 'status'); d.setAttribute('aria-live', 'polite'); d.textContent = t;
@@ -43800,7 +43802,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
   function isAccepted(f){
     if(!f) return false;
     var n = String(f.name || '').toLowerCase(), t = String(f.type || '');
-    return /^image\/(png|jpeg|webp|gif)$/.test(t) || t === 'application/pdf' || /\.(pdf|xlsx|xls|csv)$/.test(n);
+    return /^image\/(png|jpeg|webp|gif)$/.test(t) || t === 'application/pdf' || /\.(pdf|xlsx|xls|csv|docx|pptx)$/.test(n);
   }
   function deliver(input, files, processed){
     try{
@@ -43877,6 +43879,66 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     }).catch(function(){ return null; });
   }
 
+
+  /* ----- Word (.docx) et PowerPoint (.pptx) : lecture du texte directement dans le navigateur (aucun envoi, aucune bibliothèque externe) ----- */
+  function u32(d, o){ return (d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24)) >>> 0; }
+  function u16(d, o){ return d[o] | (d[o + 1] << 8); }
+  function inflateRaw(u8){
+    if(typeof DecompressionStream === 'undefined') return Promise.reject(new Error('nodecomp'));
+    var st = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Response(st).arrayBuffer().then(function(b){ return new Uint8Array(b); });
+  }
+  function zipEntries(d){
+    var e = -1; for(var i = d.length - 22; i >= Math.max(0, d.length - 65600); i--){ if(u32(d, i) === 0x06054b50){ e = i; break; } }
+    if(e < 0) throw new Error('zip');
+    var n = u16(d, e + 10), off = u32(d, e + 16), out = {}, dec = new TextDecoder();
+    for(var k = 0; k < n; k++){
+      if(u32(d, off) !== 0x02014b50) break;
+      var meth = u16(d, off + 10), csz = u32(d, off + 20), nl = u16(d, off + 28), xl = u16(d, off + 30), cl = u16(d, off + 32), lo = u32(d, off + 42);
+      out[dec.decode(d.subarray(off + 46, off + 46 + nl))] = { meth:meth, csz:csz, lo:lo };
+      off += 46 + nl + xl + cl;
+    }
+    return out;
+  }
+  function zipRead(d, ent){
+    var lo = ent.lo, nl = u16(d, lo + 26), xl = u16(d, lo + 28), start = lo + 30 + nl + xl, raw = d.subarray(start, start + ent.csz);
+    if(ent.meth === 0) return Promise.resolve(raw);
+    if(ent.meth === 8) return inflateRaw(raw);
+    return Promise.reject(new Error('meth'));
+  }
+  function xmlText(x, para, run){
+    return x.replace(/<\/w:p>(?=\s*<\/w:tc>)/g, '').replace(/<\/w:tr>/g, '\n').replace(/<w:tab\/>/g, '\t').replace(/<w:br\/>|<a:br\/>/g, '\n').replace(new RegExp('</' + para + '>', 'g'), '\n').replace(/<\/w:tc>/g, ' | ').replace(/ \| \n/g, '\n')
+      .replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&')
+      .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  window.hnOfficeText = function(file){
+    var LIM = 15000, dec = new TextDecoder();
+    return file.arrayBuffer().then(function(buf){
+      var d = new Uint8Array(buf), ents = zipEntries(d), name = String(file.name || '').toLowerCase();
+      function read(n){ return ents[n] ? zipRead(d, ents[n]).then(function(u){ return dec.decode(u); }) : Promise.resolve(''); }
+      if(/\.docx$/.test(name)){
+        return Promise.all(['word/document.xml', 'word/footnotes.xml'].map(read)).then(function(xs){
+          var t = xmlText(xs[0], 'w:p'); var f = xs[1] ? xmlText(xs[1], 'w:p') : ''; if(f) t += '\n\n--- Notes de bas de page ---\n' + f;
+          return t;
+        });
+      }
+      var slides = Object.keys(ents).filter(function(n){ return /^ppt\/slides\/slide\d+\.xml$/.test(n); }).sort(function(a, b){ return parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10); });
+      return slides.reduce(function(chain, n, i){
+        return chain.then(function(acc){
+          var num = n.match(/slide(\d+)\.xml/)[1];
+          return Promise.all([read(n), read('ppt/notesSlides/notesSlide' + num + '.xml')]).then(function(xs){
+            var t = xmlText(xs[0], 'a:p'), nt = xs[1] ? xmlText(xs[1], 'a:p') : '';
+            return acc + '--- Diapositive ' + (i + 1) + ' ---\n' + t + (nt ? '\n(Notes : ' + nt.replace(/\n+/g, ' ') + ')' : '') + '\n\n';
+          });
+        });
+      }, Promise.resolve(''));
+    }).then(function(t){
+      t = String(t || '').trim();
+      if(!t) throw new Error('vide');
+      return { text:t.slice(0, LIM), truncated:t.length > LIM };
+    });
+  };
+
   /* ----- Interception des fichiers choisis (bouton, collage ou glisser-déposer) ----- */
   function processOne(f){
     var isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '');
@@ -43912,13 +43974,22 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
   }
   window.hnAttAdd = function(arr, item){
     if(arr.length >= MAX_FILES){ toast('Maximum ' + MAX_FILES + ' fichiers par message : retirez-en un (✕) pour en ajouter un autre, ou envoyez-les en deux messages.'); return false; }
-    if(item.kind === 'image' && arr.filter(function(a){ return a.kind === 'image'; }).length >= MAX_IMAGES){ toast('Maximum ' + MAX_IMAGES + ' images par message (les PDF scannés comptent comme des images) : retirez-en une (✕), ou envoyez-les en deux messages.'); return false; }
+    if(item.kind === 'image' && arr.filter(function(a){ return a.kind === 'image'; }).length >= MAX_IMAGES){ toast('Maximum ' + MAX_IMAGES + ' images par message : retirez-en une (✕), ou envoyez-les en deux messages.'); return false; }
     item.toJSON = function(){ return { kind:this.kind, name:this.name, truncated:!!this.truncated, thumb:this.thumb || null, lost:true }; };
     if(item.kind === 'image' && item.file) makeThumb(item.file).then(function(t){ item.thumb = t; });
     arr.push(item); return true;
   };
+  function docIcon(a){ var n = String(a.name || ''); return a.kind === 'pdf' ? '📄' : /\.docx$/i.test(n) ? '📝' : /\.pptx$/i.test(n) ? '📽️' : '📊'; }
   function mo(n){ return (n / 1048576).toLocaleString('fr-CA', { maximumFractionDigits:1, minimumFractionDigits:1 }) + ' Mo'; }
   function b64len(bytes){ return Math.ceil(bytes / 3) * 4; }
+  /* Supplément de crédits IA lié aux pièces jointes (identique au calcul du serveur) : 1 crédit par Mo équivalent commencé
+     (1 Mo d'images = 12 000 caractères de texte de document), jusqu'à 8 ; moins de 0,1 Mo est inclus. */
+  window.hnAttCredit = function(list){
+    var bytes = 0, chars = 0;
+    (list || []).forEach(function(a){ if(a.kind === 'image' && a.file) bytes += a.file.size; else chars += (a.text || '').length; });
+    var mbEq = bytes / 1048576 + chars / 12000;
+    return { mbEq:mbEq, extra: mbEq < 0.1 ? 0 : Math.min(8, Math.ceil(mbEq)) };
+  };
   window.hnAttEstimate = function(list){
     var img = 0, txt = 0;
     (list || []).forEach(function(a){ if(a.kind === 'image' && a.file) img += b64len(a.file.size); else txt += (a.text || '').length; });
@@ -43936,14 +44007,15 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
         try{ im.src = URL.createObjectURL(a.file); (row.__urls = row.__urls || []).push(im.src); }catch(x){}
         sp.appendChild(im);
       }
-      sp.appendChild(document.createTextNode((a.kind === 'image' ? (a.file ? '' : '🖼️') : (a.kind === 'pdf' ? '📄' : '📊')) + ' ' + a.name + (a.truncated ? ' (contenu tronqué)' : '')));
+      sp.appendChild(document.createTextNode((a.kind === 'image' ? (a.file ? '' : '🖼️') : docIcon(a)) + ' ' + a.name + (a.truncated ? ' (contenu tronqué)' : '')));
       var b = document.createElement('button'); b.type = 'button'; b.title = 'Retirer ce fichier'; b.setAttribute('aria-label', 'Retirer ' + a.name); b.textContent = '✕';
       b.addEventListener('click', function(){ arr.splice(i, 1); onChange(); });
       sp.appendChild(b); row.appendChild(sp);
     });
     var est = window.hnAttEstimate(arr);
     var h = document.createElement('span'); h.className = 'hn-att-hint'; h.setAttribute('role', 'status');
-    h.textContent = (arr.length > 1 ? arr.length + ' fichiers prêts' : '1 fichier prêt') + ' (≈ ' + mo(est.imgB64 + est.textBytes) + ') — rien n’est encore envoyé : écrivez votre question, puis appuyez sur Envoyer.';
+    var cr = window.hnAttCredit(arr);
+    h.textContent = (arr.length > 1 ? arr.length + ' fichiers prêts' : '1 fichier prêt') + ' (≈ ' + mo(est.imgB64 + est.textBytes) + ') · ' + (cr.extra ? '+' + cr.extra + ' crédit' + (cr.extra > 1 ? 's' : '') + ' IA pour les pièces jointes' : 'pièces jointes incluses dans le coût') + ' — rien n’est encore envoyé : écrivez votre question, puis appuyez sur Envoyer.';
     row.appendChild(h);
   };
   /* Rassemble ce qui accompagne le dernier message : brouillon (obligatoire) + pièces des messages précédents du même fil.
@@ -44013,7 +44085,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
         btn.appendChild(im); btn.addEventListener('click', function(){ if(full) lightbox(full, a.name); });
         strip.appendChild(btn);
       } else {
-        var c = document.createElement('span'); c.className = 'hn-att-doc'; c.textContent = (a.kind === 'pdf' ? '📄 ' : '📊 ') + a.name; strip.appendChild(c);
+        var c = document.createElement('span'); c.className = 'hn-att-doc'; c.textContent = docIcon(a) + ' ' + a.name; strip.appendChild(c);
       }
     });
     bub.insertBefore(strip, bub.firstChild);
@@ -44168,7 +44240,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     var tid = dropTarget(); if(!tid || !hasFiles(e)) return;
     e.preventDefault();
     var files = Array.prototype.filter.call(e.dataTransfer.files || [], isAccepted);
-    if(!files.length){ toast('Format non pris en charge. Utilisez une image, un PDF, un fichier Excel ou un CSV.'); return; }
+    if(!files.length){ toast('Format non pris en charge. Utilisez une image, un PDF, un fichier Excel ou CSV, ou un fichier PowerPoint ou Word.'); return; }
     deliver($(tid), files);
   });
 })();
@@ -44240,5 +44312,99 @@ html body #fghlab-panel-hstatis .chat-shell, html body #hstatis-panel-chat .chat
 }
 @media (prefers-reduced-motion: reduce){ #chat-log *, #cowork-discuss-log *, #hstat-log *, #hstatis-log *{ scroll-behavior:auto !important; } }
 </style>
+
+<style id="hn-priv-css">
+#hn-priv-head{ display:none; }
+html.hn-private-tab body{ padding-top:0 !important; }
+html.hn-private-tab aside.sidebar, html.hn-private-tab #nav-mobile, html.hn-private-tab #folder-bar, html.hn-private-tab #period-bar,
+html.hn-private-tab #promo-website-card, html.hn-private-tab #hn-sa, html.hn-private-tab .hn-nd, html.hn-private-tab #hn-contact-foot,
+html.hn-private-tab #onboarding-modal, html.hn-private-tab #incog-bar, html.hn-private-tab .incog-toggle, html.hn-private-tab #view-assistant > header.topbar{ display:none !important; }
+html.hn-private-tab .shell{ display:block !important; grid-template-columns:1fr !important; }
+html.hn-private-tab .main{ margin:0 auto !important; max-width:1040px; width:100%; padding:0 clamp(10px,3vw,28px) 12px !important; }
+html.hn-private-tab #hn-priv-head{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:14px 0 10px; border-bottom:1px solid var(--line); margin-bottom:8px; }
+#hn-priv-head .hn-priv-brand{ display:flex; align-items:center; gap:10px; }
+#hn-priv-head .brand-mark{ width:40px; height:40px; flex:none; }
+#hn-priv-head .brand-mark svg{ width:100%; height:100%; display:block; }
+#hn-priv-head b{ display:block; font-size:18px; line-height:1.2; }
+#hn-priv-head .hn-priv-sub{ display:block; font-size:13px; color:var(--muted); }
+#hn-priv-head .hn-priv-note{ flex:1 1 320px; font-size:13px; line-height:1.45; color:var(--muted); }
+html.hn-private-tab .chat-shell{ border-style:dashed; }
+html.hn-private-tab:not(.hn-private-ready) body{ visibility:hidden; }
+.hn-priv-toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:var(--ink); color:var(--surface); padding:11px 16px; border-radius:10px; font-size:14px; line-height:1.4; z-index:99999; max-width:min(92vw,560px); box-shadow:0 4px 16px rgba(0,0,0,.25); }
+</style>
+<script id="hn-priv-js">
+(function(){
+  'use strict';
+  var PRIV = /[?&]private=1(&|$)/.test(location.search);
+  var root = document.documentElement;
+  function toast(t){ var d = document.createElement('div'); d.className = 'hn-priv-toast'; d.setAttribute('role', 'alert'); d.textContent = t; document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 8000); }
+
+  /* ---------- Onglet principal : « Navigation privée » ouvre un NOUVEL onglet ---------- */
+  function openPrivate(){
+    var w = null;
+    try{ w = window.open(location.pathname + '?private=1', '_blank'); }catch(e){}
+    if(w){ try{ w.opener = null; }catch(e){} return true; }
+    return false;
+  }
+  if(!PRIV){
+    document.addEventListener('click', function(e){
+      var b = e.target && e.target.closest && e.target.closest('.incog-toggle'); if(!b) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if(!openPrivate()) toast('Votre navigateur a bloqué l’ouverture du nouvel onglet. Autorisez les fenêtres surgissantes pour HelpNaud, puis cliquez de nouveau sur « Navigation privée ».');
+    }, true);
+    document.addEventListener('keydown', function(e){
+      if((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')){
+        e.preventDefault(); e.stopImmediatePropagation();
+        if(!openPrivate()) toast('Votre navigateur a bloqué l’ouverture du nouvel onglet. Autorisez les fenêtres surgissantes pour HelpNaud.');
+      }
+    }, true);
+    document.querySelectorAll('.incog-toggle').forEach(function(b){ b.title = 'S’ouvre dans un nouvel onglet : conversation privée, rien n’est enregistré dans l’historique (Ctrl+Maj+I)'; });
+    return;
+  }
+
+  /* ---------- Nouvel onglet privé : logo + écran vide pour poser ses questions ---------- */
+  root.classList.add('hn-private-tab');
+  document.title = 'Navigation privée — HelpNaud.ai';
+  // le raccourci ne doit pas faire sortir du mode : l'onglet se ferme avec le bouton ou avec le navigateur
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')){ e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  function closeTab(){ try{ window.close(); }catch(e){} setTimeout(function(){ if(!window.closed) location.href = location.pathname; }, 250); }
+  function buildHead(){
+    if(document.getElementById('hn-priv-head')) return;
+    var main = document.querySelector('.main'); if(!main) return;
+    var h = document.createElement('header'); h.id = 'hn-priv-head';
+    var mark = document.querySelector('.sidebar .brand-mark');
+    var brand = document.createElement('div'); brand.className = 'hn-priv-brand';
+    if(mark) brand.appendChild(mark.cloneNode(true));
+    var tx = document.createElement('div'); tx.innerHTML = '<b>HelpNaud.ai</b><span class="hn-priv-sub">🕶️ Navigation privée</span>'; brand.appendChild(tx);
+    var note = document.createElement('p'); note.className = 'hn-priv-note'; note.style.margin = '0';
+    note.textContent = 'Conversation privée : rien n’est enregistré dans votre historique, et elle disparaît quand vous fermez cet onglet. Vos messages consomment tout de même votre forfait et vos crédits IA.';
+    var x = document.createElement('button'); x.type = 'button'; x.className = 'btn'; x.id = 'hn-priv-close'; x.textContent = 'Fermer l’onglet'; x.addEventListener('click', closeTab);
+    h.appendChild(brand); h.appendChild(note); h.appendChild(x);
+    main.insertBefore(h, main.firstChild);
+  }
+  function retitleHero(){
+    var hero = document.querySelector('#view-assistant .incog-hero'); if(!hero) return;
+    var h3 = hero.querySelector('h3 span:last-child'); if(h3) h3.textContent = 'Navigation privée';
+    var p = hero.querySelector('p'); if(p) p.textContent = 'Posez vos questions à HelpNaud.ai. Cette conversation n’apparaît ni dans votre historique ni dans la recherche. Elle consomme votre forfait et vos crédits IA comme une conversation normale.';
+  }
+  function enforce(){
+    var v = document.getElementById('view-assistant');
+    if(v && v.hidden){ var nav = document.querySelector('[data-view="assistant"]'); if(nav) nav.click(); }
+    document.querySelectorAll('.modal-overlay').forEach(function(m){ if(m.id === 'onboarding-modal' || m.id === 'feedback-modal') m.hidden = true; });
+    if(!root.classList.contains('hn-incognito')){ var t = document.querySelector('#view-assistant .incog-toggle'); if(t) t.click(); }
+    buildHead(); retitleHero();
+  }
+  function start(){
+    enforce();
+    root.classList.add('hn-private-ready');
+    var n = 0, iv = setInterval(function(){ enforce(); if(++n > 12) clearInterval(iv); }, 700);
+    try{ window.scrollTo(0, 0); }catch(e){}
+    if(window.matchMedia && !window.matchMedia('(max-width:700px)').matches){ var inp = document.getElementById('chat-input'); if(inp) try{ inp.focus({ preventScroll:true }); }catch(e){} }
+  }
+  if(document.readyState === 'complete') setTimeout(start, 350); else window.addEventListener('load', function(){ setTimeout(start, 350); });
+})();
+</script>
 
 </body></html>
