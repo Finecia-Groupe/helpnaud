@@ -11557,7 +11557,7 @@
         var editBtn = document.createElement('button');
         editBtn.type = 'button'; editBtn.className = 'msg-action-btn'; editBtn.title = 'Modifier ce message';
         editBtn.innerHTML = msgActionIcon('edit');
-        editBtn.addEventListener('click', function(){ refill(getMsgText(msgEl)); });
+        editBtn.addEventListener('click', function(){ refill(getMsgText(msgEl)); try{ if(window.hnAttRestore) window.hnAttRestore(msgEl); }catch(x){} });
         bar.appendChild(editBtn);
       }
       var shareBtn = document.createElement('button');
@@ -14647,7 +14647,7 @@
 
 
   window.__hnAttReg = window.__hnAttReg || {};
-  window.__hnAttReg['chat-form'] = { list:function(){ return pendingAttachment; }, hist:function(){ return chatHistory.slice(-10); }, input:'chat-input', row:function(){ return document.getElementById('attach-chip-row'); } };
+  window.__hnAttReg['chat-form'] = { list:function(){ return pendingAttachment; }, hist:function(){ return chatHistory.slice(-9); }, input:'chat-input', row:function(){ return document.getElementById('attach-chip-row'); }, render:function(){ renderAttachChip(); } };
   function renderAttachChip(){
     window.hnAttChips(attachChipRow, pendingAttachment, function(){ renderAttachChip(); if(!pendingAttachment.length) resetSuggestRow();});
   }
@@ -14987,6 +14987,8 @@
     var thinkingEl = addMsg('Réflexion…', 'bot');
     var gen = beginGen('chat-form', thinkingEl, function(t){ chatHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); assistantConvUI.persistCurrent(); });
     var attachment = pendingAttachment.slice();
+    chatHistory[chatHistory.length - 1].atts = attachment;
+    window.hnAttShow(chatLog, attachment);
     pendingAttachment = [];
     renderAttachChip();
     resetSuggestRow();
@@ -14995,17 +14997,16 @@
       if(!sampleCap){
         gen.end();
         thinkingEl.remove();
-        var localReply = addMsg(answerQuery(q), 'bot');
+        var localReply = addMsg(window.hnAttFail(attachment, 'unavailable') || answerQuery(q), 'bot');
         if(opts.voiceReply) autoSpeakBubble(localReply);
         return;
       }
       var recent = chatHistory.slice(-10);
+      var hnTh = window.hnAttThread(recent);
       var msgs = recent.map(function(h, i){
         var content = h.content;
         if(i === 0 && h.role === 'user') content = ASSISTANT_SYSTEM + "\n\n" + hmodelPromptInstruction('assistant') + researchPromptInstruction('assistant') + "\n\n" + content;
-        if(i === recent.length - 1 && h.role === 'user' && attachment && attachment.length){
-          content += window.hnAttText(attachment);
-        }
+        if(hnTh.adds[i]) content += hnTh.adds[i];
         return { role:h.role, content:content };
       });
       var sampleOpts = {
@@ -15014,7 +15015,7 @@
         tools: buildAssistantTools(),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); chatLog.scrollTop = chatLog.scrollHeight; }
       };
-      var hnImgs = window.hnAttImages(attachment); if(hnImgs) sampleOpts.images = hnImgs;
+      var hnImgs = window.hnAttFiles(hnTh); if(hnImgs) sampleOpts.images = hnImgs;
       sampleCap(msgs, sampleOpts).then(function(res){
         if(gen.cancelled) return;
         gen.end();
@@ -15028,6 +15029,7 @@
         if(gen.cancelled) return;
         gen.end();
         var code = err && err.code;
+        if(attachment.length){ thinkingEl.remove(); var failEl = addMsg(window.hnAttFail(attachment, code), 'bot'); return; }
         thinkingEl.remove();
         var replyEl;
         if(code === 'images_unavailable'){
@@ -28589,6 +28591,8 @@
       opts = opts || {};
       hstatisHistory.push({ role:'user', content:q });
       var attachment = hstatisPending.slice();
+      hstatisHistory[hstatisHistory.length - 1].atts = attachment;
+      window.hnAttShow(hstatisLog, attachment);
       hstatisPending = [];
       renderHstatisChips();
       incrementAiCredits(function(t){ addHstatisMsg(t, 'bot'); }, 1);
@@ -28605,13 +28609,15 @@
         var domainPart = hstatisDomain ? (', avec un accent particulier sur : ' + hstatisDomain.label.toLowerCase()) : '';
         var prefix = "Tu es F-i-Stat, l'agent statistique interne avancé de FINECIA GROUPE (via HelpNaud.ai). Réponds avec rigueur technique, niveau expert, en statistiques, économétrie, finance quantitative et méthodes scientifiques" + domainPart + ". Réponds en français, de façon professionnelle, claire et structurée. FORMAT : pour une question simple, donne d'abord le résultat et le calcul essentiel (quelques lignes), puis une explication courte (3 à 5 phrases), et termine par une phrase proposant les détails avancés (dispersion, quartiles, valeurs aberrantes, hypothèses) si l'utilisateur les souhaite ; ne les développe pas d'emblée. Pour une question complexe, structure en sections mais reste concis. RIGUEUR : dans une moyenne arithmétique simple, chaque observation a le même poids (c'est sa valeur élevée qui tire la moyenne, pas un poids supérieur) ; quand tu donnes des quartiles ou des valeurs aberrantes, nomme la méthode (ex. charnières de Tukey, interpolation linéaire, règle 1,5×IQR) et rappelle que le résultat peut dépendre de la convention ; distingue écart-type d'échantillon (n−1) et de population (n) ; vérifie tes calculs avant de répondre.";
         // Texte libre (pas de JSON) : une réponse longue en JSON se tronquait et donnait « bad_json ». L'historique est conservé.
-        var hs = hstatisHistory.slice(-12).map(function(h){ return { role:h.role, content:h.content }; });
-        var attText = window.hnAttText(attachment);
+        var hsRecent = hstatisHistory.slice(-12);
+        var hsTh = window.hnAttThread(hsRecent);
+        var hs = hsRecent.map(function(h, i){ return { role:h.role, content:h.content + (hsTh.adds[i] || '') }; });
+        var attText = hsTh.adds[hsRecent.length - 1] || '';
         if(hs.length && hs[hs.length - 1].role === 'user') hs[hs.length - 1].content = prefix + "\n\nQuestion : " + q + attText;
         else hs.push({ role:'user', content: prefix + "\n\nQuestion : " + q + attText });
         while(hs.length && hs[0].role !== 'user') hs.shift();
         var hsOpts = { modelTier:'default', cache:false };
-        var hsImgs = window.hnAttImages(attachment); if(hsImgs) hsOpts.images = hsImgs;
+        var hsImgs = window.hnAttFiles(hsTh); if(hsImgs) hsOpts.images = hsImgs;
         sampleCap(hs, hsOpts).then(function(res){
           if(gen.cancelled) return;
           gen.end();
@@ -28624,6 +28630,7 @@
           if(gen.cancelled) return;
           gen.end();
           var ec = err && err.code;
+          if(attachment.length){ setMsgText(thinkingEl, window.hnAttFail(attachment, ec)); return; }
           setMsgText(thinkingEl, ec === 'images_unavailable' ? "Les images ne sont pas prises en charge par l'assistant dans cette vue."
             : ec === 'image_rejected' ? "Les images jointes n'ont pas pu être analysées (format, taille ou fichier invalide). Retirez-les (✕) ou joignez-en de plus petites."
             : "Erreur : la réponse n'a pas pu être complétée (" + (ec || 'inconnue') + "). Réessayez dans un instant.");
@@ -28638,7 +28645,7 @@
     var hstatisBtnAttach = document.getElementById('hstatis-btn-attach');
     var HSTATIS_ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Qu'en penses-tu ?"];
     window.__hnAttReg = window.__hnAttReg || {};
-    window.__hnAttReg['hstatis-form'] = { list:function(){ return hstatisPending; }, hist:function(){ return hstatisHistory.slice(-12); }, input:'hstatis-input', row:function(){ return document.getElementById('hstatis-attach-chip-row'); } };
+    window.__hnAttReg['hstatis-form'] = { list:function(){ return hstatisPending; }, hist:function(){ return hstatisHistory.slice(-11); }, input:'hstatis-input', row:function(){ return document.getElementById('hstatis-attach-chip-row'); }, render:function(){ renderHstatisChips(); } };
     function renderHstatisChips(){ window.hnAttChips(hstatisChipRow, hstatisPending, renderHstatisChips); }
     function openHstatisPicker(mode){
       if(mode === 'camera'){ hstatisFileInput.setAttribute('accept', 'image/*'); hstatisFileInput.setAttribute('capture', 'environment'); }
@@ -33192,7 +33199,7 @@
   });
 
   window.__hnAttReg = window.__hnAttReg || {};
-  window.__hnAttReg['cowork-discuss-form'] = { list:function(){ return coworkDiscussPendingAttachment; }, hist:function(){ return coworkDiscussHistory.slice(-10); }, input:'cowork-discuss-input', row:function(){ return document.getElementById('cowork-discuss-attach-chip-row'); } };
+  window.__hnAttReg['cowork-discuss-form'] = { list:function(){ return coworkDiscussPendingAttachment; }, hist:function(){ return coworkDiscussHistory.slice(-9); }, input:'cowork-discuss-input', row:function(){ return document.getElementById('cowork-discuss-attach-chip-row'); }, render:function(){ renderCoworkDiscussAttachChip(); } };
   function renderCoworkDiscussAttachChip(){
     window.hnAttChips(coworkDiscussAttachChipRow, coworkDiscussPendingAttachment, function(){ renderCoworkDiscussAttachChip(); if(!coworkDiscussPendingAttachment.length) resetCoworkDiscussSuggestRow();});
   }
@@ -33211,6 +33218,8 @@
     var thinkingEl = addCoworkDiscussMsg('Réflexion…', 'bot');
     var gen = beginGen('cowork-discuss-form', thinkingEl, function(t){ coworkDiscussHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); coworkDiscussConvUI.persistCurrent(); });
     var attachment = coworkDiscussPendingAttachment.slice();
+    coworkDiscussHistory[coworkDiscussHistory.length - 1].atts = attachment;
+    window.hnAttShow(coworkDiscussLog, attachment);
     coworkDiscussPendingAttachment = [];
     renderCoworkDiscussAttachChip();
     resetCoworkDiscussSuggestRow();
@@ -33219,17 +33228,16 @@
       if(!sampleCap){
         gen.end();
         thinkingEl.remove();
-        var localReply = addCoworkDiscussMsg(answerQueryCowork(q), 'bot');
+        var localReply = addCoworkDiscussMsg(window.hnAttFail(attachment, 'unavailable') || answerQueryCowork(q), 'bot');
         if(opts.voiceReply) autoSpeakBubble(localReply);
         return;
       }
       var recent = coworkDiscussHistory.slice(-10);
+      var hnTh = window.hnAttThread(recent);
       var msgs = recent.map(function(h, i){
         var content = h.content;
         if(i === 0 && h.role === 'user') content = COWORK_SYSTEM + "\n\n" + hmodelPromptInstruction('cowork') + researchPromptInstruction('cowork') + "\n\n" + content;
-        if(i === recent.length - 1 && h.role === 'user' && attachment && attachment.length){
-          content += window.hnAttText(attachment);
-        }
+        if(hnTh.adds[i]) content += hnTh.adds[i];
         return { role:h.role, content:content };
       });
       var sampleOpts = {
@@ -33238,20 +33246,20 @@
         tools: buildAssistantTools(),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); coworkDiscussLog.scrollTop = coworkDiscussLog.scrollHeight; }
       };
-      var hnImgs = window.hnAttImages(attachment); if(hnImgs) sampleOpts.images = hnImgs;
+      var hnImgs = window.hnAttFiles(hnTh); if(hnImgs) sampleOpts.images = hnImgs;
       // Repli si l'assistant met trop de temps, pour rester rapide même en cas de lenteur réseau.
       var timedOut = false;
       var timeoutId = setTimeout(function(){
         if(gen.cancelled) return;
         gen.end();
         timedOut = true;
-        var fallbackText = answerQueryCowork(q) + "\n\n(La réponse complète de l'assistant IA prend plus de temps que prévu ; réessayez dans un instant.)";
+        var fallbackText = (attachment.length ? window.hnAttFail(attachment, 'timeout') + '\n\n' : answerQueryCowork(q) + ' ') + "\n\n(La réponse complète de l'assistant IA prend plus de temps que prévu ; réessayez dans un instant.)";
         setMsgText(thinkingEl, fallbackText);
         coworkDiscussHistory.push({ role:'assistant', content: fallbackText });
         coworkDiscussConvUI.persistCurrent();
         fillCoworkDiscussSuggestRow(COWORK_DISCUSS_SUGGESTIONS);
         if(opts.voiceReply) autoSpeakBubble(thinkingEl);
-      }, attachment.length ? 45000 : 15000);
+      }, attachment.length ? 150000 : 15000);
       sampleCap(msgs, sampleOpts).then(function(res){
         if(timedOut || gen.cancelled) return;
         clearTimeout(timeoutId);
@@ -33267,6 +33275,7 @@
         clearTimeout(timeoutId);
         gen.end();
         var code = err && err.code;
+        if(attachment.length){ thinkingEl.remove(); addCoworkDiscussMsg(window.hnAttFail(attachment, code), 'bot'); return; }
         thinkingEl.remove();
         var replyEl;
         if(code === 'images_unavailable'){
@@ -36925,7 +36934,7 @@
   var HSTAT_ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Qu'en penses-tu ?"];
 
   window.__hnAttReg = window.__hnAttReg || {};
-  window.__hnAttReg['hstat-form'] = { list:function(){ return hstatPendingAttachment; }, hist:function(){ return hstatHistory.slice(-10); }, input:'hstat-input', row:function(){ return document.getElementById('hstat-attach-chip-row'); } };
+  window.__hnAttReg['hstat-form'] = { list:function(){ return hstatPendingAttachment; }, hist:function(){ return hstatHistory.slice(-19); }, input:'hstat-input', row:function(){ return document.getElementById('hstat-attach-chip-row'); }, render:function(){ renderHstatAttachChip(); } };
   function renderHstatAttachChip(){
     window.hnAttChips(hstatAttachChipRow, hstatPendingAttachment, function(){ renderHstatAttachChip(); });
   }
@@ -37098,6 +37107,8 @@
     var gen = beginGen('hstat-form', thinkingEl, function(t){ hstatHistory.push({ role:'assistant', content: t ? (t + ' [réponse interrompue]') : '(Réponse interrompue.)' }); });
     var suggestionsAfter = hstatDomain ? hstatDomain.suggestions : HSTAT_DEFAULT_SUGGESTIONS;
     var attachment = hstatPendingAttachment.slice();
+    hstatHistory[hstatHistory.length - 1].atts = attachment;
+    window.hnAttShow(hstatLog, attachment);
     hstatPendingAttachment = [];
     renderHstatAttachChip();
     sampleReady.then(function(){
@@ -37118,12 +37129,11 @@
       // sinon les consignes (placées sur le premier message) seraient perdues dans les longues conversations.
       var recent = hstatHistory.slice(-20);
       if(recent.length && recent[0].role !== 'user') recent = recent.slice(1);
+      var hnTh = window.hnAttThread(recent);
       var msgs = recent.map(function(h, i){
         var content = h.content;
         if(i === 0 && h.role === 'user') content = systemPrompt + "\n\n" + content;
-        if(i === recent.length - 1 && h.role === 'user' && attachment && attachment.length){
-          content += window.hnAttText(attachment);
-        }
+        if(hnTh.adds[i]) content += hnTh.adds[i];
         return { role:h.role, content:content };
       });
       var sampleOpts = {
@@ -37131,7 +37141,7 @@
         modelTier: getHmodelTier('hstat'),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); hstatLog.scrollTop = hstatLog.scrollHeight; }
       };
-      var hnImgs = window.hnAttImages(attachment); if(hnImgs) sampleOpts.images = hnImgs;
+      var hnImgs = window.hnAttFiles(hnTh); if(hnImgs) sampleOpts.images = hnImgs;
       sampleCap(msgs, sampleOpts).then(function(res){
         if(gen.cancelled) return;
         gen.end();
@@ -37144,6 +37154,7 @@
         if(gen.cancelled) return;
         gen.end();
         var hc = err && err.code;
+        if(attachment.length){ setMsgText(thinkingEl, window.hnAttFail(attachment, hc)); return; }
         setMsgText(thinkingEl, hc === 'images_unavailable' ? "Les images ne sont pas prises en charge par l'assistant dans cette vue."
           : hc === 'image_rejected' ? "Les images jointes n'ont pas pu être analysées (format, taille ou fichier invalide). Retirez-les (✕) ou joignez-en de plus petites."
           : "Erreur : la réponse n'a pas pu être complétée. Réessayez dans un instant.");
@@ -43891,9 +43902,19 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
   }, true);
 
   /* ----- Aides communes aux trois vues (liste de pièces jointes) ----- */
+  function makeThumb(file){
+    return loadImg(file).then(function(im){
+      var k = Math.min(1, 160 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+      var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.6);
+    }).catch(function(){ return null; });
+  }
   window.hnAttAdd = function(arr, item){
     if(arr.length >= MAX_FILES){ toast('Maximum ' + MAX_FILES + ' fichiers par message : retirez-en un (✕) pour en ajouter un autre, ou envoyez-les en deux messages.'); return false; }
     if(item.kind === 'image' && arr.filter(function(a){ return a.kind === 'image'; }).length >= MAX_IMAGES){ toast('Maximum ' + MAX_IMAGES + ' images par message (les PDF scannés comptent comme des images) : retirez-en une (✕), ou envoyez-les en deux messages.'); return false; }
+    item.toJSON = function(){ return { kind:this.kind, name:this.name, truncated:!!this.truncated, thumb:this.thumb || null, lost:true }; };
+    if(item.kind === 'image' && item.file) makeThumb(item.file).then(function(t){ item.thumb = t; });
     arr.push(item); return true;
   };
   function mo(n){ return (n / 1048576).toLocaleString('fr-CA', { maximumFractionDigits:1, minimumFractionDigits:1 }) + ' Mo'; }
@@ -43924,6 +43945,92 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     var h = document.createElement('span'); h.className = 'hn-att-hint'; h.setAttribute('role', 'status');
     h.textContent = (arr.length > 1 ? arr.length + ' fichiers prêts' : '1 fichier prêt') + ' (≈ ' + mo(est.imgB64 + est.textBytes) + ') — rien n’est encore envoyé : écrivez votre question, puis appuyez sur Envoyer.';
     row.appendChild(h);
+  };
+  /* Rassemble ce qui accompagne le dernier message : brouillon (obligatoire) + pièces des messages précédents du même fil.
+     recent = fenêtre d'historique [{role, content, atts?}] dont le dernier élément est le message en cours. */
+  window.hnAttThread = function(recent){
+    var n = recent.length, last = n - 1, adds = [], dropped = [], images = [];
+    var chars = TEXT_RESERVE; recent.forEach(function(m){ chars += String(m.content || '').length; });
+    var order = []; for(var i = last; i >= 0; i--) order.push(i);          // du plus récent au plus ancien
+    var overflow = false, docsKeep = {};
+    order.forEach(function(i){
+      var m = recent[i]; if(!m || m.role !== 'user' || !m.atts) return;
+      m.atts.forEach(function(a, j){
+        if(a.kind === 'image'){
+          if(a.file && !a.skip && images.length < MAX_IMAGES && images.indexOf(a) < 0) images.push(a);
+        } else if(a.text){
+          var cost = a.text.length + 160;
+          if(i === last){ chars += cost; (docsKeep[i] = docsKeep[i] || []).push(a); if(chars > TEXT_LIMIT) overflow = true; }
+          else if(chars + cost <= TEXT_LIMIT){ chars += cost; (docsKeep[i] = docsKeep[i] || []).push(a); }
+          else dropped.push(a.name);
+        }
+      });
+    });
+    recent.forEach(function(m, i){
+      var t = '';
+      (docsKeep[i] || []).forEach(function(a){ t += "\n\n[Contenu extrait du fichier joint « " + a.name + " »" + (a.truncated ? " — tronqué" : "") + (i === last ? "" : " — joint à un message précédent de ce fil") + "]\n" + a.text; });
+      adds.push(t);
+    });
+    if(images.length){
+      adds[last] += "\n\n[" + images.length + " image" + (images.length > 1 ? "s sont jointes" : " est jointe") + " à ce message (ordre d'affichage) : " + images.map(function(a, k){ return (k + 1) + '. « ' + a.name + ' »'; }).join(', ') + ". Elles proviennent du message en cours et des messages précédents de ce fil ; analyse-les visuellement.]";
+    }
+    if(dropped.length) adds[last] += "\n\n[Texte non réinclus faute de place : " + dropped.join(', ') + ". Demande à l'utilisateur de les rejoindre si nécessaire.]";
+    return { adds:adds, images:images, dropped:dropped, textChars:chars, overflow:overflow };
+  };
+  window.hnAttFiles = function(th){ var f = th.images.map(function(a){ return a.file; }); return f.length ? (f.length === 1 ? f[0] : f) : null; };
+  window.hnAttFail = function(atts, code){
+    if(!atts || !atts.length) return '';
+    var why = (code === 'too_long' || code === 'http_413') ? "le message est trop volumineux ou trop long pour l'IA"
+      : code === 'image_rejected' ? "une image est refusée (format, taille ou fichier invalide)"
+      : code === 'images_unavailable' ? "l'IA actuelle ne prend pas en charge les images"
+      : code === 'quota' || code === 'budget' ? "les crédits IA sont épuisés"
+      : code === 'unavailable' ? "l'assistant IA est indisponible"
+      : "erreur de l'IA (" + (code || 'inconnue') + ")";
+    return "⚠ Vos fichiers joints n'ont PAS été analysés : " + why + ". Aucune réponse n'a été donnée à partir de votre question seule. Cliquez sur ✎ (Modifier) sous votre message pour remettre les fichiers dans le brouillon, retirez-en au besoin, puis renvoyez.";
+  };
+  /* Miniatures dans le message envoyé + agrandissement */
+  function lightbox(src, alt){
+    var d = document.createElement('div'); d.className = 'hn-lb'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', alt);
+    var im = document.createElement('img'); im.src = src; im.alt = alt; d.appendChild(im);
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = '✕ Fermer'; d.appendChild(b);
+    function close(){ document.removeEventListener('keydown', esc, true); if(d.parentNode) d.parentNode.removeChild(d); }
+    function esc(ev){ if(ev.key === 'Escape'){ ev.stopPropagation(); close(); } }
+    d.addEventListener('click', close); document.addEventListener('keydown', esc, true);
+    document.body.appendChild(d); b.focus();
+  }
+  window.hnAttShow = function(log, atts){
+    if(!log || !atts || !atts.length) return;
+    var bubs = log.querySelectorAll('.msg.user'); var bub = bubs[bubs.length - 1]; if(!bub) return;
+    bub.__hnAtts = atts;
+    var strip = document.createElement('div'); strip.className = 'hn-att-strip';
+    atts.forEach(function(a){
+      if(a.kind === 'image'){
+        var src = a.thumb || (a.file && URL.createObjectURL(a.file));
+        var full = a.file ? URL.createObjectURL(a.file) : a.thumb;
+        var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'hn-att-th'; btn.setAttribute('aria-label', 'Agrandir l’image ' + a.name);
+        var im = document.createElement('img'); im.alt = 'Image jointe : ' + a.name; if(src) im.src = src;
+        if(!a.thumb && a.file){ makeThumb(a.file).then(function(t){ if(t){ a.thumb = t; im.src = t; } }); }
+        btn.appendChild(im); btn.addEventListener('click', function(){ if(full) lightbox(full, a.name); });
+        strip.appendChild(btn);
+      } else {
+        var c = document.createElement('span'); c.className = 'hn-att-doc'; c.textContent = (a.kind === 'pdf' ? '📄 ' : '📊 ') + a.name; strip.appendChild(c);
+      }
+    });
+    bub.insertBefore(strip, bub.firstChild);
+  };
+  var LOG_FORM = { 'chat-log':'chat-form', 'cowork-discuss-log':'cowork-discuss-form', 'hstat-log':'hstat-form', 'hstatis-log':'hstatis-form' };
+  window.hnAttRestore = function(msgEl){
+    var atts = msgEl && msgEl.__hnAtts; if(!atts || !atts.length) return;
+    var log = msgEl.closest('.chat-log'), entry = log && window.__hnAttReg && window.__hnAttReg[LOG_FORM[log.id]]; if(!entry) return;
+    var draft = entry.list(), moved = 0, skipped = 0;
+    atts.slice().forEach(function(a){
+      if((a.kind === 'image' && !a.file) || (a.kind !== 'image' && !a.text)){ skipped++; return; }
+      if(draft.indexOf(a) >= 0) return;
+      if(window.hnAttAdd(draft, a)) moved++; else skipped++;
+    });
+    atts.length = 0;                                   // les fichiers appartiennent désormais au brouillon : le retirer (✕) les retire vraiment
+    if(entry.render) entry.render();
+    toast(moved ? (moved + ' fichier' + (moved > 1 ? 's remis' : ' remis') + ' dans le brouillon : retirez-les avec ✕ si vous n’en voulez plus.') + (skipped ? ' ' + skipped + ' non récupérable(s) (conversation rechargée).' : '') : 'Les fichiers de ce message ne sont plus disponibles (conversation rechargée) : joignez-les à nouveau.');
   };
   window.hnAttText = function(list){
     var out = '';
@@ -43961,24 +44068,38 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     }).catch(function(){ return null; });
   }
   function fitRequest(entry, typed){
-    var list = entry.list(), hist = (entry.hist() || []).map(function(m){ return String(m.content || ''); });
-    var docs = list.filter(function(a){ return a.kind !== 'image'; }), imgs = list.filter(function(a){ return a.kind === 'image' && a.file; });
-    var textChars = TEXT_RESERVE + String(typed || '').length + hist.reduce(function(n, t){ return n + t.length; }, 0) + docs.reduce(function(n, a){ return n + (a.text || '').length + 120; }, 0);
-    if(textChars > TEXT_LIMIT) return Promise.resolve({ ok:false, msg:'Le texte total (question, historique récent et documents joints) est trop long pour un seul message : environ ' + textChars.toLocaleString('fr-CA') + ' caractères sur ' + TEXT_LIMIT.toLocaleString('fr-CA') + ' permis. Retirez un document (✕) ou envoyez-les en deux messages.' });
-    if(!imgs.length) return Promise.resolve({ ok:true });
-    var textBytes = Math.round(textChars * 1.15), budget = Math.min(IMG_B64_CAP, REQ_BUDGET - textBytes - 30000);
-    var sizes = imgs.map(function(a){ return b64len(a.file.size); });
-    var sum = sizes.reduce(function(a, b){ return a + b; }, 0);
-    if(sum <= budget) return Promise.resolve({ ok:true });
-    var lo = 0, hi = Math.max.apply(null, sizes);
-    for(var it = 0; it < 30; it++){ var mid = (lo + hi) / 2, tot = sizes.reduce(function(a, s2){ return a + Math.min(s2, mid); }, 0); if(tot > budget) hi = mid; else lo = mid; }
-    var cap = Math.floor(lo), targetBytes = Math.floor(cap * 3 / 4);
-    return Promise.all(imgs.map(function(a, i){ return sizes[i] <= cap ? Promise.resolve(a.file) : recompressTo(a.file, targetBytes); })).then(function(files){
-      if(files.some(function(f){ return !f; })) return { ok:false, msg:'Les ' + imgs.length + ' images sont trop lourdes pour un seul message, même compressées sans perdre la lisibilité du texte (budget : ' + mo(budget) + '). Retirez-en une ou deux (✕), ou envoyez-les en deux messages.' };
-      var after = files.reduce(function(n, f){ return n + b64len(f.size); }, 0);
-      if(after > budget) return { ok:false, msg:'Les images restent trop lourdes pour un seul message (' + mo(after) + ' pour ' + mo(budget) + ' permis). Retirez-en une (✕) ou envoyez-les en deux messages.' };
-      imgs.forEach(function(a, i){ a.file = files[i]; });
-      return { ok:true, shrunk:true };
+    var draft = entry.list(), hist = (entry.hist() || []).slice();
+    var recent = hist.concat([{ role:'user', content:String(typed || ''), atts:draft }]);
+    function attempt(allowThread){
+      var th = window.hnAttThread(recent.map(function(m, i){ return (allowThread || i === recent.length - 1) ? m : { role:m.role, content:m.content }; }));
+      if(th.overflow || th.textChars > TEXT_LIMIT) return Promise.resolve({ ok:false, msg:'Le texte total (question, historique récent et documents joints) est trop long pour un seul message : environ ' + th.textChars.toLocaleString('fr-CA') + ' caractères sur ' + TEXT_LIMIT.toLocaleString('fr-CA') + ' permis. Retirez un document (✕) ou envoyez-les en deux messages.' });
+      var imgs = th.images;
+      if(!imgs.length) return Promise.resolve({ ok:true });
+      var textBytes = Math.round(th.textChars * 1.15), budget = Math.min(IMG_B64_CAP, REQ_BUDGET - textBytes - 30000);
+      var sizes = imgs.map(function(a){ return b64len(a.file.size); });
+      var sum = sizes.reduce(function(a, b){ return a + b; }, 0);
+      if(sum <= budget) return Promise.resolve({ ok:true });
+      var lo = 0, hi = Math.max.apply(null, sizes);
+      for(var it = 0; it < 30; it++){ var mid = (lo + hi) / 2, tot = sizes.reduce(function(a, s2){ return a + Math.min(s2, mid); }, 0); if(tot > budget) hi = mid; else lo = mid; }
+      var cap = Math.floor(lo), targetBytes = Math.floor(cap * 3 / 4);
+      return Promise.all(imgs.map(function(a, i){ return sizes[i] <= cap ? Promise.resolve(a.file) : recompressTo(a.file, targetBytes); })).then(function(files){
+        var after = files.every(function(f){ return !!f; }) ? files.reduce(function(n, f){ return n + b64len(f.size); }, 0) : Infinity;
+        if(after > budget) return { ok:false, msg:'Les ' + imgs.length + ' images sont trop lourdes pour un seul message, même compressées sans perdre la lisibilité du texte (budget : ' + mo(budget) + '). Retirez-en une ou deux (✕), ou envoyez-les en deux messages.' };
+        imgs.forEach(function(a, i){ a.file = files[i]; a.thumb = a.thumb || null; });
+        return { ok:true, shrunk:true };
+      });
+    }
+    return attempt(true).then(function(r){
+      if(r.ok) return r;
+      // le brouillon seul passe-t-il ? alors on n'embarque plus les anciennes images du fil (avec avertissement)
+      var older = 0; hist.forEach(function(m){ (m.atts || []).forEach(function(a){ if(a.kind === 'image' && a.file && !a.skip) older++; }); });
+      if(!older) return r;
+      return attempt(false).then(function(r2){
+        if(!r2.ok) return r;
+        hist.forEach(function(m){ (m.atts || []).forEach(function(a){ if(a.kind === 'image') a.skip = true; }); });
+        toast('Les images des messages précédents ne sont pas réutilisées cette fois (trop lourd avec les nouvelles pièces).');
+        return r2;
+      });
     });
   }
   function entryForm(f){ var r = window.__hnAttReg; return (r && f && r[f.id]) || null; }
@@ -43993,7 +44114,8 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     var f = e.target, entry = entryForm(f);
     if(!entry) return;
     if(f.__hnFit){ f.__hnFit = false; return; }
-    if(!entry.list().length) return;
+    var th0 = window.hnAttThread((entry.hist() || []).concat([{ role:'user', content:'', atts:entry.list() }]));
+    if(!entry.list().length && !th0.images.length) return;
     e.preventDefault(); e.stopImmediatePropagation();
     if(f.__hnBusy) return; f.__hnBusy = true;
     var inp = $(entry.input), row = entry.row && entry.row(), old = row && row.querySelector('.hn-att-alert'); if(old) old.remove();
@@ -44093,6 +44215,15 @@ html body #fghlab-panel-hstatis .chat-shell, html body #hstatis-panel-chat .chat
 /* Une fois la conversation commencée, les bandeaux promotionnels au-dessus de la zone de travail se replient */
 #view-assistant:has(#chat-log .msg.user) .hn-nd, #cowork-panel-discuss:has(#cowork-discuss-log .msg.user) .hn-nd, #hstat-tab-consult:has(#hstat-log .msg.user) .hn-nd{ display:none; }
 #chat-form textarea::placeholder, #cowork-discuss-form textarea::placeholder, #hstat-form textarea::placeholder, #hstatis-form textarea::placeholder{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Miniatures dans le message envoyé */
+.hn-att-strip{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 8px; }
+.hn-att-th{ padding:0; border:2px solid rgba(255,255,255,.55); border-radius:12px; background:none; cursor:zoom-in; overflow:hidden; line-height:0; }
+.hn-att-th img{ width:92px; height:92px; object-fit:cover; display:block; }
+.hn-att-th:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+.hn-att-doc{ display:inline-flex; align-items:center; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.2); font-size:13px; line-height:1.3; max-width:100%; word-break:break-word; }
+.hn-lb{ position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,.86); display:flex; align-items:center; justify-content:center; cursor:zoom-out; }
+.hn-lb img{ max-width:94vw; max-height:88vh; object-fit:contain; border-radius:8px; background:#fff; }
+.hn-lb button{ position:absolute; top:14px; right:14px; font-size:15px; padding:10px 14px; border-radius:10px; border:0; background:#fff; color:#111; cursor:pointer; }
 /* Aperçu des images dans le brouillon */
 .attach-chip-row .attach-chip .hn-att-thumb{ width:40px; height:40px; object-fit:cover; border-radius:7px; vertical-align:middle; margin-right:6px; border:1px solid var(--line); background:var(--surface); }
 @media (max-width:860px){
