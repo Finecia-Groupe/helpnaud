@@ -14645,6 +14645,9 @@
   var btnAttach = document.getElementById('btn-attach');
   var ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Aide à rédiger un document à partir de ce fichier"];
 
+
+  window.__hnAttReg = window.__hnAttReg || {};
+  window.__hnAttReg['chat-form'] = { list:function(){ return pendingAttachment; }, hist:function(){ return chatHistory.slice(-10); }, input:'chat-input', row:function(){ return document.getElementById('attach-chip-row'); } };
   function renderAttachChip(){
     window.hnAttChips(attachChipRow, pendingAttachment, function(){ renderAttachChip(); if(!pendingAttachment.length) resetSuggestRow();});
   }
@@ -28634,6 +28637,8 @@
     var hstatisAttachMenu = document.getElementById('hstatis-attach-menu');
     var hstatisBtnAttach = document.getElementById('hstatis-btn-attach');
     var HSTATIS_ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Qu'en penses-tu ?"];
+    window.__hnAttReg = window.__hnAttReg || {};
+    window.__hnAttReg['hstatis-form'] = { list:function(){ return hstatisPending; }, hist:function(){ return hstatisHistory.slice(-12); }, input:'hstatis-input', row:function(){ return document.getElementById('hstatis-attach-chip-row'); } };
     function renderHstatisChips(){ window.hnAttChips(hstatisChipRow, hstatisPending, renderHstatisChips); }
     function openHstatisPicker(mode){
       if(mode === 'camera'){ hstatisFileInput.setAttribute('accept', 'image/*'); hstatisFileInput.setAttribute('capture', 'environment'); }
@@ -33185,6 +33190,9 @@
     renderLog: renderCoworkDiscussLogFromMessages,
     clearLog: clearCoworkDiscussLog
   });
+
+  window.__hnAttReg = window.__hnAttReg || {};
+  window.__hnAttReg['cowork-discuss-form'] = { list:function(){ return coworkDiscussPendingAttachment; }, hist:function(){ return coworkDiscussHistory.slice(-10); }, input:'cowork-discuss-input', row:function(){ return document.getElementById('cowork-discuss-attach-chip-row'); } };
   function renderCoworkDiscussAttachChip(){
     window.hnAttChips(coworkDiscussAttachChipRow, coworkDiscussPendingAttachment, function(){ renderCoworkDiscussAttachChip(); if(!coworkDiscussPendingAttachment.length) resetCoworkDiscussSuggestRow();});
   }
@@ -36915,6 +36923,9 @@
   var hstatAttachMenu = document.getElementById('hstat-attach-menu');
   var hstatBtnAttach = document.getElementById('hstat-btn-attach');
   var HSTAT_ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Qu'en penses-tu ?"];
+
+  window.__hnAttReg = window.__hnAttReg || {};
+  window.__hnAttReg['hstat-form'] = { list:function(){ return hstatPendingAttachment; }, hist:function(){ return hstatHistory.slice(-10); }, input:'hstat-input', row:function(){ return document.getElementById('hstat-attach-chip-row'); } };
   function renderHstatAttachChip(){
     window.hnAttChips(hstatAttachChipRow, hstatPendingAttachment, function(){ renderHstatAttachChip(); });
   }
@@ -43750,6 +43761,8 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
 .attach-chip-row .attach-chip button{ min-width:28px; min-height:28px; font-size:14px; cursor:pointer; border-radius:6px; }
 .attach-chip-row .attach-chip button:focus-visible, #hstatis-btn-attach:focus-visible, #hstatis-attach-menu .attach-menu-opt:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
 @media (max-width:640px){ .attach-chip-row .attach-chip button{ min-width:36px; min-height:36px; } }
+.hn-att-alert{ flex-basis:100%; font-size:13.5px; line-height:1.45; color:#8a1c1c; background:#fdecec; border:1px solid #e9b3b3; border-radius:8px; padding:8px 10px; }
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .hn-att-alert{ color:#ffd2d2; background:#3a1a1a; border-color:#7a3a3a; } }
 .hn-att-hint{ flex-basis:100%; font-size:12.5px; color:var(--muted); padding:2px 4px; }
 .hn-att-toast{ font-size:14px; line-height:1.4; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(92px + env(safe-area-inset-bottom)); background:var(--ink); color:var(--surface); padding:9px 14px; border-radius:10px; font-size:13px; z-index:9999; max-width:min(92vw,520px); box-shadow:0 4px 16px rgba(0,0,0,.25); }
 </style>
@@ -43766,7 +43779,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
   var INPUT_BY_FORM = { 'hstatis-form':'hstatis-file-input', 'chat-form':'attach-file-input', 'cowork-discuss-form':'cowork-discuss-file-input', 'hstat-form':'hstat-file-input' };
   var INPUT_IDS = { 'hstatis-file-input':1, 'attach-file-input':1, 'cowork-discuss-file-input':1, 'hstat-file-input':1, 'cowork-query-file-input':1 };
   var VIEW_INPUT = { assistant:'attach-file-input', hstat:'hstat-file-input' };   // glisser-déposer (Co-work Discussion a déjà le sien)
-  var MAX_BYTES = 900000, MAX_SIDE = 1800, MAX_FILES = 4;
+  var MAX_BYTES = 1000000, MAX_SIDE = 2000, MAX_FILES = 8, MAX_IMAGES = 6, REQ_BUDGET = 5400000, IMG_B64_CAP = 5000000, TEXT_LIMIT = 60000, TEXT_RESERVE = 6000;
   function $(id){ return document.getElementById(id); }
   function toast(t){
     var d = document.createElement('div'); d.className = 'hn-att-toast'; d.setAttribute('role', 'status'); d.setAttribute('aria-live', 'polite'); d.textContent = t;
@@ -43800,7 +43813,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     return loadImg(file).then(function(im){
       var w = im.naturalWidth, h = im.naturalHeight;
       if(Math.min(1, MAX_SIDE / Math.max(w, h)) >= 1 && file.size <= MAX_BYTES) return file;
-      var steps = [[MAX_SIDE, 0.86], [1400, 0.75], [1000, 0.7], [800, 0.6]], i = 0;
+      var steps = [[MAX_SIDE, 0.86], [1600, 0.8], [1300, 0.72], [1100, 0.66]], i = 0;
       function attempt(){
         var st = steps[i], k = Math.min(1, st[0] / Math.max(w, h));
         var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
@@ -43879,8 +43892,16 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
 
   /* ----- Aides communes aux trois vues (liste de pièces jointes) ----- */
   window.hnAttAdd = function(arr, item){
-    if(arr.length >= MAX_FILES){ toast('Maximum ' + MAX_FILES + ' fichiers par message : retirez-en un (✕) pour en ajouter un autre.'); return false; }
+    if(arr.length >= MAX_FILES){ toast('Maximum ' + MAX_FILES + ' fichiers par message : retirez-en un (✕) pour en ajouter un autre, ou envoyez-les en deux messages.'); return false; }
+    if(item.kind === 'image' && arr.filter(function(a){ return a.kind === 'image'; }).length >= MAX_IMAGES){ toast('Maximum ' + MAX_IMAGES + ' images par message (les PDF scannés comptent comme des images) : retirez-en une (✕), ou envoyez-les en deux messages.'); return false; }
     arr.push(item); return true;
+  };
+  function mo(n){ return (n / 1048576).toLocaleString('fr-CA', { maximumFractionDigits:1, minimumFractionDigits:1 }) + ' Mo'; }
+  function b64len(bytes){ return Math.ceil(bytes / 3) * 4; }
+  window.hnAttEstimate = function(list){
+    var img = 0, txt = 0;
+    (list || []).forEach(function(a){ if(a.kind === 'image' && a.file) img += b64len(a.file.size); else txt += (a.text || '').length; });
+    return { imgB64:img, textChars:txt, textBytes:Math.round(txt * 1.15) };
   };
   window.hnAttChips = function(row, arr, onChange){
     (row.__urls || []).forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(x){} }); row.__urls = [];
@@ -43899,8 +43920,9 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
       b.addEventListener('click', function(){ arr.splice(i, 1); onChange(); });
       sp.appendChild(b); row.appendChild(sp);
     });
+    var est = window.hnAttEstimate(arr);
     var h = document.createElement('span'); h.className = 'hn-att-hint'; h.setAttribute('role', 'status');
-    h.textContent = (arr.length > 1 ? arr.length + ' fichiers prêts' : '1 fichier prêt') + ' — rien n’est encore envoyé : écrivez votre question, puis appuyez sur Envoyer.';
+    h.textContent = (arr.length > 1 ? arr.length + ' fichiers prêts' : '1 fichier prêt') + ' (≈ ' + mo(est.imgB64 + est.textBytes) + ') — rien n’est encore envoyé : écrivez votre question, puis appuyez sur Envoyer.';
     row.appendChild(h);
   };
   window.hnAttText = function(list){
@@ -43916,6 +43938,72 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     var f = (list || []).filter(function(a){ return a.kind === 'image'; }).map(function(a){ return a.file; });
     return f.length ? (f.length === 1 ? f[0] : f) : null;
   };
+
+  /* ----- Compression adaptée + contrôle de la taille totale, juste avant l'envoi ----- */
+  function recompressTo(file, targetBytes){
+    return loadImg(file).then(function(im){
+      var w = im.naturalWidth, h = im.naturalHeight, L0 = Math.max(w, h);
+      var sides = [2000, 1700, 1450, 1250, 1100], qs = [0.82, 0.72, 0.62], plan = [];
+      sides.forEach(function(sd){ qs.forEach(function(q){ plan.push([Math.min(sd, L0), q]); }); });
+      var i = 0;
+      function next(){
+        if(i >= plan.length) return null;
+        var st = plan[i++], k = st[0] / L0;
+        var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        return toBlob(c, 'image/jpeg', st[1]).then(function(b){ return (b && b.size <= targetBytes) ? b : next(); });
+      }
+      return Promise.resolve(next());
+    }).then(function(b){
+      if(!b) return null;
+      var base = String(file.name || 'image').replace(/\.[^.]+$/, '');
+      return new File([b], base + '.jpg', { type:'image/jpeg' });
+    }).catch(function(){ return null; });
+  }
+  function fitRequest(entry, typed){
+    var list = entry.list(), hist = (entry.hist() || []).map(function(m){ return String(m.content || ''); });
+    var docs = list.filter(function(a){ return a.kind !== 'image'; }), imgs = list.filter(function(a){ return a.kind === 'image' && a.file; });
+    var textChars = TEXT_RESERVE + String(typed || '').length + hist.reduce(function(n, t){ return n + t.length; }, 0) + docs.reduce(function(n, a){ return n + (a.text || '').length + 120; }, 0);
+    if(textChars > TEXT_LIMIT) return Promise.resolve({ ok:false, msg:'Le texte total (question, historique récent et documents joints) est trop long pour un seul message : environ ' + textChars.toLocaleString('fr-CA') + ' caractères sur ' + TEXT_LIMIT.toLocaleString('fr-CA') + ' permis. Retirez un document (✕) ou envoyez-les en deux messages.' });
+    if(!imgs.length) return Promise.resolve({ ok:true });
+    var textBytes = Math.round(textChars * 1.15), budget = Math.min(IMG_B64_CAP, REQ_BUDGET - textBytes - 30000);
+    var sizes = imgs.map(function(a){ return b64len(a.file.size); });
+    var sum = sizes.reduce(function(a, b){ return a + b; }, 0);
+    if(sum <= budget) return Promise.resolve({ ok:true });
+    var lo = 0, hi = Math.max.apply(null, sizes);
+    for(var it = 0; it < 30; it++){ var mid = (lo + hi) / 2, tot = sizes.reduce(function(a, s2){ return a + Math.min(s2, mid); }, 0); if(tot > budget) hi = mid; else lo = mid; }
+    var cap = Math.floor(lo), targetBytes = Math.floor(cap * 3 / 4);
+    return Promise.all(imgs.map(function(a, i){ return sizes[i] <= cap ? Promise.resolve(a.file) : recompressTo(a.file, targetBytes); })).then(function(files){
+      if(files.some(function(f){ return !f; })) return { ok:false, msg:'Les ' + imgs.length + ' images sont trop lourdes pour un seul message, même compressées sans perdre la lisibilité du texte (budget : ' + mo(budget) + '). Retirez-en une ou deux (✕), ou envoyez-les en deux messages.' };
+      var after = files.reduce(function(n, f){ return n + b64len(f.size); }, 0);
+      if(after > budget) return { ok:false, msg:'Les images restent trop lourdes pour un seul message (' + mo(after) + ' pour ' + mo(budget) + ' permis). Retirez-en une (✕) ou envoyez-les en deux messages.' };
+      imgs.forEach(function(a, i){ a.file = files[i]; });
+      return { ok:true, shrunk:true };
+    });
+  }
+  function entryForm(f){ var r = window.__hnAttReg; return (r && f && r[f.id]) || null; }
+  function showAlert(entry, msg){
+    var row = entry.row && entry.row(); toast(msg.length > 140 ? msg.slice(0, 137) + '…' : msg);
+    if(!row) return;
+    var old = row.querySelector('.hn-att-alert'); if(old) old.remove();
+    var a = document.createElement('span'); a.className = 'hn-att-alert'; a.setAttribute('role', 'alert'); a.textContent = '⚠ ' + msg + ' Vos fichiers et votre texte sont conservés dans le brouillon.';
+    row.appendChild(a); row.hidden = false;
+  }
+  document.addEventListener('submit', function(e){
+    var f = e.target, entry = entryForm(f);
+    if(!entry) return;
+    if(f.__hnFit){ f.__hnFit = false; return; }
+    if(!entry.list().length) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    if(f.__hnBusy) return; f.__hnBusy = true;
+    var inp = $(entry.input), row = entry.row && entry.row(), old = row && row.querySelector('.hn-att-alert'); if(old) old.remove();
+    fitRequest(entry, inp ? inp.value : '').then(function(r){
+      f.__hnBusy = false;
+      if(!r.ok){ showAlert(entry, r.msg); return; }
+      f.__hnFit = true;
+      try{ f.requestSubmit(); }catch(x){ f.__hnFit = false; f.dispatchEvent(new Event('submit', { cancelable:true, bubbles:true })); }
+    }).catch(function(){ f.__hnBusy = false; f.__hnFit = true; try{ f.requestSubmit(); }catch(x){} });
+  }, true);
 
   /* ----- Coller (Ctrl+V) ----- */
   document.addEventListener('paste', function(e){
@@ -43976,14 +44064,18 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
 #chat-log .msg.bot, #cowork-discuss-log .msg.bot, #hstat-log .msg.bot, #hstatis-log .msg.bot{
   max-width:100%; width:100%; align-self:stretch;
   background:transparent; border:0; box-shadow:none; border-radius:0; padding:2px 0 4px;
-  font-size:16.5px; line-height:1.72; gap:8px;
+  font-size:15px; line-height:1.6; gap:8px;
 }
 #chat-log .msg.bot p, #cowork-discuss-log .msg.bot p, #hstat-log .msg.bot p, #hstatis-log .msg.bot p{ margin:0 0 .85em; }
 #chat-log .msg.bot li, #cowork-discuss-log .msg.bot li, #hstat-log .msg.bot li, #hstatis-log .msg.bot li{ margin:.25em 0; }
-#chat-log .msg.bot table, #cowork-discuss-log .msg.bot table, #hstat-log .msg.bot table, #hstatis-log .msg.bot table{ font-size:15px; }
+#chat-log .msg.bot table, #cowork-discuss-log .msg.bot table, #hstat-log .msg.bot table, #hstatis-log .msg.bot table{ font-size:14px; }
+/* Informations secondaires (heure, compteurs, légendes) : 13 px */
+#chat-log .msg-time, #cowork-discuss-log .msg-time, #hstat-log .msg-time, #hstatis-log .msg-time, .hn-ai-note, .hn-att-hint{ font-size:13px !important; opacity:.8; }
+/* Fond blanc pour la zone de lecture */
+html body #view-assistant .chat-shell, html body #cowork-panel-discuss .chat-shell, html body #hstat-tab-consult .chat-shell, html body #hstatis-panel-chat .chat-shell{ background:var(--surface); border-radius:14px; }
 /* Messages de l'utilisateur : bulle à droite, même taille de texte */
 #chat-log .msg.user, #cowork-discuss-log .msg.user, #hstat-log .msg.user, #hstatis-log .msg.user{
-  max-width:min(85%, 640px); font-size:16.5px; line-height:1.6; padding:11px 16px; border-radius:18px;
+  max-width:min(85%, 640px); font-size:15px; line-height:1.6; padding:11px 16px; border-radius:18px;
 }
 /* Petites icônes d'action (copier, lire, évaluer…) : zones de toucher plus confortables */
 #chat-log .msg-action-btn, #cowork-discuss-log .msg-action-btn, #hstat-log .msg-action-btn, #hstatis-log .msg-action-btn{ min-width:32px; min-height:32px; }
