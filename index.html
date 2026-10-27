@@ -14647,6 +14647,14 @@
   var ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Aide à rédiger un document à partir de ce fichier"];
 
 
+  window.hnSample = function(msgs, opts){
+    return sampleReady.then(function(){
+      if(!sampleCap) throw Object.assign(new Error('indisponible'), { code:'unavailable' });
+      try{ incrementAiCredits(function(){}, 2); }catch(e){}
+      return sampleCap(msgs, opts);
+    });
+  };
+
   window.__hnAttReg = window.__hnAttReg || {};
   window.__hnAttReg['chat-form'] = { list:function(){ return pendingAttachment; }, hist:function(){ return chatHistory.slice(-9); }, input:'chat-input', row:function(){ return document.getElementById('attach-chip-row'); }, render:function(){ renderAttachChip(); } };
   function renderAttachChip(){
@@ -15006,7 +15014,7 @@
       var recent = chatHistory.slice(-10);
       var hnTh = window.hnAttThread(recent);
       var msgs = recent.map(function(h, i){
-        var content = h.content;
+        var content = hnTh.contents[i] != null ? hnTh.contents[i] : h.content;
         if(i === 0 && h.role === 'user') content = ASSISTANT_SYSTEM + "\n\n" + hmodelPromptInstruction('assistant') + researchPromptInstruction('assistant') + "\n\n" + content;
         if(hnTh.adds[i]) content += hnTh.adds[i];
         return { role:h.role, content:content };
@@ -28613,7 +28621,7 @@
         // Texte libre (pas de JSON) : une réponse longue en JSON se tronquait et donnait « bad_json ». L'historique est conservé.
         var hsRecent = hstatisHistory.slice(-12);
         var hsTh = window.hnAttThread(hsRecent);
-        var hs = hsRecent.map(function(h, i){ return { role:h.role, content:h.content + (hsTh.adds[i] || '') }; });
+        var hs = hsRecent.map(function(h, i){ return { role:h.role, content:(hsTh.contents[i] != null ? hsTh.contents[i] : h.content) + (hsTh.adds[i] || '') }; });
         var attText = hsTh.adds[hsRecent.length - 1] || '';
         if(hs.length && hs[hs.length - 1].role === 'user') hs[hs.length - 1].content = prefix + "\n\nQuestion : " + q + attText;
         else hs.push({ role:'user', content: prefix + "\n\nQuestion : " + q + attText });
@@ -33237,7 +33245,7 @@
       var recent = coworkDiscussHistory.slice(-10);
       var hnTh = window.hnAttThread(recent);
       var msgs = recent.map(function(h, i){
-        var content = h.content;
+        var content = hnTh.contents[i] != null ? hnTh.contents[i] : h.content;
         if(i === 0 && h.role === 'user') content = COWORK_SYSTEM + "\n\n" + hmodelPromptInstruction('cowork') + researchPromptInstruction('cowork') + "\n\n" + content;
         if(hnTh.adds[i]) content += hnTh.adds[i];
         return { role:h.role, content:content };
@@ -37133,7 +37141,7 @@
       if(recent.length && recent[0].role !== 'user') recent = recent.slice(1);
       var hnTh = window.hnAttThread(recent);
       var msgs = recent.map(function(h, i){
-        var content = h.content;
+        var content = hnTh.contents[i] != null ? hnTh.contents[i] : h.content;
         if(i === 0 && h.role === 'user') content = systemPrompt + "\n\n" + content;
         if(hnTh.adds[i]) content += hnTh.adds[i];
         return { role:h.role, content:content };
@@ -43776,6 +43784,9 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
 @media (max-width:640px){ .attach-chip-row .attach-chip button{ min-width:36px; min-height:36px; } }
 .hn-att-alert{ flex-basis:100%; font-size:13.5px; line-height:1.45; color:#8a1c1c; background:#fdecec; border:1px solid #e9b3b3; border-radius:8px; padding:8px 10px; }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .hn-att-alert{ color:#ffd2d2; background:#3a1a1a; border-color:#7a3a3a; } }
+.hn-att-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.hn-att-actions .btn{ font-size:13.5px; }
+.hn-att-meter.bad{ color:#8a1c1c; font-weight:600; }
 .hn-att-hint{ flex-basis:100%; font-size:12.5px; color:var(--muted); padding:2px 4px; }
 .hn-att-toast{ font-size:14px; line-height:1.4; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(92px + env(safe-area-inset-bottom)); background:var(--ink); color:var(--surface); padding:9px 14px; border-radius:10px; font-size:13px; z-index:9999; max-width:min(92vw,520px); box-shadow:0 4px 16px rgba(0,0,0,.25); }
 </style>
@@ -44012,42 +44023,71 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
       b.addEventListener('click', function(){ arr.splice(i, 1); onChange(); });
       sp.appendChild(b); row.appendChild(sp);
     });
-    var est = window.hnAttEstimate(arr);
-    var h = document.createElement('span'); h.className = 'hn-att-hint'; h.setAttribute('role', 'status');
-    var cr = window.hnAttCredit(arr);
-    h.textContent = (arr.length > 1 ? arr.length + ' fichiers prêts' : '1 fichier prêt') + ' (≈ ' + mo(est.imgB64 + est.textBytes) + ') · ' + (cr.extra ? '+' + cr.extra + ' crédit' + (cr.extra > 1 ? 's' : '') + ' IA pour les pièces jointes' : 'pièces jointes incluses dans le coût') + ' — rien n’est encore envoyé : écrivez votre question, puis appuyez sur Envoyer.';
-    row.appendChild(h);
-  };
-  /* Rassemble ce qui accompagne le dernier message : brouillon (obligatoire) + pièces des messages précédents du même fil.
-     recent = fenêtre d'historique [{role, content, atts?}] dont le dernier élément est le message en cours. */
-  window.hnAttThread = function(recent){
-    var n = recent.length, last = n - 1, adds = [], dropped = [], images = [];
-    var chars = TEXT_RESERVE; recent.forEach(function(m){ chars += String(m.content || '').length; });
-    var order = []; for(var i = last; i >= 0; i--) order.push(i);          // du plus récent au plus ancien
-    var overflow = false, docsKeep = {};
-    order.forEach(function(i){
-      var m = recent[i]; if(!m || m.role !== 'user' || !m.atts) return;
-      m.atts.forEach(function(a, j){
-        if(a.kind === 'image'){
-          if(a.file && !a.skip && images.length < MAX_IMAGES && images.indexOf(a) < 0) images.push(a);
-        } else if(a.text){
-          var cost = a.text.length + 160;
-          if(i === last){ chars += cost; (docsKeep[i] = docsKeep[i] || []).push(a); if(chars > TEXT_LIMIT) overflow = true; }
-          else if(chars + cost <= TEXT_LIMIT){ chars += cost; (docsKeep[i] = docsKeep[i] || []).push(a); }
-          else dropped.push(a.name);
-        }
-      });
-    });
-    recent.forEach(function(m, i){
-      var t = '';
-      (docsKeep[i] || []).forEach(function(a){ t += "\n\n[Contenu extrait du fichier joint « " + a.name + " »" + (a.truncated ? " — tronqué" : "") + (i === last ? "" : " — joint à un message précédent de ce fil") + "]\n" + a.text; });
-      adds.push(t);
-    });
-    if(images.length){
-      adds[last] += "\n\n[" + images.length + " image" + (images.length > 1 ? "s sont jointes" : " est jointe") + " à ce message (ordre d'affichage) : " + images.map(function(a, k){ return (k + 1) + '. « ' + a.name + ' »'; }).join(', ') + ". Elles proviennent du message en cours et des messages précédents de ce fil ; analyse-les visuellement.]";
+    var meter = document.createElement('span'); meter.className = 'hn-att-hint hn-att-meter'; meter.setAttribute('role', 'status');
+    var entry = (function(){ var r = window.__hnAttReg || {}; for(var k in r){ if(r[k].row && r[k].row() === row){ r[k].formId = k; return r[k]; } } return null; })();
+    function paint(){
+      var typed = entry && document.getElementById(entry.input) ? document.getElementById(entry.input).value : '';
+      var th = window.hnAttThread(((entry && entry.hist()) || []).concat([{ role:'user', content:typed, atts:arr }]));
+      var est = window.hnAttEstimate(arr), imgs = arr.filter(function(a){ return a.kind === 'image'; }).length, cr = window.hnAttCredit(arr);
+      var left = Math.max(0, TEXT_LIMIT - th.textChars), bad = th.overflow;
+      meter.className = 'hn-att-hint hn-att-meter' + (bad ? ' bad' : '');
+      meter.textContent = 'Capacité — fichiers ' + arr.length + '/' + MAX_FILES + ' · images ' + imgs + '/' + MAX_IMAGES + ' · poids ≈ ' + mo(est.imgB64 + est.textBytes) + ' sur ' + mo(IMG_B64_CAP) + ' · texte ≈ ' + th.textChars.toLocaleString('fr-CA') + ' sur ' + TEXT_LIMIT.toLocaleString('fr-CA') + ' caractères' + (bad ? ' ⚠ documents trop longs : des options s’afficheront à l’envoi' : ' (reste ≈ ' + left.toLocaleString('fr-CA') + ')') +
+        ' · ' + (cr.extra ? '+' + cr.extra + ' crédit' + (cr.extra > 1 ? 's' : '') + ' IA pour les pièces jointes' : 'pièces jointes incluses dans le coût') + '. Rien n’est encore envoyé : écrivez votre question, puis Envoyer.';
     }
-    if(dropped.length) adds[last] += "\n\n[Texte non réinclus faute de place : " + dropped.join(', ') + ". Demande à l'utilisateur de les rejoindre si nécessaire.]";
-    return { adds:adds, images:images, dropped:dropped, textChars:chars, overflow:overflow };
+    paint(); row.__hnMeter = paint; row.appendChild(meter);
+  };
+  /* Rassemble ce qui accompagne le dernier message, en gérant la place (limite de sécurité TEXT_LIMIT) :
+     1) la question et les documents du brouillon sont prioritaires et gardés en entier ;
+     2) l'ancien historique est raccourci automatiquement (le plus ancien d'abord) ;
+     3) les documents des messages précédents restent accessibles sous forme d'extraits répartis équitablement
+        (la place disponible est partagée), plutôt que d'être oubliés.
+     recent = fenêtre d'historique [{role, content, atts?}] dont le dernier élément est le message en cours. */
+  var MIN_HIST = 2000;
+  window.hnAttThread = function(recent){
+    var n = recent.length, last = n - 1, qLen = String(recent[last].content || '').length;
+    var budget = TEXT_LIMIT - TEXT_RESERVE - qLen;
+    var draft = recent[last].atts || [];
+    var D = 0; draft.forEach(function(a){ if(a.kind !== 'image' && a.text) D += a.text.length + 160; });
+    var older = [], rawOlder = 0;
+    for(var i = last - 1; i >= 0; i--){
+      var m = recent[i]; if(!m || m.role !== 'user' || !m.atts) continue;
+      m.atts.forEach(function(a){ if(a.kind !== 'image' && a.text){ older.push({ i:i, a:a }); rawOlder += a.text.length + 160; } });
+    }
+    var Hsize = 0; for(var h = 0; h < last; h++) Hsize += String(recent[h].content || '').length;
+    var overflow = D > budget - MIN_HIST;
+    var R1 = Math.max(0, budget - D);
+    var histAllowed = Math.min(Hsize, Math.max(MIN_HIST, Math.round(R1 * 0.35)));
+    var R2 = Math.max(0, R1 - histAllowed);
+    var each = older.length ? Math.floor(R2 / older.length) : 0;
+    var contents = recent.map(function(m){ return String(m.content || ''); }), over = Hsize - histAllowed, histNow = Hsize;
+    for(var k = 0; k < last && over > 0; k++){
+      var c = contents[k]; if(c.length <= 600) continue;
+      var cut = c.slice(0, 600) + ' […message ancien raccourci]';
+      over -= (c.length - cut.length); histNow -= (c.length - cut.length); contents[k] = cut;
+    }
+    var adds = recent.map(function(){ return ''; }), dropped = [], excerpted = [], olderChars = 0;
+    draft.forEach(function(a){
+      if(a.kind !== 'image' && a.text) adds[last] += "\n\n[Contenu extrait du fichier joint « " + a.name + " »" + (a.truncated ? " — tronqué" : "") + "]\n" + a.text;
+    });
+    older.slice().reverse().forEach(function(o){                          // ordre chronologique dans chaque message
+      var a = o.a, allowed = Math.min(a.text.length, each - 260);
+      if(allowed < 800){ dropped.push(a.name); return; }
+      var t = a.text.length > allowed ? a.text.slice(0, allowed) + "\n[… extrait : " + allowed + " caractères sur " + a.text.length + "]" : a.text;
+      if(a.text.length > allowed) excerpted.push(a.name);
+      olderChars += t.length + 160;
+      adds[o.i] += "\n\n[Contenu extrait du fichier joint « " + a.name + " » — joint à un message précédent de ce fil" + (a.text.length > allowed ? " — extrait" : "") + "]\n" + t;
+    });
+    var images = [];
+    for(var j = last; j >= 0; j--){
+      var mm = recent[j]; if(!mm || mm.role !== 'user' || !mm.atts) continue;
+      mm.atts.forEach(function(a){ if(a.kind === 'image' && a.file && !a.skip && images.length < MAX_IMAGES && images.indexOf(a) < 0) images.push(a); });
+    }
+    if(images.length) adds[last] += "\n\n[" + images.length + " image" + (images.length > 1 ? "s sont jointes" : " est jointe") + " à ce message (ordre d'affichage) : " + images.map(function(a, q){ return (q + 1) + '. « ' + a.name + ' »'; }).join(', ') + ". Elles proviennent du message en cours et des messages précédents de ce fil ; analyse-les visuellement.]";
+    if(excerpted.length) adds[last] += "\n\n[Documents précédents réduits à des extraits faute de place : " + excerpted.join(', ') + ".]";
+    if(dropped.length) adds[last] += "\n\n[Documents précédents non réinclus faute de place : " + dropped.join(', ') + ". Demande à l'utilisateur de les rejoindre si nécessaire.]";
+    var used = TEXT_RESERVE + qLen + D + olderChars + histNow;
+    return { adds:adds, contents:contents, images:images, dropped:dropped, excerpted:excerpted, textChars:used, rawChars:TEXT_RESERVE + qLen + D + rawOlder + Hsize,
+             draftDocChars:D, overflow:overflow, limit:TEXT_LIMIT, budgetForDocs:Math.max(0, budget - MIN_HIST) };
   };
   window.hnAttFiles = function(th){ var f = th.images.map(function(a){ return a.file; }); return f.length ? (f.length === 1 ? f[0] : f) : null; };
   window.hnAttFail = function(atts, code){
@@ -44144,7 +44184,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     var recent = hist.concat([{ role:'user', content:String(typed || ''), atts:draft }]);
     function attempt(allowThread){
       var th = window.hnAttThread(recent.map(function(m, i){ return (allowThread || i === recent.length - 1) ? m : { role:m.role, content:m.content }; }));
-      if(th.overflow || th.textChars > TEXT_LIMIT) return Promise.resolve({ ok:false, msg:'Le texte total (question, historique récent et documents joints) est trop long pour un seul message : environ ' + th.textChars.toLocaleString('fr-CA') + ' caractères sur ' + TEXT_LIMIT.toLocaleString('fr-CA') + ' permis. Retirez un document (✕) ou envoyez-les en deux messages.' });
+      if(th.overflow || th.textChars > TEXT_LIMIT) return Promise.resolve({ ok:false, kind:'text', th:th, msg:'Les documents joints sont trop volumineux pour un seul message : environ ' + th.rawChars.toLocaleString('fr-CA') + ' caractères au total (question, documents et historique) pour ' + TEXT_LIMIT.toLocaleString('fr-CA') + ' possibles. L’historique ancien est déjà raccourci automatiquement : c’est donc le texte des documents joints qui dépasse.' });
       var imgs = th.images;
       if(!imgs.length) return Promise.resolve({ ok:true });
       var textBytes = Math.round(th.textChars * 1.15), budget = Math.min(IMG_B64_CAP, REQ_BUDGET - textBytes - 30000);
@@ -44156,14 +44196,13 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
       var cap = Math.floor(lo), targetBytes = Math.floor(cap * 3 / 4);
       return Promise.all(imgs.map(function(a, i){ return sizes[i] <= cap ? Promise.resolve(a.file) : recompressTo(a.file, targetBytes); })).then(function(files){
         var after = files.every(function(f){ return !!f; }) ? files.reduce(function(n, f){ return n + b64len(f.size); }, 0) : Infinity;
-        if(after > budget) return { ok:false, msg:'Les ' + imgs.length + ' images sont trop lourdes pour un seul message, même compressées sans perdre la lisibilité du texte (budget : ' + mo(budget) + '). Retirez-en une ou deux (✕), ou envoyez-les en deux messages.' };
-        imgs.forEach(function(a, i){ a.file = files[i]; a.thumb = a.thumb || null; });
+        if(after > budget) return { ok:false, kind:'img', msg:'Les ' + imgs.length + ' images sont trop lourdes pour un seul message, même compressées sans perdre la lisibilité du texte (budget : ' + mo(budget) + '). Retirez-en une ou deux (✕), ou envoyez-les en deux messages.' };
+        imgs.forEach(function(a, i){ a.file = files[i]; });
         return { ok:true, shrunk:true };
       });
     }
     return attempt(true).then(function(r){
-      if(r.ok) return r;
-      // le brouillon seul passe-t-il ? alors on n'embarque plus les anciennes images du fil (avec avertissement)
+      if(r.ok || r.kind === 'text') return r;
       var older = 0; hist.forEach(function(m){ (m.atts || []).forEach(function(a){ if(a.kind === 'image' && a.file && !a.skip) older++; }); });
       if(!older) return r;
       return attempt(false).then(function(r2){
@@ -44174,12 +44213,75 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
       });
     });
   }
+  /* Options proposées quand les documents du brouillon dépassent la limite */
+  function balanceDraft(entry, th){
+    var docs = entry.list().filter(function(a){ return a.kind !== 'image' && a.text; });
+    if(!docs.length) return;
+    var cap = Math.max(1200, Math.floor(th.budgetForDocs / docs.length) - 240);
+    docs.forEach(function(a){
+      var full = a.fullText || a.text; a.fullText = full;
+      if(full.length > cap){ a.text = full.slice(0, cap) + '\n[… extrait : ' + cap + ' caractères sur ' + full.length + ']'; a.truncated = true; }
+    });
+    if(entry.render) entry.render();
+  }
+  function batchPlan(entry){
+    var docs = entry.list().filter(function(a){ return a.kind !== 'image' && (a.fullText || a.text); }), batches = [], cur = [], n = 0;
+    docs.forEach(function(a){
+      var len = (a.fullText || a.text).length + 160;
+      if(cur.length && n + len > 36000){ batches.push(cur); cur = []; n = 0; }
+      cur.push(a); n += len;
+    });
+    if(cur.length) batches.push(cur);
+    return batches;
+  }
+  function batchAnalyze(entry, setStatus){
+    var plan = batchPlan(entry), out = [], chain = Promise.resolve();
+    plan.forEach(function(group, gi){
+      chain = chain.then(function(){
+        setStatus('Analyse par lots : lot ' + (gi + 1) + ' sur ' + plan.length + '… (chaque lot consomme des crédits IA)');
+        var body = group.map(function(a){ return "[Document « " + a.name + " »]\n" + (a.fullText || a.text); }).join('\n\n');
+        var prompt = "Tu prépares des synthèses destinées à COMPARER plusieurs documents ensuite. Pour CHAQUE document ci-dessous, rédige en français une synthèse structurée et fidèle : nature du document, parties concernées, dates, montants et chiffres clés, obligations / clauses / points importants, anomalies ou ambiguïtés. N'invente rien ; si une information manque, écris « non précisé ». Maximum 450 mots par document, avec le nom du document en titre.\n\n" + body;
+        return window.hnSample([{ role:'user', content:prompt }], { cache:false, modelTier:'mediane' }).then(function(res){
+          var t = String((res && res.text) || '').trim(); if(!t) throw new Error('vide');
+          out.push({ kind:'sheet', name:'Synthèse — ' + group.map(function(a){ return a.name; }).join(' + '), text:t.slice(0, 9000), truncated:t.length > 9000, synth:true, group:group });
+        });
+      });
+    });
+    return chain.then(function(){
+      var draft = entry.list(), origs = [];
+      plan.forEach(function(g){ g.forEach(function(a){ origs.push(a); }); });
+      for(var i = draft.length - 1; i >= 0; i--){ if(origs.indexOf(draft[i]) >= 0) draft.splice(i, 1); }
+      out.forEach(function(it){
+        it.toJSON = function(){ return { kind:this.kind, name:this.name, truncated:!!this.truncated, lost:true }; };
+        draft.push(it);
+      });
+      if(entry.render) entry.render();
+      return out.length;
+    });
+  }
   function entryForm(f){ var r = window.__hnAttReg; return (r && f && r[f.id]) || null; }
-  function showAlert(entry, msg){
+  function showAlert(entry, msg, r){
     var row = entry.row && entry.row(); toast(msg.length > 140 ? msg.slice(0, 137) + '…' : msg);
     if(!row) return;
     var old = row.querySelector('.hn-att-alert'); if(old) old.remove();
-    var a = document.createElement('span'); a.className = 'hn-att-alert'; a.setAttribute('role', 'alert'); a.textContent = '⚠ ' + msg + ' Vos fichiers et votre texte sont conservés dans le brouillon.';
+    var a = document.createElement('div'); a.className = 'hn-att-alert'; a.setAttribute('role', 'alert');
+    var p = document.createElement('p'); p.style.margin = '0 0 6px'; p.textContent = '⚠ ' + msg + ' Vos fichiers et votre texte sont conservés dans le brouillon.'; a.appendChild(p);
+    if(r && r.kind === 'text'){
+      var plan = batchPlan(entry), box = document.createElement('div'); box.className = 'hn-att-actions';
+      var b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'btn'; b1.textContent = 'Envoyer des extraits équilibrés';
+      b1.title = 'Chaque document est réduit à un extrait pour tenir dans la limite ; le début de chaque document est conservé.';
+      b1.addEventListener('click', function(){ balanceDraft(entry, r.th); var f = document.getElementById(entry.formId); a.remove(); toast('Documents réduits à des extraits équilibrés : vous pouvez envoyer.'); });
+      var b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'btn primary'; b2.textContent = 'Analyser par lots (' + plan.length + ' appel' + (plan.length > 1 ? 's' : '') + ' IA) puis comparer';
+      b2.title = 'Chaque lot de documents est résumé fidèlement par l’IA ; les synthèses remplacent les documents dans le brouillon pour la comparaison. Chaque lot consomme des crédits.';
+      var st = document.createElement('p'); st.className = 'hn-att-batchst'; st.setAttribute('role', 'status'); st.style.margin = '6px 0 0';
+      b2.addEventListener('click', function(){
+        b1.disabled = b2.disabled = true;
+        batchAnalyze(entry, function(t){ st.textContent = t; }).then(function(n){
+          a.remove(); toast(n + ' synthèse' + (n > 1 ? 's prêtes' : ' prête') + ' : écrivez votre question de comparaison, puis Envoyer.');
+        }).catch(function(err){ b1.disabled = b2.disabled = false; st.textContent = '⚠ L’analyse par lots a échoué (' + ((err && err.code) || (err && err.message) || 'erreur') + '). Vos documents sont conservés ; réessayez ou utilisez les extraits.'; });
+      });
+      box.appendChild(b1); box.appendChild(b2); a.appendChild(box); a.appendChild(st);
+    }
     row.appendChild(a); row.hidden = false;
   }
   document.addEventListener('submit', function(e){
@@ -44193,10 +44295,15 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     var inp = $(entry.input), row = entry.row && entry.row(), old = row && row.querySelector('.hn-att-alert'); if(old) old.remove();
     fitRequest(entry, inp ? inp.value : '').then(function(r){
       f.__hnBusy = false;
-      if(!r.ok){ showAlert(entry, r.msg); return; }
+      if(!r.ok){ showAlert(entry, r.msg, r); return; }
       f.__hnFit = true;
       try{ f.requestSubmit(); }catch(x){ f.__hnFit = false; f.dispatchEvent(new Event('submit', { cancelable:true, bubbles:true })); }
     }).catch(function(){ f.__hnBusy = false; f.__hnFit = true; try{ f.requestSubmit(); }catch(x){} });
+  }, true);
+
+  document.addEventListener('input', function(e){
+    var t = e.target; if(!t || !t.id || !window.__hnAttReg) return;
+    var r = window.__hnAttReg; for(var k in r){ if(r[k].input === t.id){ var row = r[k].row && r[k].row(); if(row && row.__hnMeter && !row.hidden) row.__hnMeter(); } }
   }, true);
 
   /* ----- Coller (Ctrl+V) ----- */
