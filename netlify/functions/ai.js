@@ -193,7 +193,7 @@ const ADAPTERS = {
     const p = { model: o.model, max_tokens: o.max, messages: msgs }; if (o.system) p.system = o.system;
     const j = await postJson('https://api.anthropic.com/v1/messages', { 'x-api-key': KEYS.anthropic, 'anthropic-version': '2023-06-01' }, p, o.signal);
     const text = (Array.isArray(j.content) ? j.content : []).filter(b => b && b.type === 'text').map(b => b.text).join('').trim();
-    const u = j.usage || {}; return { text, tin: u.input_tokens || 0, tout: u.output_tokens || 0, cut: j.stop_reason === 'max_tokens' };
+    const u = j.usage || {}; return { text, tin: u.input_tokens || 0, tout: u.output_tokens || 0, cut: j.stop_reason === 'max_tokens', why: String(j.stop_reason || '') };
   },
   async openai(o){ return openaiLike(o, 'https://api.openai.com/v1/chat/completions', KEYS.openai, true); },
   async mistral(o){ return openaiLike(o, 'https://api.mistral.ai/v1/chat/completions', KEYS.mistral, false); },
@@ -205,7 +205,7 @@ const ADAPTERS = {
     const j = await postJson('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(o.model) + ':generateContent', { 'x-goog-api-key': KEYS.google }, p, o.signal);
     const parts = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts || [];
     const u = j.usageMetadata || {};
-    return { text: parts.map(x => x.text || '').join('').trim(), tin: u.promptTokenCount || 0, tout: u.candidatesTokenCount || 0, cut: !!(j.candidates && j.candidates[0] && j.candidates[0].finishReason === 'MAX_TOKENS') };
+    return { text: parts.map(x => x.text || '').join('').trim(), tin: u.promptTokenCount || 0, tout: u.candidatesTokenCount || 0, cut: !!(j.candidates && j.candidates[0] && j.candidates[0].finishReason === 'MAX_TOKENS'), why: String((j.candidates && j.candidates[0] && j.candidates[0].finishReason) || (j.promptFeedback && j.promptFeedback.blockReason) || '') };
   }
 };
 async function openaiLike(o, url, key, images){
@@ -217,7 +217,7 @@ async function openaiLike(o, url, key, images){
   const j = await postJson(url, { Authorization: 'Bearer ' + key }, { model: o.model, max_tokens: o.max, messages: msgs }, o.signal);
   const c = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
   const u = j.usage || {};
-  return { text: (typeof c === 'string' ? c : '').trim(), tin: u.prompt_tokens || 0, tout: u.completion_tokens || 0, cut: !!(j.choices && j.choices[0] && j.choices[0].finish_reason === 'length') };
+  return { text: (typeof c === 'string' ? c : '').trim(), tin: u.prompt_tokens || 0, tout: u.completion_tokens || 0, cut: !!(j.choices && j.choices[0] && j.choices[0].finish_reason === 'length'), why: String((j.choices && j.choices[0] && j.choices[0].finish_reason) || '') };
 }
 
 
@@ -350,8 +350,13 @@ exports.handler = async function(event){
     const left = deadline - Date.now(); if (left < 3000) break;
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), left);
     try {
-      const out = await ADAPTERS[provider]({ model, max: tier.max, system, messages: msgs, images, signal: ctl.signal });
-      if (!out.text) { lastErr = { code: 'empty', status: 502, message: 'Réponse vide.' }; continue; }
+      const maxTok = extra > 0 ? Math.max(tier.max, 3000) : tier.max;   // analyse de pièces jointes : réponse plus longue (moins de coupures)
+      let out = await ADAPTERS[provider]({ model, max: maxTok, system, messages: msgs, images, signal: ctl.signal });
+      if (!out.text && Date.now() < deadline - 4000) {   // réponse vide : une seule nouvelle tentative
+        console.log('ai empty (retry)', label, 'stop=' + out.why, 'in=' + out.tin, 'out=' + out.tout);
+        out = await ADAPTERS[provider]({ model, max: maxTok, system, messages: msgs, images, signal: ctl.signal });
+      }
+      if (!out.text) { console.log('ai empty', label, 'stop=' + out.why, 'in=' + out.tin, 'out=' + out.tout, 'imgs=' + images.length); lastErr = { code: 'empty', status: 502, message: 'L’analyse n’a pas abouti.' }; continue; }
       let data;
       if (wantJson) { data = parseJson(out.text); if (data === undefined) { lastErr = { code: 'bad_json', status: 502, message: 'Réponse illisible, réessayez.' }; continue; } }
       const micro = costMicro(model, out.tin, out.tout);
