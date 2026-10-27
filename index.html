@@ -44092,13 +44092,12 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
   window.hnAttFiles = function(th){ var f = th.images.map(function(a){ return a.file; }); return f.length ? (f.length === 1 ? f[0] : f) : null; };
   window.hnAttFail = function(atts, code){
     if(!atts || !atts.length) return '';
-    var why = (code === 'too_long' || code === 'http_413') ? "le message est trop volumineux ou trop long pour l'IA"
-      : code === 'image_rejected' ? "une image est refusée (format, taille ou fichier invalide)"
-      : code === 'images_unavailable' ? "l'IA actuelle ne prend pas en charge les images"
-      : code === 'quota' || code === 'budget' ? "les crédits IA sont épuisés"
-      : code === 'unavailable' ? "l'assistant IA est indisponible"
-      : "erreur de l'IA (" + (code || 'inconnue') + ")";
-    return "⚠ Vos fichiers joints n'ont PAS été analysés : " + why + ". Aucune réponse n'a été donnée à partir de votre question seule. Cliquez sur ✎ (Modifier) sous votre message pour remettre les fichiers dans le brouillon, retirez-en au besoin, puis renvoyez.";
+    var why = (code === 'too_long' || code === 'http_413') ? "Le message est trop volumineux."
+      : code === 'image_rejected' ? "Une image est refusée (format ou taille)."
+      : code === 'images_unavailable' ? "L'IA actuelle ne prend pas en charge les images."
+      : (code === 'quota' || code === 'budget') ? "Les crédits IA sont épuisés."
+      : "L'analyse n'a pas abouti.";
+    return "⚠ " + why + " Vos fichiers sont conservés : cliquez sur ✎ sous votre message pour les remettre dans le brouillon, puis réessayez.";
   };
   /* Miniatures dans le message envoyé + agrandissement */
   function lightbox(src, alt){
@@ -44418,6 +44417,12 @@ html body #fghlab-panel-hstatis .chat-shell, html body #hstatis-panel-chat .chat
   #chat-form .chat-input-wrap, #cowork-discuss-form .chat-input-wrap, #hstat-form .chat-input-wrap, #hstatis-form .chat-input-wrap{ order:-1; flex:1 0 100%; }
 }
 @media (prefers-reduced-motion: reduce){ #chat-log *, #cowork-discuss-log *, #hstat-log *, #hstatis-log *{ scroll-behavior:auto !important; } }
+
+.msg, .msg * { overflow-wrap:anywhere; }
+.msg.bot pre, .msg.bot table { max-width:100%; overflow-x:auto; display:block; }
+.msg.bot, .msg.user { min-width:0; max-width:100%; }
+.hn-att-strip, .hn-att-doc { max-width:100%; }
+.hn-att-doc { white-space:normal; word-break:break-word; }
 </style>
 
 <style id="hn-priv-css">
