@@ -44423,7 +44423,48 @@ html body #fghlab-panel-hstatis .chat-shell, html body #hstatis-panel-chat .chat
 .msg.bot, .msg.user { min-width:0; max-width:100%; }
 .hn-att-strip, .hn-att-doc { max-width:100%; }
 .hn-att-doc { white-space:normal; word-break:break-word; }
+
+/* ===== Mode conversation : dès le premier échange, l'espace de lecture prend toute la hauteur ===== */
+html.hn-conv #view-assistant .topbar .sub, html.hn-conv #view-hstat .topbar .sub, html.hn-conv #view-cowork .topbar .sub{ display:none; }
+html.hn-conv #view-assistant .topbar, html.hn-conv #view-hstat .topbar, html.hn-conv #view-cowork .topbar{ min-height:0; padding-top:0; padding-bottom:0; align-items:center; }
+html.hn-conv #view-assistant .topbar h1, html.hn-conv #view-hstat .topbar h1, html.hn-conv #view-cowork .topbar h1{ font-size:20px; margin:0; }
+html.hn-conv .hn-nd, html.hn-conv #hn-contact-foot{ display:none !important; }
+html.hn-conv .view{ gap:8px; }
+html.hn-conv .chat-shell{ min-height:340px; }
+html.hn-conv .hn-ai-note{ margin:2px 0 0; }
+@media (max-width:640px){
+  html.hn-conv #view-hstat .topbar{ flex-wrap:wrap; gap:6px; }
+  html.hn-conv #view-hstat .topbar h1{ display:none; }
+  html.hn-conv #view-hstat .topbar .incog-toggle, html.hn-conv #view-assistant .topbar .incog-toggle, html.hn-conv #view-cowork .topbar .incog-toggle{ padding:4px 10px; font-size:13px; }
+  html.hn-conv #hstat-tabs-row{ flex-wrap:nowrap; overflow-x:auto; gap:6px; margin:0; }
+  html.hn-conv #hstat-tabs-row .btn, html.hn-conv #hstat-tabs-row button{ flex:none; padding:5px 10px; font-size:13px; }
+}
+html, body{ max-width:100%; overflow-x:hidden; }
+.view, .card, .chat-shell, .chat-log{ min-width:0; max-width:100%; }
 </style>
+<script id="hn-cl-js">
+(function(){
+  var LOGS=['chat-log','cowork-discuss-log','hstat-log','hstatis-log'], R=document.documentElement, pend=0;
+  function vis(e){ return e && e.offsetParent !== null; }
+  function fit(){
+    pend=0; var on=false, shells=[];
+    LOGS.forEach(function(id){ var l=document.getElementById(id); if(!vis(l)) return; var sh=l.closest('.chat-shell'); if(sh) shells.push(sh); if(l.querySelector('.msg.user')) on=true; });
+    var was=R.classList.contains('hn-conv'); R.classList.toggle('hn-conv', on);
+    shells.forEach(function(sh){
+      if(!on){ sh.style.removeProperty('height'); return; }
+      sh.style.removeProperty('height');
+      var top=sh.getBoundingClientRect().top + window.scrollY;
+      var h=Math.max(340, window.innerHeight - top - 36);
+      sh.style.setProperty('height', h+'px', 'important');
+      if(!was){ var lg=sh.querySelector('.chat-log'); if(lg) setTimeout(function(){ lg.scrollTop=lg.scrollHeight; }, 60); }
+    });
+  }
+  function sched(){ if(!pend){ pend=1; (window.requestAnimationFrame||setTimeout)(fit); } }
+  window.addEventListener('resize', sched);
+  new MutationObserver(sched).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class','style']});
+  setInterval(sched, 1500); sched();
+})();
+</script>
 
 <style id="hn-priv-css">
 #hn-priv-head{ display:none; }
