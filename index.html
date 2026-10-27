@@ -44470,6 +44470,11 @@ html.hn-conv #hn-sa{ bottom:150px !important; right:10px !important; }
   html.hn-conv #fghlab-panel-hstatis .hstatis-tabbar{ flex-wrap:nowrap !important; overflow-x:auto; gap:6px !important; }
   html.hn-conv #fghlab-panel-hstatis .hstatis-tabbar .btn{ flex:none; padding:5px 10px; font-size:13px; }
 }
+/* Navigation privée : l'accueil (options de recherche, plafond…) défile au lieu de passer sous la saisie */
+.incog-hero{ min-height:0 !important; overflow-y:auto; justify-content:safe center; -webkit-overflow-scrolling:touch; }
+html.hn-private-tab .chat-shell{ min-height:0; }
+.chat-log{ overscroll-behavior:contain; }
+@media (max-width:640px){ html.hn-private-tab #hn-priv-head .hn-priv-note{ display:none; } html.hn-private-tab #hn-priv-head{ padding:8px 0 6px; } html.hn-private-tab #hn-priv-head .brand-mark{ width:32px; height:32px; } }
 html, body{ max-width:100%; overflow-x:hidden; }
 .view, .card, .chat-shell, .chat-log{ min-width:0; max-width:100%; }
 </style>
@@ -44477,23 +44482,29 @@ html, body{ max-width:100%; overflow-x:hidden; }
 (function(){
   var LOGS=['chat-log','cowork-discuss-log','hstat-log','hstatis-log'], R=document.documentElement, pend=0;
   function vis(e){ return e && e.offsetParent !== null; }
+  /* La hauteur est exprimée en dvh (suit seule la barre d'adresse du téléphone) ; elle n'est réécrite que si le décalage
+     du haut change vraiment. On ne retire JAMAIS la hauteur pour mesurer : cela raccourcirait le fil et ramènerait le défilement. */
   function fit(){
-    pend=0; var on=false, shells=[];
-    LOGS.forEach(function(id){ var l=document.getElementById(id); if(!vis(l)) return; var sh=l.closest('.chat-shell'); if(sh) shells.push(sh); on=true; });
-    var was=R.classList.contains('hn-conv'); R.classList.toggle('hn-conv', on);
+    pend=0; var shells=[];
+    LOGS.forEach(function(id){ var l=document.getElementById(id); if(!vis(l)) return; var sh=l.closest('.chat-shell'); if(sh) shells.push(sh); });
+    var on = shells.length > 0, was = R.classList.contains('hn-conv');
+    if(on !== was) R.classList.toggle('hn-conv', on);
     shells.forEach(function(sh){
-      if(!on){ sh.style.removeProperty('height'); return; }
-      sh.style.removeProperty('height');
-      var top=sh.getBoundingClientRect().top + window.scrollY;
-      var h=Math.max(340, window.innerHeight - top - 36 - (window.innerWidth<=640 ? 64 : 0));
-      sh.style.setProperty('height', h+'px', 'important');
-      if(!was){ var lg=sh.querySelector('.chat-log'); if(lg) setTimeout(function(){ lg.scrollTop=lg.scrollHeight; }, 60); }
+      if(!on) return;
+      var top = Math.round(sh.getBoundingClientRect().top + window.scrollY);
+      var off = top + 36 + (window.innerWidth<=640 ? 64 : 0);
+      if(sh.__hnOff !== undefined && Math.abs(sh.__hnOff - off) < 3) return;
+      sh.__hnOff = off;
+      sh.style.setProperty('height', 'max(340px, calc(100dvh - ' + off + 'px))', 'important');
     });
+    if(!was && on){ shells.forEach(function(sh){ var lg=sh.querySelector('.chat-log'); if(lg) setTimeout(function(){ lg.scrollTop=lg.scrollHeight; }, 60); }); }
   }
   function sched(){ if(!pend){ pend=1; (window.requestAnimationFrame||setTimeout)(fit); } }
-  window.addEventListener('resize', sched);
-  new MutationObserver(sched).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class','style']});
-  setInterval(sched, 1500); sched();
+  window.addEventListener('resize', function(){ sched(); });
+  new MutationObserver(function(muts){
+    for(var i=0;i<muts.length;i++){ var t=muts[i].target; if(t && t.closest && t.closest('.chat-log')) continue; sched(); return; }
+  }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class']});
+  sched();
 })();
 </script>
 
