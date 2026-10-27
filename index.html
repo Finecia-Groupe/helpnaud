@@ -44439,6 +44439,28 @@ html.hn-conv .hn-ai-note{ margin:2px 0 0; }
   html.hn-conv #hstat-tabs-row{ flex-wrap:nowrap; overflow-x:auto; gap:6px; margin:0; }
   html.hn-conv #hstat-tabs-row .btn, html.hn-conv #hstat-tabs-row button{ flex:none; padding:5px 10px; font-size:13px; }
 }
+
+/* F-i-Stat : même organisation compacte (description repliée, devise sur une ligne, saisie compacte) */
+html.hn-conv #fghlab-panel-hstatis > .hint{ display:none; }
+html.hn-conv #fghlab-panel-hstatis .cowork-panel-head{ margin-bottom:4px; }
+html.hn-conv #fghlab-panel-hstatis .cowork-panel-head h2{ font-size:18px; }
+html.hn-conv #fghlab-panel-hstatis .hn-fcur{ margin:0 0 6px; }
+html.hn-conv #fghlab-panel-hstatis .hstatis-tabbar{ margin-bottom:6px !important; }
+html.hn-conv #hstatis-domain-wrap{ margin-bottom:6px !important; }
+html.hn-conv .chat-mini-bar:empty{ display:none; }
+html.hn-conv .hn-retry-row:empty{ display:none; }
+html.hn-conv #view-fghlab .topbar .sub{ display:none; }
+html.hn-conv #hn-sa{ bottom:150px !important; right:10px !important; }
+@media (max-width:640px){ html.hn-conv #hn-sa{ bottom:190px !important; } }
+@media (max-width:640px){
+  html.hn-conv #hn-sa{ display:none !important; }
+  html.hn-conv #fghlab-panel-hstatis .hn-fcur{ gap:6px; }
+  html.hn-conv #fghlab-panel-hstatis .hn-fcur > label:first-child{ display:none; }
+  html.hn-conv #fghlab-panel-hstatis .hn-fcur > label:last-child{ font-size:12px; flex:1 1 140px; }
+  html.hn-conv #fghlab-panel-hstatis .hn-fcur select{ max-width:100%; }
+  html.hn-conv #fghlab-panel-hstatis .hstatis-tabbar{ flex-wrap:nowrap !important; overflow-x:auto; gap:6px !important; }
+  html.hn-conv #fghlab-panel-hstatis .hstatis-tabbar .btn{ flex:none; padding:5px 10px; font-size:13px; }
+}
 html, body{ max-width:100%; overflow-x:hidden; }
 .view, .card, .chat-shell, .chat-log{ min-width:0; max-width:100%; }
 </style>
@@ -44448,13 +44470,13 @@ html, body{ max-width:100%; overflow-x:hidden; }
   function vis(e){ return e && e.offsetParent !== null; }
   function fit(){
     pend=0; var on=false, shells=[];
-    LOGS.forEach(function(id){ var l=document.getElementById(id); if(!vis(l)) return; var sh=l.closest('.chat-shell'); if(sh) shells.push(sh); if(l.querySelector('.msg.user')) on=true; });
+    LOGS.forEach(function(id){ var l=document.getElementById(id); if(!vis(l)) return; var sh=l.closest('.chat-shell'); if(sh) shells.push(sh); on=true; });
     var was=R.classList.contains('hn-conv'); R.classList.toggle('hn-conv', on);
     shells.forEach(function(sh){
       if(!on){ sh.style.removeProperty('height'); return; }
       sh.style.removeProperty('height');
       var top=sh.getBoundingClientRect().top + window.scrollY;
-      var h=Math.max(340, window.innerHeight - top - 36);
+      var h=Math.max(340, window.innerHeight - top - 36 - (window.innerWidth<=640 ? 64 : 0));
       sh.style.setProperty('height', h+'px', 'important');
       if(!was){ var lg=sh.querySelector('.chat-log'); if(lg) setTimeout(function(){ lg.scrollTop=lg.scrollHeight; }, 60); }
     });
