@@ -38794,7 +38794,7 @@
     { id: 'publiques', label: 'Données publiques : institutions, banques centrales (+2)' }
   ];
   var HNR_COSTS = { deep: 4, multi: 1, web: 2, adapted: 2 };
-  function hnrDefault(){ return { deep: false, web: false, multi: false, adapted: 'general', strict: true, sources: ['dossier', 'fichier', 'connaissances'] }; }
+  function hnrDefault(){ return { deep: false, web: false, multi: false, adapted: 'general', strict: false, pub: false, sources: ['dossier', 'fichier', 'connaissances'] }; }
   function hnrGet(view){
     var s = hnrDefault();
     try{ var r = JSON.parse(localStorage.getItem('helpnaud_research_' + view) || 'null'); if(r && typeof r === 'object'){ Object.keys(s).forEach(function(k){ if(r[k] !== undefined) s[k] = r[k]; }); } }catch(e){}
@@ -38805,7 +38805,7 @@
   function hnrBackend(){ return true; }   // recherche web assurée par le serveur IA (ai.js)
   function hnrEff(view){
     var s = hnrGet(view), has = function(id){ return s.sources.indexOf(id) > -1; };
-    return { adapted: s.adapted || 'general', web: !!s.web || (!!s.multi && has('web')), pub: !!s.multi && has('publiques'), deep: !!s.deep, multi: !!s.multi, strict: s.strict !== false };
+    return { adapted: s.adapted || 'general', web: !!s.web || (!!s.multi && has('web')), pub: !!s.pub || (!!s.multi && has('publiques')), deep: !!s.deep, multi: !!s.multi, strict: s.strict === true };
   }
   function hnrSearching(view){ var e = hnrEff(view); return e.web || e.pub || e.adapted !== 'general'; }
   window.__hnResearch = { payload: function(view){ var e = hnrEff(view); return { adapted: e.adapted, web: e.web, 'public': e.pub, deep: e.deep, multi: e.multi, strict: e.strict }; } };
@@ -38817,7 +38817,8 @@
     if(e.deep) n += HNR_COSTS.deep;
     if(e.multi) n += HNR_COSTS.multi;
     if(e.web) n += HNR_COSTS.web;
-    if(e.adapted !== 'general' || (!e.web && e.pub)) n += HNR_COSTS.adapted;
+    if(e.adapted !== 'general') n += HNR_COSTS.adapted;
+    if(e.pub) n += HNR_COSTS.adapted;
     return n;
   }
   function researchPromptInstruction(view){
@@ -38839,28 +38840,40 @@
     if(s.multi) bits.push('📚 Sources multiples (+' + HNR_COSTS.multi + ' crédit)');
     var e = hnrEff(view);
     if(e.web) bits.push('🌐 Web en temps réel (+' + HNR_COSTS.web + ')');
-    if(s.adapted && s.adapted !== 'general') bits.push('🎯 Adaptée : ' + hnrProfile(s.adapted).label + ' (+' + HNR_COSTS.adapted + (s.strict !== false ? ', limitée au domaine' : '') + ')');
-    else if(e.pub) bits.push('🏛️ Données publiques (+' + HNR_COSTS.adapted + ')');
+    if(s.adapted && s.adapted !== 'general') bits.push('🎯 Adaptée : ' + hnrProfile(s.adapted).label + ' (+' + HNR_COSTS.adapted + (s.strict === true ? ', limitée au domaine' : '') + ')');
+    if(e.pub) bits.push('🏛️ Données publiques (+' + HNR_COSTS.adapted + ')');
     if(bits.length && typeof addFn === 'function') addFn('Mode de recherche actif — ' + bits.join(' · '));
   }
   function hnrImagePrompts(){ try{ var r = JSON.parse(localStorage.getItem('helpnaud_image_prompts') || '[]'); return Array.isArray(r) ? r : []; }catch(e){ return []; } }
   function hnrImageSave(list){ try{ localStorage.setItem('helpnaud_image_prompts', JSON.stringify(list.slice(-20))); }catch(e){} }
+  function hnrTotalText(view){
+    var m = 1; try{ m = getHmodelTierDefForView(view === 'cowork' ? 'cowork' : view).creditCost || 1; }catch(e){}
+    var x = researchExtraCost(view), e = hnrEff(view), parts = [];
+    if(e.adapted !== 'general') parts.push('adaptée +' + HNR_COSTS.adapted);
+    if(e.web) parts.push('web +' + HNR_COSTS.web);
+    if(e.pub) parts.push('données publiques +' + HNR_COSTS.adapted);
+    if(e.deep) parts.push('approfondie +' + HNR_COSTS.deep);
+    if(e.multi) parts.push('sources multiples +' + HNR_COSTS.multi);
+    return '💳 Coût de l’envoi : <b>' + (m + x) + ' crédit' + ((m + x) > 1 ? 's' : '') + '</b> (modèle ' + m + (parts.length ? ' · ' + parts.join(' · ') : '') + '). Le serveur confirme le total ; les pièces jointes peuvent s’ajouter.';
+  }
   function hnrBarHtml(view, isOpen){
     if(isOpen === undefined) isOpen = window.innerWidth > 860;
-    var s = hnrGet(view), activeN = (s.deep ? 1 : 0) + (s.web ? 1 : 0) + (s.multi ? 1 : 0) + ((s.adapted && s.adapted !== 'general') ? 1 : 0), chip = function(key, label, on, extra){
+    var s = hnrGet(view), activeN = (s.deep ? 1 : 0) + (s.web ? 1 : 0) + (s.pub ? 1 : 0) + (s.multi ? 1 : 0) + ((s.adapted && s.adapted !== 'general') ? 1 : 0), chip = function(key, label, on, extra){
       return '<button type="button" class="btn" data-hnr-toggle="' + key + '" aria-pressed="' + (on ? 'true' : 'false') + '" style="padding:3px 10px; font-size:12px;' + (on ? ' background:var(--accent); color:#fff; border-color:var(--accent);' : '') + '">' + label + (extra || '') + '</button>';
     };
     return '<div class="hnr-bar" data-hnr-view="' + view + '" style="margin:0 0 8px;"><details class="hnr-det"' + (isOpen ? ' open' : '') + '><summary>⚙️ Options de recherche et Image IA' + (activeN ? ' <b>(' + activeN + ' actif' + (activeN > 1 ? 's' : '') + ')</b>' : '') + '</summary><div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;">' +
       '<span class="hint" style="margin:0; font-size:11.5px;">Mode de recherche :</span>' +
       chip('deep', '🔎 Recherche approfondie', s.deep, ' <small>+' + HNR_COSTS.deep + '</small>') +
       chip('web', '🌐 Web en temps réel', s.web, ' <small>+' + HNR_COSTS.web + '</small>') +
+      chip('pub', '🏛️ Données publiques', s.pub, ' <small>+' + HNR_COSTS.adapted + '</small>') +
       chip('multi', '📚 Sources multiples', s.multi, ' <small>+' + HNR_COSTS.multi + '</small>') +
       '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;">🎯 Recherche adaptée <select data-hnr-adapted style="border:1px solid var(--line); border-radius:8px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">' + HNR_PROFILES.map(function(p){ return '<option value="' + p.id + '"' + (p.id === s.adapted ? ' selected' : '') + '>' + p.label + '</option>'; }).join('') + '</select></label>' +
       '<button type="button" class="btn icon-only" data-hnr-adapted-help aria-expanded="false" aria-label="Comment fonctionne la recherche adaptée ?" title="Comment fonctionne la recherche adaptée ?" style="padding:2px 9px; font-size:12px;">ⓘ</button>' +
-      (s.adapted && s.adapted !== 'general' ? '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;" title="Si la question sort du domaine choisi, l’IA ne répond pas sur le fond."><input type="checkbox" data-hnr-strict' + (s.strict !== false ? ' checked' : '') + '> Limiter au domaine</label> <small style="font-size:11px; opacity:.8;">+' + HNR_COSTS.adapted + '</small>' : '') +
+      (s.adapted && s.adapted !== 'general' ? '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;" title="Si la question sort du domaine choisi, l’IA ne répond pas sur le fond."><input type="checkbox" data-hnr-strict' + (s.strict === true ? ' checked' : '') + '> Limiter au domaine</label> <small style="font-size:11px; opacity:.8;">+' + HNR_COSTS.adapted + '</small>' : '') +
       '<button type="button" class="btn" data-hnr-image-open style="padding:3px 10px; font-size:12px;">🖼️ Image IA</button></div>' +
       (s.multi ? '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; font-size:12px;">' + HNR_SOURCES.map(function(o){ return '<label style="display:inline-flex; gap:4px; align-items:center;"><input type="checkbox" data-hnr-source="' + o.id + '"' + (s.sources.indexOf(o.id) > -1 ? ' checked' : '') + '> ' + o.label + '</label>'; }).join('') + '</div>' : '') +
-      '<div data-hnr-adapted-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface-2); font-size:12.5px; line-height:1.55;">' +'<div style="font-weight:600; font-size:13px; margin-bottom:4px;">🎯 Recherche adaptée : comment ça fonctionne</div>' +'<p style="margin:0 0 8px;">Vous choisissez un domaine (Finance, Économie, Droit…). HelpNaud interroge alors <b>Internet limité à des sources spécialisées</b> de ce domaine (banques centrales, organismes statistiques, normes, textes officiels…), puis l’IA rédige avec le vocabulaire du domaine et cite les sources consultées. Avec « Web en temps réel », la recherche s’ouvre à tout Internet, les sources du domaine restant prioritaires.</p>' +'<div style="font-weight:600; margin-bottom:2px;">Ce que ça change</div>' +'<ul style="margin:0 0 8px; padding-left:18px;"><li>« Limiter au domaine » (coché par défaut) : si la question sort du domaine choisi, l’IA ne répond pas sur le fond et vous invite à changer de domaine. Décochez pour autoriser les réponses hors domaine.</li><li>Coût : +2 crédits pour la recherche adaptée, +2 pour « Web en temps réel » ou « Données publiques », +4 pour « Recherche approfondie », +1 pour « Sources multiples ». Les options se cumulent.</li><li>Si la recherche en ligne est indisponible, l’IA répond sans sources et vous êtes facturé comme d’habitude.</li></ul><div style="font-weight:600; margin-bottom:2px;">Limites</div>' +'<ul style="margin:0; padding-left:18px;"><li>Les sources en ligne peuvent être incomplètes ou en anglais : vérifiez les chiffres importants.</li><li>Ce n’est pas un avis professionnel (juridique, fiscal, financier).</li></ul></div>' +
+      '<div data-hnr-total class="hint" style="margin:6px 0 0; font-size:12px;">' + hnrTotalText(view) + '</div>' +
+      '<div data-hnr-adapted-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface-2); font-size:12.5px; line-height:1.55;">' +'<div style="font-weight:600; font-size:13px; margin-bottom:4px;">🎯 Recherche adaptée : comment ça fonctionne</div>' +'<p style="margin:0 0 8px;">Vous choisissez un domaine (Finance, Économie, Droit…). HelpNaud privilégie alors les <b>sites officiels spécialisés</b> de ce domaine (banques centrales, organismes statistiques, normes, textes officiels…) et cite les pages réellement consultées. Pour certains chiffres, il interroge directement les données officielles de la <b>Banque mondiale</b> et de la <b>Banque du Canada</b>. Les autres bases ne sont pas encore branchées.</p>' +'<div style="font-weight:600; margin-bottom:2px;">Ce que ça change</div>' +'<ul style="margin:0 0 8px; padding-left:18px;"><li>Par défaut, l’IA peut aussi répondre hors du domaine choisi. Cochez « Limiter au domaine » si vous voulez qu’elle refuse les questions hors domaine.</li><li>Suppléments : Recherche adaptée +2, Web en temps réel +2, Données publiques +2, Recherche approfondie +4, Sources multiples +1, ajoutés au coût du modèle choisi. Le total est affiché ci-dessus et confirmé par le serveur.</li><li>Si la recherche échoue ou ne trouve aucune source, le supplément de recherche est annulé et la réponse indique qu’elle n’a pas de recherche vérifiée.</li></ul><div style="font-weight:600; margin-bottom:2px;">Limites</div>' +'<ul style="margin:0; padding-left:18px;"><li>Les sources en ligne peuvent être incomplètes ou en anglais : vérifiez les chiffres importants.</li><li>Ce n’est pas un avis professionnel (juridique, fiscal, financier).</li></ul></div>' +
       '<div data-hnr-image-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface-2);"></div></details></div>';
   }
   function hnrImagePanelHtml(){
@@ -43387,7 +43400,7 @@ OPS.E.file = function(input, prod){
 </div>
 <div class="modal-overlay" id="incog-info" hidden style="z-index:90;" role="dialog" aria-modal="true" aria-labelledby="incog-info-title">
   <div class="modal-card">
-    <h2 id="incog-info-title">🕶️ Vous êtes en mode incognito</h2>
+    <h2 id="incog-info-title">🕶️ Vous êtes en mode incogito</h2>
     <p class="lead">Une conversation privée : elle disparaît quand vous quittez le mode.</p>
 
     <h4>Ce que fait le mode</h4>
@@ -43495,11 +43508,11 @@ OPS.E.file = function(input, prod){
   function buildHero(shell, log, v){
     var hero = document.createElement('div');
     hero.className = 'incog-hero';
-    hero.innerHTML = '<h3><span class="incog-mark" aria-hidden="true">H</span><span>Vous êtes en mode incognito</span></h3>' +
-      '<p>Les sessions incognito n’apparaissent ni dans votre historique ni dans la recherche, et ne sont pas utilisées pour entraîner HelpNaud.</p>' +
+    hero.innerHTML = '<h3><span class="incog-mark" aria-hidden="true">H</span><span>Vous êtes en mode incogito</span></h3>' +
+      '<p>Les sessions incogito n’apparaissent ni dans votre historique ni dans la recherche, et ne sont pas utilisées pour entraîner HelpNaud.</p>' +
       '<button type="button" class="incog-more">En savoir plus</button>' +
       '<div class="incog-opts">' +
-        '<button type="button" class="incog-pill incog-proj" disabled title="Aucun classement en projet : rien n’est enregistré en mode incognito">📁 Projet ▾</button>' +
+        '<button type="button" class="incog-pill incog-proj" disabled title="Aucun classement en projet : rien n’est enregistré en mode incogito">📁 Projet ▾</button>' +
         '<div class="incog-opts-right">' +
           '<label class="incog-pill" title="Palier de réponse IA et coût en crédits"><b>Plafond</b><select class="incog-tier" aria-label="Palier de réponse IA"></select></label>' +
           '<button type="button" class="incog-pill incog-mode" title="Options de recherche (approfondie, sources multiples, recherche adaptée)">Manuel</button>' +
@@ -43593,7 +43606,7 @@ html.hn-incognito .hn-nd-slot{ display:none !important; }
 (function(){
   'use strict';
   /* ===== Centre de suggestions HelpNaud : bandeaux et petits sondages discrets =====
-     Un seul à la fois, jamais pendant une génération, jamais en mode incognito, toujours fermables.
+     Un seul à la fois, jamais pendant une génération, jamais en mode incogito, toujours fermables.
      Contextes : ouverture de l'application, accueil (Tableau de bord), travail dans Assistant / Co-work / H-Start.
      Les réponses aux sondages sont gardées sur cet appareil (clé helpnaud_nudges) ; rien n'est envoyé automatiquement. */
   var LS = 'helpnaud_nudges', DAY = 864e5;
@@ -44603,8 +44616,8 @@ html.hn-private-tab:not(.hn-private-ready) body{ visibility:hidden; }
   }
   function retitleHero(){
     var hero = document.querySelector('#view-assistant .incog-hero'); if(!hero) return;
-    var h3 = hero.querySelector('h3 span:last-child'); if(h3) h3.textContent = 'Vous êtes en mode incognito';
-    var p = hero.querySelector('p'); if(p) p.innerHTML = 'Clavardez et posez vos questions à HelpNaud.<br>Les sessions incognito n’apparaissent ni dans votre historique ni dans la recherche.<br>Vos messages consomment tout de même votre forfait et vos crédits IA.';
+    var h3 = hero.querySelector('h3 span:last-child'); if(h3) h3.textContent = 'Vous êtes en mode incogito';
+    var p = hero.querySelector('p'); if(p) p.innerHTML = 'Clavardez et posez vos questions à HelpNaud.<br>Les sessions incogito n’apparaissent ni dans votre historique ni dans la recherche.<br>Vos messages consomment tout de même votre forfait et vos crédits IA.';
   }
   function enforce(){
     var v = document.getElementById('view-assistant');
