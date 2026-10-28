@@ -38883,6 +38883,11 @@
       pill.title = 'Coût de cet envoi : ' + tot + ' (modèle ' + m + (x ? ' + options de recherche ' + x : '') + '). Confirmé par le serveur ; les pièces jointes peuvent s’ajouter.';
       pill.style.cssText = 'margin-left:auto; font-size:11.5px; white-space:nowrap; padding:2px 8px; border-radius:999px; border:1px solid ' + (x ? 'var(--accent)' : 'var(--line)') + '; color:' + (x ? '#fff' : 'var(--muted)') + '; background:' + (x ? 'var(--accent)' : 'var(--surface-2)') + ';';
       var cw = row.querySelector('.hnr-create-wrap'); if(cw) cw.hidden = !hnrImgEnabled();
+      /* « Réessayer » : même ligne que le coût (le bouton existant est déplacé, pas recréé) */
+      if(!row.querySelector('.hn-retry-moved')){
+        var rr = row.parentNode.querySelector('.hn-retry-row'), rb = rr && rr.querySelector('button');
+        if(rb && getComputedStyle(rr).display !== 'none'){ rb.classList.add('hn-retry-moved'); rb.style.marginLeft = '0'; row.appendChild(rb); rr.style.display = 'none'; }
+      }
     }catch(e){}
   }
   function hnrPills(){ Object.keys(HNR_FORMS).forEach(hnrPill); }
