@@ -126,13 +126,13 @@ const RESEARCH_DOMAINS = Object.assign({
   politiques: ['un.org', 'undp.org', 'oecd.org', 'worldbank.org', 'afdb.org', 'imf.org', 'unesco.org', 'who.int', 'international.gc.ca', 'canada.ca', 'ec.europa.eu', 'afd.fr'],
   entreprise: ['canada.ca', 'bdc.ca', 'edc.ca', 'quebec.ca', 'revenuquebec.ca', 'oecd.org', 'worldbank.org', 'ifc.org', 'bpifrance.fr', 'service-public.fr']
 }, (function(){ try { return JSON.parse(process.env.AI_RESEARCH_DOMAINS || '{}'); } catch (e) { return {}; } })());
-const COST_ADAPTED = Number(process.env.AI_COST_ADAPTED) || 2, COST_WEB = Number(process.env.AI_COST_WEB) || 2, COST_DEEP = 4, COST_MULTI = 1;
+const COST_ADAPTED = Number(process.env.AI_COST_ADAPTED) || 2, COST_WEB = Number(process.env.AI_COST_WEB) || 2, COST_PUBLIC = Number(process.env.AI_COST_PUBLIC) || 2, COST_DEEP = 4, COST_MULTI = 1;
 const WEB_MAX_USES = Math.max(1, Math.min(8, Number(process.env.AI_WEB_MAX_USES) || 3));
 const SEARCH_MICRO = 10000;   // ≈ 0,01 $ par recherche web
 function parseResearch(raw){
   const r = raw && typeof raw === 'object' ? raw : {};
   const adapted = Object.prototype.hasOwnProperty.call(RESEARCH_PROFILES, r.adapted) ? r.adapted : 'general';
-  return { adapted, web: r.web === true, pub: r.public === true, deep: r.deep === true, multi: r.multi === true, strict: r.strict !== false };
+  return { adapted, web: r.web === true, pub: r.public === true, deep: r.deep === true, multi: r.multi === true, strict: r.strict === true };
 }
 function researchPlan(r){
   if (r.web) return { domains: null };
@@ -146,11 +146,55 @@ function researchSystem(r, searching){
     const p = RESEARCH_PROFILES[r.adapted];
     parts.push('MODE RECHERCHE ADAPTÉE — domaine « ' + p.label + ' » (' + p.hint + '). Réponds UNIQUEMENT aux questions qui relèvent de ce domaine. Si la question n’en relève pas, ne réponds pas sur le fond : explique en une ou deux phrases qu’elle sort du domaine choisi et invite à choisir « Générale » ou un autre domaine (ou à décocher « Limiter au domaine »).');
   }
+  if (r.adapted !== 'general' && !r.strict) {
+    const p = RESEARCH_PROFILES[r.adapted];
+    parts.push('RECHERCHE ADAPTÉE — domaine « ' + p.label + ' ». Privilégie les sources spécialisées de ce domaine et son vocabulaire ; tu peux néanmoins répondre à une question hors domaine, en le signalant brièvement.');
+  }
   if (r.web && r.adapted !== 'general') parts.push('Privilégie les sources du domaine (institutions, organismes officiels) avant les sources généralistes.');
-  if (searching) parts.push('Tu disposes d’un outil de recherche web. Utilise-le pour les informations récentes, chiffrées ou à vérifier ; appuie tes affirmations importantes sur les sources trouvées et indique clairement ce qui n’a pas pu être confirmé. Résume et cite, sans recopier de longs passages.');
+  if (searching) parts.push('Tu disposes d’un outil de recherche web et de deux outils de données officielles (Banque mondiale, Banque du Canada) : pour un chiffre précis (PIB, inflation, taux directeur, change), utilise-les en priorité. Utilise la recherche web pour les informations récentes, chiffrées ou à vérifier ; appuie tes affirmations importantes sur les sources trouvées et indique clairement ce qui n’a pas pu être confirmé. Résume et cite, sans recopier de longs passages.');
   if (r.deep) parts.push('Fais une analyse approfondie et structurée.');
   if (r.multi) parts.push('Croise plusieurs sources et signale les divergences.');
   return parts.length ? ' ' + parts.join(' ') : '';
+}
+
+/* ---------- Connecteurs de données officielles (API réellement interrogées) ----------
+ * 1) Banque mondiale — API Indicateurs (api.worldbank.org, gratuite, sans clé).
+ * 2) Banque du Canada — API Valet (bankofcanada.ca/valet, gratuite, sans clé).
+ * L'IA les appelle comme des outils ; les sources affichées sont celles réellement interrogées. */
+const CONNECTOR_TOOLS = [
+  { name: 'worldbank_indicator', description: 'Dernières valeurs annuelles d’un indicateur de la Banque mondiale pour un pays (ex. NY.GDP.MKTP.KD.ZG croissance du PIB, FP.CPI.TOTL.ZG inflation, SL.UEM.TOTL.ZS chômage, NY.GDP.MKTP.CD PIB courant). country : code ISO (CA, FR, SN, CI, WLD…).',
+    input_schema: { type: 'object', properties: { country: { type: 'string' }, indicator: { type: 'string' }, years: { type: 'integer', description: 'nombre de valeurs récentes, 1 à 10' } }, required: ['country', 'indicator'] } },
+  { name: 'bankofcanada_series', description: 'Dernières observations d’une série de la Banque du Canada (Valet). Exemples : V39079 = taux cible du financement à un jour ; FXUSDCAD = taux de change USD/CAD ; FXEURCAD = EUR/CAD.',
+    input_schema: { type: 'object', properties: { series: { type: 'string' }, count: { type: 'integer', description: '1 à 12' } }, required: ['series'] } }
+];
+async function getJson(url, signal){
+  const res = await fetch(url, { headers: { Accept: 'application/json' }, signal });
+  if (!res.ok) throw new Error('http ' + res.status);
+  return res.json();
+}
+async function runConnector(name, input, signal){
+  input = input && typeof input === 'object' ? input : {};
+  if (name === 'worldbank_indicator') {
+    const c = String(input.country || ''), ind = String(input.indicator || ''), n = Math.max(1, Math.min(10, parseInt(input.years, 10) || 5));
+    if (!/^[A-Za-z]{2,3}$/.test(c) || !/^[A-Za-z0-9._]{3,40}$/.test(ind)) throw new Error('paramètres invalides');
+    const j = await getJson('https://api.worldbank.org/v2/country/' + c + '/indicator/' + ind + '?format=json&mrv=' + n + '&per_page=' + n, signal);
+    const rows = Array.isArray(j) && Array.isArray(j[1]) ? j[1] : [];
+    if (!rows.length) throw new Error('aucune donnée');
+    const lab = (rows[0].indicator && rows[0].indicator.value) || ind, pays = (rows[0].country && rows[0].country.value) || c;
+    return { text: JSON.stringify({ source: 'Banque mondiale', indicateur: lab, pays, observations: rows.map(x => ({ annee: x.date, valeur: x.value })) }),
+      source: { url: 'https://data.worldbank.org/indicator/' + ind + '?locations=' + c, title: 'Banque mondiale — ' + lab + ' (' + pays + ')' } };
+  }
+  if (name === 'bankofcanada_series') {
+    const sr = String(input.series || ''), n = Math.max(1, Math.min(12, parseInt(input.count, 10) || 5));
+    if (!/^[A-Za-z0-9_.]{2,40}$/.test(sr)) throw new Error('paramètres invalides');
+    const j = await getJson('https://www.bankofcanada.ca/valet/observations/' + sr + '/json?recent=' + n, signal);
+    const obs = Array.isArray(j && j.observations) ? j.observations : [];
+    if (!obs.length) throw new Error('aucune donnée');
+    const lab = (j.seriesDetail && j.seriesDetail[sr] && j.seriesDetail[sr].label) || sr;
+    return { text: JSON.stringify({ source: 'Banque du Canada', serie: sr, libelle: lab, observations: obs.map(x => ({ date: x.d, valeur: x[sr] && x[sr].v })) }),
+      source: { url: 'https://www.bankofcanada.ca/valet/observations/' + sr + '/json?recent=' + n, title: 'Banque du Canada — ' + lab } };
+  }
+  throw new Error('outil inconnu');
 }
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 24000;
@@ -242,14 +286,29 @@ const ADAPTERS = {
     if (o.images && o.images.length) { const last = msgs[msgs.length - 1];
       last.content = o.images.map(im => ({ type: 'image', source: { type: 'base64', media_type: im.type, data: im.data } })).concat([{ type: 'text', text: last.content }]); }
     const p = { model: o.model, max_tokens: o.max, messages: msgs }; if (o.system) p.system = o.system;
-    if (o.web) p.tools = [Object.assign({ type: 'web_search_20250305', name: 'web_search', max_uses: o.web.maxUses }, o.web.domains && o.web.domains.length ? { allowed_domains: o.web.domains } : {})];
+    p.tools = [];
+    if (o.web) p.tools.push(Object.assign({ type: 'web_search_20250305', name: 'web_search', max_uses: o.web.maxUses }, o.web.domains && o.web.domains.length ? { allowed_domains: o.web.domains } : {}));
+    if (o.connectors) CONNECTOR_TOOLS.forEach(t => p.tools.push(t));
+    if (!p.tools.length) delete p.tools;
     const H = { 'x-api-key': KEYS.anthropic, 'anthropic-version': '2023-06-01' };
     let j = await postJson('https://api.anthropic.com/v1/messages', H, p, o.signal);
     let blocks = (Array.isArray(j.content) ? j.content : []).slice();
-    const add = (u) => { u = j.usage || {}; tin += u.input_tokens || 0; tout += u.output_tokens || 0; searches += (u.server_tool_use && u.server_tool_use.web_search_requests) || 0; };
-    let tin = 0, tout = 0, searches = 0; add();
-    for (let k = 0; k < 2 && j.stop_reason === 'pause_turn'; k++) {
-      p.messages = msgs.concat([{ role: 'assistant', content: j.content }]);
+    let tin = 0, tout = 0, searches = 0, connCalls = 0;
+    const connSources = [];
+    const add = () => { const u = j.usage || {}; tin += u.input_tokens || 0; tout += u.output_tokens || 0; searches += (u.server_tool_use && u.server_tool_use.web_search_requests) || 0; };
+    add();
+    for (let k = 0; k < 5 && (j.stop_reason === 'pause_turn' || j.stop_reason === 'tool_use'); k++) {
+      const follow = p.messages.concat([{ role: 'assistant', content: j.content }]);
+      if (j.stop_reason === 'tool_use') {
+        const results = [];
+        for (const b of (j.content || [])) {
+          if (!b || b.type !== 'tool_use') continue;
+          try { const r = await runConnector(b.name, b.input, o.signal); connCalls++; if (!connSources.some(x => x.url === r.source.url)) connSources.push(r.source); results.push({ type: 'tool_result', tool_use_id: b.id, content: r.text }); }
+          catch (e) { if (e && e.name === 'AbortError') throw e; results.push({ type: 'tool_result', tool_use_id: b.id, content: 'Donnée indisponible (' + (e && e.message || 'erreur') + ').', is_error: true }); }
+        }
+        follow.push({ role: 'user', content: results });
+      }
+      p.messages = follow;
       j = await postJson('https://api.anthropic.com/v1/messages', H, p, o.signal);
       blocks = blocks.concat(Array.isArray(j.content) ? j.content : []); add();
     }
@@ -260,7 +319,8 @@ const ADAPTERS = {
       if (b && b.type === 'text' && Array.isArray(b.citations)) b.citations.forEach(c => push(cited, c && c.url, c && c.title));
       if (b && b.type === 'web_search_tool_result' && Array.isArray(b.content)) b.content.forEach(c => push(found, c && c.url, c && c.title));
     }
-    return { text, tin, tout, cut: j.stop_reason === 'max_tokens', why: String(j.stop_reason || ''), sources: (cited.length ? cited : found).slice(0, 8), searches };
+    connSources.forEach(c => push(cited, c.url, c.title));
+    return { text, tin, tout, cut: j.stop_reason === 'max_tokens', why: String(j.stop_reason || ''), sources: cited.slice(0, 8), found: found.slice(0, 6), searches, connCalls };
   },
   async openai(o){ return openaiLike(o, 'https://api.openai.com/v1/chat/completions', KEYS.openai, true); },
   async mistral(o){ return openaiLike(o, 'https://api.mistral.ai/v1/chat/completions', KEYS.mistral, false); },
@@ -388,8 +448,10 @@ exports.handler = async function(event){
   } catch (e) { /* si la fonction SQL 3q n'est pas installée, les plafonds par compte restent actifs */ }
 
   let r;
-  const rExtra = (rplan ? (research.web ? COST_WEB : 0) + (research.adapted !== 'general' ? COST_ADAPTED : (!research.web && research.pub ? COST_ADAPTED : 0)) : 0) + (research.deep ? COST_DEEP : 0) + (research.multi ? COST_MULTI : 0);
-  const extra = attachExtra(images, msgs) + rExtra, cost = tier.cost + extra;   // coût de base du palier + supplément pièces jointes
+  const rSearch = (rplan ? (research.web ? COST_WEB : 0) + (research.adapted !== 'general' ? COST_ADAPTED : 0) + (research.pub ? COST_PUBLIC : 0) : 0) ;
+  const rOther = (research.deep ? COST_DEEP : 0) + (research.multi ? COST_MULTI : 0);
+  const extra = attachExtra(images, msgs) + rSearch + rOther, cost = tier.cost + extra;
+  const wantedSearch = research.web || research.pub || research.adapted !== 'general';   // coût de base du palier + supplément pièces jointes
   try { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: cost }); }
   catch (e) { return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
   if (!r || r.ok !== true) {
@@ -427,7 +489,7 @@ exports.handler = async function(event){
       const maxTok = extra > 0 ? Math.max(tier.max, research.deep ? 4000 : 3000) : tier.max;
       const call = async () => {
         const web = rplan && provider === 'anthropic' && !webFailed ? { domains: rplan.domains, maxUses: research.deep ? Math.min(8, WEB_MAX_USES + 2) : WEB_MAX_USES } : null;
-        try { return await ADAPTERS[provider]({ model, max: maxTok, system: systemFull, messages: msgs, images, web, signal: ctl.signal }); }
+        try { return await ADAPTERS[provider]({ model, max: maxTok, system: systemFull, messages: msgs, images, web, connectors: !!web, signal: ctl.signal }); }
         catch (we) { if (!web || (we && we.name === 'AbortError')) throw we; webFailed = true; return await ADAPTERS[provider]({ model, max: maxTok, system: system + (wantJson ? '' : researchSystem(research, false)), messages: msgs, images, web: null, signal: ctl.signal }); }
       };   // analyse de pièces jointes : réponse plus longue (moins de coupures)
       let out = await call();
@@ -441,9 +503,22 @@ exports.handler = async function(event){
       const micro = costMicro(model, out.tin, out.tout) + (out.searches || 0) * SEARCH_MICRO;
       try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: micro }); } catch (e) {}
       await log(true, label, out.tin, out.tout, micro);
+      /* Recherche : suppléments annulés si aucune source n'a réellement été consultée. */
+      const consulted = !!rplan && !webFailed && ((out.sources && out.sources.length) || (out.found && out.found.length) || out.searches > 0 || out.connCalls > 0);
+      let refundedSearch = 0, note = '';
+      if (!wantJson && wantedSearch) {
+        if (!consulted) {
+          refundedSearch = rSearch;
+          if (refundedSearch > 0) { try { await svcRpc('svc_ai_refund', { p_uid: uid, p_cost: refundedSearch }); } catch (e) { refundedSearch = 0; } }
+          note = '\n\nℹ️ **Réponse sans recherche vérifiée** : aucune source n’a pu être consultée' + (refundedSearch ? ' ; le supplément de recherche (' + refundedSearch + ' crédit' + (refundedSearch > 1 ? 's' : '') + ') a été annulé.' : '.') + ' Vérifiez les informations récentes ou chiffrées.';
+        }
+      }
       let finalText = (!wantJson && out.cut) ? out.text + '\n\n…(réponse tronquée par la limite de longueur : écrivez « continue » pour obtenir la suite.)' : out.text;
-      if (!wantJson && out.sources && out.sources.length) finalText += '\n\n**Sources consultées**\n' + out.sources.map(x => '- [' + x.title.replace(/[\[\]]/g, '') + '](' + x.url + ')').join('\n');
-      return reply(200, { text: finalText, data, credits: { used: r.used, limit: r.limit, plan: r.plan }, attachExtra: extra });
+      const lnk = x => '- [' + x.title.replace(/[\[\]]/g, '') + '](' + x.url + ')';
+      if (!wantJson && out.sources && out.sources.length) finalText += '\n\n**Sources citées**\n' + out.sources.map(lnk).join('\n');
+      else if (!wantJson && out.found && out.found.length) finalText += '\n\n**Pages examinées par la recherche (non citées dans le texte)**\n' + out.found.map(lnk).join('\n');
+      finalText += note;
+      return reply(200, { text: finalText, data, credits: { used: Math.max(0, r.used - refundedSearch), limit: r.limit, plan: r.plan }, attachExtra: extra, charged: { model: tier.cost, attachments: extra - rSearch - rOther, search: rSearch - refundedSearch, deep: research.deep ? COST_DEEP : 0, multi: research.multi ? COST_MULTI : 0, total: cost - refundedSearch, refunded: refundedSearch } });
     } catch (e) {
       lastErr = e && e.name === 'AbortError' ? { code: 'timeout', status: 504, message: 'L’assistant IA a mis trop de temps à répondre.' } : { code: 'upstream', status: 502, message: 'L’assistant IA est momentanément indisponible.' };
     } finally { clearTimeout(timer); }
