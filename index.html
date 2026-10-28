@@ -38861,23 +38861,104 @@
     return '💳 Coût de l’envoi : <b>' + (m + x) + ' crédit' + ((m + x) > 1 ? 's' : '') + '</b> (modèle ' + m + (parts.length ? ' · ' + parts.join(' · ') : '') + '). Le serveur confirme le total ; les pièces jointes peuvent s’ajouter.';
   }
   var HNR_FORMS = { assistant: 'chat-form', cowork: 'cowork-discuss-form', hstat: 'hstat-form', hstatis: 'hstatis-form' };
+  /* Rangée sous la zone de saisie : « ＋ Créer » (si activé par le propriétaire) à gauche, coût total à droite. */
+  function hnrMetaRow(view){
+    var form = document.getElementById(HNR_FORMS[view]); if(!form || !form.parentNode) return null;
+    var row = form.parentNode.querySelector('.hn-meta-row[data-hnr-meta="' + view + '"]');
+    if(row) return row;
+    row = document.createElement('div'); row.className = 'hn-meta-row'; row.setAttribute('data-hnr-meta', view);
+    row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin:4px 0 0; width:100%; max-width:840px; margin-left:auto; margin-right:auto;';
+    row.innerHTML = '<span class="hnr-create-wrap" hidden style="position:relative;"><button type="button" class="btn" data-hnr-create aria-haspopup="true" aria-expanded="false" style="padding:3px 10px; font-size:12px;">＋ Créer</button></span><span class="hnr-cost-pill" aria-live="polite"></span>';
+    form.parentNode.insertBefore(row, form.nextSibling);
+    return row;
+  }
   function hnrPill(view){
     try{
-      var form = document.getElementById(HNR_FORMS[view]); if(!form) return;
+      var row = hnrMetaRow(view); if(!row) return;
+      var pill = row.querySelector('.hnr-cost-pill');
       var m = 1; try{ m = view === 'hstatis' ? 1 : (getHmodelTierDefForView(view).creditCost || 1); }catch(e){}
-      var x = researchExtraCost(view), tot = m + x, pill = form.querySelector('.hnr-cost-pill');
-      if(!pill){
-        var send = form.querySelector('button[type="submit"]'); if(!send || !send.parentNode) return;
-        pill = document.createElement('span'); pill.className = 'hnr-cost-pill'; pill.setAttribute('aria-live', 'polite');
-        send.parentNode.insertBefore(pill, send);
-      }
+      var x = researchExtraCost(view), tot = m + x;
       var txt = '💳 ' + tot + ' crédit' + (tot > 1 ? 's' : '');
-      if(pill.textContent !== txt){ pill.textContent = txt; }
+      if(pill.textContent !== txt) pill.textContent = txt;
       pill.title = 'Coût de cet envoi : ' + tot + ' (modèle ' + m + (x ? ' + options de recherche ' + x : '') + '). Confirmé par le serveur ; les pièces jointes peuvent s’ajouter.';
-      pill.style.cssText = 'font-size:11.5px; white-space:nowrap; align-self:center; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:' + (x ? '#fff' : 'var(--muted)') + '; background:' + (x ? 'var(--accent)' : 'var(--surface-2)') + ';';
+      pill.style.cssText = 'margin-left:auto; font-size:11.5px; white-space:nowrap; padding:2px 8px; border-radius:999px; border:1px solid ' + (x ? 'var(--accent)' : 'var(--line)') + '; color:' + (x ? '#fff' : 'var(--muted)') + '; background:' + (x ? 'var(--accent)' : 'var(--surface-2)') + ';';
+      var cw = row.querySelector('.hnr-create-wrap'); if(cw) cw.hidden = !hnrImgEnabled();
     }catch(e){}
   }
   function hnrPills(){ Object.keys(HNR_FORMS).forEach(hnrPill); }
+  /* ---- « ＋ Créer › Image IA » : activé par le propriétaire (réglage partagé, valable sur tous les appareils) ---- */
+  var HNR_IMG_KEY = 'hn_flag_image_ia', hnrImgFlag = null;
+  function hnrImgEnabled(){
+    if(hnrImgFlag !== null) return hnrImgFlag;
+    try{ return localStorage.getItem(HNR_IMG_KEY) === '1'; }catch(e){ return false; }
+  }
+  function hnrImgApply(v){
+    hnrImgFlag = !!v; try{ localStorage.setItem(HNR_IMG_KEY, v ? '1' : '0'); }catch(e){}
+    hnrPills();
+    if(!v){ var dlg = document.getElementById('hnr-img-dlg'); if(dlg) dlg.remove(); var mn = document.getElementById('hnr-create-menu'); if(mn) mn.remove(); }
+    var cb = document.getElementById('hnr-imageia-toggle'); if(cb) cb.checked = !!v;
+  }
+  function hnrImgFetch(){
+    var A = window.__hnAuth; if(!A) return;
+    var ctl = window.AbortController ? new AbortController() : null; if(ctl) setTimeout(function(){ ctl.abort(); }, 7000);
+    fetch(A.url + '/rest/v1/rpc/feature_flag_get', { method:'POST', headers:{ 'Content-Type':'application/json', apikey:A.key }, body: JSON.stringify({ p_key:'image_ia' }), signal: ctl ? ctl.signal : undefined })
+      .then(function(r){ return r.ok ? r.json() : undefined; }).then(function(v){ if(typeof v === 'boolean') hnrImgApply(v); }).catch(function(){});
+  }
+  function hnrCloseCreate(){ var mn = document.getElementById('hnr-create-menu'); if(mn) mn.remove(); document.querySelectorAll('[data-hnr-create]').forEach(function(b){ b.setAttribute('aria-expanded', 'false'); }); }
+  function hnrOpenImageDialog(view){
+    hnrCloseCreate();
+    var old = document.getElementById('hnr-img-dlg'); if(old) old.remove();
+    var d = document.createElement('div'); d.id = 'hnr-img-dlg'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Créer une image IA');
+    d.style.cssText = 'position:fixed; inset:0; z-index:99990; background:rgba(15,23,42,.45); display:flex; align-items:center; justify-content:center; padding:16px;';
+    d.innerHTML = '<div class="hnr-bar" data-hnr-view="img-' + view + '" style="background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:14px; padding:14px; width:min(560px,100%); max-height:90dvh; overflow:auto; box-shadow:0 18px 50px rgba(0,0,0,.3);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><strong>＋ Créer</strong><button type="button" class="btn icon-only" data-hnr-img-close aria-label="Fermer" style="padding:2px 9px;">✕</button></div><div data-hnr-image-panel style="border:0; padding:0; background:none;">' + hnrImagePanelHtml() + '</div></div>';
+    d.addEventListener('click', function(e){ if(e.target === d || (e.target.closest && e.target.closest('[data-hnr-img-close]'))) d.remove(); });
+    document.body.appendChild(d);
+  }
+  document.addEventListener('click', function(e){
+    var t = e.target; if(!t || !t.closest) return;
+    var cb = t.closest('[data-hnr-create]');
+    if(cb){
+      var open = document.getElementById('hnr-create-menu'); if(open){ hnrCloseCreate(); return; }
+      var row = cb.closest('.hn-meta-row'), view = row ? row.getAttribute('data-hnr-meta') : 'assistant';
+      var mn = document.createElement('div'); mn.id = 'hnr-create-menu'; mn.setAttribute('role', 'menu');
+      var r = cb.getBoundingClientRect();
+      mn.style.cssText = 'position:fixed; z-index:99980; left:' + Math.max(8, r.left) + 'px; bottom:' + Math.round(window.innerHeight - r.top + 6) + 'px; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:4px; box-shadow:0 10px 30px rgba(0,0,0,.18); min-width:180px;';
+      mn.innerHTML = '<button type="button" class="btn" role="menuitem" data-hnr-create-img="' + view + '" style="display:flex; width:100%; justify-content:flex-start; gap:8px; border:0; background:none; padding:7px 10px; font-size:13px;">🖼️ Image IA</button>';
+      document.body.appendChild(mn); cb.setAttribute('aria-expanded', 'true');
+      return;
+    }
+    var it = t.closest('[data-hnr-create-img]'); if(it){ hnrOpenImageDialog(it.getAttribute('data-hnr-create-img')); return; }
+    if(!t.closest('#hnr-create-menu')) hnrCloseCreate();
+  });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ hnrCloseCreate(); var d = document.getElementById('hnr-img-dlg'); if(d) d.remove(); } });
+  /* Réglage propriétaire (Réglages) */
+  var hnrOwnerNow = false;
+  function hnrImgCard(){
+    var card = document.getElementById('setting-imageia-card');
+    if(!card){
+      var anchor = document.getElementById('setting-sendicon-card') || document.getElementById('fghlab-owner-cloud-card'); if(!anchor || !anchor.parentNode) return;
+      card = document.createElement('div'); card.className = 'card'; card.id = 'setting-imageia-card'; card.style.display = 'none';
+      card.innerHTML = '<h2>Bouton ＋ Créer « Image IA »</h2><p class="hint">Réglage valable pour <strong>tous les utilisateurs et tous les appareils</strong>. Activez-le seulement quand la génération d’images est branchée. Désactivé, le bouton est masqué partout (au plus tard quelques minutes après, ou à la prochaine ouverture).</p>' +
+        '<label style="display:flex; gap:8px; align-items:center; font-size:13.5px;"><input type="checkbox" id="hnr-imageia-toggle"> Afficher le bouton ＋ Créer « Image IA »</label><p class="hint" id="hnr-imageia-status" style="margin:6px 0 0;"></p>';
+      anchor.parentNode.insertBefore(card, anchor.nextSibling);
+      card.querySelector('#hnr-imageia-toggle').addEventListener('change', function(ev){
+        var on = ev.target.checked, st = document.getElementById('hnr-imageia-status'), A = window.__hnAuth, sb = A && A.client && A.client();
+        var say = function(t){ if(st){ st.textContent = t; setTimeout(function(){ if(st.textContent === t) st.textContent = ''; }, 6000); } };
+        if(!sb){ ev.target.checked = !on; say('Service indisponible.'); return; }
+        sb.rpc('feature_flag_set', { p_key:'image_ia', p_enabled:on }).then(function(r){
+          if(r && r.error){ ev.target.checked = !on; var c = String(r.error.code || ''); say(c === '42501' ? 'Action réservée au propriétaire.' : (c === 'PGRST202' ? 'Le serveur n’est pas encore configuré : exécutez le fichier supabase-image-ia.sql.' : 'Enregistrement impossible.')); return; }
+          hnrImgApply(on); say(on ? 'Activé pour tous les utilisateurs ✓' : 'Masqué pour tous les utilisateurs ✓');
+        }, function(){ ev.target.checked = !on; say('Connexion au serveur impossible.'); });
+      });
+    }
+    card.style.display = hnrOwnerNow ? '' : 'none';
+    var cb = card.querySelector('#hnr-imageia-toggle'); if(cb) cb.checked = hnrImgEnabled();
+  }
+  document.addEventListener('hn-auth', function(e){ hnrOwnerNow = !!(e.detail && e.detail.owner); hnrImgCard(); });
+  setTimeout(function(){ try{ hnrOwnerNow = !!(window.__hnAuth && window.__hnAuth.owner()); hnrImgCard(); hnrImgFetch(); }catch(e){} }, 1500);
+  setInterval(hnrImgFetch, 300000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) hnrImgFetch(); });
+
   function hnrBarHtml(view, isOpen){
     if(isOpen === undefined) isOpen = window.innerWidth > 860;
     var s = hnrGet(view), activeN = (s.deep ? 1 : 0) + (s.web ? 1 : 0) + (s.pub ? 1 : 0) + (s.multi ? 1 : 0) + ((s.adapted && s.adapted !== 'general') ? 1 : 0), chip = function(key, label, on, extra){
