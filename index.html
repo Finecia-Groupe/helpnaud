@@ -38798,7 +38798,7 @@
     { id: 'publiques', label: 'Données publiques : institutions, banques centrales (+2)' }
   ];
   var HNR_COSTS = { deep: 4, multi: 1, web: 2, adapted: 2 };
-  function hnrDefault(){ return { deep: false, web: false, multi: false, adapted: 'general', strict: false, pub: false, sources: ['dossier', 'fichier', 'connaissances'] }; }
+  function hnrDefault(){ return { deep: false, web: false, multi: false, adapted: 'general', strict: false, pub: false, spec: false, sources: ['dossier', 'fichier', 'connaissances'] }; }
   function hnrGet(view){
     var s = hnrDefault();
     try{ var r = JSON.parse(localStorage.getItem('helpnaud_research_' + view) || 'null'); if(r && typeof r === 'object'){ Object.keys(s).forEach(function(k){ if(r[k] !== undefined) s[k] = r[k]; }); } }catch(e){}
@@ -38809,10 +38809,10 @@
   function hnrBackend(){ return true; }   // recherche web assurée par le serveur IA (ai.js)
   function hnrEff(view){
     var s = hnrGet(view), has = function(id){ return s.sources.indexOf(id) > -1; };
-    return { adapted: s.adapted || 'general', web: !!s.web || (!!s.multi && has('web')), pub: !!s.pub || (!!s.multi && has('publiques')), deep: !!s.deep, multi: !!s.multi, strict: s.strict === true };
+    return { adapted: s.adapted || 'general', spec: !!s.spec && !!s.adapted && s.adapted !== 'general', web: !!s.web || (!!s.multi && has('web')), pub: !!s.pub || (!!s.multi && has('publiques')), deep: !!s.deep, multi: !!s.multi, strict: s.strict === true };
   }
-  function hnrSearching(view){ var e = hnrEff(view); return e.web || e.pub || e.adapted !== 'general'; }
-  window.__hnResearch = { payload: function(view){ var e = hnrEff(view); return { mode: (view === 'hstat' ? 'consultant' : (view === 'hstatis' ? 'statisticien' : '')), adapted: e.adapted, web: e.web, 'public': e.pub, deep: e.deep, multi: e.multi, strict: e.strict }; } };
+  function hnrSearching(view){ var e = hnrEff(view); return e.web || e.pub || e.spec; }
+  window.__hnResearch = { payload: function(view){ var e = hnrEff(view); return { mode: (view === 'hstat' ? 'consultant' : (view === 'hstatis' ? 'statisticien' : '')), adapted: e.adapted, spec: e.spec, web: e.web, 'public': e.pub, deep: e.deep, multi: e.multi, strict: e.strict }; } };
   function hnrImageBackend(){ return window.HelpNaudAI && typeof window.HelpNaudAI.generateImage === 'function' ? window.HelpNaudAI : null; }
   function hnrProfile(id){ var r = HNR_PROFILES[0]; HNR_PROFILES.forEach(function(p){ if(p.id === id) r = p; }); return r; }
   function researchExtraCost(view){
@@ -38821,7 +38821,7 @@
     if(e.deep) n += HNR_COSTS.deep;
     if(e.multi) n += HNR_COSTS.multi;
     if(e.web) n += HNR_COSTS.web;
-    if(e.adapted !== 'general') n += HNR_COSTS.adapted;
+    if(e.spec) n += HNR_COSTS.adapted;
     if(e.pub) n += HNR_COSTS.adapted;
     return n;
   }
@@ -38844,7 +38844,7 @@
     if(s.multi) bits.push('📚 Sources multiples (+' + HNR_COSTS.multi + ' crédit)');
     var e = hnrEff(view);
     if(e.web) bits.push('🌐 Web en temps réel (+' + HNR_COSTS.web + ')');
-    if(s.adapted && s.adapted !== 'general') bits.push('🎯 Adaptée : ' + hnrProfile(s.adapted).label + ' (+' + HNR_COSTS.adapted + (s.strict === true ? ', limitée au domaine' : '') + ')');
+    if(s.adapted && s.adapted !== 'general') bits.push('🎯 Domaine : ' + hnrProfile(s.adapted).label + (e.spec ? ' · sources du domaine (+' + HNR_COSTS.adapted + ')' : ' (orientation, sans supplément)') + (s.strict === true ? ' · limité au domaine' : ''));
     if(e.pub) bits.push('🏛️ Données publiques (+' + HNR_COSTS.adapted + ')');
     if(bits.length && typeof addFn === 'function') addFn('Mode de recherche actif — ' + bits.join(' · '));
   }
@@ -38853,19 +38853,37 @@
   function hnrTotalText(view){
     var m = 1; try{ m = view === 'hstatis' ? 1 : (getHmodelTierDefForView(view).creditCost || 1); }catch(e){}
     var x = researchExtraCost(view), e = hnrEff(view), parts = [];
-    if(e.adapted !== 'general') parts.push('adaptée +' + HNR_COSTS.adapted);
+    if(e.spec) parts.push('sources du domaine +' + HNR_COSTS.adapted);
     if(e.web) parts.push('web +' + HNR_COSTS.web);
     if(e.pub) parts.push('données publiques +' + HNR_COSTS.adapted);
     if(e.deep) parts.push('approfondie +' + HNR_COSTS.deep);
     if(e.multi) parts.push('sources multiples +' + HNR_COSTS.multi);
     return '💳 Coût de l’envoi : <b>' + (m + x) + ' crédit' + ((m + x) > 1 ? 's' : '') + '</b> (modèle ' + m + (parts.length ? ' · ' + parts.join(' · ') : '') + '). Le serveur confirme le total ; les pièces jointes peuvent s’ajouter.';
   }
+  var HNR_FORMS = { assistant: 'chat-form', cowork: 'cowork-discuss-form', hstat: 'hstat-form', hstatis: 'hstatis-form' };
+  function hnrPill(view){
+    try{
+      var form = document.getElementById(HNR_FORMS[view]); if(!form) return;
+      var m = 1; try{ m = view === 'hstatis' ? 1 : (getHmodelTierDefForView(view).creditCost || 1); }catch(e){}
+      var x = researchExtraCost(view), tot = m + x, pill = form.querySelector('.hnr-cost-pill');
+      if(!pill){
+        var send = form.querySelector('button[type="submit"]'); if(!send || !send.parentNode) return;
+        pill = document.createElement('span'); pill.className = 'hnr-cost-pill'; pill.setAttribute('aria-live', 'polite');
+        send.parentNode.insertBefore(pill, send);
+      }
+      var txt = '💳 ' + tot + ' crédit' + (tot > 1 ? 's' : '');
+      if(pill.textContent !== txt){ pill.textContent = txt; }
+      pill.title = 'Coût de cet envoi : ' + tot + ' (modèle ' + m + (x ? ' + options de recherche ' + x : '') + '). Confirmé par le serveur ; les pièces jointes peuvent s’ajouter.';
+      pill.style.cssText = 'font-size:11.5px; white-space:nowrap; align-self:center; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:' + (x ? '#fff' : 'var(--muted)') + '; background:' + (x ? 'var(--accent)' : 'var(--surface-2)') + ';';
+    }catch(e){}
+  }
+  function hnrPills(){ Object.keys(HNR_FORMS).forEach(hnrPill); }
   function hnrBarHtml(view, isOpen){
     if(isOpen === undefined) isOpen = window.innerWidth > 860;
     var s = hnrGet(view), activeN = (s.deep ? 1 : 0) + (s.web ? 1 : 0) + (s.pub ? 1 : 0) + (s.multi ? 1 : 0) + ((s.adapted && s.adapted !== 'general') ? 1 : 0), chip = function(key, label, on, extra){
       return '<button type="button" class="btn" data-hnr-toggle="' + key + '" aria-pressed="' + (on ? 'true' : 'false') + '" style="padding:3px 10px; font-size:12px;' + (on ? ' background:var(--accent); color:#fff; border-color:var(--accent);' : '') + '">' + label + (extra || '') + '</button>';
     };
-    return '<div class="hnr-bar" data-hnr-view="' + view + '" style="margin:0 0 8px;"><details class="hnr-det"' + (isOpen ? ' open' : '') + '><summary>⚙️ Options de recherche et Image IA' + (activeN ? ' <b>(' + activeN + ' actif' + (activeN > 1 ? 's' : '') + ')</b>' : '') + '</summary><div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;">' +
+    return '<div class="hnr-bar" data-hnr-view="' + view + '" style="margin:0 0 8px;"><details class="hnr-det"' + (isOpen ? ' open' : '') + '><summary>⚙️ Options de recherche' + (activeN ? ' <b>(' + activeN + ' actif' + (activeN > 1 ? 's' : '') + ')</b>' : '') + '</summary><div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;">' +
       '<span class="hint" style="margin:0; font-size:11.5px;">Mode de recherche :</span>' +
       chip('deep', '🔎 Recherche approfondie', s.deep, ' <small>+' + HNR_COSTS.deep + '</small>') +
       chip('web', '🌐 Web en temps réel', s.web, ' <small>+' + HNR_COSTS.web + '</small>') +
@@ -38873,11 +38891,11 @@
       chip('multi', '📚 Sources multiples', s.multi, ' <small>+' + HNR_COSTS.multi + '</small>') +
       '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;">🎯 Recherche adaptée <select data-hnr-adapted style="border:1px solid var(--line); border-radius:8px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">' + HNR_PROFILES.map(function(p){ return '<option value="' + p.id + '"' + (p.id === s.adapted ? ' selected' : '') + '>' + p.label + '</option>'; }).join('') + '</select></label>' +
       '<button type="button" class="btn icon-only" data-hnr-adapted-help aria-expanded="false" aria-label="Comment fonctionne la recherche adaptée ?" title="Comment fonctionne la recherche adaptée ?" style="padding:2px 9px; font-size:12px;">ⓘ</button>' +
-      (s.adapted && s.adapted !== 'general' ? '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;" title="Si la question sort du domaine choisi, l’IA ne répond pas sur le fond."><input type="checkbox" data-hnr-strict' + (s.strict === true ? ' checked' : '') + '> Limiter au domaine</label> <small style="font-size:11px; opacity:.8;">+' + HNR_COSTS.adapted + '</small>' : '') +
-      '<button type="button" class="btn" data-hnr-image-open style="padding:3px 10px; font-size:12px;">🖼️ Image IA</button></div>' +
+      (s.adapted && s.adapted !== 'general' ? '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;" title="Si la question sort du domaine choisi, l’IA ne répond pas sur le fond."><input type="checkbox" data-hnr-strict' + (s.strict === true ? ' checked' : '') + '> Limiter au domaine</label> ' + chip('spec', '🎯 Sources du domaine', s.spec, ' <small>+' + HNR_COSTS.adapted + '</small>') : '') +
+      '</div>' +   /* « Image IA » masqué tant que la génération n'est pas branchée */
       (s.multi ? '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; font-size:12px;">' + HNR_SOURCES.filter(function(o){ return o.id !== 'web' && o.id !== 'publiques'; }).map(function(o){ return '<label style="display:inline-flex; gap:4px; align-items:center;"><input type="checkbox" data-hnr-source="' + o.id + '"' + (s.sources.indexOf(o.id) > -1 ? ' checked' : '') + '> ' + o.label + '</label>'; }).join('') + '</div>' : '') +
       '<div data-hnr-total class="hint" style="margin:6px 0 0; font-size:12px;">' + hnrTotalText(view) + '</div>' +
-      '<div data-hnr-adapted-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface-2); font-size:12.5px; line-height:1.55;">' +'<div style="font-weight:600; font-size:13px; margin-bottom:4px;">🎯 Recherche adaptée : comment ça fonctionne</div>' +'<p style="margin:0 0 8px;">Vous choisissez un domaine (Finance, Économie, Droit…). HelpNaud privilégie alors les <b>sites officiels spécialisés</b> de ce domaine (banques centrales, organismes statistiques, normes, textes officiels…) et cite les pages réellement consultées. Pour certains chiffres, il interroge directement les données officielles de la <b>Banque mondiale</b> et de la <b>Banque du Canada</b>. Les autres bases ne sont pas encore branchées.</p>' +'<div style="font-weight:600; margin-bottom:2px;">Ce que ça change</div>' +'<ul style="margin:0 0 8px; padding-left:18px;"><li>Par défaut, l’IA peut aussi répondre hors du domaine choisi. Cochez « Limiter au domaine » si vous voulez qu’elle refuse les questions hors domaine.</li><li>Suppléments : Recherche adaptée +2, Web en temps réel +2, Données publiques +2, Recherche approfondie +4, Sources multiples +1, ajoutés au coût du modèle choisi. Le total est affiché ci-dessus et confirmé par le serveur.</li><li>Si la recherche échoue ou ne trouve aucune source, le supplément de recherche est annulé et la réponse indique qu’elle n’a pas de recherche vérifiée.</li></ul><div style="font-weight:600; margin-bottom:2px;">Limites</div>' +'<ul style="margin:0; padding-left:18px;"><li>Les sources en ligne peuvent être incomplètes ou en anglais : vérifiez les chiffres importants.</li><li>Ce n’est pas un avis professionnel (juridique, fiscal, financier).</li></ul></div>' +
+      '<div data-hnr-adapted-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface-2); font-size:12.5px; line-height:1.55;">' +'<div style="font-weight:600; font-size:13px; margin-bottom:4px;">🎯 Recherche adaptée : comment ça fonctionne</div>' +'<p style="margin:0 0 8px;">Vous choisissez un domaine (Finance, Économie, Droit…). Sans autre option, le domaine oriente seulement la réponse. Avec « Sources du domaine », HelpNaud privilégie les <b>sites officiels spécialisés</b> de ce domaine (banques centrales, organismes statistiques, normes, textes officiels…) et cite les pages réellement consultées. Pour certains chiffres, il interroge directement les données officielles de la <b>Banque mondiale</b> et de la <b>Banque du Canada</b>. Les autres bases ne sont pas encore branchées.</p>' +'<div style="font-weight:600; margin-bottom:2px;">Ce que ça change</div>' +'<ul style="margin:0 0 8px; padding-left:18px;"><li>Par défaut, l’IA peut aussi répondre hors du domaine choisi. Cochez « Limiter au domaine » si vous voulez qu’elle refuse les questions hors domaine.</li><li>Choisir un domaine seul est gratuit : il oriente seulement le vocabulaire de l’IA. Toute recherche payante doit être activée : « Sources du domaine » +2, « Web en temps réel » +2, « Données publiques » +2, « Recherche approfondie » +4, « Sources multiples » +1, ajoutés au coût du modèle choisi. Le total est affiché ci-dessus et confirmé par le serveur.</li><li>Si la recherche échoue ou ne trouve aucune source, le supplément de recherche est annulé et la réponse indique qu’elle n’a pas de recherche vérifiée.</li></ul><div style="font-weight:600; margin-bottom:2px;">Limites</div>' +'<ul style="margin:0; padding-left:18px;"><li>Les sources en ligne peuvent être incomplètes ou en anglais : vérifiez les chiffres importants.</li><li>Ce n’est pas un avis professionnel (juridique, fiscal, financier).</li></ul></div>' +
       '<div data-hnr-image-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface-2);"></div></details></div>';
   }
   function hnrImagePanelHtml(){
@@ -38890,7 +38908,7 @@
       '<p data-hnr-image-msg class="hint" style="margin:6px 0 0; font-size:12px;"></p>' +
       (list.length ? '<div style="margin-top:6px; font-size:12px;"><strong>Mes descriptions d’images</strong>' + list.slice().reverse().map(function(it, i){ return '<div style="display:flex; gap:6px; align-items:center; justify-content:space-between; padding:2px 0;"><span>' + escapeHtml(it.prompt) + ' <span class="hint" style="margin:0;">(' + escapeHtml(it.style) + ', ' + escapeHtml(it.ratio) + ')</span></span><span><button type="button" class="btn" data-hnr-image-reuse="' + (list.length - 1 - i) + '" style="padding:1px 7px; font-size:11px;">Réutiliser</button> <button type="button" class="btn danger" data-hnr-image-del="' + (list.length - 1 - i) + '" style="padding:1px 7px; font-size:11px;">✕</button></span></div>'; }).join('') + '</div>' : '');
   }
-  var hnrWatch = setInterval(function(){ try{ var f = document.getElementById('hstatis-form'); if(f && f.parentNode && !f.parentNode.querySelector('.hnr-bar')){ hnrInit('hstatis', 'hstatis-form'); } }catch(e){} }, 1000);
+  var hnrWatch = setInterval(function(){ try{ var f = document.getElementById('hstatis-form'); if(f && f.parentNode && !f.parentNode.querySelector('.hnr-bar')){ hnrInit('hstatis', 'hstatis-form'); } hnrPills(); }catch(e){} }, 1000);
   window.__hnrInit = function(v, f){ try{ hnrInit(v, f); }catch(e){} };
   function hnrInit(view, formId){
     var form = document.getElementById(formId);
@@ -38902,7 +38920,7 @@
     var bar = document.querySelector('.hnr-bar[data-hnr-view="' + view + '"]'); if(!bar) return;
     var imgOpen = bar.querySelector('[data-hnr-image-panel]') && !bar.querySelector('[data-hnr-image-panel]').hidden;
     var det = bar.querySelector('.hnr-det'), wasOpen = det ? det.open : undefined;
-    var holder = document.createElement('div'); holder.innerHTML = hnrBarHtml(view, wasOpen);
+    var holder = document.createElement('div'); holder.innerHTML = hnrBarHtml(view, wasOpen); setTimeout(hnrPills, 0);
     var nb = holder.firstChild; bar.parentNode.replaceChild(nb, bar);
     if(imgOpen){ var pn = nb.querySelector('[data-hnr-image-panel]'); pn.hidden = false; pn.innerHTML = hnrImagePanelHtml(); }
   }
