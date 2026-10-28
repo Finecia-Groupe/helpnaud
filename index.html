@@ -13488,6 +13488,7 @@
       try{ var cv = document.querySelector('.view:not([hidden])'); if(cv && cv.id) body.tool = cv.id.replace(/^view-/, ''); }catch(e){}
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
+      try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi) body.research = rp; } }catch(e){}
       if(a[1] && a[1].length){ body.image = a[1][0]; if(a[1].length > 1) body.images = a[1]; }
       return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) })
         .catch(function(){ throw Object.assign(new Error('Impossible de joindre le serveur IA (réseau ou déploiement).'), { code:'network' }); });
@@ -15028,6 +15029,7 @@
       var sampleOpts = {
         cache:false,
         modelTier: getHmodelTier('assistant'),
+        researchView: 'assistant',
         tools: buildAssistantTools(),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); chatLog.scrollTop = chatLog.scrollHeight; }
       };
@@ -33260,6 +33262,7 @@
       var sampleOpts = {
         cache:false,
         modelTier: getHmodelTier('cowork'),
+        researchView: 'cowork',
         tools: buildAssistantTools(),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); coworkDiscussLog.scrollTop = coworkDiscussLog.scrollHeight; }
       };
@@ -38787,11 +38790,11 @@
     { id: 'dossier', label: 'Mon dossier (transactions, budgets)' },
     { id: 'fichier', label: 'Fichier joint' },
     { id: 'connaissances', label: 'Connaissances générales du modèle' },
-    { id: 'web', label: 'Web en temps réel (bientôt)' },
-    { id: 'publiques', label: 'Données publiques : institutions, banques centrales (bientôt)' }
+    { id: 'web', label: 'Web en temps réel (+2)' },
+    { id: 'publiques', label: 'Données publiques : institutions, banques centrales (+2)' }
   ];
-  var HNR_COSTS = { deep: 4, multi: 1 };
-  function hnrDefault(){ return { deep: false, web: false, multi: false, adapted: 'general', sources: ['dossier', 'fichier', 'connaissances'] }; }
+  var HNR_COSTS = { deep: 4, multi: 1, web: 2, adapted: 2 };
+  function hnrDefault(){ return { deep: false, web: false, multi: false, adapted: 'general', strict: true, sources: ['dossier', 'fichier', 'connaissances'] }; }
   function hnrGet(view){
     var s = hnrDefault();
     try{ var r = JSON.parse(localStorage.getItem('helpnaud_research_' + view) || 'null'); if(r && typeof r === 'object'){ Object.keys(s).forEach(function(k){ if(r[k] !== undefined) s[k] = r[k]; }); } }catch(e){}
@@ -38799,13 +38802,22 @@
     return s;
   }
   function hnrSet(view, s){ try{ localStorage.setItem('helpnaud_research_' + view, JSON.stringify(s)); }catch(e){} }
-  function hnrBackend(){ return window.HelpNaudAI && typeof window.HelpNaudAI.webSearch === 'function' ? window.HelpNaudAI : null; }
+  function hnrBackend(){ return true; }   // recherche web assurée par le serveur IA (ai.js)
+  function hnrEff(view){
+    var s = hnrGet(view), has = function(id){ return s.sources.indexOf(id) > -1; };
+    return { adapted: s.adapted || 'general', web: !!s.web || (!!s.multi && has('web')), pub: !!s.multi && has('publiques'), deep: !!s.deep, multi: !!s.multi, strict: s.strict !== false };
+  }
+  function hnrSearching(view){ var e = hnrEff(view); return e.web || e.pub || e.adapted !== 'general'; }
+  window.__hnResearch = { payload: function(view){ var e = hnrEff(view); return { adapted: e.adapted, web: e.web, 'public': e.pub, deep: e.deep, multi: e.multi, strict: e.strict }; } };
   function hnrImageBackend(){ return window.HelpNaudAI && typeof window.HelpNaudAI.generateImage === 'function' ? window.HelpNaudAI : null; }
   function hnrProfile(id){ var r = HNR_PROFILES[0]; HNR_PROFILES.forEach(function(p){ if(p.id === id) r = p; }); return r; }
   function researchExtraCost(view){
     var s = hnrGet(view), n = 0;
-    if(s.deep) n += HNR_COSTS.deep;
-    if(s.multi) n += HNR_COSTS.multi;
+    var e = hnrEff(view);
+    if(e.deep) n += HNR_COSTS.deep;
+    if(e.multi) n += HNR_COSTS.multi;
+    if(e.web) n += HNR_COSTS.web;
+    if(e.adapted !== 'general' || (!e.web && e.pub)) n += HNR_COSTS.adapted;
     return n;
   }
   function researchPromptInstruction(view){
@@ -38817,19 +38829,19 @@
     }
     var pr = hnrProfile(s.adapted);
     if(s.adapted && s.adapted !== 'general') parts.push('RECHERCHE ADAPTÉE — domaine « ' + pr.label + ' » : ' + pr.hint + '. Utilise le vocabulaire et les références usuelles de ce domaine.');
-    parts.push('Tu n’as pas accès à Internet dans ce mode : si l’information peut avoir changé récemment, dis-le et recommande de la vérifier.');
-    return parts.length > 1 ? ' ' + parts.join(' ') : '';
+    var srch = hnrSearching(view);
+    if(!srch) parts.push('Tu n’as pas accès à Internet dans ce mode : si l’information peut avoir changé récemment, dis-le et recommande de la vérifier.');
+    return parts.length > (srch ? 0 : 1) ? ' ' + parts.join(' ') : '';
   }
   function researchAnnounce(view, addFn){
     var s = hnrGet(view), bits = [];
     if(s.deep) bits.push('🔎 Recherche approfondie (+' + HNR_COSTS.deep + ' crédits)');
     if(s.multi) bits.push('📚 Sources multiples (+' + HNR_COSTS.multi + ' crédit)');
-    if(s.adapted && s.adapted !== 'general') bits.push('🎯 Adaptée : ' + hnrProfile(s.adapted).label);
+    var e = hnrEff(view);
+    if(e.web) bits.push('🌐 Web en temps réel (+' + HNR_COSTS.web + ')');
+    if(s.adapted && s.adapted !== 'general') bits.push('🎯 Adaptée : ' + hnrProfile(s.adapted).label + ' (+' + HNR_COSTS.adapted + (s.strict !== false ? ', limitée au domaine' : '') + ')');
+    else if(e.pub) bits.push('🏛️ Données publiques (+' + HNR_COSTS.adapted + ')');
     if(bits.length && typeof addFn === 'function') addFn('Mode de recherche actif — ' + bits.join(' · '));
-    if(s.web && !hnrBackend()){
-      var flag = 'hnr_webnotice_' + view, seen = false; try{ seen = sessionStorage.getItem(flag) === '1'; sessionStorage.setItem(flag, '1'); }catch(e){}
-      if(!seen && typeof addFn === 'function') addFn('🌐 La recherche web en temps réel sera activée avec le serveur IA (prochaine étape). Cette réponse n’utilise pas encore de sources en ligne : vérifiez les informations récentes.');
-    }
   }
   function hnrImagePrompts(){ try{ var r = JSON.parse(localStorage.getItem('helpnaud_image_prompts') || '[]'); return Array.isArray(r) ? r : []; }catch(e){ return []; } }
   function hnrImageSave(list){ try{ localStorage.setItem('helpnaud_image_prompts', JSON.stringify(list.slice(-20))); }catch(e){} }
@@ -38841,11 +38853,14 @@
     return '<div class="hnr-bar" data-hnr-view="' + view + '" style="margin:0 0 8px;"><details class="hnr-det"' + (isOpen ? ' open' : '') + '><summary>⚙️ Options de recherche et Image IA' + (activeN ? ' <b>(' + activeN + ' actif' + (activeN > 1 ? 's' : '') + ')</b>' : '') + '</summary><div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;">' +
       '<span class="hint" style="margin:0; font-size:11.5px;">Mode de recherche :</span>' +
       chip('deep', '🔎 Recherche approfondie', s.deep, ' <small>+' + HNR_COSTS.deep + '</small>') +
-      chip('web', '🌐 Web en temps réel', s.web, hnrBackend() ? '' : ' <small>bientôt</small>') +
+      chip('web', '🌐 Web en temps réel', s.web, ' <small>+' + HNR_COSTS.web + '</small>') +
       chip('multi', '📚 Sources multiples', s.multi, ' <small>+' + HNR_COSTS.multi + '</small>') +
       '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;">🎯 Recherche adaptée <select data-hnr-adapted style="border:1px solid var(--line); border-radius:8px; padding:3px 6px; background:var(--surface); color:var(--ink); font-size:12px;">' + HNR_PROFILES.map(function(p){ return '<option value="' + p.id + '"' + (p.id === s.adapted ? ' selected' : '') + '>' + p.label + '</option>'; }).join('') + '</select></label>' +
+      '<button type="button" class="btn icon-only" data-hnr-adapted-help aria-expanded="false" aria-label="Comment fonctionne la recherche adaptée ?" title="Comment fonctionne la recherche adaptée ?" style="padding:2px 9px; font-size:12px;">ⓘ</button>' +
+      (s.adapted && s.adapted !== 'general' ? '<label style="display:inline-flex; gap:4px; align-items:center; font-size:12px;" title="Si la question sort du domaine choisi, l’IA ne répond pas sur le fond."><input type="checkbox" data-hnr-strict' + (s.strict !== false ? ' checked' : '') + '> Limiter au domaine</label> <small style="font-size:11px; opacity:.8;">+' + HNR_COSTS.adapted + '</small>' : '') +
       '<button type="button" class="btn" data-hnr-image-open style="padding:3px 10px; font-size:12px;">🖼️ Image IA</button></div>' +
-      (s.multi ? '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; font-size:12px;">' + HNR_SOURCES.map(function(o){ var soon = o.id === 'web' || o.id === 'publiques'; return '<label style="display:inline-flex; gap:4px; align-items:center;' + (soon ? ' opacity:.65;' : '') + '"><input type="checkbox" data-hnr-source="' + o.id + '"' + (s.sources.indexOf(o.id) > -1 ? ' checked' : '') + (soon && !hnrBackend() ? ' disabled' : '') + '> ' + o.label + '</label>'; }).join('') + '</div>' : '') +
+      (s.multi ? '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; font-size:12px;">' + HNR_SOURCES.map(function(o){ return '<label style="display:inline-flex; gap:4px; align-items:center;"><input type="checkbox" data-hnr-source="' + o.id + '"' + (s.sources.indexOf(o.id) > -1 ? ' checked' : '') + '> ' + o.label + '</label>'; }).join('') + '</div>' : '') +
+      '<div data-hnr-adapted-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface-2); font-size:12.5px; line-height:1.55;">' +'<div style="font-weight:600; font-size:13px; margin-bottom:4px;">🎯 Recherche adaptée : comment ça fonctionne</div>' +'<p style="margin:0 0 8px;">Vous choisissez un domaine (Finance, Économie, Droit…). HelpNaud interroge alors <b>Internet limité à des sources spécialisées</b> de ce domaine (banques centrales, organismes statistiques, normes, textes officiels…), puis l’IA rédige avec le vocabulaire du domaine et cite les sources consultées. Avec « Web en temps réel », la recherche s’ouvre à tout Internet, les sources du domaine restant prioritaires.</p>' +'<div style="font-weight:600; margin-bottom:2px;">Ce que ça change</div>' +'<ul style="margin:0 0 8px; padding-left:18px;"><li>« Limiter au domaine » (coché par défaut) : si la question sort du domaine choisi, l’IA ne répond pas sur le fond et vous invite à changer de domaine. Décochez pour autoriser les réponses hors domaine.</li><li>Coût : +2 crédits pour la recherche adaptée, +2 pour « Web en temps réel » ou « Données publiques », +4 pour « Recherche approfondie », +1 pour « Sources multiples ». Les options se cumulent.</li><li>Si la recherche en ligne est indisponible, l’IA répond sans sources et vous êtes facturé comme d’habitude.</li></ul><div style="font-weight:600; margin-bottom:2px;">Limites</div>' +'<ul style="margin:0; padding-left:18px;"><li>Les sources en ligne peuvent être incomplètes ou en anglais : vérifiez les chiffres importants.</li><li>Ce n’est pas un avis professionnel (juridique, fiscal, financier).</li></ul></div>' +
       '<div data-hnr-image-panel hidden style="margin-top:8px; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface-2);"></div></details></div>';
   }
   function hnrImagePanelHtml(){
@@ -38877,6 +38892,7 @@
     var bar = t.closest('.hnr-bar'); if(!bar) return;
     var view = bar.getAttribute('data-hnr-view'), b;
     if((b = t.closest('[data-hnr-toggle]'))){ var s = hnrGet(view), k = b.getAttribute('data-hnr-toggle'); s[k] = !s[k]; hnrSet(view, s); hnrRedraw(view); return; }
+    if(t.closest('[data-hnr-adapted-help]')){ var ap = bar.querySelector('[data-hnr-adapted-panel]'), hb = t.closest('[data-hnr-adapted-help]'); if(ap){ ap.hidden = !ap.hidden; hb.setAttribute('aria-expanded', ap.hidden ? 'false' : 'true'); } return; }
     if(t.closest('[data-hnr-image-open]')){ var pn = bar.querySelector('[data-hnr-image-panel]'); pn.hidden = !pn.hidden; if(!pn.hidden) pn.innerHTML = hnrImagePanelHtml(); return; }
     if(t.closest('[data-hnr-image-go]')){
       var ta = bar.querySelector('[data-hnr-image-prompt]'), msg = bar.querySelector('[data-hnr-image-msg]'), txt = ta ? ta.value.trim() : '';
@@ -38899,7 +38915,8 @@
     var t = e.target; if(!t || !t.closest) return;
     var bar = t.closest('.hnr-bar'); if(!bar) return;
     var view = bar.getAttribute('data-hnr-view');
-    if(t.hasAttribute('data-hnr-adapted')){ var s = hnrGet(view); s.adapted = t.value; hnrSet(view, s); return; }
+    if(t.hasAttribute('data-hnr-adapted')){ var s = hnrGet(view); s.adapted = t.value; hnrSet(view, s); hnrRedraw(view); return; }
+    if(t.hasAttribute('data-hnr-strict')){ var s3 = hnrGet(view); s3.strict = !!t.checked; hnrSet(view, s3); return; }
     if(t.hasAttribute('data-hnr-source')){
       var s2 = hnrGet(view), id = t.getAttribute('data-hnr-source'), i = s2.sources.indexOf(id);
       if(t.checked && i === -1) s2.sources.push(id); if(!t.checked && i > -1) s2.sources.splice(i, 1);
