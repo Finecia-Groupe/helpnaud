@@ -133,13 +133,16 @@ const SEARCH_MICRO = 10000;   // ≈ 0,01 $ par recherche web
 function parseResearch(raw){
   const r = raw && typeof raw === 'object' ? raw : {};
   const adapted = Object.prototype.hasOwnProperty.call(RESEARCH_PROFILES, r.adapted) ? r.adapted : 'general';
-  return { adapted, web: r.web === true, pub: r.public === true, deep: r.deep === true, multi: r.multi === true, strict: r.strict === true, mode: (r.mode === 'consultant' || r.mode === 'statisticien') ? r.mode : '' };
+  return { adapted, spec: r.spec === true, web: r.web === true, pub: r.public === true, deep: r.deep === true, multi: r.multi === true, strict: r.strict === true, mode: (r.mode === 'consultant' || r.mode === 'statisticien') ? r.mode : '' };
 }
-function researchPlan(r){
+function researchPlan(r){   // une recherche payante doit être activée explicitement : le choix d'un domaine seul n'en déclenche aucune
   if (r.web) return { domains: null };
-  if (r.adapted !== 'general') return { domains: RESEARCH_DOMAINS[r.adapted] || INSTITUTIONS };
-  if (r.pub) return { domains: INSTITUTIONS };
-  return null;
+  const spec = r.spec && r.adapted !== 'general';
+  if (!spec && !r.pub) return null;
+  const d = [];
+  if (spec) (RESEARCH_DOMAINS[r.adapted] || INSTITUTIONS).forEach(x => { if (!d.includes(x)) d.push(x); });
+  if (r.pub) INSTITUTIONS.forEach(x => { if (!d.includes(x)) d.push(x); });
+  return { domains: d };
 }
 function researchSystem(r, searching){
   const parts = [];
@@ -149,7 +152,7 @@ function researchSystem(r, searching){
   }
   if (r.adapted !== 'general' && !r.strict) {
     const p = RESEARCH_PROFILES[r.adapted];
-    parts.push('RECHERCHE ADAPTÉE — domaine « ' + p.label + ' ». Privilégie les sources spécialisées de ce domaine et son vocabulaire ; tu peux néanmoins répondre à une question hors domaine, en le signalant brièvement.');
+    parts.push('RECHERCHE ADAPTÉE — domaine « ' + p.label + ' ». Utilise le vocabulaire et les références de ce domaine' + (searching ? ', et privilégie ses sources spécialisées' : '') + ' ; tu peux néanmoins répondre à une question hors domaine, en le signalant brièvement.');
   }
   if (r.web && r.adapted !== 'general') parts.push('Privilégie les sources du domaine (institutions, organismes officiels) avant les sources généralistes.');
   if (searching) parts.push('Tu disposes d’un outil de recherche web et de deux outils de données officielles (Banque mondiale, Banque du Canada) : pour un chiffre précis (PIB, inflation, taux directeur, change), utilise-les en priorité. Utilise la recherche web pour les informations récentes, chiffrées ou à vérifier ; appuie tes affirmations importantes sur les sources trouvées et indique clairement ce qui n’a pas pu être confirmé. Résume et cite, sans recopier de longs passages.');
@@ -451,10 +454,10 @@ exports.handler = async function(event){
   } catch (e) { /* si la fonction SQL 3q n'est pas installée, les plafonds par compte restent actifs */ }
 
   let r;
-  const rSearch = (rplan ? (research.web ? COST_WEB : 0) + (research.adapted !== 'general' ? COST_ADAPTED : 0) + (research.pub ? COST_PUBLIC : 0) : 0) ;
+  const rSearch = (rplan ? (research.web ? COST_WEB : 0) + (research.spec && research.adapted !== 'general' ? COST_ADAPTED : 0) + (research.pub ? COST_PUBLIC : 0) : 0) ;
   const rOther = (research.deep ? COST_DEEP : 0) + (research.multi ? COST_MULTI : 0);
   const extra = attachExtra(images, msgs) + rSearch + rOther, baseCost = body.tool === 'hstatis' ? 1 : tier.cost, cost = baseCost + extra;   // F-i-Stat (outil interne de l'équipe) : 1 crédit de base
-  const wantedSearch = research.web || research.pub || research.adapted !== 'general';   // coût de base du palier + supplément pièces jointes
+  const wantedSearch = research.web || research.pub || (research.spec && research.adapted !== 'general');   // coût de base du palier + supplément pièces jointes
   try { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: cost }); }
   catch (e) { return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
   if (!r || r.ok !== true) {
