@@ -78,6 +78,7 @@ const TIERS = {
   dure:    { cost: 1, band: 'low',  max: 700 },
   basse:   { cost: 1, band: 'low',  max: 700 },
   lumiere: { cost: 1, band: 'low',  max: 700 },
+  interne: { cost: 1, band: 'mid',  max: 1600 },   // F-i-Stat (équipe interne) : 1 crédit de base, modèle de gamme moyenne
   mediane: { cost: 2, band: 'mid',  max: 1600 },
   medium2: { cost: 2, band: 'mid',  max: 1600 },
   idee:    { cost: 2, band: 'mid',  max: 1600 },
@@ -132,7 +133,7 @@ const SEARCH_MICRO = 10000;   // ≈ 0,01 $ par recherche web
 function parseResearch(raw){
   const r = raw && typeof raw === 'object' ? raw : {};
   const adapted = Object.prototype.hasOwnProperty.call(RESEARCH_PROFILES, r.adapted) ? r.adapted : 'general';
-  return { adapted, web: r.web === true, pub: r.public === true, deep: r.deep === true, multi: r.multi === true, strict: r.strict === true };
+  return { adapted, web: r.web === true, pub: r.public === true, deep: r.deep === true, multi: r.multi === true, strict: r.strict === true, mode: (r.mode === 'consultant' || r.mode === 'statisticien') ? r.mode : '' };
 }
 function researchPlan(r){
   if (r.web) return { domains: null };
@@ -152,6 +153,8 @@ function researchSystem(r, searching){
   }
   if (r.web && r.adapted !== 'general') parts.push('Privilégie les sources du domaine (institutions, organismes officiels) avant les sources généralistes.');
   if (searching) parts.push('Tu disposes d’un outil de recherche web et de deux outils de données officielles (Banque mondiale, Banque du Canada) : pour un chiffre précis (PIB, inflation, taux directeur, change), utilise-les en priorité. Utilise la recherche web pour les informations récentes, chiffrées ou à vérifier ; appuie tes affirmations importantes sur les sources trouvées et indique clairement ce qui n’a pas pu être confirmé. Résume et cite, sans recopier de longs passages.');
+  if (r.mode === 'consultant') parts.push('POSTURE DE CONSULTANT SENIOR. Quand la question le justifie, structure ainsi : 1) recommandation principale en tête ; 2) analyse et hypothèses annoncées ; 3) données et sources (origine et date de chaque chiffre) ; 4) risques, limites et points à vérifier ; 5) prochaines étapes concrètes. Distingue les faits sourcés, les estimations et ton opinion. Ne présente jamais comme vérifié ce que la recherche n’a pas confirmé.');
+  if (r.mode === 'statisticien') parts.push('RIGUEUR DE STATISTICIEN. Précise pour chaque chiffre : définition, unité, période, source et date ; indique la méthode et les incertitudes ; distingue corrélation et causalité ; ne compare pas des séries non comparables sans le signaler ; propose des vérifications reproductibles. Ne présente jamais comme vérifié ce que la recherche n’a pas confirmé.');
   if (r.deep) parts.push('Fais une analyse approfondie et structurée.');
   if (r.multi) parts.push('Croise plusieurs sources et signale les divergences.');
   return parts.length ? ' ' + parts.join(' ') : '';
@@ -450,7 +453,7 @@ exports.handler = async function(event){
   let r;
   const rSearch = (rplan ? (research.web ? COST_WEB : 0) + (research.adapted !== 'general' ? COST_ADAPTED : 0) + (research.pub ? COST_PUBLIC : 0) : 0) ;
   const rOther = (research.deep ? COST_DEEP : 0) + (research.multi ? COST_MULTI : 0);
-  const extra = attachExtra(images, msgs) + rSearch + rOther, cost = tier.cost + extra;
+  const extra = attachExtra(images, msgs) + rSearch + rOther, baseCost = body.tool === 'hstatis' ? 1 : tier.cost, cost = baseCost + extra;   // F-i-Stat (outil interne de l'équipe) : 1 crédit de base
   const wantedSearch = research.web || research.pub || research.adapted !== 'general';   // coût de base du palier + supplément pièces jointes
   try { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: cost }); }
   catch (e) { return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
@@ -486,9 +489,9 @@ exports.handler = async function(event){
     const left = deadline - Date.now(); if (left < 3000) break;
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), left);
     try {
-      const maxTok = extra > 0 ? Math.max(tier.max, research.deep ? 4000 : 3000) : tier.max;
+      const maxTok = extra > 0 ? Math.max(tier.max, research.deep ? 4000 : 3000, research.mode ? 3500 : 0) : tier.max;
       const call = async () => {
-        const web = rplan && provider === 'anthropic' && !webFailed ? { domains: rplan.domains, maxUses: research.deep ? Math.min(8, WEB_MAX_USES + 2) : WEB_MAX_USES } : null;
+        const web = rplan && provider === 'anthropic' && !webFailed ? { domains: rplan.domains, maxUses: research.mode === 'statisticien' ? 1 : Math.min(8, WEB_MAX_USES + (research.deep ? 2 : 0) + (research.mode ? 2 : 0)) } : null;
         try { return await ADAPTERS[provider]({ model, max: maxTok, system: systemFull, messages: msgs, images, web, connectors: !!web, signal: ctl.signal }); }
         catch (we) { if (!web || (we && we.name === 'AbortError')) throw we; webFailed = true; return await ADAPTERS[provider]({ model, max: maxTok, system: system + (wantJson ? '' : researchSystem(research, false)), messages: msgs, images, web: null, signal: ctl.signal }); }
       };   // analyse de pièces jointes : réponse plus longue (moins de coupures)
@@ -518,7 +521,7 @@ exports.handler = async function(event){
       if (!wantJson && out.sources && out.sources.length) finalText += '\n\n**Sources citées**\n' + out.sources.map(lnk).join('\n');
       else if (!wantJson && out.found && out.found.length) finalText += '\n\n**Pages examinées par la recherche (non citées dans le texte)**\n' + out.found.map(lnk).join('\n');
       finalText += note;
-      return reply(200, { text: finalText, data, credits: { used: Math.max(0, r.used - refundedSearch), limit: r.limit, plan: r.plan }, attachExtra: extra, charged: { model: tier.cost, attachments: extra - rSearch - rOther, search: rSearch - refundedSearch, deep: research.deep ? COST_DEEP : 0, multi: research.multi ? COST_MULTI : 0, total: cost - refundedSearch, refunded: refundedSearch } });
+      return reply(200, { text: finalText, data, credits: { used: Math.max(0, r.used - refundedSearch), limit: r.limit, plan: r.plan }, attachExtra: extra, charged: { model: baseCost, attachments: extra - rSearch - rOther, search: rSearch - refundedSearch, deep: research.deep ? COST_DEEP : 0, multi: research.multi ? COST_MULTI : 0, total: cost - refundedSearch, refunded: refundedSearch } });
     } catch (e) {
       lastErr = e && e.name === 'AbortError' ? { code: 'timeout', status: 504, message: 'L’assistant IA a mis trop de temps à répondre.' } : { code: 'upstream', status: 502, message: 'L’assistant IA est momentanément indisponible.' };
     } finally { clearTimeout(timer); }
