@@ -3,6 +3,9 @@
   publish = "."
 [functions]
   directory = "netlify/functions"  
+# Assistant IA : durée maximale (les recherches web sont plus longues)
+[functions."ai"]
+  timeout = 26
 # Rappels de rendez-vous : exécution toutes les heures (fuseau UTC)
 [functions."rdv-reminders"]
   schedule = "@hourly"
