@@ -1338,7 +1338,7 @@
   /* Espace équipe : ces cartes de Réglages ne s'affichent qu'au propriétaire (ou à l'administrateur pour
      la sienne) ; les autres utilisateurs ne les voient pas. Masquage d'affichage seulement : la vraie
      protection reste côté serveur (Supabase). */
-  body.hn-owner-hidden #fghlab-owner-cloud-card{ display:none !important; }
+  body.hn-owner-hidden #fghlab-owner-cloud-card, body.hn-owner-hidden #setting-restrict-card{ display:none !important; }
   body.hn-member-hidden #fghlab-brandlogo-card{ display:none !important; }
   body.hn-admin-hidden #fghlab-admin-card{ display:none !important; }
   .legal-text{ font-size:12.5px; line-height:1.65; color:var(--ink); max-height:360px; overflow-y:auto; padding-right:8px; }
@@ -16669,13 +16669,25 @@
       '<rect x="121" y="92" width="16" height="100" rx="3" fill="#C89B3C"/>' +
       '</svg>', title:'F-i-Stat', desc:"Agent IA statistique interne de FINECIA GROUPE — statistiques avancées, économétrie, finance quantitative et méthodes scientifiques." }
   };
+  /* ---- Sous-outils F-i-Stat et « Accès restreints » (réglage du propriétaire, partagé sur le serveur) ---- */
+  var FGHLAB_SUBTOOLS = { 'hstatis-consult':'F-i-Stat - Consultation IA', 'hstatis-data':'F-i-Stat - Données', 'hstatis-stats':'F-i-Stat - Analyses statistiques' };
+  var hnRestricted = (function(){ try{ var r = JSON.parse(localStorage.getItem('hn_restricted_tools') || '[]'); return Array.isArray(r) ? r : []; }catch(e){ return []; } })();
+  function hnIsRestricted(k){ return hnRestricted.indexOf(k) !== -1; }
+  function hnSubAllowed(member, sub){
+    if(!member) return true;                                   // propriétaire : accès complet
+    if(hnIsRestricted('hstatis') || hnIsRestricted(sub)) return false;
+    var a = member.authorizedTools || [];
+    if(a.indexOf(sub) !== -1) return true;
+    var anySub = Object.keys(FGHLAB_SUBTOOLS).some(function(k){ return a.indexOf(k) !== -1; });
+    return a.indexOf('hstatis') !== -1 && !anySub;             // membres existants : F-i-Stat autorisé = les 3 onglets
+  }
   function getFghlabVisibleTools(){
     // Si un membre d'équipe est "connecté" (simulation locale, voir plus haut), il ne voit que ses
     // outils autorisés : les autres sont totalement absents de la grille (pas seulement grisés).
     // Sans session membre active (propriétaire), accès complet inchangé.
     var member = getActiveFghlabMember();
     if(!member) return FGHLAB_TOOLS.slice();
-    return FGHLAB_TOOLS.filter(function(t){ return member.authorizedTools.indexOf(t) !== -1; });
+    return FGHLAB_TOOLS.filter(function(t){ return member.authorizedTools.indexOf(t) !== -1 && !hnIsRestricted(t); });
   }
   /* Regroupement visuel des 34 outils FGH-Lab en 8 catégories nommées — adaptation, au style
      « carte » de la grille Co-work (et non au mécanisme ruban/menu déroulant), de l'idée de
@@ -35058,7 +35070,10 @@
       return '<label style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer;">' +
         '<input type="checkbox" data-fghlab-tool-check="'+key+'"'+(selected[key] ? ' checked' : '')+'> ' +
         escapeHtml(info.title) +
-      '</label>';
+      '</label>' + (key === 'hstatis' ? Object.keys(FGHLAB_SUBTOOLS).map(function(sk){
+        return '<label style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer; padding-left:22px;">' +
+          '<input type="checkbox" data-fghlab-tool-check="'+sk+'"'+(selected[sk] ? ' checked' : '')+'> ↳ ' + escapeHtml(FGHLAB_SUBTOOLS[sk]) + '</label>';
+      }).join('') : '');
     }).join('') + Object.keys(FGHLAB_PSEUDO_TOOLS).map(function(key){
       return '<label style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer; border-top:1px dashed var(--line); padding-top:6px; margin-top:2px;">' +
         '<input type="checkbox" data-fghlab-tool-check="'+key+'"'+(selected[key] ? ' checked' : '')+'> ✏️ ' +
@@ -35090,7 +35105,102 @@
     Array.prototype.forEach.call(wrap.querySelectorAll('input'), function(cb){ cb.disabled = locked; });
     wrap.style.opacity = locked ? '0.5' : '';
     wrap.title = locked ? 'Confirmez votre code administrateur pour débloquer la sélection des outils.' : '';
+    hnApplyRestrictionsToChecklist();
   }
+  /* Éléments désactivés par le propriétaire (Réglages › Gestion Accès restreints) : case grisée et non modifiable. */
+  function hnApplyRestrictionsToChecklist(){
+    var wrap = document.getElementById('fghlab-tools-checklist'); if(!wrap) return;
+    var locked = !!fghlabFormActingAdmin() && !fghlabAdminCodeIsConfirmed();
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-fghlab-tool-check]'), function(cb){
+      var k = cb.getAttribute('data-fghlab-tool-check'), off = hnIsRestricted(k) || (k.indexOf('hstatis-') === 0 && hnIsRestricted('hstatis'));
+      var lab = cb.closest('label'); if(!lab) return;
+      cb.disabled = locked || off;
+      lab.style.opacity = off ? '.45' : ''; lab.style.cursor = off ? 'not-allowed' : 'pointer';
+      lab.title = off ? 'Désactivé par le propriétaire (Réglages › Gestion Accès restreints)' : '';
+      var tag = lab.querySelector('.hn-off-tag');
+      if(off && !tag){ tag = document.createElement('span'); tag.className = 'hn-off-tag hint'; tag.style.cssText = 'margin:0 0 0 4px; font-size:11px;'; tag.textContent = '(désactivé)'; lab.appendChild(tag); }
+      if(!off && tag) tag.remove();
+    });
+  }
+  document.addEventListener('change', function(e){
+    var t = e.target; if(!t || !t.getAttribute || t.getAttribute('data-fghlab-tool-check') !== 'hstatis') return;
+    Object.keys(FGHLAB_SUBTOOLS).forEach(function(sk){ var c = document.querySelector('#fghlab-tools-checklist [data-fghlab-tool-check="'+sk+'"]'); if(c && !c.disabled) c.checked = t.checked; });
+  });
+  /* Onglets F-i-Stat selon les droits du membre connecté (le propriétaire voit tout). */
+  function hnFiStatGate(){
+    var tabs = { chat:'hstatis-consult', data:'hstatis-data', analyses:'hstatis-stats' }, member = null;
+    try{ member = getActiveFghlabMember(); }catch(e){}
+    var firstOk = null, activeHidden = false;
+    Object.keys(tabs).forEach(function(k){
+      var b = document.getElementById('hstatis-tab-' + k); if(!b) return;
+      var ok = hnSubAllowed(member, tabs[k]);
+      b.style.display = ok ? '' : 'none';
+      if(ok && !firstOk) firstOk = b;
+      if(!ok && b.classList.contains('active')) activeHidden = true;
+    });
+    if(activeHidden && firstOk) firstOk.click();
+  }
+  setInterval(hnFiStatGate, 1500);
+  function hnApplyRestricted(list){
+    hnRestricted = Array.isArray(list) ? list.filter(function(x){ return typeof x === 'string'; }) : [];
+    try{ localStorage.setItem('hn_restricted_tools', JSON.stringify(hnRestricted)); }catch(e){}
+    hnApplyRestrictionsToChecklist(); hnFiStatGate();
+    try{ if(typeof buildFghlabGrid === 'function') buildFghlabGrid(); }catch(e){}
+    var card = document.getElementById('setting-restrict-card');
+    if(card) Array.prototype.forEach.call(card.querySelectorAll('[data-hn-restrict]'), function(cb){ cb.checked = !hnIsRestricted(cb.getAttribute('data-hn-restrict')); });
+  }
+  function hnRestrictFetch(){
+    var A = window.__hnAuth; if(!A) return;
+    var ctl = window.AbortController ? new AbortController() : null; if(ctl) setTimeout(function(){ ctl.abort(); }, 7000);
+    fetch(A.url + '/rest/v1/rpc/restrictions_get', { method:'POST', headers:{ 'Content-Type':'application/json', apikey:A.key }, body:'{}', signal: ctl ? ctl.signal : undefined })
+      .then(function(r){ return r.ok ? r.json() : undefined; }).then(function(v){ if(Array.isArray(v)) hnApplyRestricted(v); }).catch(function(){});
+  }
+  var hnRestrictOwner = false;
+  function hnRestrictCard(){
+    var card = document.getElementById('setting-restrict-card');
+    if(!card){
+      var anchor = document.getElementById('fghlab-owner-cloud-card'); if(!anchor || !anchor.parentNode) return;
+      card = document.createElement('div'); card.className = 'card'; card.id = 'setting-restrict-card'; card.style.cssText = 'display:none; margin-bottom:16px;';
+      var rows = FGHLAB_TOOLS.map(function(k){ return { k:k, t:(FGHLAB_INFO[k] && FGHLAB_INFO[k].title.replace(/<[^>]*>/g, '')) || k, sub:false }; });
+      var out = [];
+      rows.forEach(function(r){ out.push(r); if(r.k === 'hstatis') Object.keys(FGHLAB_SUBTOOLS).forEach(function(sk){ out.push({ k:sk, t:FGHLAB_SUBTOOLS[sk], sub:true }); }); });
+      Object.keys(FGHLAB_PSEUDO_TOOLS).forEach(function(k){ out.push({ k:k, t:'✏️ ' + FGHLAB_PSEUDO_TOOLS[k], sub:false }); });
+      card.innerHTML = '<details><summary style="cursor:pointer; font-weight:700; font-size:16px;">🔒 Gestion Accès restreints</summary>' +
+        '<p class="hint" style="margin:8px 0;">Visible par le propriétaire seulement. Tous les éléments de « Outils FGH-Colab autorisés pour ce membre » sont listés ici. <strong>Décochez</strong> un élément pour le désactiver : sa case devient grisée et non modifiable dans « Outils FGH-Colab autorisés pour ce membre », et les membres n’y ont plus accès. <strong>Recochez</strong> pour le réactiver : les autorisations déjà données reviennent telles quelles. Le propriétaire garde l’accès à tout. Réglage valable pour tous les appareils.</p>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px;"><input type="search" id="hn-restrict-filter" placeholder="Filtrer la liste…" style="flex:1; min-width:160px; border:1px solid var(--line); border-radius:9px; padding:6px 10px; background:var(--surface); color:var(--ink); font-size:13px;"><button type="button" class="btn" id="hn-restrict-all" style="padding:5px 10px; font-size:12px;">Tout réactiver</button></div>' +
+        '<div id="hn-restrict-list" style="max-height:320px; overflow-y:auto; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); display:grid; gap:5px;">' +
+        out.map(function(r){ return '<label data-hn-restrict-row style="display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer;' + (r.sub ? ' padding-left:22px;' : '') + '"><input type="checkbox" data-hn-restrict="' + r.k + '"> ' + (r.sub ? '↳ ' : '') + escapeHtml(r.t) + '</label>'; }).join('') + '</div>' +
+        '<p class="hint" id="hn-restrict-status" style="margin:6px 0 0;"></p></details>';
+      anchor.parentNode.insertBefore(card, anchor.nextSibling);
+      var say = function(t){ var st = document.getElementById('hn-restrict-status'); if(st){ st.textContent = t; setTimeout(function(){ if(st.textContent === t) st.textContent = ''; }, 6000); } };
+      var save = function(list, revert){
+        var A = window.__hnAuth, sb = A && A.client && A.client();
+        if(!sb){ revert(); say('Service indisponible.'); return; }
+        sb.rpc('restrictions_set', { p_tools: list }).then(function(r){
+          if(r && r.error){ revert(); var c = String(r.error.code || ''); say(c === '42501' ? 'Action réservée au propriétaire.' : (c === 'PGRST202' ? 'Le serveur n’est pas encore configuré : exécutez le fichier supabase-acces-restreints.sql.' : 'Enregistrement impossible.')); return; }
+          hnApplyRestricted(list); say('Enregistré ✓');
+        }, function(){ revert(); say('Connexion au serveur impossible.'); });
+      };
+      card.addEventListener('change', function(e){
+        var cb = e.target; if(!cb || !cb.getAttribute || !cb.getAttribute('data-hn-restrict')) return;
+        var k = cb.getAttribute('data-hn-restrict'), list = hnRestricted.filter(function(x){ return x !== k; });
+        if(!cb.checked) list.push(k);
+        save(list, function(){ cb.checked = !cb.checked; });
+      });
+      card.querySelector('#hn-restrict-all').addEventListener('click', function(){ save([], function(){}); });
+      card.querySelector('#hn-restrict-filter').addEventListener('input', function(e){
+        var q = e.target.value.trim().toLowerCase();
+        Array.prototype.forEach.call(card.querySelectorAll('[data-hn-restrict-row]'), function(l){ l.style.display = !q || l.textContent.toLowerCase().indexOf(q) !== -1 ? 'flex' : 'none'; });
+      });
+    }
+    card.style.display = hnRestrictOwner ? '' : 'none';
+    Array.prototype.forEach.call(card.querySelectorAll('[data-hn-restrict]'), function(cb){ cb.checked = !hnIsRestricted(cb.getAttribute('data-hn-restrict')); });
+  }
+  document.addEventListener('hn-auth', function(e){ hnRestrictOwner = !!(e.detail && e.detail.owner); hnRestrictCard(); });
+  setTimeout(function(){ try{ hnRestrictOwner = !!(window.__hnAuth && window.__hnAuth.owner()); hnRestrictCard(); hnRestrictFetch(); }catch(e){} }, 1800);
+  setInterval(hnRestrictFetch, 300000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) hnRestrictFetch(); });
+  function hnPlaceholderEnd(){}
   /* Affiche/masque : champ Rôle de l'administrateur + option « Liste accès… » (propriétaire qui
      modifie un membre déjà administrateur uniquement), boîte de confirmation du code, bouton. */
   function syncFghlabFormExtras(member){
