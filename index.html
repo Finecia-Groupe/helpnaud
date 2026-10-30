@@ -21513,7 +21513,7 @@
           '<div>' +
             '<div style="font-weight:700; font-size:13.5px;">'+escapeHtml(p.title)+'</div>' +
             '<div class="hint" style="margin:2px 0 0;">'+metaParts.join(' · ')+'</div>' +
-            fghlabCoprojectReadinessHtml(p) +
+            fghlabCoprojectReadinessHtml(p) + hnCpNoteHtml(p) +
           '</div>' +
           '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' +
             '<select data-coproject-status="'+escapeHtml(p.id)+'" style="border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">'+thisStatusOptions+'</select>' +
@@ -24178,7 +24178,9 @@
     en_attente: 'En attente d\'offres',
     offres_recues: 'Offres reçues',
     accepte: 'Financement accepté',
-    refuse: 'Refusé'
+    refuse: 'Refusé',
+    abandonne: 'Abandonné',
+    suspendu: 'Suspendu'
   };
 
   /* ================= NOS CLIENTS : fiche client créée automatiquement =================
@@ -24190,7 +24192,7 @@
     var map = {};
     function get(name){
       var k = hnNormName(name); if(!k) return null;
-      if(!map[k]) map[k] = { key:k, name:String(name).trim(), phone:'', email:'', contact:'', sources:{}, nCo:0, nBank:0, nPartner:0, clientNumber:'', since:'' };
+      if(!map[k]) map[k] = { key:k, name:String(name).trim(), phone:'', email:'', contact:'', sources:{}, nCo:0, nBank:0, nPartner:0, clientNumber:'', since:'', dossiers:[], events:[], alerts:[] };
       return map[k];
     }
     function since(c, d){ if(d && (!c.since || d < c.since)) c.since = d; }
@@ -24202,6 +24204,10 @@
       if(ct.email && !c.email) c.email = ct.email;
       if(p.clientNumber && !c.clientNumber) c.clientNumber = p.clientNumber;
       since(c, p.createdOn);
+      var cpSt = (COPROJECT_STATUS.filter(function(s){ return s.key === p.status; })[0] || {}).label || p.status || '';
+      c.dossiers.push({ kind:'CO-PROJET', title:p.title || 'Projet', state:cpSt, color: p.status === 'termine' ? '#2D9C93' : (p.status === 'en_suspens' ? '#6B7280' : '#C89B3C'), note: p.statusNote ? p.statusNote.text : '' });
+      c.events.push({ on:p.createdOn, kind:'CO-PROJET', text:'Projet « ' + (p.title || '') + ' » créé' });
+      (p.statusHistory || []).forEach(function(h){ c.events.push({ on:h.on, kind:'CO-PROJET', text:'« ' + (p.title || '') + ' » — ' + h.text }); });
     });
     (fghlabState.partners || []).forEach(function(p){
       var c = p && get(p.name); if(!c) return;
@@ -24211,13 +24217,22 @@
       if(p.contact && !c.contact) c.contact = p.contact;
       if(p.clientNumber && !c.clientNumber) c.clientNumber = p.clientNumber;
       since(c, p.registeredOn);
+      c.dossiers.push({ kind:'Partner Market', title:p.name, state:p.status || '', color:'#16304A', note:'' });
+      c.events.push({ on:p.registeredOn, kind:'Partner Market', text:'Inscrit dans Partner Market' + (p.status ? ' (' + p.status + ')' : '') });
     });
     (fghlabState.fgbankProjects || []).forEach(function(pr){
       var c = pr && get(pr.client); if(!c) return;
       c.sources['FG & Bank'] = 1; c.nBank++;
       if(pr.clientNumber && !c.clientNumber) c.clientNumber = pr.clientNumber;
       since(c, pr.createdOn);
-    });
+      var stg = fgbankStage(pr);
+      c.dossiers.push({ kind:'FG & Bank', title:pr.title || 'Dossier', state:(FGBANK_STATUS[pr.status] || pr.status || '') + (stg === 'progress' ? ' · en traitement' : ''), color: pr.status === 'accepte' ? '#2D9C93' : (pr.status === 'refuse' ? '#B3261E' : ((pr.status === 'abandonne' || pr.status === 'suspendu') ? '#6B7280' : '#C89B3C')), note: pr.closure ? (pr.closure.note || '') : '' });
+      c.events.push({ on:pr.createdOn, kind:'FG & Bank', text:'Dossier « ' + (pr.title || '') + ' » déposé' });
+      (pr.offers || []).forEach(function(o){ c.events.push({ on:o.submittedOn, kind:'FG & Bank', text:'Offre de ' + (o.partnerName || 'un partenaire') + (o.amount ? ' (' + fgbankMoney(o.amount) + ')' : '') + ' — « ' + (pr.title || '') + ' »' }); });
+      (pr.stageHistory || []).forEach(function(h){ c.events.push({ on:h.on, kind:'FG & Bank', text:'« ' + (pr.title || '') + ' » — ' + h.text }); });
+          });
+    try{ hnDerivedAlerts().forEach(function(a){ var c = map[hnNormName(a.client)]; if(c) c.alerts.push(a); }); }catch(x){}
+    Object.keys(map).forEach(function(k){ map[k].events.sort(function(a, b){ return String(a.on || '').localeCompare(String(b.on || '')); }); });
     return Object.keys(map).map(function(k){ return map[k]; }).sort(function(a, b){ return a.name.localeCompare(b.name, 'fr'); });
   }
   function hnClientByName(name){ var k = hnNormName(name), r = null; hnClientsBuild().forEach(function(c){ if(c.key === k) r = c; }); return r; }
@@ -24241,7 +24256,7 @@
     var listEl = document.getElementById('nc-list'); if(!listEl) return;
     var q = hnNormName((document.getElementById('nc-filter') || {}).value || '');
     var all = hnClientsBuild();
-    var sig = JSON.stringify(all.map(function(c){ return [c.key, c.phone, c.email, c.nCo, c.nBank, c.nPartner]; })) + '|' + q;
+    var sig = JSON.stringify(all.map(function(c){ return [c.key, c.phone, c.email, c.nCo, c.nBank, c.nPartner, c.dossiers.map(function(d){ return d.state; }), c.events.length, c.alerts.length]; })) + '|' + q;
     if(!force && sig === hnNcSig) return; hnNcSig = sig;
     var rows = all.filter(function(c){ return !q || hnNormName([c.name, c.phone, c.email, c.clientNumber, c.contact].join(' ')).indexOf(q) !== -1; });
     if(!rows.length){ listEl.innerHTML = '<p class="hint" style="margin:0;">' + (all.length ? 'Aucun client ne correspond à la recherche.' : 'Aucun client pour l’instant : la fiche se crée automatiquement dès qu’un client s’inscrit dans CO-PROJET ou Partner Market, ou fait affaire dans FG & Bank Partnership.') + '</p>'; return; }
@@ -24253,7 +24268,7 @@
       return '<div style="border:1px solid var(--line); border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:8px;">' +
         '<div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center;"><strong>' + escapeHtml(c.name) + '</strong><span class="hint" style="margin:0; font-family:monospace;">' + (c.clientNumber ? 'Client N° ' + escapeHtml(c.clientNumber) : '') + '</span></div>' +
         '<div style="display:flex; gap:10px; flex-wrap:wrap; margin:6px 0; font-size:13px;">' + ph + (em ? ' ' + em : '') + (c.contact ? '<span class="hint" style="margin:0;">Contact : ' + escapeHtml(c.contact) + '</span>' : '') + '</div>' +
-        '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">' + chips + '<span class="hint" style="margin:0 0 0 4px;">' + escapeHtml(det) + (c.since ? ' · depuis le ' + escapeHtml(fmtFghlabShortDate(c.since)) : '') + '</span></div></div>';
+        '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">' + chips + '<span class="hint" style="margin:0 0 0 4px;">' + escapeHtml(det) + (c.since ? ' · depuis le ' + escapeHtml(fmtFghlabShortDate(c.since)) : '') + '</span></div>' + hnClientDossiersHtml(c) + '</div>';
     }).join('');
   }
   function bindFghlabNosClients(){
@@ -24265,6 +24280,157 @@
     var p = document.getElementById('fghlab-panel-nosclients');
     if(p && !p.hidden) renderNosClients(false);
   }, 3000);
+
+  /* ================= Clôture d’affaire, synchro CO-PROJET, alertes ================= */
+  var HN_MOTIFS = { finance:'Financé', refuse:'Refusé', abandonne:'Abandonné', suspendu:'Suspendu' };
+  function hnToday(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function hnClosureChecks(proj, motif){
+    var out = [];
+    var docs = Number(proj.docsCount) || 0, cp = null;
+    if(proj.sourceCoprojectId) (fghlabState.coprojects || []).forEach(function(p){ if(p.id === proj.sourceCoprojectId) cp = p; });
+    if(cp) docs = Math.max(docs, Number(cp.docsCount) || 0);
+    var req = (proj.docRequest && proj.docRequest.items && proj.docRequest.items.length ? proj.docRequest : (cp && cp.docRequest && cp.docRequest.items && cp.docRequest.items.length ? cp.docRequest : null));
+    if(motif === 'finance'){
+      var ok = !!(proj.acceptedOfferId && proj.status === 'accepte');
+      out.push({ ok:ok, block:!ok, text: ok ? 'Une offre acceptée est enregistrée' : 'Aucune offre acceptée : acceptez d’abord une offre pour déclarer le dossier financé' });
+    }
+    if(req) out.push({ ok: docs >= req.items.length, text: docs >= req.items.length ? 'Pièces demandées reçues (' + docs + '/' + req.items.length + ')' : 'Pièces demandées incomplètes : ' + docs + ' reçue(s) sur ' + req.items.length });
+    else out.push({ ok: docs > 0, text: docs > 0 ? docs + ' pièce(s) au dossier' : 'Aucune pièce au dossier' });
+    var c = null; try{ c = hnClientByName(proj.client); }catch(x){}
+    out.push({ ok: !!(c && (c.phone || c.email)), text: (c && (c.phone || c.email)) ? 'Coordonnées du client renseignées' : 'Aucune coordonnée (téléphone/courriel) pour le client' });
+    return out;
+  }
+  function hnClosureModal(proj, motif0){
+    var old = document.getElementById('hn-close-modal'); if(old) old.remove();
+    var wrap = document.createElement('div'); wrap.id = 'hn-close-modal';
+    wrap.style.cssText = 'position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding:16px;';
+    var inpCss = 'width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 9px; background:var(--surface); color:var(--ink); font-size:13px; box-sizing:border-box;';
+    wrap.innerHTML = '<div style="background:var(--surface); color:var(--ink); border-radius:14px; max-width:480px; width:100%; max-height:90vh; overflow:auto; padding:16px 18px; box-shadow:0 10px 40px rgba(0,0,0,.3);">' +
+      '<h3 style="margin:0 0 4px;">🏁 Clôturer l’affaire</h3><div class="hint" style="margin:0 0 10px;">' + escapeHtml(proj.title || '') + ' — ' + escapeHtml(proj.client || '') + '</div>' +
+      '<label style="font-size:12px;">Motif de clôture *<select id="hn-cl-motif" style="' + inpCss + '"><option value="">— Choisir —</option>' + Object.keys(HN_MOTIFS).map(function(k){ return '<option value="' + k + '"' + (k === motif0 ? ' selected' : '') + '>' + HN_MOTIFS[k] + '</option>'; }).join('') + '</select></label>' +
+      '<label style="font-size:12px; display:block; margin-top:8px;">Date de clôture *<input type="date" id="hn-cl-date" value="' + hnToday() + '" style="' + inpCss + '"></label>' +
+      '<label style="font-size:12px; display:block; margin-top:8px;"><span id="hn-cl-notelab">Raison / commentaire</span><textarea id="hn-cl-note" rows="3" maxlength="500" style="' + inpCss + '"></textarea></label>' +
+      '<div id="hn-cl-checks" style="margin-top:10px; font-size:12.5px; line-height:1.7;"></div>' +
+      '<label id="hn-cl-force-wrap" style="display:none; margin-top:6px; font-size:12px; gap:6px; align-items:flex-start;"><input type="checkbox" id="hn-cl-force"> <span>Je confirme la clôture malgré les points à vérifier ci-dessus.</span></label>' +
+      '<div id="hn-cl-err" style="color:#B3261E; font-size:12px; margin-top:6px;"></div>' +
+      '<div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;"><button type="button" class="btn" id="hn-cl-cancel">Annuler</button><button type="button" class="btn primary" id="hn-cl-ok">Clôturer</button></div></div>';
+    document.body.appendChild(wrap);
+    var $ = function(id){ return document.getElementById(id); };
+    var checks = [];
+    function refresh(){
+      var m = $('hn-cl-motif').value;
+      checks = hnClosureChecks(proj, m);
+      $('hn-cl-checks').innerHTML = '<strong>Contrôle du dossier</strong><br>' + checks.map(function(c){ return (c.ok ? '✅ ' : (c.block ? '⛔ ' : '⚠️ ')) + escapeHtml(c.text); }).join('<br>');
+      var warn = checks.some(function(c){ return !c.ok && !c.block; });
+      $('hn-cl-force-wrap').style.display = warn ? 'flex' : 'none';
+      $('hn-cl-notelab').textContent = (m && m !== 'finance') ? 'Raison * (obligatoire)' : 'Raison / commentaire';
+    }
+    $('hn-cl-motif').addEventListener('change', refresh); refresh();
+    $('hn-cl-cancel').addEventListener('click', function(){ wrap.remove(); });
+    $('hn-cl-ok').addEventListener('click', function(){
+      var m = $('hn-cl-motif').value, d = $('hn-cl-date').value, note = $('hn-cl-note').value.trim(), err = $('hn-cl-err');
+      if(!m){ err.textContent = 'Choisissez un motif de clôture.'; return; }
+      if(!d){ err.textContent = 'Indiquez la date de clôture.'; return; }
+      if(m !== 'finance' && !note){ err.textContent = 'Indiquez la raison (obligatoire pour ce motif).'; return; }
+      checks = hnClosureChecks(proj, m);
+      if(checks.some(function(c){ return c.block; })){ err.textContent = 'Clôture impossible : ' + checks.filter(function(c){ return c.block; })[0].text + '.'; return; }
+      if(checks.some(function(c){ return !c.ok && !c.block; }) && !$('hn-cl-force').checked){ err.textContent = 'Cochez la confirmation pour clôturer malgré les points à vérifier.'; return; }
+      var actor = fghlabActor();
+      proj.closure = { motif:m, on:d, by:actor, note:note, checks:checks.map(function(c){ return (c.ok ? 'OK' : 'À vérifier') + ' — ' + c.text; }) };
+      if(m === 'refuse') proj.status = 'refuse'; else if(m === 'abandonne') proj.status = 'abandonne'; else if(m === 'suspendu') proj.status = 'suspendu';
+      proj.finishedBy = actor; proj.finishedOn = new Date(d + 'T12:00:00').toISOString();
+      fgbankLog(proj, 'Affaire clôturée : ' + HN_MOTIFS[m] + (note ? ' — ' + note : ''));
+      try{ hnCloseSync(proj); }catch(x){}
+      fgbankSecOpen.done = true;
+      persistFghlabState();
+      wrap.remove();
+      renderFghlabBankProjectList();
+      try{ if(typeof renderFghlabCoprojectList === 'function') renderFghlabCoprojectList(); }catch(x){}
+      try{ l6Toast('Affaire clôturée ✓'); }catch(x){}
+    });
+  }
+  function hnCoprojOf(proj){ var cp = null; if(proj && proj.sourceCoprojectId) (fghlabState.coprojects || []).forEach(function(p){ if(p.id === proj.sourceCoprojectId) cp = p; }); return cp; }
+  function hnCloseSync(proj){
+    var cp = hnCoprojOf(proj); if(!cp || !proj.closure) return;
+    var m = proj.closure.motif, to = (m === 'finance' || m === 'abandonne') ? 'termine' : 'en_suspens';
+    var prev = cp.status;
+    cp.status = to;
+    if(!Array.isArray(cp.statusHistory)) cp.statusHistory = [];
+    var txt = 'FG & Bank : ' + HN_MOTIFS[m] + ' → statut « ' + (COPROJECT_STATUS.filter(function(s){ return s.key === to; })[0] || {}).label + ' »' + (proj.closure.note && m !== 'finance' ? ' (' + proj.closure.note + ')' : '');
+    cp.statusHistory.push({ on:new Date().toISOString(), text:txt });
+    cp.statusNote = (to === 'en_suspens') ? { text: HN_MOTIFS[m] + ' — ' + (proj.closure.note || ''), on: proj.closure.on, from:'fgbank', prev: prev } : null;
+  }
+  function hnReopenSync(proj){
+    var cp = hnCoprojOf(proj);
+    if(proj.closure && cp && (cp.status === 'termine' || cp.status === 'en_suspens')){
+      cp.status = 'en_cours'; cp.statusNote = null;
+      if(!Array.isArray(cp.statusHistory)) cp.statusHistory = [];
+      cp.statusHistory.push({ on:new Date().toISOString(), text:'FG & Bank : dossier rouvert → statut « En cours »' });
+    }
+    if(proj.closure) fgbankLog(proj, 'Clôture annulée (dossier rouvert)');
+    proj.closure = null;
+  }
+  function hnClosureInfoHtml(proj){
+    var c = proj.closure; if(!c) return '';
+    return '<div class="hint" style="margin-top:6px; font-size:11.5px;">🏁 Clôturé : <strong>' + escapeHtml(HN_MOTIFS[c.motif] || c.motif) + '</strong> le ' + escapeHtml(fmtFghlabShortDate(c.on)) + (c.note ? ' — ' + escapeHtml(c.note) : '') +
+      (c.checks && c.checks.length ? '<details style="display:inline-block; margin-left:6px;"><summary style="cursor:pointer;">contrôle</summary>' + c.checks.map(function(x){ return escapeHtml(x); }).join('<br>') + '</details>' : '') + '</div>';
+  }
+  function hnCpNoteHtml(p){
+    var n = p && p.statusNote; if(!n || p.status !== 'en_suspens') return '';
+    return '<div style="margin-top:4px; font-size:11.5px; color:#B3261E;">⏸ En suspens (FG & Bank) : ' + escapeHtml(n.text || '') + '</div>';
+  }
+  function hnClientDossiersHtml(c){
+    if(!c.dossiers.length && !c.events.length) return '';
+    var al = c.alerts.map(function(a){ return '<span class="ctb-stub-badge" style="background:' + a.color + '; color:#fff;">' + escapeHtml(a.short) + '</span>'; }).join(' ');
+    var ds = c.dossiers.map(function(d){ return '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12.5px; padding:2px 0;"><span class="hint" style="margin:0; min-width:92px;">' + escapeHtml(d.kind) + '</span><span>' + escapeHtml(d.title) + '</span><span class="ctb-stub-badge" style="background:' + d.color + '; color:#fff;">' + escapeHtml(d.state || '—') + '</span>' + (d.note ? '<span class="hint" style="margin:0;">' + escapeHtml(d.note) + '</span>' : '') + '</div>'; }).join('');
+    var ev = c.events.map(function(e){ return '<div style="font-size:12px; padding:2px 0; border-left:2px solid var(--line); padding-left:8px; margin-left:4px;"><span class="hint" style="margin:0; font-family:monospace;">' + escapeHtml(fmtFghlabShortDate(e.on) || '—') + '</span> · <em>' + escapeHtml(e.kind) + '</em> · ' + escapeHtml(e.text) + '</div>'; }).join('');
+    return '<details style="margin-top:8px;"' + (c.alerts.length ? ' open' : '') + '><summary style="cursor:pointer; font-size:12.5px; font-weight:600;">État des dossiers et historique (' + c.dossiers.length + ' dossier' + (c.dossiers.length > 1 ? 's' : '') + ', ' + c.events.length + ' événement' + (c.events.length > 1 ? 's' : '') + ') ' + al + '</summary>' +
+      '<div style="margin:6px 0;">' + ds + '</div><div style="font-size:12px; font-weight:600; margin:6px 0 2px;">Historique chronologique</div>' + ev + '</details>';
+  }
+  /* Alertes : dossier sans offre après X jours, échéances de soumission */
+  function hnAlertCfg(){
+    var c = { noOffer:7, deadline:14 };
+    try{ var j = JSON.parse(localStorage.getItem('helpnaud_alert_cfg') || '{}'); if(j.noOffer > 0) c.noOffer = +j.noOffer; if(j.deadline > 0) c.deadline = +j.deadline; }catch(e){}
+    return c;
+  }
+  function hnDaysBetween(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); if(!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]), t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    return Math.round((d - t) / 86400000);
+  }
+  function hnDerivedAlerts(){
+    var cfg = hnAlertCfg(), out = [];
+    (fghlabState.fgbankProjects || []).forEach(function(pr){
+      if(!pr || pr.closure || pr.status !== 'en_attente' || (pr.offers && pr.offers.length)) return;
+      var age = -hnDaysBetween(pr.createdOn); if(age === null || isNaN(age) || age < cfg.noOffer) return;
+      out.push({ kind:'no_offer', client:pr.client, color:'#C89B3C', short:'sans offre ' + age + ' j', text:'« ' + (pr.title || 'Dossier') + ' » (' + (pr.client || '—') + ') : aucune offre depuis ' + age + ' jours (seuil ' + cfg.noOffer + ' j).' });
+    });
+    (fghlabState.coprojects || []).forEach(function(p){
+      if(!p || p.status === 'termine' || !p.echeanceSoumission) return;
+      var d = hnDaysBetween(p.echeanceSoumission); if(d === null) return;
+      if(d < 0) out.push({ kind:'deadline', client:p.client, color:'#B3261E', short:'échéance dépassée', text:'« ' + (p.title || 'Projet') + ' » (' + (p.client || '—') + ') : échéance de soumission dépassée de ' + (-d) + ' jour' + (d < -1 ? 's' : '') + ' (' + fmtFghlabShortDate(p.echeanceSoumission) + ').' });
+      else if(d <= cfg.deadline) out.push({ kind:'deadline', client:p.client, color:'#C89B3C', short:'échéance dans ' + d + ' j', text:'« ' + (p.title || 'Projet') + ' » (' + (p.client || '—') + ') : échéance de soumission ' + (d === 0 ? 'aujourd’hui' : 'dans ' + d + ' jour' + (d > 1 ? 's' : '')) + ' (' + fmtFghlabShortDate(p.echeanceSoumission) + ').' });
+    });
+    return out;
+  }
+  function hnDerivedAlertsHtml(list){
+    var cfg = hnAlertCfg();
+    var cfgHtml = '<div class="hint" style="margin:6px 0 0; font-size:11.5px;">Seuils : sans offre après <input type="number" min="1" max="365" id="hn-al-nooffer" value="' + cfg.noOffer + '" style="width:54px; border:1px solid var(--line); border-radius:6px; padding:2px 4px; background:var(--surface); color:var(--ink);"> j · échéances dans les <input type="number" min="1" max="365" id="hn-al-deadline" value="' + cfg.deadline + '" style="width:54px; border:1px solid var(--line); border-radius:6px; padding:2px 4px; background:var(--surface); color:var(--ink);"> prochains jours</div>';
+    if(!list.length) return '<div id="hn-derived-al" style="margin-bottom:10px;">' + cfgHtml + '</div>';
+    return '<div id="hn-derived-al" style="border:1px solid #B3261E; border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:12px;"><div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">⏰ Dossiers à suivre (' + list.length + ')</div>' +
+      list.map(function(a){ return '<div style="padding:4px 0; border-top:1px solid var(--line); font-size:12.5px;"><span class="ctb-stub-badge" style="background:' + a.color + '; color:#fff;">' + escapeHtml(a.short) + '</span> ' + escapeHtml(a.text) + '</div>'; }).join('') + cfgHtml + '</div>';
+  }
+  function hnBindAlertCfg(root){
+    ['hn-al-nooffer', 'hn-al-deadline'].forEach(function(id){
+      var el = root.querySelector('#' + id); if(!el) return;
+      el.addEventListener('change', function(){
+        var c = hnAlertCfg(); var v = Math.max(1, Math.min(365, parseInt(el.value, 10) || 1));
+        if(id === 'hn-al-nooffer') c.noOffer = v; else c.deadline = v;
+        try{ localStorage.setItem('helpnaud_alert_cfg', JSON.stringify(c)); }catch(e){}
+        renderFghlabBankAlerts(); try{ renderNosClients(true); }catch(x){}
+      });
+    });
+  }
   function makeFghlabBankProjectRowId(){ return 'fghbk-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function makeFghlabBankOfferId(){ return 'fghof-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   /* ================= Numérotation Client N° / Projet N° / Numéro d'affaire (3 catégories) =========
@@ -24523,7 +24689,7 @@
   /* Classement des dossiers : Dossiers (en attente) → Traitement en cours → Dossier terminé - Suivi au besoin.
      Un dossier dont le financement est accepté ou refusé est classé « terminé » automatiquement. */
   function fgbankStage(proj){
-    if(proj.finishedBy || proj.status === 'accepte' || proj.status === 'refuse') return 'done';
+    if(proj.finishedBy || proj.status === 'accepte' || proj.status === 'refuse' || proj.status === 'abandonne' || proj.status === 'suspendu') return 'done';
     return proj.handler ? 'progress' : 'queue';
   }
   function fgbankOrigin(proj){
@@ -24536,7 +24702,7 @@
     if(proj.depositedBy) lines.push('Déposé par : <strong>'+escapeHtml(fghlabActorLabel(proj.depositedBy))+'</strong>');
     lines.push('Pris en charge par : ' + (proj.handler ? '<strong>'+escapeHtml(fghlabActorLabel(proj.handler))+'</strong>'+(proj.handledOn ? ' le '+escapeHtml(fmtFghlabShortDate(proj.handledOn)) : '') : '<em>personne pour l\u2019instant</em>'));
     if(proj.finishedBy) lines.push('<span style="color:#2D9C93;">Dossier terminé par : <strong>'+escapeHtml(fghlabActorLabel(proj.finishedBy))+'</strong>'+(proj.finishedOn ? ' le '+escapeHtml(fmtFghlabShortDate(proj.finishedOn)) : '')+'</span>');
-    else if(stage === 'done') lines.push('<span style="color:#2D9C93;">Classé automatiquement : '+(proj.status === 'accepte' ? 'financement accepté' : 'dossier refusé')+'.</span>');
+    else if(stage === 'done') lines.push('<span style="color:#2D9C93;">Classé automatiquement : '+(proj.status === 'accepte' ? 'financement accepté' : (proj.status === 'refuse' ? 'dossier refusé' : (FGBANK_STATUS[proj.status] || 'clos').toLowerCase()))+'.</span>');
     var b = function(act, label, cls){ return '<button type="button" class="btn'+(cls ? ' '+cls : '')+'" data-fgbank-act="'+act+'" data-id="'+id+'" style="padding:3px 9px; font-size:11.5px;">'+label+'</button>'; };
     var btns = '';
     if(stage === 'queue') btns = b('take', 'Prendre en charge');
@@ -24578,7 +24744,7 @@
     var fgbankSorted = fghlabState.fgbankProjects.slice().reverse();
     var fgbankCards = fgbankSorted.map(function(proj){
       var statusLabel = FGBANK_STATUS[proj.status] || proj.status;
-      var statusColor = proj.status === 'accepte' ? '#2D9C93' : (proj.status === 'refuse' ? '#B3261E' : '#C89B3C');
+      var statusColor = proj.status === 'accepte' ? '#2D9C93' : (proj.status === 'refuse' ? '#B3261E' : ((proj.status === 'abandonne' || proj.status === 'suspendu') ? '#6B7280' : '#C89B3C'));
       var visiblePartnersHtml = activeBanks.length
         ? activeBanks.map(function(p){ return escapeHtml(p.name) + ' (' + escapeHtml(p.type) + ')'; }).join(', ')
         : 'aucun partenaire Banque/Microfinance actif pour le moment';
@@ -24626,7 +24792,7 @@
           '<label style="display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--muted);">Frais de structuration ('+escapeHtml(fgbankCurrency)+')' +
             '<input type="number" min="0" step="1" data-fgbank-structuring-fee="'+escapeHtml(proj.id)+'" value="'+(Number(proj.structuringFee) || 0)+'" style="width:120px; border:1px solid var(--line); border-radius:7px; padding:4px 7px; background:var(--surface); color:var(--ink); font-size:12px;">' +
           '</label>' +
-          (proj.status !== 'accepte' && proj.status !== 'refuse' ? '<button type="button" class="btn danger" data-fgbank-refuse="'+escapeHtml(proj.id)+'" style="padding:3px 9px; font-size:11.5px;">Marquer refusé</button>' : '') +
+          (!proj.closure ? '<button type="button" class="btn primary" data-fgbank-close="'+escapeHtml(proj.id)+'" style="padding:3px 9px; font-size:11.5px;">🏁 Clôturer l’affaire</button>' : '') + (proj.status !== 'accepte' && proj.status !== 'refuse' && !proj.closure ? '<button type="button" class="btn danger" data-fgbank-refuse="'+escapeHtml(proj.id)+'" style="padding:3px 9px; font-size:11.5px;">Marquer refusé</button>' : '') +
         '</div>'
       ) : '';
       var acceptedInfo = proj.status === 'accepte'
@@ -24646,6 +24812,7 @@
         fghlabBankHandlerHtml(proj) +
         '<div class="hint" style="margin-top:8px; font-size:11.5px;">Visible par les partenaires Banque/Microfinance actifs : '+visiblePartnersHtml+'</div>' +
         ownerExtras +
+        hnClosureInfoHtml(proj) +
         acceptedInfo +
         offersHtml +
         offerFormHtml + ((isOwnerSession && proj.status !== 'accepte') ? offerHelpHtml : '') +
@@ -24742,12 +24909,12 @@
         else if(act === 'requeue'){
           if(!window.confirm('Remettre ce dossier dans « Dossiers » (en attente de traitement) ? Vous pourrez le reprendre plus tard.')) return;
           proj.finishedBy = null; proj.finishedOn = null; proj.handler = null; proj.handledOn = null;
-          if(proj.status === 'refuse') proj.status = (proj.offers && proj.offers.length) ? 'offres_recues' : 'en_attente';
+          if(proj.status === 'refuse' || proj.status === 'abandonne' || proj.status === 'suspendu'){ proj.status = (proj.offers && proj.offers.length) ? 'offres_recues' : 'en_attente'; try{ hnReopenSync(proj); }catch(x){} }
           fgbankLog(proj, 'Remis dans Dossiers (en attente de traitement)');
         }
         else if(act === 'reopen'){
           proj.finishedBy = null; proj.finishedOn = null;
-          if(proj.status === 'refuse') proj.status = (proj.offers && proj.offers.length) ? 'offres_recues' : 'en_attente';
+          if(proj.status === 'refuse' || proj.status === 'abandonne' || proj.status === 'suspendu'){ proj.status = (proj.offers && proj.offers.length) ? 'offres_recues' : 'en_attente'; try{ hnReopenSync(proj); }catch(x){} }
           proj.handler = actor; proj.handledOn = nowIso; fgbankLog(proj, 'Dossier rouvert → Traitement en cours');
         }
         else return;
@@ -24845,6 +25012,7 @@
           aproj.acceptedOn = new Date().toISOString();
           aproj.commissionRateApplied = Number(fghlabState.monetizationConfig.commissionRate) || 0;
           aproj.commissionAmount = (Number(offer.amount) || 0) * (aproj.commissionRateApplied / 100);
+          try{ if(!aproj.closure) aproj.closure = { motif:'finance', on:aproj.acceptedOn.slice(0,10), by:fghlabActor(), note:'Offre acceptée', auto:true, checks:[] }; fgbankLog(aproj, 'Financé — offre acceptée'); hnCloseSync(aproj); }catch(x){}
           persistFghlabState();
           renderFghlabBankProjectList();
           renderFghlabRevenueDashboard();
@@ -24854,11 +25022,15 @@
           var rpid = refuseBtn.getAttribute('data-fgbank-refuse');
           var rproj = null;
           fghlabState.fgbankProjects.forEach(function(p){ if(p.id === rpid) rproj = p; });
-          if(rproj && window.confirm('Marquer ce dossier comme refusé ? Il sera classé dans « Dossier terminé » ; vous pourrez le rouvrir.')){
-            rproj.status = 'refuse'; fgbankLog(rproj, 'Marqué refusé');
-            persistFghlabState();
-            renderFghlabBankProjectList();
-          }
+          if(rproj) hnClosureModal(rproj, 'refuse');
+          return;
+        }
+        var closeBtn = e.target.closest ? e.target.closest('[data-fgbank-close]') : null;
+        if(closeBtn){
+          var cpid = closeBtn.getAttribute('data-fgbank-close'), cproj = null;
+          fghlabState.fgbankProjects.forEach(function(p){ if(p.id === cpid) cproj = p; });
+          if(cproj) hnClosureModal(cproj, cproj.status === 'accepte' ? 'finance' : '');
+          return;
         }
       });
     }
@@ -25268,8 +25440,10 @@
     var rest = all.filter(function(a){ return !(a.kind === 'vehicle_completed' && !a.classifiedOn); });
     var alerts = pending.concat(rest.slice(0, Math.max(0, 8 - pending.length)));
     var unread = all.filter(function(a){ return !a.read; }).length;
-    if(!all.length){ el.innerHTML = ''; return; }
-    el.innerHTML = '<div style="border:1px solid #C89B3C; border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:12px;">' +
+    var dAl = []; try{ dAl = hnDerivedAlerts(); }catch(x){}
+    var dHtml = hnDerivedAlertsHtml(dAl);
+    if(!all.length){ el.innerHTML = dHtml; hnBindAlertCfg(el); return; }
+    el.innerHTML = dHtml + '<div style="border:1px solid #C89B3C; border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:12px;">' +
       '<div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">🔔 Alertes (Marché Partenaire | Partner Market, CO-PROJET | COPROJECT…)' + (unread ? ' <span class="ctb-stub-badge" style="background:#C89B3C; color:#fff;">'+unread+' nouvelle'+(unread > 1 ? 's' : '')+'</span>' : '') + '</div>' +
       alerts.map(function(a){
         var done = a.kind === 'vehicle_completed', l9k = L9_ALERT_KINDS[a.kind];
@@ -25279,6 +25453,7 @@
           (done ? l6AlertVerifHtml(a) : '') + l9AlertExtraHtml(a) +
         '</div>';
       }).join('') + '</div>';
+    hnBindAlertCfg(el);
   }
   function fghlabOpenAlert(alertId){
     var a = null;
