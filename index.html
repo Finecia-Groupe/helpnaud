@@ -20900,6 +20900,7 @@
       if(key === 'pese') return fghlabPesePanelHtml(info);
       if(key === 'documentation') return fghlabDocumentationPanelHtml(info);
       if(key === 'feuillecalcul') return fghlabFeuilleCalculPanelHtml(info);
+      if(key === 'nosclients') return fghlabNosClientsPanelHtml(info);
       if(key === 'hstatis') return fghlabHstatisPanelHtml(info);
       if(FGHLAB_TRACKER_CONFIG[key]) return fghlabTrackerPanelHtml(key, info);
       if(FGHLAB_STATEMENT_CONFIG[key]) return fghlabStatementPanelHtml(key, info);
@@ -20920,6 +20921,7 @@
     if(visibleSet.pese) bindFghlabPesePanel();
     if(visibleSet.documentation) bindFghlabDocumentationPanel();
     if(visibleSet.feuillecalcul) bindFghlabFeuilleCalculPanel();
+    if(visibleSet.nosclients) bindFghlabNosClients();
     if(visibleSet.hstatis) bindFghlabHstatisPanel();
     Object.keys(FGHLAB_TRACKER_CONFIG).forEach(function(k){ if(visibleSet[k]) bindFghlabTrackerPanel(k); });
     if(visibleSet.rdv) bindFghlabRdvExtras();
@@ -23108,6 +23110,7 @@
         '<select id="partnermarket-type-input" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' + typeOptions + '</select>' +
         '<input type="text" id="partnermarket-contact-input" maxlength="100" placeholder="Contact (nom)" style="flex:1; min-width:140px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
         '<input type="email" id="partnermarket-email-input" maxlength="140" placeholder="Courriel" style="flex:1; min-width:160px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
+        '<input type="tel" id="partnermarket-phone-input" maxlength="40" placeholder="Téléphone" style="flex:1; min-width:140px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' +
         '<select id="partnermarket-status-input" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' + statusOptions + '</select>' +
         '<select id="partnermarket-tier-input" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">' + tierOptions + '</select>' +
         '<label style="display:flex; flex-direction:column; gap:2px; font-size:10.5px; color:var(--muted);">Frais d\'inscription<input type="number" id="partnermarket-fee-input" min="0" step="1" value="'+PARTNER_TIER_DEFAULT_FEES.Standard+'" style="width:150px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;"></label>' +
@@ -23429,7 +23432,7 @@
         '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
           '<div>' +
             '<div style="font-weight:700; font-size:13.5px;">'+escapeHtml(p.name)+' <span class="hint" style="font-weight:400;">('+escapeHtml(p.type)+')</span></div>' +
-            '<div class="hint" style="margin:2px 0 0;">Contact : '+escapeHtml(p.contact || '—')+' · '+escapeHtml(p.email || '—')+' · Inscrit le '+escapeHtml(fmtFghlabShortDate(p.registeredOn))+'</div>' +
+            '<div class="hint" style="margin:2px 0 0;">Contact : '+escapeHtml(p.contact || '—')+' · '+escapeHtml(p.email || '—')+(p.phone ? ' · 📞 '+escapeHtml(p.phone) : '')+' · Inscrit le '+escapeHtml(fmtFghlabShortDate(p.registeredOn))+'</div>' +
             (p.clientNumber || p.projectNumber || p.dealNumber ? '<div class="hint" style="margin:1px 0 0; font-family:monospace; font-size:11px; letter-spacing:.3px;">'+(p.clientNumber ? 'Client N° '+escapeHtml(p.clientNumber) : '')+(p.clientNumber && p.projectNumber ? ' · ' : '')+(p.projectNumber ? 'Projet N° '+escapeHtml(p.projectNumber) : '')+(p.dealNumber ? ' · '+escapeHtml(p.dealNumber) : '')+'</div>' : '') +
           '</div>' +
           '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' + ownerControls + '</div>' +
@@ -23562,6 +23565,7 @@
       var emailInput = document.getElementById('partnermarket-email-input');
       var statusInput = document.getElementById('partnermarket-status-input');
       var typeInputEl = document.getElementById('partnermarket-type-input');
+      var phoneInputR = document.getElementById('partnermarket-phone-input'); if(phoneInputR) phoneInputR.value = '';
       if(nameInput) nameInput.value = '';
       if(contactInput) contactInput.value = '';
       if(emailInput) emailInput.value = '';
@@ -23602,6 +23606,7 @@
             existing.type = (typeInputEl && typeInputEl.value) || 'Autre';
             existing.contact = contactInput ? contactInput.value.trim() : '';
             existing.email = emailInput ? emailInput.value.trim() : '';
+            var phoneInputS = document.getElementById('partnermarket-phone-input'); if(phoneInputS) existing.phone = phoneInputS.value.trim();
             existing.status = (statusInput && statusInput.value) || existing.status;
             existing.tier = (tierInput && tierInput.value) || existing.tier;
             existing.listingFee = feeInput ? (Number(feeInput.value) || 0) : existing.listingFee;
@@ -23630,6 +23635,7 @@
           dealNumber: beNums ? beNums.dealNumber : null,
           contact: contactInput ? contactInput.value.trim() : '',
           email: emailInput ? emailInput.value.trim() : '',
+          phone: (document.getElementById('partnermarket-phone-input') || { value:'' }).value.trim(),
           status: (statusInput && statusInput.value) || 'En attente',
           tier: (tierInput && tierInput.value) || 'Standard',
           listingFee: feeInput ? (Number(feeInput.value) || 0) : PARTNER_TIER_DEFAULT_FEES.Standard,
@@ -23760,6 +23766,7 @@
           if(typeInputEl2) typeInputEl2.value = partnerToEdit.type || 'Autre';
           if(contactInputEl) contactInputEl.value = partnerToEdit.contact || '';
           if(emailInputEl) emailInputEl.value = partnerToEdit.email || '';
+          var phoneInputE = document.getElementById('partnermarket-phone-input'); if(phoneInputE) phoneInputE.value = partnerToEdit.phone || '';
           if(statusInputEl) statusInputEl.value = partnerToEdit.status || 'En attente';
           if(feeInputEl2) feeInputEl2.value = Number(partnerToEdit.listingFee) || 0;
           if(tierInputEl2) tierInputEl2.value = partnerToEdit.tier || 'Standard';
@@ -24173,6 +24180,91 @@
     accepte: 'Financement accepté',
     refuse: 'Refusé'
   };
+
+  /* ================= NOS CLIENTS : fiche client créée automatiquement =================
+     Un client inscrit dans CO-PROJET | COPROJECT ou dans Marché Partenaire | Partner Market, ou qui fait affaire dans
+     FG & Bank Partnership, a automatiquement sa fiche ici (Client N°, téléphone, courriel, origines). La liste est recalculée
+     à partir des trois outils : aucune saisie en double, et les fiches suivent les données synchronisées. */
+  function hnNormName(s){ return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' '); }
+  function hnClientsBuild(){
+    var map = {};
+    function get(name){
+      var k = hnNormName(name); if(!k) return null;
+      if(!map[k]) map[k] = { key:k, name:String(name).trim(), phone:'', email:'', contact:'', sources:{}, nCo:0, nBank:0, nPartner:0, clientNumber:'', since:'' };
+      return map[k];
+    }
+    function since(c, d){ if(d && (!c.since || d < c.since)) c.since = d; }
+    (fghlabState.coprojects || []).forEach(function(p){
+      var c = p && get(p.client); if(!c) return;
+      c.sources['CO-PROJET'] = 1; c.nCo++;
+      var ct = p.contact || {};
+      if(ct.phone && !c.phone) c.phone = ct.phone;
+      if(ct.email && !c.email) c.email = ct.email;
+      if(p.clientNumber && !c.clientNumber) c.clientNumber = p.clientNumber;
+      since(c, p.createdOn);
+    });
+    (fghlabState.partners || []).forEach(function(p){
+      var c = p && get(p.name); if(!c) return;
+      c.sources['Partner Market'] = 1; c.nPartner++;
+      if(p.phone && !c.phone) c.phone = p.phone;
+      if(p.email && !c.email) c.email = p.email;
+      if(p.contact && !c.contact) c.contact = p.contact;
+      if(p.clientNumber && !c.clientNumber) c.clientNumber = p.clientNumber;
+      since(c, p.registeredOn);
+    });
+    (fghlabState.fgbankProjects || []).forEach(function(pr){
+      var c = pr && get(pr.client); if(!c) return;
+      c.sources['FG & Bank'] = 1; c.nBank++;
+      if(pr.clientNumber && !c.clientNumber) c.clientNumber = pr.clientNumber;
+      since(c, pr.createdOn);
+    });
+    return Object.keys(map).map(function(k){ return map[k]; }).sort(function(a, b){ return a.name.localeCompare(b.name, 'fr'); });
+  }
+  function hnClientByName(name){ var k = hnNormName(name), r = null; hnClientsBuild().forEach(function(c){ if(c.key === k) r = c; }); return r; }
+  /* Téléphone du client affiché dans FG & Bank Partnership (dossier déposé) */
+  function hnClientPhoneHtml(proj){
+    var c = null; try{ c = hnClientByName(proj && proj.client); }catch(e){}
+    var ph = c && c.phone ? String(c.phone) : '';
+    var digits = ph.replace(/[^\d+]/g, '');
+    return ph ? ' · 📞 <a href="tel:' + escapeHtml(digits) + '" style="color:inherit; font-weight:600;">' + escapeHtml(ph) + '</a>'
+              : ' · 📞 <span style="color:#B3261E;">téléphone non renseigné</span>';
+  }
+  function fghlabNosClientsPanelHtml(info){
+    return '<div class="card hn-panel" id="fghlab-panel-nosclients" hidden>' +
+      '<h2 style="margin:0 0 4px;">' + escapeHtml(info.title) + '</h2>' +
+      '<p class="hint" style="margin:0 0 10px;">' + escapeHtml(info.desc) + '</p>' +
+      '<input type="search" id="nc-filter" placeholder="Rechercher un client (nom, téléphone, courriel, N°)…" style="width:100%; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px; margin-bottom:10px;">' +
+      '<div id="nc-list"></div></div>';
+  }
+  var hnNcSig = '';
+  function renderNosClients(force){
+    var listEl = document.getElementById('nc-list'); if(!listEl) return;
+    var q = hnNormName((document.getElementById('nc-filter') || {}).value || '');
+    var all = hnClientsBuild();
+    var sig = JSON.stringify(all.map(function(c){ return [c.key, c.phone, c.email, c.nCo, c.nBank, c.nPartner]; })) + '|' + q;
+    if(!force && sig === hnNcSig) return; hnNcSig = sig;
+    var rows = all.filter(function(c){ return !q || hnNormName([c.name, c.phone, c.email, c.clientNumber, c.contact].join(' ')).indexOf(q) !== -1; });
+    if(!rows.length){ listEl.innerHTML = '<p class="hint" style="margin:0;">' + (all.length ? 'Aucun client ne correspond à la recherche.' : 'Aucun client pour l’instant : la fiche se crée automatiquement dès qu’un client s’inscrit dans CO-PROJET ou Partner Market, ou fait affaire dans FG & Bank Partnership.') + '</p>'; return; }
+    listEl.innerHTML = '<p class="hint" style="margin:0 0 8px;">' + all.length + ' client' + (all.length > 1 ? 's' : '') + ' · créés automatiquement</p>' + rows.map(function(c){
+      var chips = Object.keys(c.sources).map(function(k){ return '<span style="font-size:11px; padding:2px 8px; border-radius:999px; background:var(--accent-soft); color:var(--ink);">' + escapeHtml(k) + '</span>'; }).join(' ');
+      var ph = c.phone ? '<a href="tel:' + escapeHtml(String(c.phone).replace(/[^\d+]/g, '')) + '" style="font-weight:600;">📞 ' + escapeHtml(c.phone) + '</a>' : '<span style="color:#B3261E;">📞 téléphone non renseigné</span>';
+      var em = c.email ? '<a href="mailto:' + escapeHtml(c.email) + '">✉ ' + escapeHtml(c.email) + '</a>' : '';
+      var det = [c.nCo ? c.nCo + ' projet' + (c.nCo > 1 ? 's' : '') + ' CO-PROJET' : '', c.nPartner ? 'Partner Market' : '', c.nBank ? c.nBank + ' dossier' + (c.nBank > 1 ? 's' : '') + ' FG & Bank' : ''].filter(Boolean).join(' · ');
+      return '<div style="border:1px solid var(--line); border-radius:11px; background:var(--surface-2); padding:10px 12px; margin-bottom:8px;">' +
+        '<div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center;"><strong>' + escapeHtml(c.name) + '</strong><span class="hint" style="margin:0; font-family:monospace;">' + (c.clientNumber ? 'Client N° ' + escapeHtml(c.clientNumber) : '') + '</span></div>' +
+        '<div style="display:flex; gap:10px; flex-wrap:wrap; margin:6px 0; font-size:13px;">' + ph + (em ? ' ' + em : '') + (c.contact ? '<span class="hint" style="margin:0;">Contact : ' + escapeHtml(c.contact) + '</span>' : '') + '</div>' +
+        '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">' + chips + '<span class="hint" style="margin:0 0 0 4px;">' + escapeHtml(det) + (c.since ? ' · depuis le ' + escapeHtml(fmtFghlabShortDate(c.since)) : '') + '</span></div></div>';
+    }).join('');
+  }
+  function bindFghlabNosClients(){
+    var f = document.getElementById('nc-filter'); if(f) f.addEventListener('input', function(){ renderNosClients(true); });
+    renderNosClients(true);
+  }
+  document.addEventListener('click', function(e){ if(e.target && e.target.closest && e.target.closest('[data-fghlabtool="nosclients"]')) setTimeout(function(){ renderNosClients(true); }, 50); });
+  setInterval(function(){
+    var p = document.getElementById('fghlab-panel-nosclients');
+    if(p && !p.hidden) renderNosClients(false);
+  }, 3000);
   function makeFghlabBankProjectRowId(){ return 'fghbk-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function makeFghlabBankOfferId(){ return 'fghof-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   /* ================= Numérotation Client N° / Projet N° / Numéro d'affaire (3 catégories) =========
@@ -24546,7 +24638,7 @@
             '<div class="hint" style="margin:0; font-family:monospace; font-size:12px; letter-spacing:.3px;">'+escapeHtml(proj.referenceId)+'</div>' +
             (proj.clientNumber || proj.projectNumber ? '<div class="hint" style="margin:1px 0 0; font-family:monospace; font-size:11px; letter-spacing:.3px;">'+(proj.clientNumber ? 'Client N° '+escapeHtml(proj.clientNumber) : '')+(proj.clientNumber && proj.projectNumber ? ' · ' : '')+(proj.projectNumber ? 'Projet N° '+escapeHtml(proj.projectNumber) : '')+'</div>' : '') +
             '<div style="font-weight:700; font-size:13.5px; margin-top:2px;">'+escapeHtml(proj.title)+'</div>' +
-            '<div class="hint" style="margin:2px 0 0;">Client : '+escapeHtml(proj.client || '—')+' · Déposé le '+escapeHtml(fmtFghlabShortDate(proj.createdOn))+(proj.sourceCoprojectId ? ' · Origine : CO-PROJET | COPROJECT' : '')+(proj.sourceVehicleLeadId ? ' · Origine : Marché Partenaire | Partner Market (véhicule)' : '')+'</div>' +
+            '<div class="hint" style="margin:2px 0 0;">Client : '+escapeHtml(proj.client || '—')+hnClientPhoneHtml(proj)+' · Déposé le '+escapeHtml(fmtFghlabShortDate(proj.createdOn))+(proj.sourceCoprojectId ? ' · Origine : CO-PROJET | COPROJECT' : '')+(proj.sourceVehicleLeadId ? ' · Origine : Marché Partenaire | Partner Market (véhicule)' : '')+'</div>' +
           '</div>' +
           '<span class="ctb-stub-badge" style="background:'+statusColor+'; color:#fff;">'+escapeHtml(statusLabel)+'</span>' +
         '</div>' +
@@ -30079,6 +30171,9 @@
   FGHLAB_GROUPS.push({ key:'services', label:'Services internes : informatique, marketing et communication',
     icon:'<rect x="2" y="3" width="16" height="11" rx="2" fill="none" stroke="#16304A" stroke-width="2"/><line x1="7" y1="17" x2="13" y2="17" stroke="#C89B3C" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="10" y2="17" stroke="#2D9C93" stroke-width="2"/>',
     tools:['ti','mkt'] });
+  FGHLAB_TOOLS.push('nosclients');
+  FGHLAB_INFO.nosclients = { icon:'🗂️', title:'NOS CLIENTS', desc:"Fiche de chaque client, créée automatiquement dès qu’il s’inscrit dans CO-PROJET ou Partner Market, ou qu’il fait affaire dans FG & Bank Partnership : Client N°, téléphone, courriel et origines." };
+  FGHLAB_GROUPS.forEach(function(g){ if(g.key === 'projets') g.tools.push('nosclients'); });
 
   FGHLAB_TRACKER_CONFIG.ti = { itemLabel:'demande ou incident TI',
     statuses:[{key:'demande',label:'Demande reçue'},{key:'analyse',label:'En analyse'},{key:'encours',label:'En cours'},{key:'test',label:'En test'},{key:'resolu',label:'Résolu / clôturé'}],
@@ -39000,9 +39095,11 @@
       var pill = row.querySelector('.hnr-cost-pill');
       var m = 1; try{ m = view === 'hstatis' ? 1 : (getHmodelTierDefForView(view).creditCost || 1); }catch(e){}
       var x = researchExtraCost(view), tot = m + x;
-      var txt = '💳 ' + tot + ' crédit' + (tot > 1 ? 's' : '');
+      var td = null; try{ td = getHmodelTierDefForView(view); }catch(e){}
+      var lab = view === 'hstatis' ? '🛡️ F-i-Stat' : (((td && td.emoji) || '⚖️') + ' ' + ((td && td.label) || 'Modèle'));
+      var txt = lab + ' ' + tot;
       if(pill.textContent !== txt) pill.textContent = txt;
-      pill.title = 'Coût de cet envoi : ' + tot + ' (modèle ' + m + (x ? ' + options de recherche ' + x : '') + '). Confirmé par le serveur ; les pièces jointes peuvent s’ajouter.';
+      pill.title = 'Modèle ' + lab + ' — coût de cet envoi : ' + tot + ' crédit' + (tot > 1 ? 's' : '') + ' (modèle ' + m + (x ? ' + options de recherche ' + x : '') + '). Confirmé par le serveur ; les pièces jointes peuvent s’ajouter.';
       pill.style.cssText = 'margin-left:auto; font-size:11.5px; white-space:nowrap; padding:2px 8px; border-radius:999px; border:1px solid ' + (x ? 'var(--accent)' : 'var(--line)') + '; color:' + (x ? '#fff' : 'var(--muted)') + '; background:' + (x ? 'var(--accent)' : 'var(--surface-2)') + ';';
       var cw = row.querySelector('.hnr-create-wrap'); if(cw) cw.hidden = !hnrImgEnabled();
       /* « Réessayer » : même ligne que le coût (le bouton existant est déplacé, pas recréé) */
