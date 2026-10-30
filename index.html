@@ -5661,6 +5661,10 @@
               <!-- Option « Liste accès… » (round D16) : stockée dans canViewAccessList, PAS dans
                    authorizedTools. Affichée uniquement au propriétaire qui modifie un membre déjà
                    administrateur (voir syncFghlabFormExtras()). Masquée pour un administrateur. -->
+              <label id="fghlab-phoneright-wrap" style="display:none; align-items:flex-start; gap:8px; cursor:pointer; font-size:12.5px; margin-top:7px; padding:7px 10px; border:1px dashed var(--line); border-radius:9px;">
+                <input type="checkbox" id="fghlab-phoneright-check">
+                <span><strong>Droit « 📱 Mobile / téléphone »</strong> <span class="hint" style="margin:0;">— permet à ce membre (administrateur délégué ou secrétaire particulier/ière) d’enregistrer ou de changer le numéro de téléphone des membres, sur autorisation interne du propriétaire. Rien d’autre n’est ouvert.</span></span>
+              </label>
               <label id="fghlab-accesslist-option-wrap" style="display:none; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; margin-top:7px; padding:7px 10px; border:1px dashed var(--accent); border-radius:9px; background:var(--accent-soft);">
                 <input type="checkbox" id="fghlab-accesslist-check">
                 <span><strong>Liste accès FGH-Colab - Autorisation</strong> <span class="hint" style="margin:0;">(droit d'administrateur — n'est pas un outil)</span></span>
@@ -6637,6 +6641,21 @@
   function hnPhoneDigits(v){ var d = String(v || '').replace(/\D/g, ''); if(d.indexOf('00') === 0) d = d.slice(2); return d; }
   function hnPhoneNormalize(v){ var raw = String(v || '').trim(); if(!raw) return ''; var d = hnPhoneDigits(raw); return d ? '+' + d : ''; }
   function hnPhoneValid(v){ var d = hnPhoneDigits(v); return d.length >= 8 && d.length <= 15; }
+  function hnCanManagePhones(){
+    if(fghlabCloudRole === 'owner') return true;
+    var m = null; try{ m = getActiveFghlabMember(); }catch(e){}
+    return !!(m && m.canManagePhones);
+  }
+  function hnSetPhoneRpc(id, phone){
+    return fghlabSb.rpc('member_set_phone', { p_member_id: String(id), p_phone: phone || '' }).then(function(r){
+      if(r.error){
+        var msg = String(r.error.message || '').toLowerCase();
+        if(msg.indexOf('not allowed') >= 0) throw fghlabCloudFail(HN_PHONE_DENIED);
+        throw fghlabCloudFail(HN_PHONE_SQL);
+      }
+    });
+  }
+  var HN_PHONE_DENIED = 'Numéro non enregistré : seul le propriétaire, ou un administrateur délégué / secrétaire particulier à qui le propriétaire a donné le droit « Mobile / téléphone », peut enregistrer ou changer un numéro. Le propriétaire (ou ce membre autorisé) peut l’ajouter en modifiant le membre.';
   var HN_PHONE_SQL = 'Le numéro n’a pas pu être enregistré : exécutez d’abord le fichier supabase-telephone-membre.sql dans Supabase (une seule fois).';
   function fghlabCloudLoadTeam(){
     var sb = fghlabSb;
@@ -6647,7 +6666,7 @@
       sb.from('team_member_sessions').select('member_id,kind,login_at,logout_at').order('login_at', { ascending: false }).limit(3000),
       sb.from('team_access_grants').select('granted_by,member_id,granted_on').order('granted_on', { ascending: false }).limit(3000),
       isOwner ? sb.rpc('owner_team_numbers') : sb.rpc('my_member_info'),
-      sb.from('team_members').select('id,phone')
+      sb.from('team_members').select('id,phone,can_manage_phones')
     ]).then(function(r){
       if(r[0].error) throw r[0].error;
       var numbers = {};
@@ -6656,8 +6675,8 @@
       var sessions = ((r[1] && !r[1].error && r[1].data) || []).slice().reverse();
       var grants = ((r[2] && !r[2].error && r[2].data) || []).slice().reverse();
       fghlabState.team = fghlabCloudMapTeam(r[0].data, sessions, grants, numbers);
-      var phones = {}; if(r[4] && !r[4].error) (r[4].data || []).forEach(function(x){ phones[x.id] = x.phone || ''; });
-      fghlabState.team.forEach(function(m){ m.phone = phones[m.id] || ''; });
+      var phones = {}, rights = {}; if(r[4] && !r[4].error) (r[4].data || []).forEach(function(x){ phones[x.id] = x.phone || ''; rights[x.id] = !!x.can_manage_phones; });
+      fghlabState.team.forEach(function(m){ m.phone = phones[m.id] || ''; m.canManagePhones = !!rights[m.id]; });
       fghlabCloudSetFlag();
       return fghlabState.team;
     });
@@ -7085,20 +7104,26 @@
           if(r.error) throw r.error;
           if(!r.data || !r.data.length) throw fghlabCloudFail('Modification refusée par le serveur.');
           if((existing.phone || '') === (f.phone || '')) return null;
-          return sb.from('team_members').update({ phone: f.phone || null }).eq('id', editingId).select('id').then(function(rp){ if(rp.error || !rp.data || !rp.data.length) throw fghlabCloudFail(HN_PHONE_SQL); return null; });
+          return hnSetPhoneRpc(editingId, f.phone);
+        }).then(function(){
+          var rc = document.getElementById('fghlab-phoneright-check');
+          if(!rc || !!rc.checked === !!existing.canManagePhones) return null;
+          return sb.from('team_members').update({ can_manage_phones: !!rc.checked }).eq('id', editingId).select('id').then(function(rp){ if(rp.error || !rp.data || !rp.data.length) throw fghlabCloudFail(HN_PHONE_SQL); return null; });
         }).then(function(){
           // Les outils passent par le serveur, qui journalise l'octroi au nom du propriétaire.
           if(!toolsChanged) return null;
           return sb.rpc('owner_set_member_tools', { p_member_id: editingId, p_tools: f.tools }).then(function(r2){ if(r2.error) throw r2.error; });
         });
       }else{
-        if(emailChanged || existing.name !== f.name || (existing.jobTitle || '') !== (f.job || '') || (existing.phone || '') !== (f.phone || '')){
-          fghlabCloudTeamErr('Seul le propriétaire peut modifier le nom, le courriel, le téléphone ou le poste. Un administrateur modifie uniquement les outils autorisés.');
+        if(emailChanged || existing.name !== f.name || (existing.jobTitle || '') !== (f.job || '') || ((existing.phone || '') !== (f.phone || '') && !hnCanManagePhones())){
+          fghlabCloudTeamErr('Seul le propriétaire peut modifier le nom, le courriel ou le poste ; le téléphone ne peut être changé que par le propriétaire ou un membre ayant le droit « Mobile / téléphone ». Un administrateur modifie uniquement les outils autorisés.');
           return;
         }
         if(!fghlabCloudAdminCode){ fghlabCloudTeamErr('Confirmez d’abord votre code administrateur.'); return; }
         p = sb.rpc('grant_member_access', { p_member_id: editingId, p_tools: f.tools, p_admin_code: fghlabCloudAdminCode }).then(function(r){
           if(r.error) throw r.error;
+          if((existing.phone || '') === (f.phone || '')) return null;
+          return hnSetPhoneRpc(editingId, f.phone);
         });
       }
     }else{
@@ -7113,9 +7138,7 @@
         return sb.from('team_members').select('id').ilike('email', f.email.trim()).limit(1).then(function(q){
           var id = (out && (out.id || out.member_id)) || (q.data && q.data[0] && q.data[0].id);
           if(!id) return null;
-          return sb.from('team_members').update({ phone: f.phone }).eq('id', id).select('id').then(function(rp){
-            if(rp.error || !rp.data || !rp.data.length) f._phoneFail = true;
-          });
+          return hnSetPhoneRpc(id, f.phone).then(null, function(e){ f._phoneFail = (e && e.userMessage) || HN_PHONE_DENIED; });
         });
       });
     }
@@ -7125,7 +7148,7 @@
       resetFghlabTeamForm();
       renderFghlabAdmin();
       if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI();
-      if(f._phoneFail) fghlabCloudTeamErr(HN_PHONE_SQL);
+      if(f._phoneFail) fghlabCloudTeamErr(f._phoneFail);
       if(f._created){
         var cr = f._created;
         showFghlabProvisionalPasswordBox('Mot de passe provisoire pour ' + (f.name || 'l’ancien membre') + ' — N° de membre ' + cr.member_number + (cr.note ? ' — ' + cr.note : '') + (cr.kind === 'returning' ? (cr.kept_number ? ' (ancien numéro conservé)' : ' (nouveau numéro)') : '') + ' — à transmettre au membre :', cr.provisional_password);
@@ -30972,8 +30995,24 @@
     var infoEl = document.getElementById('fghlab-member-profile-info');
     var member = getActiveFghlabMember();
     if(!infoEl || !member) return;
-    infoEl.innerHTML = '<strong>' + escapeHtml(member.name) + '</strong><br>' + escapeHtml(member.email) + (member.memberNumber ? (' · N° de membre ' + escapeHtml(member.memberNumber)) : '') + '<br>📞 ' + (member.phone ? escapeHtml(member.phone) + ' <span class="hint" style="margin:0;">(à confirmer à chaque connexion à FGH-Colab, sans le +)</span>' : 'téléphone non renseigné');
+    infoEl.innerHTML = '<strong>' + escapeHtml(member.name) + '</strong><br>' + escapeHtml(member.email) + (member.memberNumber ? (' · N° de membre ' + escapeHtml(member.memberNumber)) : '') + '<br>📞 ' + (member.phone ? escapeHtml(member.phone) + ' <span class="hint" style="margin:0;">(à confirmer à chaque connexion à FGH-Colab, sans le +)</span>' : 'téléphone non renseigné') + hnPhonesPanelHtml(member);
   }
+  function hnPhonesPanelHtml(member){
+    if(!member || !member.canManagePhones) return '';
+    return '<div style="margin-top:10px; border-top:1px solid var(--line); padding-top:8px;"><strong>📱 Téléphones de l’équipe</strong> <span class="hint" style="margin:0;">(droit Mobile / téléphone donné par le propriétaire)</span>' +
+      (fghlabState.team || []).map(function(m){ return '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:4px 0; font-size:12.5px;"><span style="flex:1; min-width:140px;">' + escapeHtml(m.name) + ' — ' + (m.phone ? escapeHtml(m.phone) : '<em>non renseigné</em>') + '</span><button type="button" class="btn" data-hn-setphone="' + escapeHtml(m.id) + '" style="padding:3px 9px; font-size:12px;">Modifier</button></div>'; }).join('') + '</div>';
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target && e.target.closest && e.target.closest('[data-hn-setphone]'); if(!b) return;
+    var id = b.getAttribute('data-hn-setphone'), m = null;
+    (fghlabState.team || []).forEach(function(x){ if(x.id === id) m = x; });
+    if(!m || !hnCanManagePhones()) return;
+    var v = window.prompt('Téléphone de ' + m.name + ' avec code pays (ex. : +22890001234). Laisser vide pour retirer.', m.phone || '');
+    if(v === null) return;
+    v = hnPhoneNormalize(v);
+    if(v && !hnPhoneValid(v)){ window.alert('Numéro invalide : indiquez le code pays et le numéro.'); return; }
+    hnSetPhoneRpc(id, v).then(function(){ return fghlabCloudLoadTeam(); }).then(function(){ renderFghlabMemberProfilePanel(); try{ renderFghlabAdmin(); }catch(x){} }, function(err){ window.alert((err && err.userMessage) || HN_PHONE_SQL); });
+  });
   function hideFghlabProvisionalNotice(){
     var el = document.getElementById('fghlab-provisional-notice');
     if(el) el.style.display = 'none';
@@ -35536,6 +35575,10 @@
     }
     if(listWrap) listWrap.style.display = showAdminExtras ? 'flex' : 'none';
     if(listCheck && !showAdminExtras) listCheck.checked = false;
+    var prW = document.getElementById('fghlab-phoneright-wrap'), prC = document.getElementById('fghlab-phoneright-check');
+    var showPr = !!(isOwner && editing);
+    if(prW) prW.style.display = showPr ? 'flex' : 'none';
+    if(prC) prC.checked = showPr ? !!editing.canManagePhones : false;
     var acting = fghlabFormActingAdmin();
     var confirmBox = document.getElementById('fghlab-admin-confirm-box');
     var okEl = document.getElementById('fghlab-admin-confirm-ok');
@@ -35841,7 +35884,7 @@
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
             '<div>' +
               '<strong>'+escapeHtml(member.name)+'</strong>' + (member.memberNumber ? (' — N° '+escapeHtml(member.memberNumber)) : '') + '<br>' +
-              '<span class="hint" style="margin:0;">'+escapeHtml(member.email)+' · 📞 '+(member.phone ? escapeHtml(member.phone) : 'téléphone non renseigné')+' · '+member.authorizedTools.length+' outil'+(member.authorizedTools.length > 1 ? 's' : '')+' autorisé'+(member.authorizedTools.length > 1 ? 's' : '')+'</span><br>' +
+              '<span class="hint" style="margin:0;">'+escapeHtml(member.email)+' · 📞 '+(member.phone ? escapeHtml(member.phone) : 'téléphone non renseigné')+(member.canManagePhones ? ' · 📱 droit téléphone' : '')+' · '+member.authorizedTools.length+' outil'+(member.authorizedTools.length > 1 ? 's' : '')+' autorisé'+(member.authorizedTools.length > 1 ? 's' : '')+'</span><br>' +
               pwBadge +
               stampHtml +
             '</div>' +
