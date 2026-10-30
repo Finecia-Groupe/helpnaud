@@ -4560,7 +4560,7 @@
         </div>
 
         <div id="fghlab-member-login-wrap">
-          <button type="button" class="btn" id="fghlab-member-login-toggle" style="padding:4px 10px; font-size:12px;">Se connecter en tant que membre d'équipe (courriel, puis N° de membre, puis mot de passe)</button>
+          <button type="button" class="btn" id="fghlab-member-login-toggle" style="padding:4px 10px; font-size:12px;">Se connecter en tant que membre d'équipe (courriel, N° de membre, mot de passe, puis téléphone si inscrit)</button>
           <form id="fghlab-login-step1-form" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
             <input type="email" id="fghlab-login-email-input" placeholder="Courriel du membre" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:220px;">
             <button type="submit" class="btn primary" style="padding:6px 12px; font-size:12.5px;">Continuer</button>
@@ -4577,6 +4577,8 @@
           </form>
           <form id="fghlab-login-step3-form" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
             <p class="hint" id="fghlab-login-step3-intro" style="width:100%; margin:0 0 2px;"></p>
+            <input type="tel" id="fghlab-login-phone-input" inputmode="numeric" autocomplete="tel" placeholder="Téléphone avec code pays (ex. : 22890001234)" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:290px; max-width:100%;">
+            <p class="hint" style="width:100%; margin:0;">Si un numéro de téléphone est inscrit dans votre dossier, confirmez-le ici, précédé du code pays, sans le + ni espaces (ex. : +22890001234 → 22890001234). Sans numéro dans votre dossier, laissez vide.</p>
             <input type="password" id="fghlab-login-password-input" placeholder="Mot de passe" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:200px;">
             <button type="submit" class="btn primary" style="padding:6px 12px; font-size:12.5px;">Se connecter</button>
             <button type="button" class="btn" id="fghlab-login-step3-back" style="padding:6px 12px; font-size:12.5px;">Retour</button>
@@ -5646,6 +5648,10 @@
               <input type="email" id="fghlab-team-email-input" maxlength="120" placeholder="Courriel — ex. : jordan@finecia.com" style="flex:1; min-width:180px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+              <input type="tel" id="fghlab-team-phone-input" maxlength="20" inputmode="tel" placeholder="Téléphone du membre avec code pays — ex. : +22890001234 (facultatif)" aria-label="Numéro de téléphone du membre" style="flex:1; min-width:180px; border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
+            </div>
+            <p class="hint" style="margin:-4px 0 8px;">Ce numéro est affiché dans le dossier du membre. Une fois inscrit, il sert de moyen d’identification additionnel : le membre devra le confirmer (code pays + numéro, sans le +) à chaque connexion à FGH-Colab, après son courriel, son N° de membre et son mot de passe. Sans numéro, la connexion reste inchangée. La connexion à deux facteurs viendra plus tard.</p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
               <input type="text" id="fghlab-team-jobtitle-input" maxlength="80" placeholder="Poste — ex. : Technicien, Informaticien, Directeur adjoint" aria-label="Poste du membre" style="flex:1; min-width:180px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
               <input type="text" id="fghlab-team-adminrole-input" maxlength="100" placeholder="Rôle de l'administrateur — ex. : Directeur" aria-label="Rôle de l'administrateur" style="display:none; flex:1; min-width:180px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
             </div>
@@ -6627,6 +6633,11 @@
     });
     return list;
   }
+  /* Téléphone du membre (indicatif pays) : 2e identifiant de connexion à FGH-Colab. */
+  function hnPhoneDigits(v){ var d = String(v || '').replace(/\D/g, ''); if(d.indexOf('00') === 0) d = d.slice(2); return d; }
+  function hnPhoneNormalize(v){ var raw = String(v || '').trim(); if(!raw) return ''; var d = hnPhoneDigits(raw); return d ? '+' + d : ''; }
+  function hnPhoneValid(v){ var d = hnPhoneDigits(v); return d.length >= 8 && d.length <= 15; }
+  var HN_PHONE_SQL = 'Le numéro n’a pas pu être enregistré : exécutez d’abord le fichier supabase-telephone-membre.sql dans Supabase (une seule fois).';
   function fghlabCloudLoadTeam(){
     var sb = fghlabSb;
     if(!sb) return Promise.reject(fghlabCloudFail('Service de connexion sécurisée indisponible.'));
@@ -6635,7 +6646,8 @@
       sb.from('team_members').select(FGHLAB_TEAM_COLS).order('name', { ascending: true }),
       sb.from('team_member_sessions').select('member_id,kind,login_at,logout_at').order('login_at', { ascending: false }).limit(3000),
       sb.from('team_access_grants').select('granted_by,member_id,granted_on').order('granted_on', { ascending: false }).limit(3000),
-      isOwner ? sb.rpc('owner_team_numbers') : sb.rpc('my_member_info')
+      isOwner ? sb.rpc('owner_team_numbers') : sb.rpc('my_member_info'),
+      sb.from('team_members').select('id,phone')
     ]).then(function(r){
       if(r[0].error) throw r[0].error;
       var numbers = {};
@@ -6644,6 +6656,8 @@
       var sessions = ((r[1] && !r[1].error && r[1].data) || []).slice().reverse();
       var grants = ((r[2] && !r[2].error && r[2].data) || []).slice().reverse();
       fghlabState.team = fghlabCloudMapTeam(r[0].data, sessions, grants, numbers);
+      var phones = {}; if(r[4] && !r[4].error) (r[4].data || []).forEach(function(x){ phones[x.id] = x.phone || ''; });
+      fghlabState.team.forEach(function(m){ m.phone = phones[m.id] || ''; });
       fghlabCloudSetFlag();
       return fghlabState.team;
     });
@@ -6749,7 +6763,7 @@
   }
 
   /* ---- connexion MEMBRE : courriel + N° (saisis aux étapes 1-2) + mot de passe (étape 3) ---- */
-  function fghlabCloudMemberLogin(email, number, password){
+  function fghlabCloudMemberLogin(email, number, password, phone){
     var sb = fghlabOwnerSbInit();
     if(!sb) return Promise.reject(fghlabCloudFail('Service de connexion sécurisée indisponible (hors ligne ou bloqué par le navigateur).'));
     fghlabCloudBusy = true;
@@ -6783,6 +6797,7 @@
         fghlabState.team.forEach(function(m){ if(m.id === info.id) mine = m; });
         if(!mine) throw fghlabCloudFail('Votre fiche est introuvable. Contactez le propriétaire.');
         if(!mine.memberNumber) mine.memberNumber = number;
+        if(hnPhoneDigits(mine.phone) && hnPhoneDigits(phone) !== hnPhoneDigits(mine.phone)) throw fghlabCloudFail('Confirmation du téléphone requise : saisissez le numéro de votre dossier précédé du code pays, sans le +, ni espaces (ex. : 22890001234).');
         return info;
       });
     }).then(function(info){
@@ -7069,13 +7084,16 @@
         p = sb.from('team_members').update(upd).eq('id', editingId).select('id').then(function(r){
           if(r.error) throw r.error;
           if(!r.data || !r.data.length) throw fghlabCloudFail('Modification refusée par le serveur.');
+          if((existing.phone || '') === (f.phone || '')) return null;
+          return sb.from('team_members').update({ phone: f.phone || null }).eq('id', editingId).select('id').then(function(rp){ if(rp.error || !rp.data || !rp.data.length) throw fghlabCloudFail(HN_PHONE_SQL); return null; });
+        }).then(function(){
           // Les outils passent par le serveur, qui journalise l'octroi au nom du propriétaire.
           if(!toolsChanged) return null;
           return sb.rpc('owner_set_member_tools', { p_member_id: editingId, p_tools: f.tools }).then(function(r2){ if(r2.error) throw r2.error; });
         });
       }else{
-        if(emailChanged || existing.name !== f.name || (existing.jobTitle || '') !== (f.job || '')){
-          fghlabCloudTeamErr('Seul le propriétaire peut modifier le nom, le courriel ou le poste. Un administrateur modifie uniquement les outils autorisés.');
+        if(emailChanged || existing.name !== f.name || (existing.jobTitle || '') !== (f.job || '') || (existing.phone || '') !== (f.phone || '')){
+          fghlabCloudTeamErr('Seul le propriétaire peut modifier le nom, le courriel, le téléphone ou le poste. Un administrateur modifie uniquement les outils autorisés.');
           return;
         }
         if(!fghlabCloudAdminCode){ fghlabCloudTeamErr('Confirmez d’abord votre code administrateur.'); return; }
@@ -7089,7 +7107,17 @@
         name: f.name, email: f.email, job_title: f.job, tools: f.tools,
         activated_by_name: fghlabState.adminProfile.name, activated_by_number: fghlabState.adminProfile.number,
         admin_code: isOwner ? undefined : fghlabCloudAdminCode
-      }, f.ext || {})).then(function(out){ f._created = out; });
+      }, f.ext || {})).then(function(out){
+        f._created = out;
+        if(!f.phone) return null;
+        return sb.from('team_members').select('id').ilike('email', f.email.trim()).limit(1).then(function(q){
+          var id = (out && (out.id || out.member_id)) || (q.data && q.data[0] && q.data[0].id);
+          if(!id) return null;
+          return sb.from('team_members').update({ phone: f.phone }).eq('id', id).select('id').then(function(rp){
+            if(rp.error || !rp.data || !rp.data.length) f._phoneFail = true;
+          });
+        });
+      });
     }
     fghlabCloudTeamErr('');
     if(addBtn) addBtn.disabled = true;
@@ -7097,6 +7125,7 @@
       resetFghlabTeamForm();
       renderFghlabAdmin();
       if(typeof refreshFghlabAccessUI === 'function') refreshFghlabAccessUI();
+      if(f._phoneFail) fghlabCloudTeamErr(HN_PHONE_SQL);
       if(f._created){
         var cr = f._created;
         showFghlabProvisionalPasswordBox('Mot de passe provisoire pour ' + (f.name || 'l’ancien membre') + ' — N° de membre ' + cr.member_number + (cr.note ? ' — ' + cr.note : '') + (cr.kind === 'returning' ? (cr.kept_number ? ' (ancien numéro conservé)' : ' (nouveau numéro)') : '') + ' — à transmettre au membre :', cr.provisional_password);
@@ -14495,7 +14524,7 @@
     }
     var ret = spcReturning();
     var rb = cEl('spc-return-box'); if(rb) rb.style.display = ret ? '' : 'none';
-    ['fghlab-team-name-input', 'fghlab-team-email-input', 'fghlab-team-jobtitle-input'].forEach(function(id){ var i = cEl(id); if(i) i.style.display = ret ? 'none' : ''; });
+    ['fghlab-team-name-input', 'fghlab-team-email-input', 'fghlab-team-phone-input', 'fghlab-team-jobtitle-input'].forEach(function(id){ var i = cEl(id); if(i) i.style.display = ret ? 'none' : ''; });
     if(ret){
       var s = cEl('spc-return-member'), keep = s.value; s.textContent = '';
       if(!spc.arch.length) s.appendChild(spcEl('option', { value:'', text:'Aucun ancien membre disponible' }));
@@ -30943,7 +30972,7 @@
     var infoEl = document.getElementById('fghlab-member-profile-info');
     var member = getActiveFghlabMember();
     if(!infoEl || !member) return;
-    infoEl.innerHTML = '<strong>' + escapeHtml(member.name) + '</strong><br>' + escapeHtml(member.email) + (member.memberNumber ? (' · N° de membre ' + escapeHtml(member.memberNumber)) : '');
+    infoEl.innerHTML = '<strong>' + escapeHtml(member.name) + '</strong><br>' + escapeHtml(member.email) + (member.memberNumber ? (' · N° de membre ' + escapeHtml(member.memberNumber)) : '') + '<br>📞 ' + (member.phone ? escapeHtml(member.phone) + ' <span class="hint" style="margin:0;">(à confirmer à chaque connexion à FGH-Colab, sans le +)</span>' : 'téléphone non renseigné');
   }
   function hideFghlabProvisionalNotice(){
     var el = document.getElementById('fghlab-provisional-notice');
@@ -31048,6 +31077,7 @@
   var fghlabLoginStep3Form = document.getElementById('fghlab-login-step3-form');
   var fghlabLoginStep3Intro = document.getElementById('fghlab-login-step3-intro');
   var fghlabLoginPasswordInput = document.getElementById('fghlab-login-password-input');
+  var fghlabLoginPhoneInput = document.getElementById('fghlab-login-phone-input');
   var fghlabLoginStep3Error = document.getElementById('fghlab-login-step3-error');
   var fghlabLoginStep3BackBtn = document.getElementById('fghlab-login-step3-back');
   var fghlabLoginStep3CancelBtn = document.getElementById('fghlab-login-step3-cancel');
@@ -31066,6 +31096,7 @@
     if(fghlabLoginEmailInput) fghlabLoginEmailInput.value = '';
     if(fghlabLoginNumberInput) fghlabLoginNumberInput.value = '';
     if(fghlabLoginPasswordInput) fghlabLoginPasswordInput.value = '';
+    if(fghlabLoginPhoneInput) fghlabLoginPhoneInput.value = '';
   }
   if(fghlabLoginToggleBtn && fghlabLoginStep1Form){
     fghlabLoginToggleBtn.addEventListener('click', function(){
@@ -31197,7 +31228,7 @@
         if(submitBtn) submitBtn.disabled = true;
         if(fghlabLoginStep3Error) fghlabLoginStep3Error.style.display = 'none';
         fghlabCloudNotice('', '');
-        fghlabCloudMemberLogin(fghlabCloudLoginEmail, fghlabCloudLoginNumber, pw).then(function(info){
+        fghlabCloudMemberLogin(fghlabCloudLoginEmail, fghlabCloudLoginNumber, pw, fghlabLoginPhoneInput ? fghlabLoginPhoneInput.value : '').then(function(info){
           var wasProvisional = !!info.must_change_password;
           setFghlabActiveMember(info.id);
           fghlabCloudWriteMark();
@@ -31210,6 +31241,7 @@
         }, function(err){
           if(fghlabLoginStep3Error){ fghlabLoginStep3Error.textContent = fghlabCloudErrText(err); fghlabLoginStep3Error.style.display = 'block'; }
           if(fghlabLoginPasswordInput) fghlabLoginPasswordInput.value = '';
+          if(fghlabLoginPhoneInput) fghlabLoginPhoneInput.value = '';
         }).then(function(){ if(submitBtn) submitBtn.disabled = false; });
         return;
       }
@@ -31220,6 +31252,10 @@
           fghlabLoginStep3Error.textContent = 'Mot de passe incorrect. Vérifiez le mot de passe provisoire fourni par le propriétaire du compte (ou votre mot de passe personnalisé si vous l\'avez changé), ou recommencez avec « Retour ».';
           fghlabLoginStep3Error.style.display = 'block';
         }
+        return;
+      }
+      if(hnPhoneDigits(member.phone) && hnPhoneDigits(fghlabLoginPhoneInput ? fghlabLoginPhoneInput.value : '') !== hnPhoneDigits(member.phone)){
+        if(fghlabLoginStep3Error){ fghlabLoginStep3Error.textContent = 'Confirmation du téléphone requise : saisissez le numéro de votre dossier précédé du code pays, sans le +, ni espaces (ex. : 22890001234).'; fghlabLoginStep3Error.style.display = 'block'; }
         return;
       }
       var wasProvisional = !!member.passwordIsProvisional;
@@ -35544,6 +35580,7 @@
     var confirmCodeInput = document.getElementById('fghlab-admin-confirm-code-input');
     var confirmErr = document.getElementById('fghlab-admin-confirm-error');
     if(jobInput) jobInput.value = '';
+    var phInp0 = document.getElementById('fghlab-team-phone-input'); if(phInp0) phInp0.value = '';
     if(confirmCodeInput) confirmCodeInput.value = '';
     if(confirmErr) confirmErr.style.display = 'none';
     fghlabAdminConfirmedFor = null;
@@ -35804,7 +35841,7 @@
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">' +
             '<div>' +
               '<strong>'+escapeHtml(member.name)+'</strong>' + (member.memberNumber ? (' — N° '+escapeHtml(member.memberNumber)) : '') + '<br>' +
-              '<span class="hint" style="margin:0;">'+escapeHtml(member.email)+' · '+member.authorizedTools.length+' outil'+(member.authorizedTools.length > 1 ? 's' : '')+' autorisé'+(member.authorizedTools.length > 1 ? 's' : '')+'</span><br>' +
+              '<span class="hint" style="margin:0;">'+escapeHtml(member.email)+' · 📞 '+(member.phone ? escapeHtml(member.phone) : 'téléphone non renseigné')+' · '+member.authorizedTools.length+' outil'+(member.authorizedTools.length > 1 ? 's' : '')+' autorisé'+(member.authorizedTools.length > 1 ? 's' : '')+'</span><br>' +
               pwBadge +
               stampHtml +
             '</div>' +
@@ -35899,6 +35936,12 @@
       var tools = getCheckedFghlabTools();
       var jobTitleInput = document.getElementById('fghlab-team-jobtitle-input');
       var jobTitleVal = jobTitleInput ? jobTitleInput.value.trim() : '';
+      var phoneInp = document.getElementById('fghlab-team-phone-input');
+      var phoneVal = phoneInp ? hnPhoneNormalize(phoneInp.value) : '';
+      if(phoneVal && !hnPhoneValid(phoneVal)){
+        if(fghlabTeamErrorEl){ fghlabTeamErrorEl.textContent = 'Numéro de téléphone invalide : indiquez le code pays et le numéro (ex. : +22890001234).'; fghlabTeamErrorEl.style.display = 'block'; }
+        return;
+      }
       if(fghlabCloudMode()){
         // Mode serveur : création / modification vérifiées par le serveur (voir fghlabCloudSubmitTeamForm).
         var ext = null;
@@ -35906,7 +35949,7 @@
           try{ ext = window.__hnSpc.extras(tools); }
           catch(err){ if(fghlabTeamErrorEl){ fghlabTeamErrorEl.textContent = err.message; fghlabTeamErrorEl.style.display = 'block'; } return; }
         }
-        fghlabCloudSubmitTeamForm({ name: name, email: email, tools: tools, job: jobTitleVal, ext: ext });
+        fghlabCloudSubmitTeamForm({ name: name, email: email, tools: tools, job: jobTitleVal, phone: phoneVal, ext: ext });
         return;
       }
       var newMember = null;
@@ -35918,6 +35961,7 @@
           existing.email = email;
           existing.authorizedTools = tools;
           existing.jobTitle = jobTitleVal;
+          existing.phone = phoneVal;
           // adminRole et canViewAccessList : propriétaire seulement, et seulement pour un membre
           // déjà administrateur. Toute autre session conserve la valeur existante (défense en profondeur).
           if(isOwnerNow && existing.isAdmin){
@@ -35950,6 +35994,7 @@
           adminConnections: [],
           grantedAccess: [],
           jobTitle: jobTitleVal,
+          phone: phoneVal,
           adminRole: '',
           canViewAccessList: false
         };
@@ -36184,6 +36229,7 @@
           fghlabAdminConfirmedFor = null; // nouvelle opération : la confirmation du code est à refaire
           var jobEl = document.getElementById('fghlab-team-jobtitle-input');
           if(jobEl) jobEl.value = member.jobTitle || '';
+          var phEl = document.getElementById('fghlab-team-phone-input'); if(phEl) phEl.value = member.phone || '';
           var roleEl2 = document.getElementById('fghlab-team-adminrole-input');
           var listChk2 = document.getElementById('fghlab-accesslist-check');
           if(roleEl2) roleEl2.value = member.adminRole || '';
@@ -45327,6 +45373,10 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
       if(can) sep();
       item(IC.files, 'Afficher les fichiers du chat', function(){ closeMenu(); openViewer(key); });
       item(IC.gear, 'Réglages de la conversation', function(){ closeMenu(); var sh = btn.closest('.chat-shell'), t = sh && sh.querySelector('.hn-opt-toggle'); if(t) t.click(); var p = sh && sh.querySelector('.hn-opts-panel'); if(p && p.scrollIntoView) setTimeout(function(){ p.scrollIntoView({ block:'nearest' }); }, 30); });
+      (function(){
+        var sec = btn.closest('section.view'), tg = sec && sec.querySelector('.incog-toggle');
+        if(tg && !document.documentElement.classList.contains('hn-private-tab') && !priv) item('<span style="display:inline-block; width:18px; text-align:center;">🕶️</span>', 'Navigation privée', function(){ closeMenu(); tg.click(); });
+      })();
       sep();
       if(can) item(IC.arch, 'Archiver', function(){ if(ad.archive()){ closeMenu(); toast('Conversation archivée. Retrouvez-la dans Historique › Archivées.'); } else toast(ad.note || 'Envoyez d’abord un message.'); }, { disabled:!has });
       item(IC.trash, ad.del, function(){
