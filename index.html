@@ -35141,11 +35141,23 @@
     if(activeHidden && firstOk) firstOk.click();
   }
   setInterval(hnFiStatGate, 1500);
-  function hnApplyRestricted(list){
-    hnRestricted = Array.isArray(list) ? list.filter(function(x){ return typeof x === 'string'; }) : [];
-    try{ localStorage.setItem('hn_restricted_tools', JSON.stringify(hnRestricted)); }catch(e){}
-    hnApplyRestrictionsToChecklist(); hnFiStatGate();
+  /* Le menu des outils n'est reconstruit que si aucun outil n'est ouvert (une reconstruction referme l'outil et efface sa saisie). */
+  var hnGridDirty = false;
+  function hnGridFlush(){
+    if(!hnGridDirty) return;
+    if(document.querySelector('#fghlab-panels > :not([hidden])')) return;
+    hnGridDirty = false;
     try{ if(typeof buildFghlabGrid === 'function') buildFghlabGrid(); }catch(e){}
+  }
+  setInterval(hnGridFlush, 3000);
+  function hnApplyRestricted(list){
+    var next = Array.isArray(list) ? list.filter(function(x){ return typeof x === 'string'; }) : [];
+    var changed = JSON.stringify(next.slice().sort()) !== JSON.stringify(hnRestricted.slice().sort());
+    hnRestricted = next;
+    try{ localStorage.setItem('hn_restricted_tools', JSON.stringify(hnRestricted)); }catch(e){}
+    if(!changed) return;   /* rien de nouveau : ne rien redessiner (sinon l'outil ouvert se refermait toutes les 5 minutes) */
+    hnApplyRestrictionsToChecklist(); hnFiStatGate();
+    hnGridDirty = true; hnGridFlush();
     var card = document.getElementById('setting-restrict-card');
     if(card) Array.prototype.forEach.call(card.querySelectorAll('[data-hn-restrict]'), function(cb){ cb.checked = !hnIsRestricted(cb.getAttribute('data-hn-restrict')); });
   }
