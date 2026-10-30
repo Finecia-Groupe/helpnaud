@@ -3889,7 +3889,7 @@
           <h1>HelpNaud Database
             <span class="info-tip-wrap"><button type="button" class="info-tip-btn" data-i18n-tip="tip.database" data-tip="Une vue technique de vos données HelpNaud : aperçu et statistiques, documentation du schéma, et un outil pour explorer une table (dossier, catalogue ou tâches) comme un ensemble de données.">?</button></span>
           </h1>
-          <p class="sub" data-i18n="sub.database">Vos données HelpNaud sont stockées localement dans votre navigateur (aucun serveur de base de données pour l'instant). Cet onglet en donne une vue technique.</p>
+          <p class="sub" data-i18n="sub.database">Vos dossiers de travail HelpNaud (transactions, budgets, documents) sont enregistrés dans votre navigateur. Les comptes, crédits IA, équipe FGH-Colab, liens partagés et rendez-vous sont gérés sur le serveur sécurisé de HelpNaud.ai. Cet onglet en donne une vue technique des données locales.</p>
           <p class="hint plan-note" style="margin:6px 0 0;">💳 Les éléments de ce menu fonctionnent avec votre forfait HelpNaud ; les fonctions assistées par l’IA utilisent votre crédit IA. <a href="#" data-go-plans="1">Voir les forfaits</a></p>
         </div>
       </header>
@@ -3986,7 +3986,7 @@
         <button type="button" class="cowork-card" data-dbtool="docs">
           <span class="cowork-icon">📘</span>
           <span class="cowork-card-title">Documentation de base de données</span>
-          <span class="cowork-card-desc">Le schéma technique de vos données locales, et le plan prévu pour une future base hébergée.</span>
+          <span class="cowork-card-desc">Le schéma technique de vos données locales, et le plan de synchronisation vers la base hébergée.</span>
         </button>
         <button type="button" class="cowork-card" data-dbtool="analyze">
           <span class="cowork-icon">🔬</span>
@@ -4040,11 +4040,11 @@
 
       <div class="card db-panel" id="db-panel-docs" hidden>
         <h2>Documentation de base de données</h2>
-        <p class="hint">HelpNaud n'utilise pas encore de base de données hébergée : vos données restent dans le stockage local (« localStorage ») de ce navigateur, sur cet appareil. Voici le schéma actuel.</p>
+        <p class="hint">HelpNaud utilise une base de données hébergée (Supabase) pour les comptes, les crédits IA, l'équipe FGH-Colab, les liens partagés et les rendez-vous. Vos dossiers de travail (transactions, budgets, documents) restent pour l'instant dans le stockage local (« localStorage ») de ce navigateur, sur cet appareil. Voici le schéma de ces données locales.</p>
         <div id="db-docs-schema"></div>
         <div class="card" style="margin-top:16px; background:var(--accent-soft); border-color:var(--accent);">
-          <h3 style="margin:0 0 6px;">À venir — base de données hébergée</h3>
-          <p class="hint" style="margin:0;">Une version future de HelpNaud (avec Netlify) pourrait synchroniser ces mêmes données vers une base hébergée, pour un accès depuis plusieurs appareils. <strong>Ceci n'est pas encore fonctionnel</strong> — c'est une planification, pas une fonctionnalité active. Le schéma ci-dessus est un bon point de départ : chaque dossier deviendrait une table « transactions » liée à un compte, avec les mêmes colonnes qu'aujourd'hui.</p>
+          <h3 style="margin:0 0 6px;">À venir — synchronisation de vos dossiers</h3>
+          <p class="hint" style="margin:0;">La synchronisation de ces dossiers de travail vers la base hébergée, pour un accès depuis plusieurs appareils, est prévue. <strong>Ceci n'est pas encore fonctionnel</strong> — c'est une planification, pas une fonctionnalité active. Le schéma ci-dessus est un bon point de départ : chaque dossier deviendrait une table « transactions » liée à un compte, avec les mêmes colonnes qu'aujourd'hui.</p>
         </div>
       </div>
 
@@ -4692,7 +4692,7 @@
               <li>L'administrateur détermine les outils FGH-Colab nécessaires au rôle du membre avant d'activer son accès.</li>
               <li>Le numéro à 8 chiffres attribué sert d'identifiant de connexion et ne doit pas être partagé.</li>
               <li>Tout accès devenu inutile (départ, changement de rôle) doit être retiré rapidement par l'administrateur.</li>
-              <li>Les connexions et déconnexions sont consignées localement et peuvent être consultées par le propriétaire à des fins de suivi interne.</li>
+              <li>Les connexions et déconnexions sont consignées sur le serveur sécurisé et peuvent être consultées par le propriétaire à des fins de suivi interne.</li>
             </ul>
           </div>
         </details>
@@ -4710,8 +4710,8 @@
           <summary><h2 style="margin:0; font-size:13.5px;">4. Politique de confidentialité des données dans FGH-Colab</h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
           <div class="collapsible-body">
             <p style="font-size:13px; line-height:1.6; margin:0 0 8px;">Les informations saisies dans FGH-Colab (dossiers clients, données financières, analyses, etc.) sont destinées exclusivement à l'usage interne de FINECIA GROUPE.</p>
-            <p style="font-size:13px; line-height:1.6; margin:0 0 8px;">HelpNaud.ai étant actuellement une application pilote sans serveur dédié, les données et l'historique des connexions sont conservés localement sur l'appareil utilisé, et non sur un serveur central sécurisé — elles ne sont donc pas automatiquement partagées entre appareils ni protégées par un chiffrement de niveau serveur. Le propriétaire est invité à faire preuve de prudence quant aux appareils utilisés pour accéder à FGH-Colab tant qu'une infrastructure serveur dédiée n'est pas en place.</p>
-            <p style="font-size:13px; line-height:1.6; margin:0;">Une politique de confidentialité renforcée, adossée à une véritable infrastructure serveur, sera mise en place lors du passage de HelpNaud.ai à une version hébergée.</p>
+            <p style="font-size:13px; line-height:1.6; margin:0 0 8px;">Les comptes des membres, leurs numéros, leurs droits par outil et l'historique des connexions sont enregistrés sur le serveur sécurisé de HelpNaud.ai : les mots de passe sont protégés par le serveur et le rôle de chaque personne (propriétaire, administrateur, membre) est confirmé par le serveur. Les informations de travail saisies dans les outils (dossiers, analyses, brouillons) restent, sauf indication contraire dans l'outil, enregistrées localement sur l'appareil utilisé : elles ne sont donc pas automatiquement partagées entre appareils. Le propriétaire est invité à faire preuve de prudence quant aux appareils utilisés pour accéder à FGH-Colab.</p>
+            <p style="font-size:13px; line-height:1.6; margin:0;">Les demandes envoyées à l'assistant IA transitent par le serveur de HelpNaud.ai, puis par le fournisseur d'IA retenu, qui produit la réponse : ne saisissez pas d'information que vous n'êtes pas autorisé à partager. Cette politique sera complétée à mesure que d'autres données seront migrées vers le serveur.</p>
           </div>
         </details>
       </div>
@@ -4870,7 +4870,7 @@
 
       <div class="card">
         <h2>Rappel de rapport périodique</h2>
-        <p class="hint">HelpNaud ne peut pas encore envoyer de courriel automatiquement (version pilote, sans serveur) — ce rappel reste local à cet appareil : il vous indique simplement quand générer votre prochain rapport.</p>
+        <p class="hint">Ce rappel reste local à cet appareil : il vous indique simplement quand générer votre prochain rapport (aucun courriel automatique n'est envoyé pour ce rappel).</p>
         <div class="settings-grid">
           <div class="settings-field">
             <label for="report-schedule-freq">Fréquence souhaitée</label>
@@ -4997,7 +4997,7 @@
           <button class="btn primary" id="security-lock-save" type="button">Enregistrer le code</button>
           <span class="copy-status" id="security-lock-status-msg"></span>
         </div>
-        <p class="hint" style="margin-top:10px;">Ce code est stocké uniquement dans le stockage local de ce navigateur — ce n'est pas un système de compte sécurisé, seulement un écran de verrouillage rapide pour cet appareil. Une fois activé, il sera demandé au prochain chargement de la page. La gestion complète de comptes et de mots de passe (avec récupération, etc.) est prévue pour la version hébergée de HelpNaud.ai.</p>
+        <p class="hint" style="margin-top:10px;">Ce code est stocké uniquement dans le stockage local de ce navigateur — ce n'est pas un compte, seulement un écran de verrouillage rapide pour cet appareil, distinct de votre compte HelpNaud.ai. Une fois activé, il sera demandé au prochain chargement de la page.</p>
       </div>
 
       <div class="card">
@@ -5374,7 +5374,7 @@
               <input type="checkbox" id="company-legal-docs" style="width:16px; height:16px; flex:none;">
               <span>Documents légaux disponibles (constitution, permis, licences...) <span class="badge-soon">Provisoire</span></span>
             </label>
-            <p class="hint" style="margin:4px 0 0 24px;">Case provisoire — le téléversement et la gestion des documents légaux de l'entreprise seront activés avec la version hébergée de HelpNaud.</p>
+            <p class="hint" style="margin:4px 0 0 24px;">Case provisoire — le téléversement et la gestion des documents légaux de l'entreprise seront activés dans une prochaine mise à jour de HelpNaud.</p>
           </div>
         </div>
         <div class="modal-actions" style="justify-content:flex-start; margin-top:14px;">
@@ -5404,7 +5404,7 @@
           <details class="collapsible">
             <summary><h2 style="margin:0;">Applications mobiles <span class="badge-soon">Bientôt — Android &amp; iOS</span></h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
             <div class="collapsible-body">
-          <p class="hint">Une application mobile HelpNaud est prévue une fois la version hébergée (option 3) en place. Revenez consulter cette section pour le lien de téléchargement.</p>
+          <p class="hint">Une application mobile HelpNaud est prévue. Revenez consulter cette section pour le lien de téléchargement.</p>
             </div>
           </details>
         </div>
@@ -5594,7 +5594,7 @@
              visible d'un membre ordinaire. -->
         <div id="fghlab-legacy-admin-section" style="display:none; border-top:1px solid var(--line); margin-top:4px; padding-top:16px;">
         <h3 style="margin:0 0 4px;">Gestion du compte administrateur</h3>
-        <p class="hint" style="margin:0 0 14px;">Réglages réservés au propriétaire de ce compte HelpNaud (FINECIA GROUPE), et aux administrateurs désignés connectés à ADMINISTRATEUR ci-dessus. Aucun compte distinct pour l'instant — version pilote, sans serveur.</p>
+        <p class="hint" style="margin:0 0 14px;">Réglages réservés au propriétaire de ce compte HelpNaud (FINECIA GROUPE), et aux administrateurs désignés connectés à ADMINISTRATEUR ci-dessus. Les droits des membres et des administrateurs sont gérés sur le serveur sécurisé (voir Espace propriétaire).</p>
 
         <div style="border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--surface-2);">
           <h3 style="margin:0 0 4px; font-size:14px; display:flex; align-items:center; flex-wrap:wrap;">FGH-Colab — Autorisation <span class="badge-private">FINECIA GROUPE</span></h3>
@@ -5735,7 +5735,7 @@
           <div id="fghlab-team-list"></div>
           <p class="hint" id="fghlab-team-empty" style="margin:4px 0 0;">Aucun membre d'équipe ajouté pour l'instant — seul le propriétaire voit FGH-Colab.</p>
 
-          <p class="hint" id="fghlab-team-disclaimer" style="margin-top:14px;">HelpNaud.ai est actuellement une application pilote, sans serveur : cette autorisation, les numéros de membre, les droits par outil, le journal de connexions et les mots de passe des membres (ainsi que les codes et mots de passe ADMINISTRATEUR ci-dessus) sont gérés localement sur cet appareil (localStorage), sans hachage ni chiffrement de niveau serveur — ce n'est pas un véritable système d'authentification ni un contrôle d'accès sécurisé côté serveur. Une personne avec accès au code source de la page pourrait contourner ce mécanisme. Une gestion multi-utilisateurs réelle, avec de vrais comptes et un véritable code à deux facteurs, arrivera avec une future version hébergée.</p>
+          <p class="hint" id="fghlab-team-disclaimer" style="margin-top:14px;">Les comptes de l'équipe FGH-Colab (numéros de membre, mots de passe, droits par outil, journal de connexions) sont gérés sur le serveur sécurisé de HelpNaud.ai, et le rôle de chaque personne (propriétaire, administrateur, membre) est confirmé par le serveur. Les codes de verrouillage rapide ADMINISTRATEUR ci-dessus restent propres à cet appareil. Une copie locale ancienne de l'équipe, si elle subsiste sur un appareil, peut être reprise sur le serveur puis effacée (carte Espace propriétaire).</p>
         </div>
         </div>
         </div>
@@ -7236,7 +7236,7 @@
       'sub.anomalies': 'Détection automatique : montants inhabituels, transactions en double et montants ronds à vérifier.',
       'sub.assistant': "Assistant IA à réponse libre, avec accès aux vraies transactions, anomalies et budgets du dossier ouvert. La première question peut demander votre autorisation.",
       'sub.cowork': "Des outils IA prêts à l'emploi : analyser un fichier, rédiger un document, générer un vrai fichier Excel, PowerPoint ou un graphique.",
-      'sub.database': "Vos données HelpNaud sont stockées localement dans votre navigateur (aucun serveur de base de données pour l'instant). Cet onglet en donne une vue technique.",
+      'sub.database': "Vos dossiers de travail HelpNaud (transactions, budgets, documents) sont enregistrés dans votre navigateur. Les comptes, crédits IA, équipe FGH-Colab, liens partagés et rendez-vous sont gérés sur le serveur sécurisé de HelpNaud.ai. Cet onglet en donne une vue technique des données locales.",
       'sub.hntools': 'Analyses et contrôles complémentaires au Tableau de bord, pour le dossier actuellement ouvert.',
       'sub.report': 'Résumé de la période affichée, prêt à télécharger ou copier dans un courriel.',
       'sub.resolutions': "Bonnes pratiques de gouvernance financière pour une PME, à titre de référence — pas un avis juridique ou comptable.",
@@ -7363,7 +7363,7 @@
       'sub.anomalies': 'Automatic detection: unusual amounts, duplicate transactions, and round amounts to review.',
       'sub.assistant': "Free-form AI assistant, with access to the actual transactions, anomalies, and budgets of the open folder. The first question may ask for your permission.",
       'sub.cowork': "Ready-to-use AI tools: analyze a file, draft a document, generate a real Excel or PowerPoint file, or a chart.",
-      'sub.database': "Your HelpNaud data is stored locally in your browser (no database server for now). This tab gives a technical view of it.",
+      'sub.database': "Your HelpNaud working files (transactions, budgets, documents) are saved in your browser. Accounts, AI credits, the FGH-Colab team, shared links and appointments are managed on HelpNaud.ai's secure server. This tab gives a technical view of the local data.",
       'sub.hntools': 'Analyses and controls that complement the Dashboard, for the currently open folder.',
       'sub.report': 'Summary of the displayed period, ready to download or copy into an email.',
       'sub.resolutions': "Financial governance best practices for a small business, for reference only — not legal or accounting advice.",
@@ -36502,19 +36502,19 @@
   var LEGAL_TERMS_HTML =
     '<h3>1. Objet</h3><p>HelpNaud est un outil pilote de contrôle financier destiné aux petites et moyennes entreprises (PME). Il est fourni « tel quel », en phase d\'essai, sans garantie d\'exactitude, de disponibilité continue ou d\'absence d\'erreur.</p>' +
     '<h3>2. Utilisation prévue</h3><p>HelpNaud sert à organiser et visualiser vos données financières internes. Il ne remplace pas l\'avis d\'un comptable, d\'un fiscaliste ou d\'un juriste ; validez toute décision importante auprès d\'un professionnel qualifié.</p>' +
-    '<h3>3. Accès</h3><p>La version actuelle ne requiert pas de compte utilisateur : l\'accès se fait via le lien fourni par votre organisation. Ne partagez ce lien qu\'avec les personnes autorisées à consulter vos données financières.</p>' +
-    '<h3>4. Propriété des données</h3><p>Les données que vous importez (transactions, budgets, documents) demeurent votre propriété. HelpNaud ne les collecte pas à des fins autres que leur affichage dans l\'application.</p>' +
+    '<h3>3. Accès</h3><p>L\'accès aux fonctions d\'IA et aux outils d\'équipe requiert un compte HelpNaud.ai. Protégez vos identifiants et ne partagez les liens fournis par votre organisation qu\'avec les personnes autorisées à consulter vos données financières.</p>' +
+    '<h3>4. Propriété des données</h3><p>Les données que vous importez (transactions, budgets, documents) demeurent votre propriété. HelpNaud ne les utilise qu\'à des fins de fonctionnement des services que vous utilisez (assistant IA, partage, rendez-vous).</p>' +
     '<h3>5. Limitation de responsabilité</h3><p>Pendant la phase pilote, HelpNaud peut évoluer sans préavis. Aucune garantie n\'est offerte quant à l\'exactitude des calculs, prévisions ou détections d\'anomalies affichés ; vérifiez toujours les montants importants par vous-même.</p>' +
     '<h3>6. Résiliation</h3><p>L\'accès à HelpNaud peut être interrompu à tout moment pendant la phase pilote. Exportez régulièrement une sauvegarde de vos données (voir « Documents »).</p>' +
     '<h3>7. Contact</h3><p>Pour toute question sur ces conditions, écrivez-nous via « Envoyer un commentaire » dans la barre latérale, ou à contact@helpnaud.ai.</p>';
   var LEGAL_PRIVACY_HTML =
-    '<h3>1. Où vivent vos données</h3><p>Les dossiers, transactions et réglages que vous créez dans HelpNaud sont stockés localement dans le navigateur de cet appareil (mémoire « localStorage »). HelpNaud lui-même ne dispose pas, à ce stade, d\'un serveur distinct qui reçoit ou conserve ces données.</p>' +
-    '<h3>2. Hébergement de l\'application</h3><p>HelpNaud s\'exécute actuellement comme une page « Artifact » dans l\'environnement Claude, fourni par Anthropic. Le fonctionnement de cette page (chargement, exécution) est régi par la politique de confidentialité d\'Anthropic ; consultez-la pour comprendre le traitement effectué à ce niveau.</p>' +
+    '<h3>1. Où vivent vos données</h3><p>Les dossiers, transactions et réglages que vous créez dans HelpNaud sont enregistrés par défaut dans le navigateur de cet appareil (mémoire « localStorage »). Certaines données sont gérées sur le serveur sécurisé de HelpNaud.ai : votre compte et vos crédits IA, l\'équipe FGH-Colab, les conversations que vous choisissez de partager par lien, et les demandes de rendez-vous envoyées par les formulaires publics.</p>' +
+    '<h3>2. Hébergement et services tiers</h3><p>HelpNaud.ai est hébergé sur Netlify (helpnaud.ai) ; les comptes et données serveur sont stockés chez Supabase. Les demandes à l\'assistant IA transitent par le serveur de HelpNaud, puis par un fournisseur d\'IA (par défaut Anthropic) qui produit la réponse ; lorsque vous activez une recherche en ligne, des sources externes peuvent être consultées. Les courriels automatiques (par exemple les rappels de rendez-vous) sont envoyés par un prestataire d\'envoi. Ces tiers appliquent leurs propres politiques de confidentialité.</p>' +
     '<h3>3. Commentaires envoyés</h3><p>Le bouton « Envoyer un commentaire » prépare un courriel que vous devez vous-même envoyer, ou un texte que vous pouvez copier ; rien n\'est transmis automatiquement sans une action explicite de votre part.</p>' +
-    '<h3>4. Sécurité</h3><p>Comme vos données restent dans le navigateur de cet appareil, la sécurité de cet appareil (verrouillage, mises à jour, accès partagé) relève de votre organisation. HelpNaud ne réalise pas de sauvegarde automatique à distance : utilisez « Exporter une sauvegarde » régulièrement.</p>' +
+    '<h3>4. Sécurité</h3><p>Les données conservées dans le navigateur dépendent de la sécurité de cet appareil (verrouillage, mises à jour, accès partagé), qui relève de votre organisation. Les données du serveur sont protégées par authentification et par des règles d\'accès. HelpNaud ne réalise pas de sauvegarde automatique à distance de vos données locales : utilisez « Exporter une sauvegarde » régulièrement.</p>' +
     '<h3>5. Témoins et suivi</h3><p>HelpNaud n\'utilise pas de témoins (cookies) publicitaires ni de suivi analytique tiers.</p>' +
     '<h3>6. Vos droits</h3><p>Vous pouvez supprimer vos données à tout moment en supprimant les dossiers concernés dans HelpNaud, ou en effaçant les données de site de votre navigateur pour cette page.</p>' +
-    '<h3>7. Évolutions à venir</h3><p>Une future version hébergée (au-delà de Claude, avec compte utilisateur et courriel automatique) impliquera une politique mise à jour, communiquée avant son activation.</p>' +
+    '<h3>7. Évolutions à venir</h3><p>La migration progressive d\'autres données vers le serveur (par exemple la synchronisation de vos dossiers entre appareils) impliquera une mise à jour de cette politique, communiquée avant son activation.</p>' +
     '<h3>8. Contact</h3><p>Pour toute question sur cette politique, écrivez à contact@helpnaud.ai.</p>';
   function renderLegalText(){
     var t = document.getElementById('legal-terms');
@@ -39138,7 +39138,7 @@
       }
       var list = hnrImagePrompts(); list.push({ prompt: txt.slice(0, 600), style: st, ratio: ra, on: new Date().toISOString() }); hnrImageSave(list);
       var pn2 = bar.querySelector('[data-hnr-image-panel]'); pn2.innerHTML = hnrImagePanelHtml();
-      var m2 = pn2.querySelector('[data-hnr-image-msg]'); m2.style.color = 'var(--accent)'; m2.textContent = 'La génération d’images par IA sera activée avec le serveur IA (prochaine étape). Votre description est enregistrée ci-dessous : aucun crédit n’a été consommé.';
+      var m2 = pn2.querySelector('[data-hnr-image-msg]'); m2.style.color = 'var(--accent)'; m2.textContent = 'La génération d’images par IA n’est pas encore disponible. Votre description est enregistrée ci-dessous : aucun crédit n’a été consommé.';
       return;
     }
     if((b = t.closest('[data-hnr-image-reuse]'))){ var l3 = hnrImagePrompts(), it = l3[Number(b.getAttribute('data-hnr-image-reuse'))]; if(it){ var ta3 = bar.querySelector('[data-hnr-image-prompt]'); if(ta3) ta3.value = it.prompt; } return; }
