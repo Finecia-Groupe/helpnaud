@@ -578,7 +578,7 @@
     font-family:inherit; display:block;
   }
   .btn.icon-only{ padding:9px 10px; }
-  /* Écran dégagé (Chat, Co-work, H-Start, etc.) : Dossier/Période/Recherche repliés par défaut. */
+  /* Écran dégagé (Chat, Co-work, Consult, etc.) : Dossier/Période/Recherche repliés par défaut. */
   body.hn-focus:not(.hn-dossier-open) #folder-bar, body.hn-focus:not(.hn-dossier-open) #period-bar{ display:none !important; }
   [data-hn-dossier]{ cursor:pointer; }
   body.hn-dossier-open [data-hn-dossier]{ color:var(--accent); }
@@ -624,6 +624,8 @@
   /* Barre d'actions de saisie : micro · ondes (mode vocal) · envoyer · arrêter */
   .chat-input-wrap.has-actions textarea{ padding-right:118px; }
   .chat-form.is-generating .chat-input-wrap.has-actions textarea{ padding-right:154px; }
+  .hn-ai-note-link{ color:inherit; text-decoration:underline; text-decoration-color:rgba(60,110,200,.7); text-underline-offset:3px; cursor:pointer; }
+  .hn-ai-note-link:hover{ color:var(--accent, #16304A); }
   .hn-ai-note{ margin:6px 0 0; text-align:center; font-size:11.5px; line-height:1.4; color:var(--muted); }
   .chat-actions{ position:absolute; right:4px; bottom:4px; display:flex; align-items:center; gap:4px; }
   .chat-actions .chat-mic-btn, .chat-actions .chat-send-btn{ position:static; }
@@ -690,7 +692,7 @@
      fixe) : le menu s'ouvre vers le bas au lieu du haut, pour rester dans la carte au lieu de
      déborder au-dessus. Utilisée par le panneau Co-work > Interroger un fichier. */
   .attach-menu.menu-below{ bottom:auto; top:calc(100% + 6px); }
-  /* Popover compact pour le sélecteur de domaine H-Start : contrairement aux attach-menu habituels
+  /* Popover compact pour le sélecteur de domaine Consult : contrairement aux attach-menu habituels
      (liste verticale étroite), celui-ci affiche les 16 chips de domaine en grille pour rester
      lisible sans reprendre toute la hauteur de la page comme l'ancienne rangée toujours dépliée. */
   .hstat-domain-menu{ width:340px; max-width:min(90vw, 480px); flex-direction:row; flex-wrap:wrap; max-height:320px; overflow-y:auto; gap:6px; }
@@ -712,7 +714,7 @@
     width:76px; gap:4px; padding:8px 4px; font-size:20px; line-height:1.2;
   }
   #cowork-tools-menu .attach-menu-opt span{ font-size:11px; line-height:1.25; }
-  /* Popover du sélecteur de calculatrice H-Start : liste verticale (les ~20 noms de calculatrices
+  /* Popover du sélecteur de calculatrice Consult : liste verticale (les ~20 noms de calculatrices
      sont plus longs que les chips de domaine), plafonnée en hauteur comme .hstat-domain-menu pour
      rester scrollable plutôt que de pousser la page vers le bas. */
   .hstat-calc-menu{ width:320px; max-width:min(90vw, 420px); flex-direction:column; max-height:320px; overflow-y:auto; gap:2px; }
@@ -966,7 +968,7 @@
   .fghlab-group.compact .fghlab-group-header{ margin-bottom:7px; }
   .fghlab-group.compact .fghlab-group-header h3{ font-size:11px; }
 
-  /* H-Start : vue principale (pas un panneau Co-work compact) — deux colonnes de calculatrices
+  /* Consult : vue principale (pas un panneau Co-work compact) — deux colonnes de calculatrices
      sur écran large, une seule en dessous, et un fil de discussion volontairement haut pour
      faciliter la lecture des réponses de HelpNaud.ai (demande utilisateur explicite). */
   .hstat-calc-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; align-items:start; }
@@ -976,7 +978,7 @@
   @media (max-width: 860px){ .hstat-calc-grid{ grid-template-columns:1fr; } }
   /* .chat-shell utilise normalement height:min(560px, 66dvh), ce qui suppose peu de contenu
      au-dessus du fil de discussion (vrai pour Assistant/Co-work Discussion). Dans l'onglet
-     « Consultation IA » de H-Start, les boutons d'onglets + l'en-tête de panneau + la rangée de
+     « Consultation IA » de Consult, les boutons d'onglets + l'en-tête de panneau + la rangée de
      domaines ajoutent du contenu au-dessus du chat-shell ; sans ce correctif, 66dvh calculé sur la
      hauteur *totale* de la fenêtre pousse la zone de saisie sous la ligne de flottaison sur la
      plupart des écrans (bogue rapporté : champ de saisie invisible après sélection d'un domaine).
@@ -990,7 +992,7 @@
 
   /* Assistant et Co-work Discussion ont reçu (demande utilisateur) une ligne d'explication du
      but de l'outil + une ligne « Limites : ... » (et pour Assistant une ligne « Astuce : ... »)
-     au-dessus du fil de discussion. Comme pour le correctif H-Start ci-dessus, la règle de base
+     au-dessus du fil de discussion. Comme pour le correctif Consult ci-dessus, la règle de base
      .chat-shell{ height:min(560px, 66dvh) } ne tient pas compte de ce nouveau contenu et rendait
      le fil de discussion visiblement trop court (1-2 messages visibles, grand espace vide sous
      le formulaire de saisie — bogue rapporté par capture d'écran). On applique donc le même
@@ -1006,7 +1008,7 @@
      réduite de 320px à 260px pour redonner cet espace au fil de discussion. */
   #view-assistant .chat-shell{ height:clamp(400px, calc(100dvh - 260px), 900px); }
   #cowork-panel-discuss .chat-shell{ height:clamp(400px, calc(100dvh - 290px), 900px); }
-  /* F-i-Stat (FGH-Colab) utilise le même balisage .chat-shell que H-Start (barre de domaine
+  /* F-i-Stat (FGH-Colab) utilise le même balisage .chat-shell que Consult (barre de domaine
      compacte + mini-barre crédits) mais sans Mode vocal/Hmodel dans sa mini-barre, donc un chrome
      au-dessus un peu plus léger — règle de base alignée sur le même calcul que les trois autres
      (jusque-là absente : F-i-Stat retombait sur height:min(560px, 66dvh) de la règle générique
@@ -1020,7 +1022,7 @@
      d'écran diminue, alors que 100dvh est lui-même beaucoup plus petit sur téléphone — une même
      constante en pixels ne peut donc pas convenir à la fois au desktop et au mobile. Mesuré
      précisément (Playwright, 390×844 et 820×1180, voir notes de dev) : sur téléphone, le haut de
-     .chat-shell pouvait se retrouver à 290-345px du haut de l'écran rien que pour Assistant/H-Start,
+     .chat-shell pouvait se retrouver à 290-345px du haut de l'écran rien que pour Assistant/Consult,
      ne laissant qu'une fraction de l'écran déjà réduit au journal de conversation — d'où les
      réponses de HelpNaud.ai à peine visibles avant la barre de saisie signalées par capture d'écran.
      On ajoute donc ici des bandes mobile/tablette dédiées, avec des constantes mesurées séparément
@@ -1056,7 +1058,7 @@
   }
 
   /* Allègement du chrome au-dessus de .chat-shell sur mobile/tablette (≤860px), pour Assistant,
-     Co-work Discussion, H-Start Consultation IA et F-i-Stat uniquement — jamais sur desktop, et
+     Co-work Discussion, Consult Consultation IA et F-i-Stat uniquement — jamais sur desktop, et
      jamais sur les autres vues (Tableau, Docs...), qui gardent leur présentation habituelle.
      Rien n'est supprimé fonctionnellement : le sous-titre descriptif fait doublon avec le bouton
      (i)/l'infobulle déjà présent à côté du titre de chaque vue ; les autres réglages ne font que
@@ -1598,7 +1600,7 @@
        haut RÉEL de l'élément, sans tenir compte de la barre du haut fixe (.sidebar en mode mobile,
        position:fixed) — contrairement au flux normal de la page, où le padding-top de .main
        au-dessus réserve déjà la place pour elle. Résultat (bogue pré-existant, rendu plus visible
-       par l'allègement du chrome d'Assistant/Co-work Discussion/H-Start/F-i-Stat ci-dessous : le
+       par l'allègement du chrome d'Assistant/Co-work Discussion/Consult/F-i-Stat ci-dessous : le
        contenu qui suit immédiatement tombe alors plus près du haut de l'écran) : les premières
        lignes de la vue/du panneau fraîchement affiché pouvaient se retrouver cachées sous cette
        barre fixe. scroll-margin-top (même valeur que le padding-top de .main ci-dessus) indique au
@@ -1919,7 +1921,7 @@
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="anomalies">⚠️ <span>Anomalies</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="assistant">💬 <span>Assistant</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="cowork">🫂 <span>Co-work</span></button>
-        <button type="button" class="attach-menu-opt" data-quicklaunch-view="hstat">📈 <span>H-Start</span></button>
+        <button type="button" class="attach-menu-opt" data-quicklaunch-view="hstat">📈 <span>Consult</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="report">📑 <span>Rapport</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="resolutions">⚖️ <span>Résolutions</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="library">📖 <span>Bibliothèque</span></button>
@@ -1978,8 +1980,8 @@
         <span data-i18n="nav.cowork">Co-work</span>
       </button>
       <button class="nav-btn" data-view="hstat">
-        <svg viewBox="0 0 240 240" width="18" height="18" style="stroke:none;" role="img" aria-label="H-Start"><circle cx="120" cy="120" r="95" fill="none" stroke="#2D9C93" stroke-width="14"/><polygon points="120,35 148,120 120,108" fill="#16304A"/><polygon points="120,205 92,120 120,132" fill="#C89B3C"/><circle cx="120" cy="120" r="11" fill="#16304A"/></svg>
-        <span data-i18n="nav.hstat">H-Start</span>
+        <svg viewBox="0 0 240 240" width="18" height="18" style="stroke:none;" role="img" aria-label="Consult"><circle cx="120" cy="120" r="95" fill="none" stroke="#2D9C93" stroke-width="14"/><polygon points="120,35 148,120 120,108" fill="#16304A"/><polygon points="120,205 92,120 120,132" fill="#C89B3C"/><circle cx="120" cy="120" r="11" fill="#16304A"/></svg>
+        <span data-i18n="nav.hstat">Consult</span>
       </button>
       <button class="nav-btn" data-view="report">
         <svg viewBox="0 0 24 24"><rect x="4" y="2.5" width="16" height="19" rx="1.3"/><path d="M8 13v4M12 9v8M16 12v5"/></svg>
@@ -2042,7 +2044,7 @@
       <button data-view="anomalies"><span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4.5"/></svg></span><span data-i18n="navm.anomalies">Alertes</span></button>
       <button data-view="assistant"><svg viewBox="0 0 24 24"><path d="M4 4.5h16v12H9l-4.2 3.4a.4.4 0 0 1-.65-.31V4.5z"/></svg><span data-i18n="navm.assistant">Chat</span></button>
       <button data-view="cowork"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="7.5" height="7.5" rx="1.4"/><rect x="13.5" y="4" width="7.5" height="7.5" rx="1.4"/><rect x="3" y="14.5" width="7.5" height="7.5" rx="1.4"/><rect x="13.5" y="14.5" width="7.5" height="7.5" rx="1.4"/></svg><span data-i18n="nav.cowork">Co-work</span></button>
-      <button data-view="hstat"><svg viewBox="0 0 240 240" width="18" height="18" style="stroke:none;" role="img" aria-label="H-Start"><circle cx="120" cy="120" r="95" fill="none" stroke="#2D9C93" stroke-width="14"/><polygon points="120,35 148,120 120,108" fill="#16304A"/><polygon points="120,205 92,120 120,132" fill="#C89B3C"/><circle cx="120" cy="120" r="11" fill="#16304A"/></svg><span data-i18n="navm.hstat">H-Start</span></button>
+      <button data-view="hstat"><svg viewBox="0 0 240 240" width="18" height="18" style="stroke:none;" role="img" aria-label="Consult"><circle cx="120" cy="120" r="95" fill="none" stroke="#2D9C93" stroke-width="14"/><polygon points="120,35 148,120 120,108" fill="#16304A"/><polygon points="120,205 92,120 120,132" fill="#C89B3C"/><circle cx="120" cy="120" r="11" fill="#16304A"/></svg><span data-i18n="navm.hstat">Consult</span></button>
       <button data-view="report"><svg viewBox="0 0 24 24"><rect x="4" y="2.5" width="16" height="19" rx="1.3"/><path d="M8 13v4M12 9v8M16 12v5"/></svg><span data-i18n="nav.report">Rapport</span></button>
       <button data-view="resolutions"><svg viewBox="0 0 24 24"><path d="M4 4.8c2-1 5-1.2 8 .2v13.7c-3-1.4-6-1.2-8-.2V4.8z"/><path d="M20 4.8c-2-1-5-1.2-8 .2v13.7c3-1.4 6-1.2 8-.2V4.8z"/></svg><span data-i18n="navm.resolutions">Infos</span></button>
       <button data-view="tasks"><span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.3l3.6 2.1"/></svg></span><span data-i18n="navm.tasks">Tâches</span></button>
@@ -2984,7 +2986,7 @@
     <section class="view" id="view-hstat" hidden>
       <header class="topbar">
         <div>
-          <h1 style="margin:0; display:flex; align-items:center; gap:10px;"><svg viewBox="0 0 240 240" width="32" height="32" style="stroke:none; flex:none;" role="img" aria-label="H-Start"><circle cx="120" cy="120" r="95" fill="none" stroke="#2D9C93" stroke-width="14"/><polygon points="120,35 148,120 120,108" fill="#16304A"/><polygon points="120,205 92,120 120,132" fill="#C89B3C"/><circle cx="120" cy="120" r="11" fill="#16304A"/></svg>H-Start</h1>
+          <h1 style="margin:0; display:flex; align-items:center; gap:10px;"><svg viewBox="0 0 240 240" width="32" height="32" style="stroke:none; flex:none;" role="img" aria-label="Consult"><circle cx="120" cy="120" r="95" fill="none" stroke="#2D9C93" stroke-width="14"/><polygon points="120,35 148,120 120,108" fill="#16304A"/><polygon points="120,205 92,120 120,132" fill="#C89B3C"/><circle cx="120" cy="120" r="11" fill="#16304A"/></svg>Consult</h1>
           <p class="sub">Consultation IA avancée par domaine (statistiques, finance, économie, portefeuilles, gestion de projets, informatique, génie, droit, éducation, vie, travail, cuisine &amp; hôtellerie, assurance, santé), et calculatrices hors-ligne dédiées.</p>
         </div>
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -3007,10 +3009,10 @@
         <div class="cowork-panel-head">
           <h2 style="margin:0;">Consultation IA</h2>
           <div class="chat-info-wrap">
-            <button class="btn icon-only" id="hstat-info-btn" type="button" aria-label="À propos de H-Start" title="Aide">
+            <button class="btn icon-only" id="hstat-info-btn" type="button" aria-label="À propos de Consult" title="Aide">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.15" fill="currentColor" stroke-width="2.4"/></svg>
             </button>
-            <div class="chat-info-popover" id="hstat-info-popover" hidden role="tooltip" style="left:auto; right:0; bottom:auto; top:calc(100% + 6px); margin-bottom:0; width:320px;">H-Start est l'outil de consultation et de calcul le plus vaste et le plus avancé de HelpNaud : 42 domaines professionnels, techniques et institutionnels (statistiques, finance, économie, gouvernance, droit, génie, santé, énergie, État, politiques publiques, fiscalité, climat...) et 26 calculatrices hors-ligne dédiées. Il vise un usage plus poussé qu'Assistant ou Co-work — organisations, grandes entreprises, autorités publiques et administratives, institutions, décideurs politiques, universités, chercheurs, étudiants, professionnels, banques et organisations.<br><br>Choisissez un domaine ci-dessous pour orienter la consultation IA, ou posez directement votre question sans en choisir. Les calculatrices hors-ligne sont regroupées dans l'onglet « Calculateurs » ; la devise sélectionnée en haut de la page ajuste l'affichage des montants dans les calculatrices financières.<br><br>Limites : 120 messages, 12 000 caractères par message. Changez de domaine ci-dessus pour repartir avec un nouveau compteur.</div>
+            <div class="chat-info-popover" id="hstat-info-popover" hidden role="tooltip" style="left:auto; right:0; bottom:auto; top:calc(100% + 6px); margin-bottom:0; width:320px;">Consult est l'outil de consultation et de calcul le plus vaste et le plus avancé de HelpNaud : 42 domaines professionnels, techniques et institutionnels (statistiques, finance, économie, gouvernance, droit, génie, santé, énergie, État, politiques publiques, fiscalité, climat...) et 26 calculatrices hors-ligne dédiées. Il vise un usage plus poussé qu'Assistant ou Co-work — organisations, grandes entreprises, autorités publiques et administratives, institutions, décideurs politiques, universités, chercheurs, étudiants, professionnels, banques et organisations.<br><br>Choisissez un domaine ci-dessous pour orienter la consultation IA, ou posez directement votre question sans en choisir. Les calculatrices hors-ligne sont regroupées dans l'onglet « Calculateurs » ; la devise sélectionnée en haut de la page ajuste l'affichage des montants dans les calculatrices financières.<br><br>Limites : 120 messages, 12 000 caractères par message. Changez de domaine ci-dessus pour repartir avec un nouveau compteur.</div>
           </div>
         </div>
         <div class="attach-menu-wrap" id="hstat-domain-wrap" style="margin-bottom:10px; flex-wrap:wrap; align-items:center; gap:8px;">
@@ -3073,9 +3075,9 @@
             <span class="mic-timer" id="hstat-mic-timer" hidden></span>
             <div class="chat-input-wrap">
               <!-- Commandes rapides : tapez / (ex. /van, /ecart-type, /calculateurs) pour obtenir des
-                   suggestions H-Start, comme pour Co-work — voir HSTAT_SLASH_COMMANDS. -->
+                   suggestions Consult, comme pour Co-work — voir HSTAT_SLASH_COMMANDS. -->
               <div class="cowork-slash-menu" id="hstat-slash-menu" hidden role="listbox" aria-label="Commandes rapides"></div>
-              <textarea id="hstat-input" rows="1" placeholder="Clavardez avec H-Start : posez votre question, ou choisissez d'abord un domaine. Tapez / pour des suggestions." autocomplete="off"></textarea>
+              <textarea id="hstat-input" rows="1" placeholder="Clavardez avec Consult : posez votre question, ou choisissez d'abord un domaine. Tapez / pour des suggestions." autocomplete="off"></textarea>
               <button class="btn icon-only mic-btn chat-mic-btn" id="hstat-mic" type="button" title="Note vocale">
                 <svg viewBox="0 0 24 24"><path d="M12 15a3.4 3.4 0 0 0 3.4-3.4V6a3.4 3.4 0 0 0-6.8 0v5.6A3.4 3.4 0 0 0 12 15z"/><path d="M6 11a6 6 0 0 0 12 0M12 17.5V21"/></svg>
               </button>
@@ -4072,7 +4074,7 @@
     </section>
 
     <!-- H-WEB : générateur de site web (anciennement l'outil « Créer un site web » de Co-work),
-         sorti de la grille Co-work et promu module principal, à la manière de H-Start. Voir la
+         sorti de la grille Co-work et promu module principal, à la manière de Consult. Voir la
          section JS « H-Web » pour le câblage (identifiants cowork-website-* conservés tels quels :
          la logique de génération/régénération/téléchargement HTML n'a pas été dupliquée). -->
     <section class="view" id="view-hweb" hidden>
@@ -5274,7 +5276,7 @@
 
       <div class="card">
         <h2>Crédits IA</h2>
-        <p class="hint">Un « crédit IA » = un message envoyé à l'assistant (Assistant, Co-work &gt; Discussion ou H-Start, confondus — les calculateurs hors-ligne de H-Start n'en consomment pas). Suivi uniquement sur cet appareil, remis à zéro chaque mois civil. Choisissez ci-dessous le palier à titre indicatif (aucun abonnement payant n'est actif pendant la phase pilote) pour voir l'allocation mensuelle correspondante.</p>
+        <p class="hint">Un « crédit IA » = un message envoyé à l'assistant (Assistant, Co-work &gt; Discussion ou Consult, confondus — les calculateurs hors-ligne de Consult n'en consomment pas). Suivi uniquement sur cet appareil, remis à zéro chaque mois civil. Choisissez ci-dessous le palier à titre indicatif (aucun abonnement payant n'est actif pendant la phase pilote) pour voir l'allocation mensuelle correspondante.</p>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
           <label class="hint" style="margin:0;" for="ai-credits-tier-select">Palier (indicatif) :</label>
           <select id="ai-credits-tier-select" style="width:auto;"></select>
@@ -5771,7 +5773,7 @@
         </details>
       </div>
     </section>
-    <footer id="hn-contact-foot" style="text-align:center; font-size:12px; color:var(--muted); padding:18px 12px 28px;"><div style="margin-bottom:4px;">HelpNaud est une IA qui vous aide au quotidien et peut faire des erreurs.</div>HelpNaud.ai — Powered by FINECIA GROUPE · <a href="mailto:contact@helpnaud.ai">contact@helpnaud.ai</a> · <a href="mailto:support@helpnaud.ai">support@helpnaud.ai</a></footer>
+    <footer id="hn-contact-foot" style="text-align:center; font-size:12px; color:var(--muted); padding:18px 12px 28px;"><div style="margin-bottom:4px;"><a href="/Platforme" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">HelpNaud est une IA qui vous aide au quotidien et peut faire des erreurs. Vérifiez les informations importantes.</a></div>HelpNaud.ai — Powered by FINECIA GROUPE · <a href="mailto:contact@helpnaud.ai">contact@helpnaud.ai</a> · <a href="mailto:support@helpnaud.ai">support@helpnaud.ai</a></footer>
   </main>
 </div>
 
@@ -5869,7 +5871,7 @@
           fghlabState.adminProfile.number = (typeof parsed.adminProfile.number === 'string') ? parsed.adminProfile.number : '';
         }
         // Devises indépendantes par outil (FG & Bank Partnership / CO-PROJET | COPROJECT / Marché Partenaire | Partner Market) —
-        // persistées séparément de la devise du dossier et de celle de H-Start.
+        // persistées séparément de la devise du dossier et de celle de Consult.
         fghlabState.fgbankCurrency = (typeof parsed.fgbankCurrency === 'string' && parsed.fgbankCurrency) ? parsed.fgbankCurrency : null;
         fghlabState.coprojectCurrency = (typeof parsed.coprojectCurrency === 'string' && parsed.coprojectCurrency) ? parsed.coprojectCurrency : null;
         fghlabState.partnermarketCurrency = (typeof parsed.partnermarketCurrency === 'string' && parsed.partnermarketCurrency) ? parsed.partnermarketCurrency : null;
@@ -7247,7 +7249,7 @@
       'nav.anomalies': 'Anomalies',
       'nav.assistant': 'Assistant',
       'nav.cowork': 'Co-work',
-      'nav.hstat': 'H-Start',
+      'nav.hstat': 'Consult',
       'nav.report': 'Rapport',
       'nav.resolutions': 'Résolutions',
       'nav.library': 'Bibliothèque',
@@ -7263,7 +7265,7 @@
       'navm.library': 'Biblio.',
       'navm.database': 'Données',
       'navm.hntools': 'Outils',
-      'navm.hstat': 'H-Start',
+      'navm.hstat': 'Consult',
       'navm.tasks': 'Tâches',
       'btn.help': 'Aide & prise en main',
       'btn.help.title': 'Revoir le guide de bienvenue',
@@ -7374,7 +7376,7 @@
       'nav.anomalies': 'Anomalies',
       'nav.assistant': 'Assistant',
       'nav.cowork': 'Co-work',
-      'nav.hstat': 'H-Start',
+      'nav.hstat': 'Consult',
       'nav.report': 'Report',
       'nav.resolutions': 'Resolutions',
       'nav.library': 'Library',
@@ -7390,7 +7392,7 @@
       'navm.library': 'Library',
       'navm.database': 'Data',
       'navm.hntools': 'Tools',
-      'navm.hstat': 'H-Start',
+      'navm.hstat': 'Consult',
       'navm.tasks': 'Tasks',
       'btn.help': 'Help & onboarding',
       'btn.help.title': 'Revisit the welcome guide',
@@ -7616,7 +7618,7 @@
       text:"Posez vos questions en langage naturel : l'assistant répond à partir de vos vraies données, et peut analyser un fichier joint grâce à la trombone." },
     { view:'cowork', selector:'nav:cowork', title:'Co-work',
       text:"Générez un document, un tableau Excel ou une présentation PowerPoint, ou faites analyser un fichier — directement depuis HelpNaud." },
-    { view:'hstat', selector:'nav:hstat', title:'H-Start',
+    { view:'hstat', selector:'nav:hstat', title:'Consult',
       text:"Consultation IA avancée par domaine (finance, économie, droit, santé, climat et bien d'autres) et des calculatrices hors-ligne dédiées." },
     { view:'report', selector:'nav:report', title:'Rapport',
       text:"Un rapport par dossier, ou un rapport consolidé pour tous les dossiers, prêt à afficher ou à télécharger." },
@@ -7843,7 +7845,7 @@
     { id:'gratuit', nom:'Gratuit', prix:'0 USD', periode:'', actif:true,
       fonctionnalites:['Crédits IA : 30 / mois','Enveloppe API interne : 0,30 $ / mois','1 dossier, 1 utilisateur','Exports avec filigrane'] },
     { id:'essentiel', nom:'Essentiel', prix:'29 USD', periode:'/ mois, hors taxes', actif:true,
-      fonctionnalites:['Crédits IA : 850 / mois','Enveloppe API interne : 5 $ / mois','Calculateurs H-Start débloqués, rapports sans filigrane','Support courriel 48 h'] },
+      fonctionnalites:['Crédits IA : 850 / mois','Enveloppe API interne : 5 $ / mois','Calculateurs Consult débloqués, rapports sans filigrane','Support courriel 48 h'] },
     { id:'avancee', nom:'Avancée', prix:'79 USD', periode:'/ mois, hors taxes', actif:true,
       fonctionnalites:['Crédits IA : 2 000 / mois','Enveloppe API interne : 10 $ / mois','Historique 1 an, exports Excel et PowerPoint','Support courriel prioritaire 36 h'] },
     { id:'pro', nom:'Professionnel', prix:'129 USD', periode:'/ mois, hors taxes', actif:true,
@@ -7927,10 +7929,10 @@
      accessible depuis Réglages > Abonnements. */
   var ABONNEMENTS_PLANS = [
     { nom:'Gratuit', prix:'0 USD', tagline:'Pour découvrir HelpNaud.ai',
-      avantages:["Accès à Assistant, Co-work et H-Start (tous les 42 domaines)","Rapports PDF de base","1 dossier/entreprise","1 utilisateur","Support communautaire (FAQ et documentation)"],
+      avantages:["Accès à Assistant, Co-work et Consult (tous les 42 domaines)","Rapports PDF de base","1 dossier/entreprise","1 utilisateur","Support communautaire (FAQ et documentation)"],
       limites:"30 crédits IA par mois (environ 15 messages au palier Médiane) ; exports avec filigrane « Propulsé par HelpNaud.ai »." },
     { nom:'Essentiel', prix:'29 USD / mois, hors taxes', tagline:'Pour les indépendants',
-      avantages:["Tous les calculateurs H-Start débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique de conversations 90 jours","Support par courriel (réponse sous 48h)"],
+      avantages:["Tous les calculateurs Consult débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique de conversations 90 jours","Support par courriel (réponse sous 48h)"],
       limites:"850 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
     { nom:'Avancée', prix:'79 USD / mois, hors taxes', tagline:'Pour les intermédiaires et les curieux',
       avantages:["Tout le forfait Essentiel, plus :","Historique de conversations étendu à 1 an","Exports Excel et PowerPoint","Support par courriel prioritaire (réponse sous 36h)"],
@@ -7977,14 +7979,14 @@
 
   /* ================= Crédits IA (liés aux paliers d'Abonnements) =================
      Un « crédit IA » = un message utilisateur réellement envoyé à l'IA (Assistant, Co-work >
-     Discussion ou H-Start confondus — pas les calculatrices hors-ligne de H-Start, 100% locales,
+     Discussion ou Consult confondus — pas les calculatrices hors-ligne de Consult, 100% locales,
      ni les autres outils Co-work qui ne passent pas par submitToAssistant/submitCoworkDiscuss/
      submitHstat). Suivi uniquement sur cet appareil (localStorage, comme le reste des données
      HelpNaud), remis à zéro chaque mois civil (année-mois courants) — pas de vraie notion de
      "date d'abonnement" tant que la facturation n'existe pas, donc le mois civil est le repère
      le plus simple et le plus honnête à afficher.
      Allocation mensuelle par palier : reprend tel quel les limites déjà annoncées par vue dans
-     ABONNEMENTS_PLANS ci-dessus (Assistant + Co-work + H-Start additionnés), pour ne jamais
+     ABONNEMENTS_PLANS ci-dessus (Assistant + Co-work + Consult additionnés), pour ne jamais
      afficher un chiffre différent de ce que la page Abonnements promet déjà :
        Pilote      : 30 + 80 + 120   = 230
        Essentiel   : 150 + 300 + 400 = 850
@@ -8234,7 +8236,7 @@
   renderAiCreditsIndicator();
 
   /* ================= Hmodel : palier de réponse IA (à côté de Mode vocal) =================
-     Contrôle « Hmodel », indépendant par vue (Assistant / Co-work Discussion / H-Start), qui choisit
+     Contrôle « Hmodel », indépendant par vue (Assistant / Co-work Discussion / Consult), qui choisit
      un palier de réponse simulé : profondeur (court/moyen/long/très long), ton, et coût en crédits
      IA (voir incrementAiCredits ci-dessus). Le palier choisi influence réellement la réponse : son
      « desc »/« tone »/« depth » sont injectés dans le prompt système envoyé à sampleCap (voir
@@ -11334,7 +11336,7 @@
      bas) : déclenche automatiquement la lecture à haute voix de la bulle de réponse dès qu'elle est
      prête, sans que l'utilisateur ait à cliquer sur « Lire à haute voix » — pour une conversation
      vocale rapide, de bout en bout, sans repasser par le clavier. */
-  // Détermine à quelle vue (Assistant / Co-work Discussion / H-Start) appartient une bulle, pour le
+  // Détermine à quelle vue (Assistant / Co-work Discussion / Consult) appartient une bulle, pour le
   // Mode vocal (voir plus bas) : chaque vue a son propre fil (#chat-log / #cowork-discuss-log /
   // #hstat-log), jamais deux actifs en même temps puisqu'une seule vue est visible à la fois.
 
@@ -11397,7 +11399,10 @@
     if(!(form.nextElementSibling && form.nextElementSibling.classList.contains('hn-ai-note'))){
       var note = document.createElement('p');
       note.className = 'hn-ai-note';
-      note.textContent = 'HelpNaud est une IA qui vous aide au quotidien et peut faire des erreurs. Vérifiez les informations importantes.';
+      var nl = document.createElement('a'); nl.href = '/Platforme'; nl.target = '_blank'; nl.rel = 'noopener'; nl.className = 'hn-ai-note-link';
+      nl.title = 'Ouvrir la page HelpNaud Plateforme (aide, confidentialité, limites…) dans un nouvel onglet';
+      nl.textContent = 'HelpNaud est une IA qui vous aide au quotidien et peut faire des erreurs. Vérifiez les informations importantes.';
+      note.appendChild(nl);
       form.parentNode.insertBefore(note, form.nextSibling);
     }
     var wave = document.createElement('button');
@@ -13345,7 +13350,7 @@
 
   /* ================= Export / import des modèles (partageables) =================
      Génériques, réutilisés par les 3 systèmes de « Mes modèles » (Assistant, Co-work Discussion,
-     H-Start) pour permettre de partager ses modèles entre appareils ou avec quelqu'un d'autre via
+     Consult) pour permettre de partager ses modèles entre appareils ou avec quelqu'un d'autre via
      un simple fichier .json. */
   function exportTemplatesFile(list, filename, statusEl){
     try{
@@ -13425,18 +13430,18 @@
      FINECIA GROUPE (dont une traduction raisonnable de "Glavade avec HelpNaud" en "Collaborez avec
      HelpNaud"). Le message qui fait la promotion de Co-work n'apparaît que dans le pool Assistant
      (un utilisateur déjà dans Co-work n'a pas besoin d'y être renvoyé) ; le message qui fait la
-     promotion de H-Start apparaît dans les deux pools Assistant et Co-work, mais pas dans l'intro
-     propre de H-Start (laissée intacte, plus spécifique au domaine). */
+     promotion de Consult apparaît dans les deux pools Assistant et Co-work, mais pas dans l'intro
+     propre de Consult (laissée intacte, plus spécifique au domaine). */
   var WELCOME_MESSAGE_POOLS = {
     assistant: [
       "Bonjour, je suis HelpNaud. Vous pouvez me poser n'importe quelle question — je connais aussi les vraies transactions, anomalies et budgets du dossier ouvert. Joignez une photo, une image ou un fichier (PDF/Excel/CSV) avec le bouton +, ou utilisez la note vocale 🎤. Pour les outils avancés (générer un Excel, un graphique, un document…), passez à Co-work. Essayez une des suggestions ci-dessous ou posez votre question.",
       "Bonjour, je suis HelpNaud, je suis prêt à te répondre.",
       "Bonjour, tu as une idée, j'ai la réponse ! Dis-moi ce que tu penses.",
       "Tu as un projet à cœur, va chez l'agent Co-work. L'agent Co-Work, une équipe.",
-      "Bonjour, connais-tu H-Start ! C'est le consultant IA de tout. Consulte-le !",
+      "Bonjour, connais-tu Consult ! C'est le consultant IA de tout. Consulte-le !",
       "Bonjour, on commence avec quoi ?",
       "Time to build something great! I'm HelpNaud.",
-      "Time to build something great, let's begin with H-Start.",
+      "Time to build something great, let's begin with Consult.",
       "Ready when you are.",
       "Travaillez avec HelpNaud."
     ],
@@ -13445,10 +13450,10 @@
       "Bonjour, je suis HelpNaud, je suis prêt à te répondre.",
       "Collaborez avec HelpNaud.",
       "Bonjour, tu as une idée, j'ai la réponse ! Dis-moi ce que tu penses.",
-      "Bonjour, connais-tu H-Start ! C'est le consultant IA de tout. Consulte-le !",
+      "Bonjour, connais-tu Consult ! C'est le consultant IA de tout. Consulte-le !",
       "Bonjour, on commence avec quoi ?",
       "Time to build something great! I'm HelpNaud.",
-      "Time to build something great, let's begin with H-Start.",
+      "Time to build something great, let's begin with Consult.",
       "Ready when you are.",
       "Travaillez avec HelpNaud."
     ]
@@ -13919,7 +13924,7 @@
   })();
 
   /* ----- Équipe : autorisations d'outils HelpNaud, registre de journée, journal d'activité (SQL 3t) ----- */
-  var HNT_LABELS = { dashboard:'Tableau de bord', catalogue:'Catalogue', assistant:'Chat / Assistant', cowork:'Co-work', hstat:'H-Start', report:'Rapport', hweb:'H-Web', database:'Bases de données', hntools:'Outils HelpNaud', ifhelp:'Interface Help', taiso:'TAISO', itaf:'iTAF' };
+  var HNT_LABELS = { dashboard:'Tableau de bord', catalogue:'Catalogue', assistant:'Chat / Assistant', cowork:'Co-work', hstat:'Consult', report:'Rapport', hweb:'H-Web', database:'Bases de données', hntools:'Outils HelpNaud', ifhelp:'Interface Help', taiso:'TAISO', itaf:'iTAF' };
   var hnT = { day:null, grants:[], policy:null, grantsAll:[], team:[], report:[], activity:[], busy:false, timer:null };
   function hnTeamRole(){ return (fghlabCloudRole === 'member' || fghlabCloudRole === 'admin') ? fghlabCloudRole : null; }
   function hnTeamToast(t){ try{ var d = document.createElement('div'); d.textContent = t; d.setAttribute('role','status'); d.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:13px;z-index:99999;max-width:90vw;'; document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 5000); }catch(e){} }
@@ -14912,14 +14917,14 @@
   // Prompt systeme de Co-work (Discussion) : volontairement DISTINCT d'ASSISTANT_SYSTEM (demande
   // explicite de l'utilisateur, apres un retour signalant que Co-work « sonnait » comme une copie
   // du Chat). Co-work reste large (pas seulement financier, comme l'Assistant) mais reste un niveau
-  // au-dessus du Chat simple SANS jamais empieter sur le role de H-Start (Consultation IA), qui lui
+  // au-dessus du Chat simple SANS jamais empieter sur le role de Consult (Consultation IA), qui lui
   // a pleine autorite pour repondre en profondeur a absolument tout, meme hors de ses domaines
   // officiels. Co-work donne donc des reponses utiles et accessibles, pas une analyse experte
-  // poussee — pour cela, il renvoie brievement vers H-Start plutot que d'essayer lui-meme.
+  // poussee — pour cela, il renvoie brievement vers Consult plutot que d'essayer lui-meme.
   var COWORK_SYSTEM = "Tu es l'agent Co-work de HelpNaud, l'assistant de travail d'equipe et de creation de contenu integre a une application de gestion financiere pour PME (FINECIA GROUPE). " +
     "Co-work aide a a peu pres n'importe quel sujet de travail en equipe ou de creation de contenu — brainstorming, redaction, organisation, planification, communication, idees, relecture, structuration de documents — ainsi qu'avec les donnees du dossier financier actuellement ouvert. Ne refuse jamais un sujet simplement parce qu'il n'est pas financier. " +
     "Quand une question porte sur les transactions, le solde, les anomalies, les budgets ou les dossiers de l'application, utilise les outils fournis pour aller chercher les vraies donnees plutot que de deviner ou d'halluciner des chiffres. " +
-    "Reste toutefois a un niveau utile et relativement concis/accessible, PAS une analyse experte approfondie : pour toute question qui demande une vraie rigueur technique, une methodologie poussee ou une expertise specialisee (statistiques, econometrie, finance quantitative, droit avance, etc.), dis-le brievement et renvoie l'utilisateur vers H-Start (Consultation IA), qui a pleine autorite pour traiter ce niveau de profondeur, plutot que d'essayer toi-meme d'aller aussi loin. " +
+    "Reste toutefois a un niveau utile et relativement concis/accessible, PAS une analyse experte approfondie : pour toute question qui demande une vraie rigueur technique, une methodologie poussee ou une expertise specialisee (statistiques, econometrie, finance quantitative, droit avance, etc.), dis-le brievement et renvoie l'utilisateur vers Consult (Consultation IA), qui a pleine autorite pour traiter ce niveau de profondeur, plutot que d'essayer toi-meme d'aller aussi loin. " +
     "Reponds en francais, de facon professionnelle et accessible, sauf si on te parle dans une autre langue. " +
     "Tu n'es pas un conseiller financier, comptable ou juridique agree : pour une decision importante, rappelle-le brievement si pertinent, sans en faire une longue mise en garde a chaque reponse.";
 
@@ -15415,7 +15420,7 @@
      champ de saisie, sans soumettre le formulaire ni fermer le menu — pour enchaîner plusieurs
      insertions (utile pour des formules, des références de documents, des notes techniques...). */
   var QUICK_SYMBOLS = ['(',')','[',']','{','}','/','\\','<','>','|','&','#','@','€','$','%','=','+','•'];
-  // Jeu dédié H-Start : symboles utiles en finance/statistiques (formules, notation scientifique,
+  // Jeu dédié Consult : symboles utiles en finance/statistiques (formules, notation scientifique,
   // devises, unités), en plus du strict minimum demandé (/ : # % ¥ \ | *) — voir wireSymbolsMenu.
   var HSTAT_SYMBOLS = ['/',':','#','%','¥','\\','|','*','±','≈','≠','≤','≥','∑','√','Δ','€','$','°','‰'];
   function insertAtCursor(textarea, resizeFn, ch){
@@ -15457,7 +15462,7 @@
   }
   wireSymbolsMenu('symbols-btn', 'symbols-menu', 'symbols-grid', chatInput, chatInputResize);
 
-  /* ================= Bouton flottant "aller au dernier message" (Chat / Co-work Discussion / H-Start) =====
+  /* ================= Bouton flottant "aller au dernier message" (Chat / Co-work Discussion / Consult) =====
      Apparaît seulement quand l'utilisateur a remonté le fil de discussion (plus de ~60px au-dessus
      du bas) ; un clic ramène instantanément en bas. Utilise un MutationObserver pour réévaluer sa
      visibilité quand de nouveaux messages arrivent pendant que l'utilisateur est remonté (sans ça,
@@ -15660,12 +15665,12 @@
       }).join('');
   }
   // 3 des 8 outils Co-work (Rédiger un document, Créer un graphique, Interroger un fichier) ont
-  // été déplacés dans H-Start (onglet "🛠️ Outils" — voir selectHstatToolPanel et #hstat-tools-grid
+  // été déplacés dans Consult (onglet "🛠️ Outils" — voir selectHstatToolPanel et #hstat-tools-grid
   // plus bas) ; Générer du code est resté/revenu dans Co-work. openCoworkToolForced() reste le
   // point d'entrée unique utilisé par tous les appelants existants (menu "+" de la barre latérale,
   // menu "🧰" de Co-work, les passerelles entre outils comme appendToCoworkDraftDoc/
   // appendChartToCoworkPptx, et les commandes "/" de Co-work Discussion), donc on y route
-  // simplement vers H-Start pour ces 3 outils plutôt que de dupliquer la logique d'ouverture à
+  // simplement vers Consult pour ces 3 outils plutôt que de dupliquer la logique d'ouverture à
   // chaque appelant.
   var HSTAT_RELOCATED_TOOLS = ['draft','chart','query'];
   function openCoworkToolForced(tool){
@@ -15687,7 +15692,7 @@
     c.addEventListener('click', function(){ selectCoworkTool(c.dataset.tool); });
   });
 
-  /* ================= H-Start : outils déplacés depuis Co-work (onglet "🛠️ Outils") =================
+  /* ================= Consult : outils déplacés depuis Co-work (onglet "🛠️ Outils") =================
      Même mécanisme de bascule que selectCoworkTool()/selectDbTool() ci-dessus, mais scopé à
      #hstat-tools-grid et aux 3 panneaux Rédiger un document/Créer un graphique/Interroger un
      fichier (déplacés ici tels quels depuis Co-work — mêmes id, même contenu, même logique
@@ -24696,7 +24701,7 @@
     return { partnerListingFees: partnerListingFees, structuringFees: structuringFees, commissions: commissions, introFees: introFees, dealerCommissions: dealerCommissions, dealerReferralFees: dealerReferralFees, total: total };
   }
   function fmtFghlabAmount(n){ return (Number(n) || 0).toLocaleString('fr-FR'); }
-  /* Devise indépendante de FG & Bank Partnership (distincte du dossier, de H-Start, et des devises
+  /* Devise indépendante de FG & Bank Partnership (distincte du dossier, de Consult, et des devises
      propres à CO-PROJET | COPROJECT/Marché Partenaire | Partner Market) — même pattern que hstatCurrency (voir ~ligne 26682), mais
      avec persistance dans fghlabState.fgbankCurrency (voir persistFghlabState/loadFghlabState). */
   var fgbankCurrency = fghlabState.fgbankCurrency || activeCurrencyCode();
@@ -28104,8 +28109,8 @@
      F-i-Stat est un outil bespoke FGH-Colab (comme CO-PROJET | COPROJECT/TOUTTEST — PAS un des 25/8 outils
      tracker/relevé génériques) : une consultation IA avancée en statistiques, économétrie, finance
      quantitative et méthodes scientifiques, réservée à l'équipe FINECIA GROUPE (jamais exposée aux
-     abonnés HelpNaud.ai ordinaires, qui ont déjà H-Start — voir hstat-tab-consult plus haut — comme
-     équivalent public/généraliste). Architecture clonée de la Consultation IA de H-Start (sélecteur
+     abonnés HelpNaud.ai ordinaires, qui ont déjà Consult — voir hstat-tab-consult plus haut — comme
+     équivalent public/généraliste). Architecture clonée de la Consultation IA de Consult (sélecteur
      de domaine en popover + fil de discussion + formulaire), mais volontairement réduite à son cœur
      pour cette première version (pas de pièces jointes, mode vocal, Hmodel ni « Mes modèles » —
      à ajouter plus tard si nécessaire) : HSTATIS_DOMAINS est un tableau neuf et séparé de
@@ -28145,7 +28150,7 @@
           '<button class="btn icon-only" id="hstatis-info-btn" type="button" aria-label="À propos de F-i-Stat" title="Aide">' +
             '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.15" fill="currentColor" stroke-width="2.4"/></svg>' +
           '</button>' +
-          '<div class="chat-info-popover" id="hstatis-info-popover" hidden role="tooltip" style="left:auto; right:0; bottom:auto; top:calc(100% + 6px); margin-bottom:0; width:320px;">F-i-Stat est l’agent statistique interne de FINECIA GROUPE dans FGH-Colab : consultation IA avancée en statistiques, économétrie, finance quantitative et méthodes scientifiques, pour les mandats et analyses internes. Outil réservé à l’équipe FINECIA GROUPE — distinct de H-Start (accessible à tous les utilisateurs de HelpNaud.ai).</div>' +
+          '<div class="chat-info-popover" id="hstatis-info-popover" hidden role="tooltip" style="left:auto; right:0; bottom:auto; top:calc(100% + 6px); margin-bottom:0; width:320px;">F-i-Stat est l’agent statistique interne de FINECIA GROUPE dans FGH-Colab : consultation IA avancée en statistiques, économétrie, finance quantitative et méthodes scientifiques, pour les mandats et analyses internes. Outil réservé à l’équipe FINECIA GROUPE — distinct de Consult (accessible à tous les utilisateurs de HelpNaud.ai).</div>' +
         '</div>' +
       '</div>' +
       '<p class="hint" style="margin:0 0 10px;">'+escapeHtml(info.desc)+'</p>' +
@@ -28849,7 +28854,7 @@
     var HSTATIS_MAX_CHARS = 12000;
     var HSTATIS_DEFAULT_SUGGESTIONS = ["Choisissez un domaine ci-dessus pour des suggestions ciblées", "Comment interpréter une p-value ?", "Quelle est la différence entre corrélation et causalité ?"];
 
-    // Équivalent local de addHstatMsg (H-Start), adapté au fil #hstatis-log — addHstatMsg lui-même
+    // Équivalent local de addHstatMsg (Consult), adapté au fil #hstatis-log — addHstatMsg lui-même
     // est câblé en dur sur les ids #hstat-* et n'accepte pas de conteneur/préfixe en paramètre, donc
     // on le reproduit ici à l'identique plutôt que d'y toucher (voir buildMsgBubble, générique, lui,
     // et déjà réutilisé tel quel).
@@ -28934,9 +28939,9 @@
     }
 
     // Un seul appel sampleCap.json(...) par envoi explicite (clic « Envoyer » ou Entrée dans le
-    // formulaire) — jamais déclenché automatiquement, comme submitHstat (H-Start) et les autres vues
+    // formulaire) — jamais déclenché automatiquement, comme submitHstat (Consult) et les autres vues
     // de consultation IA de l'app. Repli : sampleReady/sampleCap indisponible => message d'erreur
-    // dans le fil, UI jamais bloquée (même dégradation que H-Start dans ce bac à sable).
+    // dans le fil, UI jamais bloquée (même dégradation que Consult dans ce bac à sable).
     function submitHstatis(q, opts){
       opts = opts || {};
       hstatisHistory.push({ role:'user', content:q });
@@ -28988,7 +28993,7 @@
         });
       });
     }
-    /* Pièces jointes de F-i-Stat : mêmes règles que H-Start (images, PDF, Excel/CSV ; plusieurs fichiers, chacun retirable). */
+    /* Pièces jointes de F-i-Stat : mêmes règles que Consult (images, PDF, Excel/CSV ; plusieurs fichiers, chacun retirable). */
     var hstatisPending = [];
     var hstatisChipRow = document.getElementById('hstatis-attach-chip-row');
     var hstatisFileInput = document.getElementById('hstatis-file-input');
@@ -31740,7 +31745,7 @@
 
   /* ---- 8. Calculs rapides (convertisseur de devises, taxes, seuil de rentabilité) ----
      Trois calculatrices locales, indépendantes des données du dossier ouvert — complémentaires
-     aux calculatrices de H-Start, mais pensées ici comme des utilitaires d'accès rapide plutôt
+     aux calculatrices de Consult, mais pensées ici comme des utilitaires d'accès rapide plutôt
      que des consultations spécialisées. Taux de change fixes et approximatifs (pas d'appel
      réseau) : à titre indicatif seulement. */
   var QC_FX_RATES_TO_USD = { // 1 unité de la devise = X USD, valeurs approximatives fixes
@@ -31823,13 +31828,13 @@
   var MKT_TEMPLATES_AUTO = [
     "👋 Bonjour ! Saviez-vous que HelpNaud.ai peut générer vos rapports Excel et PowerPoint automatiquement ? Essayez Co-work dès aujourd'hui.",
     "📊 Votre tableau de bord a évolué ce mois-ci. Consultez vos nouvelles anomalies détectées par HelpNaud.ai en un clic.",
-    "🚀 Nouveau : H-Start couvre maintenant 42 domaines d'expertise — finance, droit, santé, agriculture et plus. Explorez-les dans votre espace HelpNaud.ai.",
+    "🚀 Nouveau : Consult couvre maintenant 42 domaines d'expertise — finance, droit, santé, agriculture et plus. Explorez-les dans votre espace HelpNaud.ai.",
     "🔔 Il y a 30 jours que vous n'avez pas consulté vos Résolutions. HelpNaud.ai vous aide à garder le contrôle — revenez y jeter un œil."
   ];
   var MKT_TEMPLATES_SOCIAL = [
     "HelpNaud.ai, propulsé par Claude.ai 🤖 — le contrôle financier et les outils IA réunis dans une seule plateforme. Analysez, rédigez, calculez, décidez. #GestionFinancière #IA",
     "Des chiffres aux décisions, en quelques clics. HelpNaud.ai transforme vos données financières en rapports clairs, grâce à l'intelligence artificielle de Claude. #Finance #Automatisation",
-    "Universités, banques, administrations publiques : H-Start par HelpNaud.ai met 42 domaines d'expertise et des dizaines de calculateurs à votre portée. #Institutions #DataDriven",
+    "Universités, banques, administrations publiques : Consult par HelpNaud.ai met 42 domaines d'expertise et des dizaines de calculateurs à votre portée. #Institutions #DataDriven",
     "Essayez HelpNaud.ai gratuitement avec le forfait Pilote — aucune carte de crédit requise. Le contrôle financier, augmenté par l'IA. #Essai #FinTech"
   ];
   function renderMktGroup(containerId, templates, groupKey){
@@ -32579,7 +32584,7 @@
   var coworkExcelData = null; // { title, columns, rows }
 
   // Devise du tableau Excel généré : la liste CURRENCIES/fmtMoney (déjà utilisée par les dossiers
-  // et H-Start) est réutilisée ici pour rester cohérent dans toute l'application. On applique la
+  // et Consult) est réutilisée ici pour rester cohérent dans toute l'application. On applique la
   // devise choisie aux colonnes dont l'en-tête ressemble clairement à une colonne monétaire
   // (« montant », « prix », « coût »...) sans avoir besoin de régénérer via l'IA — quand aucune
   // colonne monétaire n'est détectable, la devise choisie influence quand même le prochain
@@ -33451,7 +33456,7 @@
   }
   // `list` optionnel (défaut COWORK_SLASH_COMMANDS) — permet de réutiliser exactement la même
   // logique de correspondance pour d'autres jeux de commandes « / » ailleurs dans l'app (voir
-  // HSTAT_SLASH_COMMANDS plus bas, pour H-Start).
+  // HSTAT_SLASH_COMMANDS plus bas, pour Consult).
   function matchSlashCommands(token, list){
     list = list || COWORK_SLASH_COMMANDS;
     var t = slashNormalize(token);
@@ -33472,7 +33477,7 @@
   }
   function runCoworkSlashCommand(command, rest){
     // 3 des outils visés par ces commandes (draft/chart/query) ont été déplacés dans
-    // H-Start : openCoworkToolForced() sait désormais router vers la bonne vue pour eux (voir
+    // Consult : openCoworkToolForced() sait désormais router vers la bonne vue pour eux (voir
     // HSTAT_RELOCATED_TOOLS), donc on l'utilise toujours plutôt que selectCoworkTool() directement,
     // qui ne trouverait plus ces panneaux (sortis de la vue Co-work). Générer du code (code) est
     // resté/revenu dans Co-work, openCoworkToolForced() y route donc directement.
@@ -35168,7 +35173,7 @@
     return new Blob(localParts.concat(centralParts, [end]), { type: 'application/zip' });
   }
 
-  /* Pont minimal vers les petits modules ajoutés en fin de page (Atelier de code, H-Start, H-Web) :
+  /* Pont minimal vers les petits modules ajoutés en fin de page (Atelier de code, Consult, H-Web) :
      ils vivent dans des <script> séparés et n'ont pas accès à ce qui est privé à ce bloc. */
   window.__hn = {
     buildZip: buildZip,
@@ -36516,7 +36521,7 @@
     { titre:'Utiliser le Co-work', texte:"Générez des graphiques, documents, tableaux Excel ou présentations PowerPoint à partir de vos données, directement depuis l'onglet Co-work." },
     { titre:'Suivre les anomalies', texte:"L'onglet Anomalies signale les montants inhabituels, doublons et montants ronds à vérifier — ajustez la sensibilité dans les réglages de cet onglet." },
     { titre:'Exporter une sauvegarde', texte:"Dans Documents, « Exporter une sauvegarde » télécharge un fichier JSON de tous vos dossiers — à conserver en lieu sûr, HelpNaud ne les stocke que sur cet appareil." },
-    { titre:'Utiliser H-Start', texte:"H-Start est la consultation IA avancée de HelpNaud : choisissez un domaine (finance, droit, informatique, environnement…), posez votre question et obtenez une réponse structurée. Chaque réponse utilise le crédit IA de votre forfait — un message simple coûte peu, une analyse longue davantage." }
+    { titre:'Utiliser Consult', texte:"Consult est la consultation IA avancée de HelpNaud : choisissez un domaine (finance, droit, informatique, environnement…), posez votre question et obtenez une réponse structurée. Chaque réponse utilise le crédit IA de votre forfait — un message simple coûte peu, une analyse longue davantage." }
   ];
   var LIBRARY_TEMPLATES = [
     { titre:"Lettre de mise en demeure (retard de paiement)", texte:"Objet : Mise en demeure — facture no [X]. Par la présente, nous vous mettons en demeure de payer la somme de [montant] $ due depuis le [date d'échéance], dans un délai de 10 jours suivant la réception de cette lettre, à défaut de quoi nous nous réservons le droit d'entreprendre les recours appropriés." },
@@ -36978,7 +36983,7 @@
     reader.readAsDataURL(file);
   });
 
-  /* ---- H-Start (vue principale de la barre latérale, entre Co-work et Rapport) ----
+  /* ---- Consult (vue principale de la barre latérale, entre Co-work et Rapport) ----
      Anciennement l'outil « Stat » de Co-work (préfixe coworkStat-) : sorti de la grille Co-work
      et promu en vue plein écran pour lui donner beaucoup plus d'espace (demande utilisateur),
      donc renommé avec le préfixe hstat-/HSTAT_. Consultation IA par domaine (16 domaines, chips),
@@ -37079,11 +37084,11 @@
   var hstatDomainRow = document.getElementById('hstat-domain-row');
   var hstatHistory = []; // {role:'user'|'assistant', content:string}
   var hstatDomain = null; // objet de HSTAT_DOMAINS, ou null (généraliste)
-  // H-Start n'utilise pas le système multi-conversations (ConversationStore) d'Assistant/Co-work :
+  // Consult n'utilise pas le système multi-conversations (ConversationStore) d'Assistant/Co-work :
   // c'est un seul fil continu, sans bouton "+ Nouveau chat". Le compteur de messages est donc
   // remis à zéro quand l'utilisateur change de domaine (sélection ou désélection ci-dessous),
-  // le geste le plus proche d'un "nouveau départ" que H-Start propose déjà.
-  // H-Start cible un usage institutionnel/avancé (organisations, grandes entreprises, autorités
+  // le geste le plus proche d'un "nouveau départ" que Consult propose déjà.
+  // Consult cible un usage institutionnel/avancé (organisations, grandes entreprises, autorités
   // publiques, universités, chercheurs...) beaucoup plus vaste qu'Assistant ou Co-work > Discussion
   // (voir ASSISTANT_MAX_MESSAGES/COWORK_DISCUSS_MAX_MESSAGES plus haut dans le fichier) — limites
   // volontairement plus généreuses en attendant de vrais paliers d'abonnement payants (valeurs
@@ -37093,7 +37098,7 @@
   var hstatUserMsgCount = 0;
   var HSTAT_DEFAULT_SUGGESTIONS = ["Calcule un écart-type à partir de données", "Calcule la VAN d'un investissement", "Choisissez un domaine ci-dessus pour des suggestions ciblées"];
 
-  /* Devise utilisée par les calculatrices financières de H-Start (état simple en mémoire, pas de
+  /* Devise utilisée par les calculatrices financières de Consult (état simple en mémoire, pas de
      persistance requise) — réutilise la liste CURRENCIES/fmtMoney déjà définie pour les dossiers,
      par cohérence avec le reste de l'application. Défaut : devise du dossier ouvert. */
   var hstatCurrency = activeCurrencyCode();
@@ -37110,7 +37115,7 @@
     });
   }
 
-  /* Onglets H-Start : « Consultation IA » et « Calculateurs » comme deux sous-pages distinctes
+  /* Onglets Consult : « Consultation IA » et « Calculateurs » comme deux sous-pages distinctes
      (plutôt que tout empilé sur une seule page) — bascule simple d'affichage, cohérente avec le
      style de bouton déjà utilisé ailleurs (voir .hstat-tab-btn.active dans le CSS). */
   var hstatTabConsult = document.getElementById('hstat-tab-consult');
@@ -37265,9 +37270,9 @@
   }
   var hstatInputResize = wireAutoGrowInput(hstatInput, hstatForm);
 
-  /* ================= Modèles enregistrés (H-Start) =================
+  /* ================= Modèles enregistrés (Consult) =================
      Même fonctionnalité que « Mes modèles » de l'Assistant (voir plus haut), adaptée à la
-     Consultation IA de H-Start — persistée séparément sur cet appareil. */
+     Consultation IA de Consult — persistée séparément sur cet appareil. */
   var hstatTemplatesRow = document.getElementById('hstat-templates-row');
   var hstatTemplates = [];
   function loadHstatTemplates(){
@@ -37399,7 +37404,7 @@
     if(e.target.closest('#hstat-domain-wrap')) return;
     closeHstatDomainMenu();
   });
-  /* Pont pour le module « Historique » de H-Start (script séparé en fin de page). */
+  /* Pont pour le module « Historique » de Consult (script séparé en fin de page). */
   window.__hnHstat = {
     history: function(){ return hstatHistory.slice(); },
     domainId: function(){ return hstatDomain ? hstatDomain.id : null; },
@@ -37420,15 +37425,15 @@
   function renderHstatIntro(){
     if(hstatLog.dataset.ready) return;
     hstatLog.dataset.ready = '1';
-    addHstatMsg("Bonjour, je suis HelpNaud.ai — H-Start. Choisissez un domaine ci-dessus pour une consultation avancée orientée. Vous pouvez aussi clavarder (clavardage) librement : écrivez simplement votre question, ou tapez /clavarder.", 'bot');
+    addHstatMsg("Bonjour, je suis HelpNaud.ai — Consult. Choisissez un domaine ci-dessus pour une consultation avancée orientée. Vous pouvez aussi clavarder (clavardage) librement : écrivez simplement votre question, ou tapez /clavarder.", 'bot');
     renderHstatDomainRow();
     fillHstatSuggestRow(HSTAT_DEFAULT_SUGGESTIONS);
   }
 
-  /* ================= Pièce jointe H-Start (menu +) =================
+  /* ================= Pièce jointe Consult (menu +) =================
      Même composant et même logique que le Chat / Co-work Discussion (voir attach-menu-wrap du Chat
      et cowork-discuss-attach-menu-wrap) : photo (appareil photo), image, ou PDF/Excel/CSV — adapté
-     ici pour alimenter la conversation H-Start (hstatHistory/submitHstat) plutôt que celle du Chat. */
+     ici pour alimenter la conversation Consult (hstatHistory/submitHstat) plutôt que celle du Chat. */
   var hstatPendingAttachment = []; // { kind:'image'|'pdf'|'sheet', file?, name, text?, truncated? }
   var hstatAttachChipRow = document.getElementById('hstat-attach-chip-row');
   var hstatFileInput = document.getElementById('hstat-file-input');
@@ -37481,7 +37486,7 @@
         }
         if(!window.hnAttAdd(hstatPendingAttachment, { kind:'image', file:file, name:name })) return;
         renderHstatAttachChip();
-        saveImageToMediaLibrary(file, 'H-Start');
+        saveImageToMediaLibrary(file, 'Consult');
         fillHstatSuggestRow(HSTAT_ATTACH_SUGGESTIONS);
       });
     } else if(/\.pdf$/i.test(lower)){
@@ -37506,16 +37511,16 @@
     });
   });
 
-  // Caractères spéciaux H-Start : mêmes composant/mécanique que le Chat (wireSymbolsMenu), mais avec
+  // Caractères spéciaux Consult : mêmes composant/mécanique que le Chat (wireSymbolsMenu), mais avec
   // le jeu de symboles finance/statistiques dédié (HSTAT_SYMBOLS) plutôt que le jeu générique.
   wireSymbolsMenu('hstat-symbols-btn', 'hstat-symbols-menu', 'hstat-symbols-grid', hstatInput, hstatInputResize, HSTAT_SYMBOLS);
 
-  /* ================= Commandes rapides « / » (H-Start) =================
+  /* ================= Commandes rapides « / » (Consult) =================
      Même mécanique que COWORK_SLASH_COMMANDS (voir plus haut, dans Co-work Discussion) : tapez /
-     suivi d'un mot (ex. /van, /ecart-type, /calculateurs) dans le champ H-Start pour ouvrir un petit
+     suivi d'un mot (ex. /van, /ecart-type, /calculateurs) dans le champ Consult pour ouvrir un petit
      menu de suggestions près du curseur. Contrairement à Co-work (qui change d'outil), la plupart
-     des commandes H-Start complètent simplement le champ de saisie avec un prompt de départ — les
-     deux premières commandes reprennent telles quelles les suggestions déjà visibles dans H-Start
+     des commandes Consult complètent simplement le champ de saisie avec un prompt de départ — les
+     deux premières commandes reprennent telles quelles les suggestions déjà visibles dans Consult
      (HSTAT_DEFAULT_SUGGESTIONS : « écart-type », « VAN ») ; les deux dernières (/calculateurs,
      /domaine) agissent comme des raccourcis (ouvrent l'onglet Calculateurs / le sélecteur de
      domaine), à la manière des commandes Co-work qui ouvrent un outil. */
@@ -37526,7 +37531,7 @@
     { cmd:'sharpe', aliases:['sharpe','ratio'], label:"Calculer un ratio de Sharpe", icon:'📐', text:'Calcule le ratio de Sharpe de ce portefeuille : ' },
     { cmd:'interet', aliases:['interet','intérêt','compose','composé'], label:'Calculer un intérêt composé', icon:'💹', text:"Calcule l'intérêt composé pour : " },
     { cmd:'amortissement', aliases:['amortissement','pret','prêt'], label:"Calculer l'amortissement d'un prêt", icon:'🏦', text:"Calcule l'amortissement de ce prêt : " },
-    { cmd:'clavarder', aliases:['clavarder','clavardage','clavardez','clavarde','discuter','chat'], label:'Clavarder (clavardage) librement avec H-Start', icon:'💬', action:'chat' },
+    { cmd:'clavarder', aliases:['clavarder','clavardage','clavardez','clavarde','discuter','chat'], label:'Clavarder (clavardage) librement avec Consult', icon:'💬', action:'chat' },
     { cmd:'calculateurs', aliases:['calculateurs','calc','calculatrice','calculatrices'], label:'Ouvrir les calculateurs hors-ligne', icon:'🧮', action:'calc' },
     { cmd:'domaine', aliases:['domaine','domain','domaines'], label:'Choisir un domaine de consultation', icon:'🗂️', action:'domain' }
   ];
@@ -37577,7 +37582,7 @@
     menu.hidden = true;
   });
 
-  // Note vocale H-Start : même fabrique partagée que le Chat / Co-work Discussion.
+  // Note vocale Consult : même fabrique partagée que le Chat / Co-work Discussion.
   createVoiceNoteRecorder({
     btnId: 'hstat-mic',
     timerId: 'hstat-mic-timer',
@@ -37587,7 +37592,7 @@
   });
 
   /* ---- Consultant IA expert : doctrine commune + profil mémorisé de l'utilisateur ---- */
-  var HSTART_DOCTRINE = "Tu es H-Start, le consultant IA de HelpNaud.ai : un conseiller de très haut niveau qui répond avec la profondeur d'un expert reconnu du domaine concerné, et qui accompagne la personne dans son travail comme dans sa vie. " +
+  var HSTART_DOCTRINE = "Tu es Consult, le consultant IA de HelpNaud.ai : un conseiller de très haut niveau qui répond avec la profondeur d'un expert reconnu du domaine concerné, et qui accompagne la personne dans son travail comme dans sa vie. " +
     "Méthode : 1) reformule brièvement l'enjeu réel derrière la question ; 2) donne d'abord la réponse ou la recommandation principale, puis le raisonnement ; 3) structure l'analyse (cadres reconnus du domaine, hypothèses explicites, chiffres et formules avec un exemple calculé quand c'est utile, comparaison d'options, scénarios, risques et leviers) ; 4) termine par des prochaines étapes concrètes et priorisées. " +
     "Rigueur : appuie-toi sur les normes, lois, standards et références reconnus du domaine (cite-les par leur nom quand tu es certain), distingue clairement les faits établis, les pratiques courantes et ton opinion, signale les juridictions et les dates qui changent la réponse, et dis franchement quand tu n'es pas sûr ou quand une information récente est nécessaire — n'invente jamais de chiffre, de source, de loi ou de citation. " +
     "Accompagnement : adapte le niveau de langage à la personne, pose au plus une ou deux questions de clarification seulement si elles changent vraiment la réponse (sinon réponds avec des hypothèses annoncées), propose des alternatives, et sois chaleureux et respectueux dans les sujets personnels. " +
@@ -37671,7 +37676,7 @@
     var q = hstatInput.value.trim();
     if(!q) return;
     if(q.length > HSTAT_MAX_CHARS){
-      addHstatMsg("Votre message dépasse la limite de " + HSTAT_MAX_CHARS + " caractères pour H-Start. Raccourcissez-le, ou scindez-le en plusieurs messages.", 'bot');
+      addHstatMsg("Votre message dépasse la limite de " + HSTAT_MAX_CHARS + " caractères pour Consult. Raccourcissez-le, ou scindez-le en plusieurs messages.", 'bot');
       return;
     }
     // Commande rapide (/van, /ecart-type...) : complète le champ au lieu d'envoyer tel quel — voir
@@ -37703,7 +37708,7 @@
   /* ================= Mode vocal (conversation continue) =================
      Au-delà de la note vocale ponctuelle (un tap = un message, voir createVoiceNoteRecorder plus
      haut) et de la lecture à voix haute à la demande (bouton 🔊 par bulle) qui existent déjà dans
-     Assistant, Co-work > Discussion et H-Start, le Mode vocal enchaîne les deux en boucle une fois
+     Assistant, Co-work > Discussion et Consult, le Mode vocal enchaîne les deux en boucle une fois
      activé : (1) démarre l'écoute (même micro/reconnaissance que la note vocale), (2) envoie
      automatiquement la transcription comme message, (3) lit la réponse de l'IA à voix haute dès
      qu'elle arrive (voir autoSpeakBubble), puis (4) relance l'écoute automatiquement — jusqu'à ce
@@ -38410,7 +38415,7 @@
   /* ---- Taille d'échantillon (sondage) ----
      Formule usuelle n0 = z² × p(1-p) / e², avec correction population finie n = n0 / (1 + (n0-1)/N)
      quand une taille de population est renseignée — utile pour sondages, études de marché ou
-     enquêtes publiques/institutionnelles (audience élargie de H-Start). */
+     enquêtes publiques/institutionnelles (audience élargie de Consult). */
   var HSTAT_Z_SCORES = { '90': 1.645, '95': 1.96, '99': 2.576 };
   document.getElementById('hstat-samplesize-calc').addEventListener('click', function(){
     var statusEl = document.getElementById('hstat-samplesize-status');
@@ -38788,7 +38793,7 @@
       btn.classList.toggle('active', btn.dataset.view === name);
     });
     try{ localStorage.setItem('helpnaud_view', name); }catch(e){}
-    /* Écran dégagé : la barre Dossier/Période n'apparaît que sur les vues de données ; ailleurs (Chat, Co-work, H-Start…) elle est repliée et s'ouvre via le bouton « Dossier » du menu. */
+    /* Écran dégagé : la barre Dossier/Période n'apparaît que sur les vues de données ; ailleurs (Chat, Co-work, Consult…) elle est repliée et s'ouvre via le bouton « Dossier » du menu. */
     try{ document.body.classList.toggle('hn-focus', ['dashboard','documents','catalogue','anomalies','report','database'].indexOf(name) < 0); document.body.classList.remove('hn-dossier-open'); }catch(e){}
     if(name === 'settings'){ try{ hnApplyTeamUi(); }catch(e){} }
     scrollAppToTop();
@@ -39132,11 +39137,11 @@
     });
   })();
 
-  /* ================= Lot 7 — Options (Assistant / Co-work / H-Start), recherche, crédits ================= */
+  /* ================= Lot 7 — Options (Assistant / Co-work / Consult), recherche, crédits ================= */
   var HNO_OPTIONS = [
     { n: 1, id: 'assistant', view: 'assistant', emoji: '💬', label: 'Assistant (chat)', best: 'Questions libres, explications, rédaction et analyse de votre dossier.' },
     { n: 2, id: 'cowork', view: 'cowork', emoji: '🫂', label: 'Co-work', best: 'Travailler sur vos fichiers et documents avec les outils (Excel, rapports, rédaction, discussion).' },
-    { n: 3, id: 'hstat', view: 'hstat', emoji: '📈', label: 'H-Start', best: 'Clavardage, statistiques, rédaction de document et analyse de données.' }
+    { n: 3, id: 'hstat', view: 'hstat', emoji: '📈', label: 'Consult', best: 'Clavardage, statistiques, rédaction de document et analyse de données.' }
   ];
   var HNO_SUGGEST = { dashboard: 'assistant', documents: 'assistant', catalogue: 'assistant', anomalies: 'assistant', report: 'assistant', resolutions: 'assistant', library: 'cowork', tasks: 'cowork', database: 'hstat', hweb: 'cowork', hntools: 'cowork', fghlab: 'cowork', settings: 'assistant' };
   function hnoTest(){ return window.__HNO_TEST || {}; }
@@ -39650,7 +39655,7 @@
     var t=document.getElementById('cowork-draft-input'); if(!t) return;
     t.value=b.getAttribute('data-draft-suggest'); t.dispatchEvent(new Event('input',{bubbles:true})); t.focus();
   });
-  /* Réessayer : renvoie la dernière question de l'utilisateur dans la même vue (Assistant, Co-work, H-Start). */
+  /* Réessayer : renvoie la dernière question de l'utilisateur dans la même vue (Assistant, Co-work, Consult). */
   function lastUserText(scope, before){
     var list=[].slice.call(scope.querySelectorAll('.msg.user'));
     if(before){ list=list.filter(function(m){ return !!(m.compareDocumentPosition(before)&Node.DOCUMENT_POSITION_FOLLOWING); }); }
@@ -40119,7 +40124,7 @@
     '<button type="button" class="btn" id="hh-export">⤓ Exporter (.md)</button>'+
     '<input type="search" id="hh-q" placeholder="Rechercher dans mes conversations" aria-label="Rechercher dans mes conversations" style="flex:1 1 180px"><span class="copy-status" id="hh-status"></span></div>'+
     '<div class="hh-list" id="hh-list"></div>'+
-    '<label for="hh-profile" class="hint" style="margin:6px 0 0"><b>Ce que H-Start doit savoir de moi</b> (profession, secteur, pays, objectifs, niveau d’expertise) — utilisé pour personnaliser chaque réponse.</label>'+
+    '<label for="hh-profile" class="hint" style="margin:6px 0 0"><b>Ce que Consult doit savoir de moi</b> (profession, secteur, pays, objectifs, niveau d’expertise) — utilisé pour personnaliser chaque réponse.</label>'+
     '<textarea id="hh-profile" rows="3" maxlength="1200" placeholder="Ex. : Directrice financière d’une PME de transport au Québec ; je préfère des réponses chiffrées et des plans d’action."></textarea>'+
     '<div class="hh-row"><button type="button" class="btn" id="hh-profile-save">Enregistrer ma mémoire</button><button type="button" class="btn" id="hh-profile-clear">Effacer</button>'+
     '<span class="hint" style="margin:0">Stocké uniquement sur cet appareil.</span></div>'+
@@ -40166,7 +40171,7 @@
   });
   document.getElementById('hh-export').addEventListener('click',function(){
     if(!window.__hnHstat) return; var h=window.__hnHstat.history(); if(!h.length){ st('Rien à exporter.'); return; }
-    var md='# Conversation H-Start — '+new Date().toLocaleDateString('fr-CA')+'\n\n'+h.map(function(m){return '**'+(m.role==='user'?'Moi':'H-Start')+'**\n\n'+m.content;}).join('\n\n---\n\n')+'\n';
+    var md='# Conversation Consult — '+new Date().toLocaleDateString('fr-CA')+'\n\n'+h.map(function(m){return '**'+(m.role==='user'?'Moi':'Consult')+'**\n\n'+m.content;}).join('\n\n---\n\n')+'\n';
     var blob=new Blob([md],{type:'text/markdown;charset=utf-8'});
     if(window.claude&&window.__hn){ window.__hn.saveOrFallback({filename:'h-start-conversation.md',data:blob,statusEl:document.getElementById('hh-status'),fallbackText:md}); return; }
     var l=document.createElement('a'); l.href=URL.createObjectURL(blob); l.download='h-start-conversation.md'; document.body.appendChild(l); l.click(); setTimeout(function(){URL.revokeObjectURL(l.href);l.remove();},800);
@@ -40762,7 +40767,7 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
       case 'avatar': var am = $('hnd-avmenu'); if(am){ var has = !!avPhoto(); am.innerHTML = '<button type="button" class="hnd-sub" data-hnd="avpick">📷 <span>' + (has ? 'Changer la photo de profil' : 'Ajouter une photo de profil') + '</span></button>' + (has ? '<button type="button" class="hnd-sub" data-hnd="avrm">🗑️ <span>Retirer la photo</span></button>' : ''); am.hidden = !am.hidden; var sm0 = $('hnd-sessmenu'); if(sm0) sm0.hidden = true; } break;
       case 'avpick': var af = $('hnd-avfile'); if(af) af.click(); break;
       case 'avrm': try{ localStorage.removeItem('helpnaud_user_photo'); }catch(x){} renderAvatar(); var am2 = $('hnd-avmenu'); if(am2) am2.hidden = true; toast('Photo retirée.'); break;
-      case 'newsession': var m = $('hnd-sessmenu'); if(m){ m.innerHTML = '<button type="button" class="hnd-sub" data-hnd-sess="assistant">💬 <span>Assistant (chat)</span></button><button type="button" class="hnd-sub" data-hnd-sess="cowork">🫂 <span>Co-work (discussion)</span></button><button type="button" class="hnd-sub" data-hnd-sess="hstat">📈 <span>H-Start (clavardage)</span></button>'; m.hidden = !m.hidden; } break;
+      case 'newsession': var m = $('hnd-sessmenu'); if(m){ m.innerHTML = '<button type="button" class="hnd-sub" data-hnd-sess="assistant">💬 <span>Assistant (chat)</span></button><button type="button" class="hnd-sub" data-hnd-sess="cowork">🫂 <span>Co-work (discussion)</span></button><button type="button" class="hnd-sub" data-hnd-sess="hstat">📈 <span>Consult (clavardage)</span></button>'; m.hidden = !m.hidden; } break;
     }
   }
   function newSession(kind){
@@ -43998,7 +44003,7 @@ OPS.E.file = function(input, prod){
 
     <h4>Ce que fait le mode</h4>
     <ul>
-      <li>Le mode s'applique à l'<b>Assistant</b>, à <b>Co-work (Discussion)</b> et à <b>H-Start (Consultation IA)</b>.</li>
+      <li>Le mode s'applique à l'<b>Assistant</b>, à <b>Co-work (Discussion)</b> et à <b>Consult (Consultation IA)</b>.</li>
       <li>Vous repartez d'une conversation vierge. Rien de ce que vous écrivez n'est ajouté à votre <b>historique</b> ni à la <b>recherche dans vos conversations</b>.</li>
       <li>Les conversations privées ne sont pas utilisées pour entraîner HelpNaud.</li>
       <li>Les outils d'organisation (renommer, classer dans un projet, historique) sont masqués pendant le mode, car rien n'est enregistré. La ligne sous le champ de saisie reste disponible : <b>Projet</b> (inactif, rien n'est classé), le <b>palier de réponse IA</b> (Plafond, Médiane…) avec son coût en crédits, et le <b>mode de recherche</b> (Manuel ou options de recherche activées).</li>
@@ -44021,7 +44026,7 @@ OPS.E.file = function(input, prod){
 
     <h4>Activer et quitter</h4>
     <ul>
-      <li>Bouton <b>🕶️ Navigation privée</b> dans la barre de l'Assistant, de Co-work ou de H-Start.</li>
+      <li>Bouton <b>🕶️ Navigation privée</b> dans la barre de l'Assistant, de Co-work ou de Consult.</li>
       <li>Raccourci clavier : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>I</kbd> (<kbd>⌘</kbd>+<kbd>Maj</kbd>+<kbd>I</kbd> sur Mac). Certains navigateurs réservent ce raccourci aux outils de développement : utilisez alors le bouton.</li>
       <li>Le mode n'est pas mémorisé : il se désactive à chaque rechargement de la page.</li>
     </ul>
@@ -44200,7 +44205,7 @@ html.hn-incognito .hn-nd-slot{ display:none !important; }
   'use strict';
   /* ===== Centre de suggestions HelpNaud : bandeaux et petits sondages discrets =====
      Un seul à la fois, jamais pendant une génération, jamais en mode incogito, toujours fermables.
-     Contextes : ouverture de l'application, accueil (Tableau de bord), travail dans Assistant / Co-work / H-Start.
+     Contextes : ouverture de l'application, accueil (Tableau de bord), travail dans Assistant / Co-work / Consult.
      Les réponses aux sondages sont gardées sur cet appareil (clé helpnaud_nudges) ; rien n'est envoyé automatiquement. */
   var LS = 'helpnaud_nudges', DAY = 864e5;
   var LOGS = { assistant:'chat-log', cowork:'cowork-discuss-log', hstat:'hstat-log' };
@@ -44425,10 +44430,10 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
 <script id="hn-att-js">
 (function(){
   'use strict';
-  /* ===== Coller / glisser des captures et documents dans Assistant, Co-work (Discussion) et H-Start =====
+  /* ===== Coller / glisser des captures et documents dans Assistant, Co-work (Discussion) et Consult =====
      - Ctrl+V (ou Cmd+V) dans le champ de saisie : une capture d'écran, une image, un PDF, un fichier Excel ou CSV copié est joint,
        exactement comme avec le bouton « Joindre ».
-     - Glisser-déposer un fichier sur Assistant ou H-Start (Co-work Discussion le faisait déjà).
+     - Glisser-déposer un fichier sur Assistant ou Consult (Co-work Discussion le faisait déjà).
      - Grandes images : réduites automatiquement (le serveur refuse les images trop lourdes).
      - PDF scanné (sans texte) : les 3 premières pages sont jointes comme une image, lue visuellement par l'IA (pas une vraie reconnaissance OCR).
      Jusqu'à 4 fichiers par message, chacun retirable séparément (✕). Tout passe par les champs fichier existants : mêmes règles, mêmes messages. */
@@ -44959,7 +44964,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
     deliver(input, files);
   }, true);
 
-  /* ----- Glisser-déposer sur Assistant et H-Start ----- */
+  /* ----- Glisser-déposer sur Assistant et Consult ----- */
   function activeView(){ var v = document.querySelector('section.view:not([hidden])'); return v ? v.id.replace(/^view-/, '') : ''; }
   function hasFiles(e){ var dt = e.dataTransfer; if(!dt) return false; return Array.prototype.indexOf.call(dt.types || [], 'Files') !== -1; }
   var dragT = null;
@@ -44986,7 +44991,7 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
 
 <style id="hn-cl-css">
 /* ===== Espaces de travail façon Claude : grande zone de lecture, texte plus grand, moins de cadres superposés =====
-   Concerne les 4 conversations : Assistant, Co-work (Discussion), H-Start (Consultation IA), F-i-Stat (Consultation IA). */
+   Concerne les 4 conversations : Assistant, Co-work (Discussion), Consult (Consultation IA), F-i-Stat (Consultation IA). */
 #chat-log, #cowork-discuss-log, #hstat-log, #hstatis-log{
   padding: 22px max(14px, calc((100% - 840px) / 2)) 16px;
   gap: 18px;
@@ -45322,7 +45327,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
   function toast(t){ var d = document.createElement('div'); d.className = 'hn-mn-toast'; d.setAttribute('role', 'status'); d.textContent = t; document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 4200); }
   function mk(tag, cls, html){ var e = document.createElement(tag); if(cls) e.className = cls; if(html != null) e.innerHTML = html; return e; }
 
-  /* ---------- Adaptateurs : une conversation = Assistant, Co-work, H-Start ou F-i-Stat ---------- */
+  /* ---------- Adaptateurs : une conversation = Assistant, Co-work, Consult ou F-i-Stat ---------- */
   function projAPI(){ var a = window.__hnConvAPI && (window.__hnConvAPI.assistant || window.__hnConvAPI['cowork-discuss']); return a ? a.projects : null; }
   function convAdapter(scope){
     function A(){ return window.__hnConvAPI && window.__hnConvAPI[scope]; }
@@ -45351,7 +45356,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
       history:function(){ return window.__hnHstat ? window.__hnHstat.history() : []; },
       rec:rec, note:HH_NOTE,
       linkKey:function(){ var h = H(); return 'hstat:' + (h && h.cur() || 'tmp'); },
-      title:function(){ var r = rec(); return (r && r.title) || 'Consultation H-Start'; },
+      title:function(){ var r = rec(); return (r && r.title) || 'Consultation Consult'; },
       rename:function(){ var r = rec(); if(!r){ toast(HH_NOTE); return; } var n = window.prompt('Renommer cette conversation :', r.title || ''); if(n && n.trim()) upd(function(c){ c.title = n.trim().slice(0, 80); }); },
       pinned:function(){ var r = rec(); return !!(r && r.pinned); },
       pin:function(){ return upd(function(c){ c.pinned = !c.pinned; }); },
@@ -45620,4 +45625,28 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
 })();
 </script>
 
+<script>
+/* Hauteur de la zone de réponse (Assistant, Co-work > Discussion, Consult) : sur mobile, la zone occupe tout
+   l'espace libre jusqu'à la barre de navigation du bas (plus de bande vide sous l'avertissement). */
+(function(){
+  var SEL = ['#view-assistant .chat-shell', '#cowork-panel-discuss .chat-shell', '#hstat-tab-consult .chat-shell'];
+  function fit(){
+    try{
+      var nav = document.getElementById('nav-mobile');
+      var mobile = window.innerWidth <= 860 && nav && getComputedStyle(nav).display !== 'none' && getComputedStyle(nav).position === 'fixed';
+      SEL.forEach(function(sel){
+        var el = document.querySelector(sel); if(!el) return;
+        if(!mobile || !el.offsetParent){ if(el.dataset.hnFit){ el.style.removeProperty('height'); el.style.removeProperty('min-height'); delete el.dataset.hnFit; } return; }
+        var r = el.getBoundingClientRect(), navTop = nav.getBoundingClientRect().top;
+        var h = Math.round(navTop - (r.top + (window.scrollY || 0)) - 10);
+        h = Math.max(300, Math.min(h, 1000));
+        if(el.dataset.hnFit !== String(h)){ el.dataset.hnFit = String(h); el.style.setProperty('height', h + 'px', 'important'); el.style.setProperty('min-height', '0', 'important'); }
+      });
+    }catch(e){}
+  }
+  window.addEventListener('resize', fit); window.addEventListener('orientationchange', function(){ setTimeout(fit, 300); });
+  document.addEventListener('click', function(){ setTimeout(fit, 120); setTimeout(fit, 600); }, true);
+  setInterval(fit, 1000); setTimeout(fit, 800);
+})();
+</script>
 </body></html>
