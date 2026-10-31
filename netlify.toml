@@ -16,3 +16,20 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"
+
+# Page d'aide « Plateforme » (lien de l'avertissement sous les réponses de l'IA)
+[[redirects]]
+  from = "/Platforme"
+  to = "/platforme.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/platforme"
+  to = "/platforme.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/Plateforme"
+  to = "/platforme.html"
+  status = 200
+  force = true
