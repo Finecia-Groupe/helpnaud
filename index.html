@@ -45686,7 +45686,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
 <style id="hn-webmode-css">
 body.hn-webmode .sidebar .nav-btn:not([data-view="hweb"]):not([data-view="settings"]),body.hn-webmode .mobile-nav button:not([data-view="hweb"]):not([data-view="settings"]){display:none!important}
 #hn-webbar{display:none}
-body.hn-webmode #hn-webbar{display:flex;position:fixed;z-index:9999;left:50%;transform:translateX(-50%);bottom:12px;width:min(94vw,760px);gap:6px 14px;align-items:center;justify-content:center;flex-wrap:wrap;padding:8px 14px;border-radius:14px;background:#16304a;color:#fff;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.3);text-align:center}@media(max-width:820px){body.hn-webmode #hn-webbar{bottom:72px}}
+body.hn-webmode #hn-webbar{display:flex;flex-direction:column;gap:4px;margin:auto 10px 12px;padding:10px 12px;border-radius:12px;background:#16304a;color:#fff;font-size:12px;line-height:1.4;text-align:left}body.hn-webmode #hn-webbar span{display:block}@media(max-width:820px){body.hn-webmode #hn-webbar{display:flex;position:fixed;z-index:9999;left:50%;transform:translateX(-50%);bottom:72px;width:min(94vw,560px);margin:0;flex-direction:row;flex-wrap:wrap;justify-content:center;text-align:center}}
 body.hn-webmode #hn-webbar a{color:#fff;text-decoration:underline}
 body.hn-webmode #hweb-ways{border-color:#2d9c93}
 </style><script>
@@ -45696,7 +45696,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   try{ document.title='HelpNaud H-Web — Créez votre site'; }catch(e){}
   var bar=document.createElement('div'); bar.id='hn-webbar';
   bar.innerHTML='<span><b>HelpNaud H-Web</b> · page dédiée pour créer votre site web rapidement</span><span><a href="/">Ouvrir l’application HelpNaud complète</a> · <a href="/Platforme#hweb" target="_blank" rel="noopener">Guide H-Web</a></span>';
-  document.body.insertBefore(bar,document.body.firstChild);
+  var sb=document.querySelector('.sidebar'); if(sb){ sb.appendChild(bar); } else { document.body.insertBefore(bar,document.body.firstChild); }
   function go(){ try{ if(typeof showView==='function') showView('hweb'); }catch(e){} }
   /* showView est dans l'IIFE principale : on clique le bouton de menu H-Web, puis on réessaie après le chargement */
   function click(){ var b=document.querySelector('.nav-btn[data-view="hweb"]'); if(b) b.click(); }
