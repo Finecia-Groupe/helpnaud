@@ -4092,6 +4092,12 @@
           <p class="hint plan-note" style="margin:6px 0 0;">💳 La génération et la régénération par l’IA utilisent votre forfait et votre crédit IA ; l’aperçu, la galerie de sections, les thèmes et le téléchargement restent inclus. <a href="#" data-go-plans="1">Voir les forfaits</a></p>
         </div>
       </header>
+      <div class="card" id="hweb-ways" style="margin-bottom:14px;">
+        <h2 style="margin:0 0 6px;">Deux façons de travailler avec H-Web</h2>
+        <p style="margin:0 0 8px;"><b>1. Dans l’application HelpNaud</b> : restez dans votre espace de travail et ouvrez H-Web depuis le menu, avec vos conversations, vos dossiers et votre forfait.</p>
+        <p style="margin:0 0 8px;"><b>2. Sur la page dédiée</b> <a href="https://helpnaud.ai/Web" target="_blank" rel="noopener">helpnaud.ai/Web</a> : une page réservée à H-Web, pour créer un site rapidement, sans le reste de l’application. Même compte, même forfait, même crédit IA.</p>
+        <p class="hint" style="margin:0;">🏗️ <b>À venir sur helpnaud.ai/Web</b> : héberger, loger et sauvegarder les sites de vos entreprises directement dans l’interface web de HelpNaud (« Mes sites »), au lieu de les télécharger puis les héberger ailleurs. Cette fonction est en préparation ; elle sera annoncée dans les notes de version.</p>
+      </div>
 
       <div class="card cowork-panel" id="hweb-panel">
         <div class="cowork-panel-head">
@@ -45670,4 +45676,23 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
   setInterval(fit, 1000); setTimeout(fit, 800);
 })();
 </script>
-</body></html>
+<style id="hn-webmode-css">
+body.hn-webmode .sidebar .nav-btn:not([data-view="hweb"]):not([data-view="settings"]),body.hn-webmode .mobile-nav button:not([data-view="hweb"]):not([data-view="settings"]){display:none!important}
+#hn-webbar{display:none}
+body.hn-webmode #hn-webbar{display:flex;position:fixed;z-index:9999;left:50%;transform:translateX(-50%);bottom:12px;width:min(94vw,760px);gap:6px 14px;align-items:center;justify-content:center;flex-wrap:wrap;padding:8px 14px;border-radius:14px;background:#16304a;color:#fff;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.3);text-align:center}@media(max-width:820px){body.hn-webmode #hn-webbar{bottom:72px}}
+body.hn-webmode #hn-webbar a{color:#fff;text-decoration:underline}
+body.hn-webmode #hweb-ways{border-color:#2d9c93}
+</style><script>
+(function(){
+  if(!/^\/(h-?web|web)\/?$/i.test(location.pathname)) return;
+  document.body.classList.add('hn-webmode');
+  try{ document.title='HelpNaud H-Web — Créez votre site'; }catch(e){}
+  var bar=document.createElement('div'); bar.id='hn-webbar';
+  bar.innerHTML='<span><b>HelpNaud H-Web</b> · page dédiée pour créer votre site web rapidement</span><span><a href="/">Ouvrir l’application HelpNaud complète</a> · <a href="/Platforme#hweb" target="_blank" rel="noopener">Guide H-Web</a></span>';
+  document.body.insertBefore(bar,document.body.firstChild);
+  function go(){ try{ if(typeof showView==='function') showView('hweb'); }catch(e){} }
+  /* showView est dans l'IIFE principale : on clique le bouton de menu H-Web, puis on réessaie après le chargement */
+  function click(){ var b=document.querySelector('.nav-btn[data-view="hweb"]'); if(b) b.click(); }
+  [300,1200,2500].forEach(function(t){ setTimeout(click,t); });
+})();
+</script></body></html>
