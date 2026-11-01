@@ -3,7 +3,7 @@
   .fghlab-navbar .btn{ padding:5px 12px; font-size:13px; white-space:nowrap; }
   .fghlab-navbar .btn:disabled{ opacity:.4; cursor:default; }
   .lead-steps{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px; padding-top:6px; border-top:1px dashed var(--line); }
-</style></head><body>
+</style></head><body class="hn-owner-hidden">
 <title>HelpNaud</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" data-hn-default="1">
 <link rel="icon" href="/favicon.ico" sizes="any" data-hn-default="1">
@@ -624,6 +624,11 @@
   /* Barre d'actions de saisie : micro · ondes (mode vocal) · envoyer · arrêter */
   .chat-input-wrap.has-actions textarea{ padding-right:118px; }
   .chat-form.is-generating .chat-input-wrap.has-actions textarea{ padding-right:154px; }
+
+  .hn-welcome{ text-align:center; margin:4px 0 16px; font-family:"Times New Roman", Times, Georgia, serif; }
+  .hn-welcome h2.hn-w-h{ margin:0 0 6px; font-size:clamp(24px,6vw,36px); line-height:1.15; font-weight:700; color:var(--ink); }
+  .hn-welcome p.hn-w-p{ margin:0; font-size:clamp(15px,3.8vw,19px); line-height:1.4; color:var(--ink); }
+  html.hn-private-tab .incog-hero.hn-typing > h3, html.hn-private-tab .incog-hero.hn-typing > p, html.hn-private-tab .incog-hero.hn-typing > .incog-more{ display:none; }
   .hn-ai-note-link{ color:inherit; text-decoration:underline; text-decoration-color:rgba(60,110,200,.7); text-underline-offset:3px; cursor:pointer; }
   .hn-ai-note-link:hover{ color:var(--accent, #16304A); }
   .hn-ai-note{ margin:6px 0 0; text-align:center; font-size:11.5px; line-height:1.4; color:var(--muted); }
@@ -1341,6 +1346,8 @@
      la sienne) ; les autres utilisateurs ne les voient pas. Masquage d'affichage seulement : la vraie
      protection reste côté serveur (Supabase). */
   body.hn-owner-hidden #fghlab-owner-cloud-card, body.hn-owner-hidden #setting-restrict-card{ display:none !important; }
+  /* Fiche interne des forfaits (« Vue propriétaire ») : réservée au propriétaire ; la phrase d'information sur les forfaits reste visible pour tous. */
+  body.hn-owner-hidden #plans-admin-toggle, body.hn-owner-hidden #plans-admin-panel{ display:none !important; }
   body.hn-member-hidden #fghlab-brandlogo-card{ display:none !important; }
   body.hn-admin-hidden #fghlab-admin-card{ display:none !important; }
   .legal-text{ font-size:12.5px; line-height:1.65; color:var(--ink); max-height:360px; overflow-y:auto; padding-right:8px; }
@@ -5133,6 +5140,7 @@
         <p class="hint" id="cust-intro" style="margin:0 0 10px;">Créez gratuitement votre compte HelpNaud pour utiliser l'assistant IA (crédits d'essai chaque mois) et retrouver votre forfait sur tous vos appareils.</p>
         <p class="hint" id="cust-msg" hidden role="status" style="margin:0 0 10px; font-weight:600;"></p>
         <div id="cust-out">
+          <div class="hn-welcome"><h2 class="hn-w-h">Interrogez votre quotidien et l’avenir</h2><p class="hn-w-p">HelpNaud, Votre partenaire de réflexion immédiate pour de grandes ambitions.</p></div>
           <div style="display:flex; gap:6px; margin-bottom:10px;">
             <button type="button" class="btn primary" id="cust-tab-login" style="padding:6px 12px; font-size:12.5px;">Connexion</button>
             <button type="button" class="btn" id="cust-tab-signup" style="padding:6px 12px; font-size:12.5px;">Créer un compte</button>
@@ -31829,13 +31837,20 @@
     "👋 Bonjour ! Saviez-vous que HelpNaud.ai peut générer vos rapports Excel et PowerPoint automatiquement ? Essayez Co-work dès aujourd'hui.",
     "📊 Votre tableau de bord a évolué ce mois-ci. Consultez vos nouvelles anomalies détectées par HelpNaud.ai en un clic.",
     "🚀 Nouveau : Consult couvre maintenant 42 domaines d'expertise — finance, droit, santé, agriculture et plus. Explorez-les dans votre espace HelpNaud.ai.",
-    "🔔 Il y a 30 jours que vous n'avez pas consulté vos Résolutions. HelpNaud.ai vous aide à garder le contrôle — revenez y jeter un œil."
+    "🔔 Il y a 30 jours que vous n'avez pas consulté vos Résolutions. HelpNaud.ai vous aide à garder le contrôle — revenez y jeter un œil.",
+    "💬 Une question sur vos chiffres ? Posez-la à HelpNaud.ai dans Chat : la réponse arrive en quelques secondes, avec le coût en crédits affiché avant l'envoi.",
+    "🔎 Besoin d'une source fiable ? Activez la recherche web ou les données publiques dans les options de recherche : HelpNaud.ai cite les sources réellement consultées.",
+    "🕶️ Une conversation confidentielle ? Ouvrez la Navigation privée depuis le menu ⋯ : rien n'est enregistré dans votre historique."
   ];
   var MKT_TEMPLATES_SOCIAL = [
-    "HelpNaud.ai, propulsé par Claude.ai 🤖 — le contrôle financier et les outils IA réunis dans une seule plateforme. Analysez, rédigez, calculez, décidez. #GestionFinancière #IA",
-    "Des chiffres aux décisions, en quelques clics. HelpNaud.ai transforme vos données financières en rapports clairs, grâce à l'intelligence artificielle de Claude. #Finance #Automatisation",
+    "HelpNaud.ai, propulsé par FINECIA GROUPE 🤖 — le contrôle financier et les outils IA réunis dans une seule plateforme. Analysez, rédigez, calculez, décidez. #GestionFinancière #IA",
+    "Des chiffres aux décisions, en quelques clics. HelpNaud.ai transforme vos données financières ou économiques en rapports clairs, grâce à l'intelligence artificielle. #Finance #Automatisation #Économie",
+    "Des astuces aux créations, en quelques clics. HelpNaud.ai transforme vos idées en projet clair et présentable, grâce à l'intelligence artificielle. #Projet #Contenus #Transformation #Crédibilité",
     "Universités, banques, administrations publiques : Consult par HelpNaud.ai met 42 domaines d'expertise et des dizaines de calculateurs à votre portée. #Institutions #DataDriven",
-    "Essayez HelpNaud.ai gratuitement avec le forfait Pilote — aucune carte de crédit requise. Le contrôle financier, augmenté par l'IA. #Essai #FinTech"
+    "Essayez HelpNaud.ai gratuitement avec le forfait Pilote — aucune carte de crédit requise. Le contrôle financier, augmenté par l'IA. #Essai #FinTech",
+    "Un conseiller IA dans votre poche 📱 HelpNaud.ai s'utilise sur mobile, directement dans le navigateur : Chat, Co-work et Consult, partout où vous travaillez. #IA #Mobile",
+    "Vérifier, comparer, décider, avec la recherche web et les données publiques. #DonnéesPubliques #Finance #Économie #Santé #Statistique #Éducation&Recherche #42domaines",
+    "Entrepreneurs, PME, étudiants : HelpNaud.ai vous aide à structurer un projet, calculer vos coûts et préparer vos présentations. Essayez-le. #Entrepreneuriat #PME"
   ];
   function renderMktGroup(containerId, templates, groupKey){
     var el = document.getElementById(containerId);
@@ -45214,8 +45229,10 @@ html.hn-private-tab:not(.hn-private-ready) body{ visibility:hidden; }
   }
   function retitleHero(){
     var hero = document.querySelector('#view-assistant .incog-hero'); if(!hero) return;
-    var h3 = hero.querySelector('h3 span:last-child'); if(h3) h3.textContent = 'Vous êtes en mode incogito';
-    var p = hero.querySelector('p'); if(p) p.innerHTML = 'Clavardez et posez vos questions à HelpNaud.<br>Les sessions incogito n’apparaissent ni dans votre historique ni dans la recherche.<br>Vos messages consomment tout de même votre forfait et vos crédits IA.';
+    var h3e = hero.querySelector('h3'); if(h3e){ h3e.innerHTML = 'Interrogez vos idées et l’avenir'; h3e.style.cssText = 'font-family:"Times New Roman",Times,Georgia,serif; font-weight:700; justify-content:center;'; }
+    var p = hero.querySelector('p'); if(p){ p.textContent = 'HelpNaud, Votre partenaire de réflexion immédiate pour de grandes ambitions.'; p.style.cssText = 'font-family:"Times New Roman",Times,Georgia,serif; font-size:18px; color:var(--ink);'; }
+    var inp = document.getElementById('chat-input');
+    if(inp && !inp.dataset.hnTyping){ inp.dataset.hnTyping = '1'; inp.addEventListener('input', function(){ hero.classList.toggle('hn-typing', !!inp.value.trim()); }); }
   }
   function enforce(){
     var v = document.getElementById('view-assistant');
