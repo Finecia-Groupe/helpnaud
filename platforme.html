@@ -22,7 +22,7 @@ nav.toc a.t{padding:7px 10px;font-weight:600;margin-top:4px}
 nav.toc a.st{padding:4px 10px 4px 30px;font-size:13px;color:var(--muted);border-left:2px solid var(--line);margin-left:16px}
 nav.toc a.st .en{display:block;font-size:11.5px;opacity:.85}
 nav.toc a.t .en{display:block;font-size:12px;font-weight:400;color:var(--muted)}
-nav.toc a.t{display:block}.chev{display:inline-block;width:1em;transition:transform .15s;color:var(--muted)}.grp.open>a.t .chev{transform:rotate(90deg)}.grp:not(.open)>.subs{display:none}
+nav.toc a.t{display:block}.chev{display:inline-block;width:1em;transition:transform .15s;color:var(--muted)}.grp.exp>a.t .chev{transform:rotate(90deg)}.grp:not(.exp)>.subs{display:none}
 .extra{margin:10px 0 4px;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:14.5px}
 nav.toc a:hover{background:var(--soft)}nav.toc a.on{background:var(--soft);color:var(--accent);font-weight:700;border-left-color:var(--accent2)}
 .card,article{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
@@ -58,11 +58,11 @@ function show(id,scroll){var found=false;arts.forEach(function(a){var on=a.datas
  if(!found){id='';}
  document.getElementById('hero').hidden=!!id;
  links.forEach(function(l){l.classList.toggle('on',l.dataset.s===id)});
- var ga=document.querySelector('article:not([hidden])');if(ga&&ga.dataset.g){var gg=toc.querySelector('.grp[data-g="'+ga.dataset.g+'"]');if(gg)gg.classList.add('open')}
+ var ga=document.querySelector('article:not([hidden])');if(ga&&ga.dataset.g){var gg=toc.querySelector('.grp[data-g="'+ga.dataset.g+'"]');if(gg)gg.classList.add('exp')}
  var cur=toc.querySelector('a.on');if(cur&&cur.scrollIntoView&&window.innerWidth>820){var r=cur.getBoundingClientRect(),t=toc.getBoundingClientRect();if(r.top<t.top||r.bottom>t.bottom)cur.scrollIntoView({block:'center'})}
  if(scroll)window.scrollTo(0,0);if(id.indexOf('/')>-1||!id)toc.classList.remove('show')}
 function route(sc){show(decodeURIComponent((location.hash||'').slice(1)),sc)}
 window.addEventListener('hashchange',function(){route(true)});
-toc.querySelectorAll('.grp>a.t').forEach(function(a){a.addEventListener('click',function(e){var g=a.parentNode;if(g.classList.contains('open')){e.preventDefault();g.classList.remove('open')}else{g.classList.add('open')}})});
+toc.querySelectorAll('.grp>a.t').forEach(function(a){a.addEventListener('click',function(e){var g=a.parentNode;if(g.classList.contains('exp')){e.preventDefault();g.classList.remove('exp')}else{g.classList.add('exp')}})});
 document.getElementById('mb').addEventListener('click',function(){toc.classList.toggle('show')});
 route(false);})();</script></body></html>
