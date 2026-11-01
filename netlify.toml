@@ -33,3 +33,45 @@
   to = "/platforme.html"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/Web"
+  to = "/platforme.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/web"
+  to = "/platforme.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/WEB"
+  to = "/platforme.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/H-web"
+  to = "/platforme.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/h-web"
+  to = "/platforme.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/H-Web"
+  to = "/platforme.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/hweb"
+  to = "/platforme.html"
+  status = 200
+  force = true
