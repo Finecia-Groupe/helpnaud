@@ -2996,7 +2996,7 @@
           <h1 style="margin:0; display:flex; align-items:center; gap:10px;"><svg viewBox="0 0 240 240" width="32" height="32" style="stroke:none; flex:none;" role="img" aria-label="Consult"><circle cx="120" cy="120" r="95" fill="none" stroke="#2D9C93" stroke-width="14"/><polygon points="120,35 148,120 120,108" fill="#16304A"/><polygon points="120,205 92,120 120,132" fill="#C89B3C"/><circle cx="120" cy="120" r="11" fill="#16304A"/></svg>Consult</h1>
           <p class="sub">Consultation IA avancée par domaine (statistiques, finance, économie, portefeuilles, gestion de projets, informatique, génie, droit, éducation, vie, travail, cuisine &amp; hôtellerie, assurance, santé), et calculatrices hors-ligne dédiées.</p>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div id="hstat-cur-holder" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <label for="hstat-currency" class="hint" style="margin:0;">Devise</label>
           <select id="hstat-currency"></select>
         </div>
@@ -5789,6 +5789,7 @@
     </section>
     <div class="card" id="hn-site-plat-card"><h2>🌐 Site Plateforme</h2><p style="color:var(--muted); margin:6px 0 12px;">Guides, FAQ, rôle de chaque espace (Chat, Co-work, Consult, HelpNaud Web) et notre mission : tout HelpNaud en un site, en français et en anglais.</p><a class="btn" href="https://helpnaud.ai/Platforme#mission/0" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">Ouvrir le site Plateforme ↗</a></div>
     <div class="card" id="hn-site-web-card"><h2>🧩 HelpNaud H-Web</h2><p style="color:var(--muted); margin:6px 0 12px;">Créez un vrai site web pour votre entreprise : guide complet, étapes, formats de téléchargement, mise en ligne et fonctionnalités supplémentaires.</p><a class="btn" href="https://helpnaud.ai/Web" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">Ouvrir le site H-Web ↗</a></div>
+    <div class="card" id="hn-tips-card"><h2>💡 Rappels HelpNaud</h2><p style="color:var(--muted); margin:6px 0 10px;">De temps en temps, un court message discret (par exemple sur Consult) peut apparaître en bas de l’écran pendant que vous travaillez. Il ne bloque jamais votre saisie.</p><label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="hn-tips-on"> Afficher les rappels HelpNaud</label></div>
     <footer id="hn-contact-foot" style="text-align:center; font-size:12px; color:var(--muted); padding:18px 12px 28px;"><div style="margin-bottom:4px;"><a href="/Platforme" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">HelpNaud est une IA qui vous aide au quotidien et peut faire des erreurs. Vérifiez les informations importantes.</a></div>HelpNaud.ai — Powered by FINECIA GROUPE · <a href="mailto:contact@helpnaud.ai">contact@helpnaud.ai</a> · <a href="mailto:support@helpnaud.ai">support@helpnaud.ai</a></footer>
   </main>
 </div>
@@ -31848,7 +31849,9 @@
     "🔔 Il y a 30 jours que vous n'avez pas consulté vos Résolutions. HelpNaud.ai vous aide à garder le contrôle — revenez y jeter un œil.",
     "💬 Une question sur vos chiffres ? Posez-la à HelpNaud.ai dans Chat : la réponse arrive en quelques secondes, avec le coût en crédits affiché avant l'envoi.",
     "🔎 Besoin d'une source fiable ? Activez la recherche web ou les données publiques dans les options de recherche : HelpNaud.ai cite les sources réellement consultées.",
-    "🕶️ Une conversation confidentielle ? Ouvrez la Navigation privée depuis le menu ⋯ : rien n'est enregistré dans votre historique."
+    "🕶️ Une conversation confidentielle ? Ouvrez la Navigation privée depuis le menu ⋯ : rien n'est enregistré dans votre historique.",
+    "Je suis HelpNaud.ai - Consult, l'agent de consultation IA avancé par domaines, avec des réponses poussées et approfondies. Clavardez profondément avec HelpNaud dans Consult.",
+    "Cliquez sur « Clavardage » pour ouvrir l'espace Consult de HelpNaud. Consultation IA avancée par domaine. Essayez-le pour faire la différence."
   ];
   var MKT_TEMPLATES_SOCIAL = [
     "HelpNaud.ai, propulsé par FINECIA GROUPE 🤖 — le contrôle financier et les outils IA réunis dans une seule plateforme. Analysez, rédigez, calculez, décidez. #GestionFinancière #IA",
@@ -31858,7 +31861,9 @@
     "Essayez HelpNaud.ai gratuitement avec le forfait Pilote — aucune carte de crédit requise. Le contrôle financier, augmenté par l'IA. #Essai #FinTech",
     "Un conseiller IA dans votre poche 📱 HelpNaud.ai s'utilise sur mobile, directement dans le navigateur : Chat, Co-work et Consult, partout où vous travaillez. #IA #Mobile",
     "Vérifier, comparer, décider, avec la recherche web et les données publiques. #DonnéesPubliques #Finance #Économie #Santé #Statistique #Éducation&Recherche #42domaines",
-    "Entrepreneurs, PME, étudiants : HelpNaud.ai vous aide à structurer un projet, calculer vos coûts et préparer vos présentations. Essayez-le. #Entrepreneuriat #PME"
+    "Entrepreneurs, PME, étudiants : HelpNaud.ai vous aide à structurer un projet, calculer vos coûts et préparer vos présentations. Essayez-le. #Entrepreneuriat #PME",
+    "HelpNaud fait la différence. C'est l'outil IA pensé pour les humains et les entreprises. Essayez-le en un clic.",
+    "HelpNaud, c'est la différence. C'est l'outil IA pensé pour vous. Essayez-le."
   ];
   function renderMktGroup(containerId, templates, groupKey){
     var el = document.getElementById(containerId);
@@ -45423,7 +45428,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
 
   /* ---------- Menu ⋯ ---------- */
   var openM = null;
-  function closeMenu(refocus){ if(!openM) return; var b = openM.btn; if(openM.el.parentNode) openM.el.parentNode.removeChild(openM.el); b.setAttribute('aria-expanded', 'false'); openM = null; if(refocus) try{ b.focus(); }catch(e){} }
+  function closeMenu(refocus){ if(!openM) return; var b = openM.btn; var _cs = document.getElementById('hstat-currency'), _ch = document.getElementById('hstat-cur-holder'); if(_cs && _ch && !_ch.contains(_cs)){ _cs.style.cssText = ''; _ch.appendChild(_cs); } if(openM.el.parentNode) openM.el.parentNode.removeChild(openM.el); b.setAttribute('aria-expanded', 'false'); openM = null; if(refocus) try{ b.focus(); }catch(e){} }
   function place(m, btn){
     var r = btn.getBoundingClientRect(), w = m.offsetWidth || 268;
     var left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8), top = r.bottom + 6;
@@ -45437,6 +45442,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
     function item(icon, label, fn, o){ o = o || {}; var b = mk('button', o.danger ? 'danger' : '', icon + '<span' + (o.head ? ' class="hn-mn-h"' : '') + '>' + label + '</span>' + (o.arrow ? '<span class="hn-mn-arrow">' + IC.chev + '</span>' : '') + (o.check ? '<span class="hn-mn-ck">✓</span>' : '')); b.type = 'button'; b.setAttribute('role', 'menuitem'); if(o.disabled) b.disabled = true; b.addEventListener('click', function(){ fn(); }); m.appendChild(b); return b; }
     function sep(){ m.appendChild(mk('div', 'hn-mn-sep')); }
     function main(){
+      var _cs = document.getElementById('hstat-currency'), _ch = document.getElementById('hstat-cur-holder'); if(_cs && _ch && !_ch.contains(_cs)) _ch.appendChild(_cs);
       m.innerHTML = '';
       var hist = ad.history(), has = hist.length > 0, priv = isPriv(), can = ad.persist && !priv;
       if(can){
@@ -45444,6 +45450,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
         item(IC.pin, ad.pinned() ? 'Désépingler' : 'Épingler', function(){ if(ad.pin()){ closeMenu(); toast(ad.pinned() ? 'Conversation épinglée.' : 'Épinglage retiré.'); } else { toast(ad.note || 'Envoyez d’abord un message.'); } }, { disabled:!has });
       }
       if(can) sep();
+      if(key === 'hstat' && _cs){ var _row = mk('div', 'hn-mn-cur'); _row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;'; var _lb = mk('span', '', 'Devise'); _lb.style.cssText = 'font-size:13.5px;'; _row.appendChild(_lb); _cs.style.cssText = 'flex:1;min-width:0;'; _row.appendChild(_cs); m.appendChild(_row); }
       item(IC.files, 'Afficher les fichiers du chat', function(){ closeMenu(); openViewer(key); });
       item(IC.gear, 'Réglages de la conversation', function(){ closeMenu(); var sh = btn.closest('.chat-shell'), t = sh && sh.querySelector('.hn-opt-toggle'); if(t) t.click(); var p = sh && sh.querySelector('.hn-opts-panel'); if(p && p.scrollIntoView) setTimeout(function(){ p.scrollIntoView({ block:'nearest' }); }, 30); });
       (function(){
@@ -45694,5 +45701,99 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   /* showView est dans l'IIFE principale : on clique le bouton de menu H-Web, puis on réessaie après le chargement */
   function click(){ var b=document.querySelector('.nav-btn[data-view="hweb"]'); if(b) b.click(); }
   [300,1200,2500].forEach(function(t){ setTimeout(click,t); });
+})();
+</script><style id="hn-consult-hdr-css">
+#view-hstat > header.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#view-hstat > header.topbar > #hstat-cur-holder{display:none!important}
+#view-hstat > header.topbar > div:first-child .sub{display:none}
+#view-hstat > header.topbar #hstat-tabs-row{margin:0!important;flex-wrap:wrap;margin-left:auto!important}
+#view-hstat > header.topbar .incog-toggle{margin-left:0}
+#hstat-title-info{position:relative;display:inline-flex;vertical-align:middle;margin-left:4px}
+#hstat-title-info>button{width:26px;height:26px;padding:0;display:inline-grid;place-items:center;border-radius:50%}
+#hstat-title-info svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+#hstat-title-pop{position:absolute;z-index:60;left:0;top:calc(100% + 6px);width:min(340px,80vw);padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface,#fff);color:var(--ink,inherit);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;font-weight:400;line-height:1.5;text-align:left}
+#hstat-title-pop[hidden]{display:none}
+</style><script>
+(function(){
+  var hd=document.querySelector('#view-hstat > header.topbar'); if(!hd) return;
+  var tabs=document.getElementById('hstat-tabs-row'), h1=hd.querySelector('h1'), sub=hd.querySelector('.sub');
+  var tg=hd.querySelector('.incog-toggle');
+  if(tabs){ hd.insertBefore(tabs, tg||null); }
+  if(h1 && sub){
+    var w=document.createElement('span'); w.id='hstat-title-info';
+    w.innerHTML='<button type="button" class="btn icon-only" aria-label="À propos de Consult" aria-expanded="false" title="À propos de Consult"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.15" fill="currentColor" stroke-width="2.4"/></svg></button><div id="hstat-title-pop" role="tooltip" hidden></div>';
+    h1.appendChild(w);
+    var pop=w.querySelector('#hstat-title-pop'), bt=w.querySelector('button'); pop.textContent=sub.textContent.trim();
+    bt.addEventListener('click',function(e){ e.stopPropagation(); pop.hidden=!pop.hidden; bt.setAttribute('aria-expanded',String(!pop.hidden)); });
+    document.addEventListener('click',function(e){ if(!w.contains(e.target)){ pop.hidden=true; bt.setAttribute('aria-expanded','false'); } });
+  }
+})();
+</script><style id="hn-tips-css">
+#hn-rem{position:fixed;z-index:9000;left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:12px 14px 12px 14px;border-radius:14px;background:#16304a;color:#fff;box-shadow:0 8px 28px rgba(0,0,0,.28);font-size:13.5px;line-height:1.5;opacity:0;transform:translateY(10px);transition:opacity .4s,transform .4s;pointer-events:none}
+#hn-rem.on{opacity:1;transform:none;pointer-events:auto}
+#hn-rem.bg{opacity:.38;transform:scale(.97);transform-origin:left bottom}
+#hn-rem.bg:hover,#hn-rem.bg:focus-within{opacity:1;transform:none}
+#hn-rem .tx{margin:0 18px 8px 0}
+#hn-rem .ac{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#hn-rem button{font:inherit;font-size:12.5px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:none;color:#fff;padding:3px 10px;cursor:pointer}
+#hn-rem button.go{background:#2d9c93;border-color:#2d9c93}
+#hn-rem .x{position:absolute;right:8px;top:6px;border:0;font-size:16px;padding:0 4px}
+@media(max-width:820px){#hn-rem{bottom:76px;left:10px}}
+</style><script>
+(function(){
+  if(/[?&]private=1/.test(location.search)) return;
+  var OFF='helpnaud_tips_off', LAST='helpnaud_tips_last', IDX='helpnaud_tips_idx';
+  function get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  /* Réglages : case à cocher */
+  var cb=document.getElementById('hn-tips-on');
+  if(cb){ cb.checked = get(OFF)!=='1'; cb.addEventListener('change',function(){ set(OFF, cb.checked?'0':'1'); if(!cb.checked) hide(); }); }
+  var TIPS=[
+    {t:"Je suis HelpNaud.ai - Consult, l’agent de consultation IA avancé par domaines, avec des réponses poussées et approfondies. Clavardez profondément avec HelpNaud dans Consult.", go:'hstat', l:'Ouvrir Consult'},
+    {t:"Cliquez sur « Clavardage » pour ouvrir l’espace Consult de HelpNaud. Consultation IA avancée par domaine. Essayez-le pour faire la différence.", go:'hstat', l:'Ouvrir Consult'},
+    {t:"🔎 Besoin d’une source fiable ? Activez la recherche web ou les données publiques dans les options de recherche : HelpNaud cite les sources réellement consultées.", go:'assistant', l:'Ouvrir Chat'},
+    {t:"🕶️ Une conversation confidentielle ? Ouvrez la Navigation privée depuis le menu ⋯ : rien n’est enregistré dans votre historique."}
+  ];
+  var el=document.createElement('div'); el.id='hn-rem'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite');
+  document.body.appendChild(el);
+  var timers=[], lastKey=0, showing=false;
+  document.addEventListener('keydown',function(){ lastKey=Date.now(); },true);
+  function hide(){ el.classList.remove('on','bg'); showing=false; timers.forEach(clearTimeout); timers=[]; }
+  function loggedIn(){
+    var ci=document.getElementById('cust-in'); if(ci && ci.style.display!=='none' && ci.offsetParent!==null) return true;
+    if(ci && getComputedStyle(ci).display!=='none') return true;
+    try{ if(typeof hnTeamRole==='function' && hnTeamRole()) return true; }catch(e){}
+    return false;
+  }
+  function busy(){
+    if(Date.now()-lastKey<25000) return true;
+    if(document.hidden) return true;
+    var a=document.activeElement; if(a && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) && a.id!=='hn-tips-on') return true;
+    if(document.querySelector('.modal-overlay:not([hidden]),#hno-panel,dialog[open]')) return true;
+    return false;
+  }
+  function show(){
+    if(showing) return;
+    var i=parseInt(get(IDX)||'0',10)||0, tip=TIPS[i%TIPS.length]; set(IDX,String((i+1)%TIPS.length)); set(LAST,String(Date.now()));
+    el.innerHTML='<button class="x" type="button" aria-label="Fermer">×</button><p class="tx"></p><div class="ac"></div>';
+    el.querySelector('.tx').textContent=tip.t;
+    var ac=el.querySelector('.ac');
+    if(tip.go){ var g=document.createElement('button'); g.type='button'; g.className='go'; g.textContent=tip.l; g.addEventListener('click',function(){ hide(); var b=document.querySelector('.nav-btn[data-view="'+tip.go+'"]'); if(b) b.click(); }); ac.appendChild(g); }
+    var n=document.createElement('button'); n.type='button'; n.textContent='Ne plus afficher'; n.addEventListener('click',function(){ set(OFF,'1'); if(cb) cb.checked=false; hide(); }); ac.appendChild(n);
+    el.querySelector('.x').addEventListener('click',hide);
+    showing=true; el.classList.remove('bg'); el.classList.add('on');
+    timers.push(setTimeout(function(){ if(showing) el.classList.add('bg'); },12000));   /* passe en arrière-plan */
+    timers.push(setTimeout(hide,45000));
+  }
+  var FIRST=4*60*1000, EVERY=12*60*1000;
+  function tick(){
+    if(get(OFF)==='1' || showing || !loggedIn() || busy()) return;
+    var last=parseInt(get(LAST)||'0',10)||0, now=Date.now();
+    if(now-last < EVERY*(0.8+Math.random()*0.5)) return;
+    show();
+  }
+  /* premier message après ~4 min d’utilisation de la session ; ensuite au plus un toutes les ~12 min */
+  setTimeout(function(){ setInterval(tick,30000); tick(); }, FIRST);
+  window.__hnTipTest=function(){ show(); };
 })();
 </script></body></html>
