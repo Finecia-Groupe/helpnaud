@@ -45807,4 +45807,14 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 #view-report:not([hidden]) ~ #hn-site-plat-card,
 #view-report:not([hidden]) ~ #hn-site-web-card,
 #view-report:not([hidden]) ~ #hn-tips-card{display:block}
-</style></body></html>
+</style><script>
+(function(){
+  var row=document.getElementById('hstat-suggest-row'), det=document.getElementById('hstat-suggest-row-details');
+  if(!row||!det) return;
+  /* Consult : un clic sur une suggestion referme la liste (évite de choisir deux fois la même suggestion) */
+  row.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('button, .suggest-chip'); if(!b||!row.contains(b)) return;
+    setTimeout(function(){ det.open=false; },0);
+  });
+})();
+</script></body></html>
