@@ -12,7 +12,12 @@ async function rest(method, path, body, extra){
   if (!r.ok) { const e = new Error('rest ' + r.status); e.detail = await r.text().catch(() => ''); throw e; }
   return r.status === 204 ? null : r.json().catch(() => null);
 }
-const LAB = { 0: 'C’est maintenant', 30: 'Dans 30 minutes', 60: 'Dans 1 heure', 120: 'Dans 2 heures', 1440: 'Demain', 2880: 'Dans 2 jours', 4320: 'Dans 3 jours', 10080: 'Dans 1 semaine', 20160: 'Dans 2 semaines' };
+const LAB = { 0: 'C’est le début', 30: 'Dans 30 minutes', 60: 'Dans 1 heure', 120: 'Dans 2 heures', 1440: 'Demain', 2880: 'Dans 2 jours', 4320: 'Dans 3 jours', 10080: 'Dans 1 semaine', 20160: 'Dans 2 semaines' };
+function leadText(m){
+  if (LAB[m]) return LAB[m];
+  if (m % 10080 === 0) return 'Dans ' + (m / 10080) + ' semaines'; if (m % 1440 === 0) return 'Dans ' + (m / 1440) + ' jours';
+  if (m % 60 === 0) return 'Dans ' + (m / 60) + ' heures'; return 'Dans ' + m + ' minutes';
+}
 function whenText(r){
   try {
     const o = { timeZone: r.tz || 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
@@ -34,7 +39,7 @@ exports.handler = async function(){
     try {
       const claimed = await rest('PATCH', 'hn_task_reminders?rkey=eq.' + encodeURIComponent(r.rkey) + '&sent_at=is.null', { sent_at: new Date().toISOString() }, { Prefer: 'return=representation' });
       if (!Array.isArray(claimed) || !claimed.length) continue;
-      const lead = LAB[r.minutes] || 'Rappel';
+      const lead = leadText(r.minutes);
       const text = 'Bonjour,\n\n' + lead + ' : « ' + r.title + ' »\nPrévu : ' + whenText(r) + '.\n\nCe rappel a été programmé dans HelpNaud (Planifier une tâche). Gérez vos tâches sur https://helpnaud.ai\n\nHelpNaud.ai — propulsé par FINECIA GROUPE';
       const html = '<p>Bonjour,</p><p><b>' + esc(lead) + '</b> : « ' + esc(r.title) + ' »<br>Prévu : ' + esc(whenText(r)) + '.</p><p style="color:#667">Ce rappel a été programmé dans HelpNaud (Planifier une tâche). <a href="https://helpnaud.ai">Ouvrir HelpNaud</a></p><p style="color:#889;font-size:12px">HelpNaud.ai — propulsé par FINECIA GROUPE</p>';
       const resp = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
