@@ -1950,6 +1950,7 @@
       <div class="attach-menu menu-below" id="newchat-chooser-menu" hidden style="width:min(240px, calc(100vw - 28px));">
         <button type="button" class="attach-menu-opt" id="newchat-opt-assistant">💬 <span>Assistant (Chat)</span></button>
         <button type="button" class="attach-menu-opt" id="newchat-opt-cowork">🫂 <span>Co-work (Discussion)</span></button>
+        <button type="button" class="attach-menu-opt" id="newchat-opt-consult">🧭 <span>Consult (clavardage)</span></button>
       </div>
     </div>
 
@@ -3695,6 +3696,16 @@
         </div>
         <p class="hint" style="margin:0 0 12px;">Outils déplacés depuis Co-work : rédaction de documents, création de graphiques et interrogation de fichier. Choisissez un outil ci-dessous.</p>
         <div class="cowork-grid" id="hstat-tools-grid">
+        <button type="button" class="cowork-card" data-hstat-goto="consult">
+          <span class="cowork-icon">💬</span>
+          <span class="cowork-card-title">Consultation IA</span>
+          <span class="cowork-card-desc">Choisissez un domaine et clavardez avec HelpNaud pour des réponses poussées et approfondies.</span>
+        </button>
+        <button type="button" class="cowork-card" data-hstat-goto="calc">
+          <span class="cowork-icon">🧮</span>
+          <span class="cowork-card-title">Calculateurs</span>
+          <span class="cowork-card-desc">Calculatrices hors-ligne dédiées : instantanées, sans crédit IA.</span>
+        </button>
         <button type="button" class="cowork-card" data-tool="draft">
           <span class="cowork-icon">📝</span>
           <span class="cowork-card-title">Rédiger un document</span>
@@ -4947,13 +4958,29 @@
         </div>
       </header>
       <div class="card">
-        <h2>Nouvelle tâche</h2>
+        <h2>Nouvelle tâche, réunion ou rendez-vous</h2>
         <form class="task-form" id="task-form">
           <div><label for="task-form-title">Titre</label><input type="text" id="task-form-title" maxlength="120" placeholder="Ex. Renouveler l'assurance" required></div>
           <div><label for="task-form-date">Échéance</label><input type="date" id="task-form-date" required></div>
           <div><label for="task-form-time">Heure (optionnel)</label><input type="time" id="task-form-time"></div>
           <div><label for="task-form-folder">Dossier lié (optionnel)</label><select id="task-form-folder"><option value="">— Aucun —</option></select></div>
           <div><label for="task-form-recurrence">Récurrence</label><select id="task-form-recurrence"><option value="aucune" selected>Aucune</option><option value="hebdomadaire">Hebdomadaire</option><option value="mensuelle">Mensuelle</option><option value="trimestrielle">Trimestrielle</option><option value="annuelle">Annuelle</option></select></div>
+          <div id="task-rem-box" style="grid-column:1/-1;">
+            <label>🔔 Me rappeler avant (optionnel — tâche, réunion ou rendez-vous)</label>
+            <div class="task-rem-chips" id="task-rem-chips">
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="0"> À l’heure</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="30"> 30 min</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="60"> 1 h</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="120"> 2 h</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="1440"> 1 jour</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="2880"> 2 jours</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="4320"> 3 jours</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="10080"> 1 semaine</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="20160"> 2 semaines</label>
+            </div>
+            <label class="task-rem-chip" style="margin-top:8px!important;"><input type="checkbox" id="task-rem-email"> ✉️ Envoyer aussi par courriel (à l’adresse de mon compte connecté)</label>
+            <p class="hint" style="margin:4px 0 0;">Sans heure, le rappel se calcule à partir de 9 h. Les rappels s’affichent dans HelpNaud (et en notification du navigateur si vous l’autorisez) tant que l’application est ouverte ; avec « courriel », ils arrivent aussi dans votre boîte même application fermée (compte connecté requis).</p>
+          </div>
           <div><button type="submit" class="btn primary">Ajouter</button></div>
         </form>
         <div class="task-list" id="task-list"></div>
@@ -8331,6 +8358,7 @@
   }
   function persistTasks(){
     try{ localStorage.setItem('helpnaud_tasks', JSON.stringify(tasksState)); }catch(e){}
+    try{ if(window.hnSyncRem) window.hnSyncRem(true); }catch(e){}
   }
 
   /* ================= Espace image (Bibliothèque) =================
@@ -36493,6 +36521,7 @@
       if(t.date) metaParts.push((overdue ? 'En retard — échéance ' : 'Échéance ') + fmtTaskDate(t.date, t.heure));
       if(folder) metaParts.push(escapeHtml(folder.nom));
       if(t.recurrence && t.recurrence !== 'aucune') metaParts.push('🔁 ' + (RECURRENCE_LABELS[t.recurrence] || t.recurrence));
+      if(t.rappels && t.rappels.length) metaParts.push('🔔 ' + (window.hnRemLabels ? window.hnRemLabels(t.rappels) : t.rappels.length + ' rappel(s)') + (t.email ? ' ✉️' : ''));
       return '<div class="task-row'+(t.fait?' done':'')+(overdue?' overdue':'')+'" data-task-id="'+t.id+'">'
         + '<input type="checkbox" data-task-toggle="'+t.id+'"'+(t.fait?' checked':'')+' aria-label="Marquer terminé">'
         + '<div class="task-main"><div class="task-title">'+escapeHtml(t.titre)+'</div>'
@@ -36512,7 +36541,11 @@
     var date = dateEl.value;
     var heure = timeEl ? timeEl.value : '';
     if(!titre || !date) return;
-    tasksState.push({ id:'t_'+Date.now(), titre:titre, date:date, heure:heure||null, folderId: folderEl.value||null, fait:false, recurrence: (recurrenceEl ? recurrenceEl.value : 'aucune') });
+    var rappels = Array.prototype.map.call(document.querySelectorAll('input[name="task-rappel"]:checked'), function(c){ return parseInt(c.value,10); });
+    tasksState.push({ id:'t_'+Date.now(), titre:titre, date:date, heure:heure||null, folderId: folderEl.value||null, fait:false, recurrence: (recurrenceEl ? recurrenceEl.value : 'aucune'), rappels: rappels, email: !!(rappels.length && (document.getElementById('task-rem-email')||{}).checked) });
+    if(rappels.length && window.hnAskNotify) window.hnAskNotify();
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="task-rappel"]'), function(c){ c.checked = false; });
+    var _em = document.getElementById('task-rem-email'); if(_em) _em.checked = false;
     persistTasks();
     titleEl.value = ''; dateEl.value = ''; if(timeEl) timeEl.value = ''; folderEl.value = ''; if(recurrenceEl) recurrenceEl.value = 'aucune';
     renderTasks();
@@ -36525,7 +36558,7 @@
     t.fait = cb.checked;
     if(cb.checked && t.recurrence && t.recurrence !== 'aucune' && t.date){
       var nextDate = addRecurrenceInterval(t.date, t.recurrence);
-      tasksState.push({ id:'t_'+Date.now()+'_r', titre:t.titre, date:nextDate, heure:t.heure, folderId:t.folderId, fait:false, recurrence:t.recurrence });
+      tasksState.push({ id:'t_'+Date.now()+'_r', titre:t.titre, date:nextDate, heure:t.heure, folderId:t.folderId, fait:false, recurrence:t.recurrence, rappels:(t.rappels||[]).slice(), email: !!t.email });
     }
     persistTasks();
     renderTasks();
@@ -39053,6 +39086,13 @@
       showView('assistant');
       var newBtn = document.getElementById('assistant-conv-new-btn');
       if(newBtn) newBtn.click();
+    });
+    var optConsult = document.getElementById('newchat-opt-consult');
+    if(optConsult) optConsult.addEventListener('click', function(){
+      menu.hidden = true;
+      showView('hstat');
+      var cb = document.getElementById('hstat-tab-btn-consult'); if(cb) cb.click();
+      try{ if(window.__hnHstat && window.__hnHstat.fresh) window.__hnHstat.fresh(); }catch(e){}
     });
     if(optCowork) optCowork.addEventListener('click', function(){
       menu.hidden = true;
@@ -45816,5 +45856,105 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     var b=e.target.closest&&e.target.closest('button, .suggest-chip'); if(!b||!row.contains(b)) return;
     setTimeout(function(){ det.open=false; },0);
   });
+})();
+</script><style id="hn-v39-css">
+/* Consult : onglets -> Outils à côté du (i) ; Consultation IA / Calculateurs passent dans Outils */
+#hstat-tab-btn-consult,#hstat-tab-btn-calc{display:none!important}
+#view-hstat > header.topbar #hstat-tabs-row{margin:0 0 0 10px!important;display:inline-flex!important;vertical-align:middle;flex-wrap:nowrap}
+#view-hstat > header.topbar > div:first-child{display:flex;align-items:center;flex-wrap:wrap;gap:0}
+#view-hstat > header.topbar > div:first-child h1{display:inline-flex;align-items:center;margin:0}
+/* Suggestions à côté de « Choisir un domaine » */
+#hstat-domain-wrap #hstat-suggest-row-details{position:relative;margin:0;display:inline-block}
+#hstat-domain-wrap #hstat-suggest-row-details>summary{display:inline-flex;align-items:center;gap:6px;cursor:pointer;list-style:none;padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface,#fff);font-weight:600;font-size:13.5px;white-space:nowrap}
+#hstat-domain-wrap #hstat-suggest-row-details>.suggest-row{position:absolute;z-index:40;left:0;top:calc(100% + 6px);width:min(520px,calc(100vw - 48px));padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface,#fff);box-shadow:0 10px 28px rgba(0,0,0,.18);margin:0}
+/* Rappels de tâches */
+.task-rem-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.task-rem-chip{display:inline-flex!important;align-items:center;gap:5px;margin:0!important;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px!important;font-weight:500!important;text-transform:none!important;letter-spacing:0!important;color:var(--ink)!important;cursor:pointer}
+.task-rem-chip input{width:auto!important;margin:0}
+#hn-taskrem{position:fixed;z-index:99990;right:16px;top:16px;display:flex;flex-direction:column;gap:8px;max-width:min(380px,calc(100vw - 32px))}
+.hn-taskrem-item{background:#16304a;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.3);font-size:14px;line-height:1.45;position:relative}
+.hn-taskrem-item b{display:block;margin-bottom:2px}
+.hn-taskrem-item button{position:absolute;right:8px;top:6px;background:none;border:0;color:#fff;font-size:18px;cursor:pointer}
+</style><script>
+(function(){
+  /* ---- Consult : déplacements d'éléments ---- */
+  var hd=document.querySelector('#view-hstat > header.topbar'), tabs=document.getElementById('hstat-tabs-row'), h1=hd&&hd.querySelector('h1');
+  if(tabs&&h1){ var info=document.getElementById('hstat-title-info'); h1.parentNode.insertBefore(tabs,h1.nextSibling); }
+  var det=document.getElementById('hstat-suggest-row-details');
+  function placeSugg(){
+    var wrap=document.getElementById('hstat-domain-wrap'), tg=document.getElementById('hstat-domain-toggle');
+    if(!det||!wrap||!tg) return;
+    if(det.parentNode!==wrap){ wrap.insertBefore(det, tg.nextSibling); }
+  }
+  placeSugg(); [400,1500,3500].forEach(function(t){ setTimeout(placeSugg,t); });
+  document.addEventListener('click',function(e){ if(det&&det.open&&!det.contains(e.target)) det.open=false; });
+  var grid=document.getElementById('hstat-tools-grid');
+  if(grid) grid.addEventListener('click',function(e){
+    var c=e.target.closest('[data-hstat-goto]'); if(!c) return;
+    var b=document.getElementById('hstat-tab-btn-'+c.getAttribute('data-hstat-goto')); if(b) b.click();
+  });
+
+  /* ---- Rappels de tâches ---- */
+  var LAB={0:'à l’heure',30:'30 min avant',60:'1 h avant',120:'2 h avant',1440:'1 jour avant',2880:'2 jours avant',4320:'3 jours avant',10080:'1 semaine avant',20160:'2 semaines avant'};
+  window.hnRemLabels=function(a){ return a.slice().sort(function(x,y){return x-y;}).map(function(m){ return LAB[m]||(m+' min avant'); }).join(', '); };
+  window.hnAskNotify=function(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} };
+  var FIRED='helpnaud_task_reminders_fired';
+  function lget(k,d){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
+  var box=document.createElement('div'); box.id='hn-taskrem'; document.body.appendChild(box);
+  function notify(t,msg){
+    var d=document.createElement('div'); d.className='hn-taskrem-item'; d.setAttribute('role','alert');
+    d.innerHTML='<button type="button" aria-label="Fermer">×</button><b></b><span></span>';
+    d.querySelector('b').textContent='🔔 Rappel : '+t.titre; d.querySelector('span').textContent=msg;
+    d.querySelector('button').onclick=function(){ d.remove(); };
+    box.appendChild(d);
+    try{ if('Notification' in window && Notification.permission==='granted') new Notification('HelpNaud — Rappel : '+t.titre,{body:msg}); }catch(e){}
+  }
+  function check(){
+    var tasks=lget('helpnaud_tasks',[]); if(!Array.isArray(tasks)) return;
+    var fired=lget(FIRED,{}), now=Date.now(), changed=false;
+    tasks.forEach(function(t){
+      if(!t||t.fait||!t.date||!t.rappels||!t.rappels.length) return;
+      var due=new Date(t.date+'T'+(t.heure||'09:00')+':00').getTime(); if(isNaN(due)) return;
+      t.rappels.forEach(function(m){
+        var key=t.id+'|'+t.date+'|'+(t.heure||'')+'|'+m, at=due-m*60000;
+        if(fired[key]||now<at) return;
+        fired[key]=1; changed=true;
+        if(now>due+60*60000) return;           /* trop ancien : on ne réveille pas pour un événement déjà passé */
+        var when=new Date(due).toLocaleString('fr-CA',{weekday:'long',day:'numeric',month:'long',hour:t.heure?'2-digit':undefined,minute:t.heure?'2-digit':undefined});
+        notify(t, m===0 ? 'C’est maintenant : '+when+'.' : 'Prévu '+when+' ('+(LAB[m]||m+' min avant')+').');
+      });
+    });
+    if(changed){ try{ localStorage.setItem(FIRED,JSON.stringify(fired)); }catch(e){} }
+  }
+  setTimeout(check,2500); setInterval(check,30000);
+  window.__hnRemCheck=check;
+})();
+</script><script>
+(function(){
+  /* Synchronisation des rappels par courriel avec le serveur (fonction Netlify « task-reminders »). */
+  var timer=null, warned=false;
+  function lget(k,d){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
+  function toast(t){ var d=document.createElement('div'); d.textContent=t; d.style.cssText='position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#16304a;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:99999;max-width:90vw'; document.body.appendChild(d); setTimeout(function(){ d.remove(); },4200); }
+  function run(interactive){
+    var tasks=lget('helpnaud_tasks',[]); if(!Array.isArray(tasks)) return;
+    var list=tasks.filter(function(t){ return t&&t.email&&!t.fait&&t.date&&t.rappels&&t.rappels.length; }).map(function(t){
+      var due=new Date(t.date+'T'+(t.heure||'09:00')+':00'); return { id:t.id, titre:t.titre, heure:t.heure||null, due:isNaN(due)?null:due.toISOString(), rappels:t.rappels, email:true, fait:!!t.fait };
+    }).filter(function(t){ return t.due; });
+    var hadSynced=lget('helpnaud_rem_synced',false);
+    if(!list.length && !hadSynced) return;     /* rien à envoyer et rien à effacer côté serveur */
+    if(typeof window.__hnAiToken!=='function') return;
+    window.__hnAiToken().then(function(token){
+      if(!token){ if(interactive && list.length && !warned){ warned=true; toast('Connectez-vous à votre compte pour recevoir les rappels par courriel.'); } return; }
+      return fetch('/.netlify/functions/task-reminders',{ method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer '+token },
+        body:JSON.stringify({ tz:(Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'), tasks:list }) })
+      .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+      .then(function(x){
+        if(x.ok){ try{ localStorage.setItem('helpnaud_rem_synced', JSON.stringify(list.length>0)); }catch(e){} if(interactive && list.length) toast('✉️ Rappels par courriel programmés ('+x.j.scheduled+') à '+x.j.email); }
+        else if(interactive) toast(x.j&&x.j.message?x.j.message:'Rappels par courriel indisponibles pour le moment.');
+      });
+    }).catch(function(){});
+  }
+  window.hnSyncRem=function(interactive){ clearTimeout(timer); timer=setTimeout(function(){ run(!!interactive); },800); };
+  setTimeout(function(){ run(false); },6000);   /* au chargement : resynchronise (ex. tâche terminée ou supprimée sur cet appareil) */
 })();
 </script></body></html>

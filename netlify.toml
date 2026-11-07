@@ -9,6 +9,9 @@
 # Rappels de rendez-vous : exécution toutes les heures (fuseau UTC)
 [functions."rdv-reminders"]
   schedule = "@hourly"
+# Rappels de tâches par courriel : toutes les 10 minutes
+[functions."task-reminders-cron"]
+  schedule = "*/10 * * * *"
 # En-têtes de sécurité de base
 [[headers]]
   for = "/*"
