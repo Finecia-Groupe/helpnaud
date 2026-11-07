@@ -7,7 +7,6 @@
 const SB_URL = (process.env.SUPABASE_URL || 'https://elzdsyfxpeqnrhlxbgbk.supabase.co').replace(/\/+$/, '');
 const SB_PUB = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_5ZLQ6FIGJMATE6YslnS_Dw_D9x8TL7P';
 const SB_SECRET = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const ALLOWED = [0, 30, 60, 120, 1440, 2880, 4320, 10080, 20160];
 const reply = (code, o) => ({ statusCode: code, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(o) });
 const hits = new Map();
 function limited(k){ const n = Date.now(), a = (hits.get(k) || []).filter(t => n - t < 60000); a.push(n); hits.set(k, a); return a.length > 12; }
@@ -42,7 +41,7 @@ exports.handler = async function(event){
     if (!t || t.fait || !t.email || !t.id || !t.due || !Array.isArray(t.rappels)) continue;
     const due = Date.parse(t.due); if (isNaN(due) || due < now - 3600000) continue;
     for (const m of t.rappels.slice(0, 10)) {
-      if (ALLOWED.indexOf(m) < 0) continue;
+      if (!Number.isInteger(m) || m < 0 || m > 40320) continue;   // 0 à 4 semaines (délais standards ou personnalisés)
       const at = due - m * 60000;
       if (at < now - 3600000) continue;           // trop ancien : jamais envoyé
       rows.push({ rkey: user.id + '|' + String(t.id).slice(0, 60) + '|' + m + '|' + new Date(due).toISOString(), user_id: user.id, email: user.email,
