@@ -4958,7 +4958,7 @@
         </div>
       </header>
       <div class="card">
-        <h2>Nouvelle tâche, réunion ou rendez-vous</h2>
+        <h2>Nouvelle tâche, réunion, rendez-vous ou événement</h2>
         <form class="task-form" id="task-form">
           <div><label for="task-form-title">Titre</label><input type="text" id="task-form-title" maxlength="120" placeholder="Ex. Renouveler l'assurance" required></div>
           <div><label for="task-form-date">Échéance</label><input type="date" id="task-form-date" required></div>
@@ -4966,22 +4966,29 @@
           <div><label for="task-form-folder">Dossier lié (optionnel)</label><select id="task-form-folder"><option value="">— Aucun —</option></select></div>
           <div><label for="task-form-recurrence">Récurrence</label><select id="task-form-recurrence"><option value="aucune" selected>Aucune</option><option value="hebdomadaire">Hebdomadaire</option><option value="mensuelle">Mensuelle</option><option value="trimestrielle">Trimestrielle</option><option value="annuelle">Annuelle</option></select></div>
           <div id="task-rem-box" style="grid-column:1/-1;">
-            <label>🔔 Me rappeler avant (optionnel — tâche, réunion ou rendez-vous)</label>
+            <label>🔔 Me rappeler avant <span style="text-transform:none;font-weight:500;">— optionnel : tâche, réunion, rendez-vous ou événement</span></label>
+            <p class="hint" style="margin:2px 0 4px;">Vous pouvez sélectionner plusieurs rappels (par exemple 1 semaine, 1 jour et 30 minutes avant).</p>
             <div class="task-rem-chips" id="task-rem-chips">
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="0"> À l’heure</label>
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="30"> 30 min</label>
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="60"> 1 h</label>
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="120"> 2 h</label>
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="1440"> 1 jour</label>
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="2880"> 2 jours</label>
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="4320"> 3 jours</label>
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="10080"> 1 semaine</label>
-              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="20160"> 2 semaines</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="0"> Au début</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="30"> 30 min avant</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="60"> 1 h avant</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="120"> 2 h avant</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="1440"> 1 jour avant</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="2880"> 2 jours avant</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="4320"> 3 jours avant</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="10080"> 1 semaine avant</label>
+              <label class="task-rem-chip"><input type="checkbox" name="task-rappel" value="20160"> 2 semaines avant</label>
             </div>
-            <label class="task-rem-chip" style="margin-top:8px!important;"><input type="checkbox" id="task-rem-email"> ✉️ Envoyer aussi par courriel (à l’adresse de mon compte connecté)</label>
-            <p class="hint" style="margin:4px 0 0;">Sans heure, le rappel se calcule à partir de 9 h. Les rappels s’affichent dans HelpNaud (et en notification du navigateur si vous l’autorisez) tant que l’application est ouverte ; avec « courriel », ils arrivent aussi dans votre boîte même application fermée (compte connecté requis).</p>
+            <div class="task-rem-custom" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+              <span style="font-size:13px;">Personnalisé :</span>
+              <input type="number" id="task-rem-cu-n" min="1" max="999" value="45" style="width:76px;">
+              <select id="task-rem-cu-u" style="width:auto;"><option value="1">minutes</option><option value="60">heures</option><option value="1440">jours</option><option value="10080">semaines</option></select>
+              <button type="button" class="btn" id="task-rem-cu-add" style="padding:5px 10px;font-size:13px;">＋ Ajouter ce rappel</button>
+            </div>
+            <label class="task-rem-chip" style="margin-top:8px!important;"><input type="checkbox" id="task-rem-email"> ✉️ Courriel : envoyer aussi chaque rappel à l’adresse de mon compte connecté</label>
+            <p class="hint" style="margin:4px 0 0;">Si aucune heure n’est indiquée, les rappels sont calculés à partir de 9 h, selon votre fuseau horaire. Ils s’affichent dans HelpNaud et peuvent aussi être transmis par notification du navigateur, si vous l’avez autorisée. Activez l’option « Courriel » pour recevoir le rappel même lorsque HelpNaud est fermé (compte connecté requis).</p>
           </div>
-          <div><button type="submit" class="btn primary">Ajouter</button></div>
+          <div><button type="submit" class="btn primary">Ajouter la tâche</button></div>
         </form>
         <div class="task-list" id="task-list"></div>
         <p class="hint" id="task-empty-hint" hidden style="margin-top:10px;">Aucune tâche planifiée pour le moment.</p>
@@ -36546,6 +36553,7 @@
     if(rappels.length && window.hnAskNotify) window.hnAskNotify();
     Array.prototype.forEach.call(document.querySelectorAll('input[name="task-rappel"]'), function(c){ c.checked = false; });
     var _em = document.getElementById('task-rem-email'); if(_em) _em.checked = false;
+    Array.prototype.forEach.call(document.querySelectorAll('#task-rem-chips label:nth-child(n+10)'), function(l){ l.remove(); });
     persistTasks();
     titleEl.value = ''; dateEl.value = ''; if(timeEl) timeEl.value = ''; folderEl.value = ''; if(recurrenceEl) recurrenceEl.value = 'aucune';
     renderTasks();
@@ -45859,7 +45867,9 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 })();
 </script><style id="hn-v39-css">
 /* Consult : onglets -> Outils à côté du (i) ; Consultation IA / Calculateurs passent dans Outils */
-#hstat-tab-btn-consult,#hstat-tab-btn-calc{display:none!important}
+#hstat-tab-btn-calc,#hstat-tools-grid [data-hstat-goto="consult"]{display:none!important}
+#hstat-tabs-row .hstat-tab-btn{white-space:nowrap}
+@media(max-width:520px){#view-hstat > header.topbar #hstat-tabs-row{margin-left:4px!important;gap:4px}#hstat-tabs-row .hstat-tab-btn{padding:4px 6px!important;font-size:12px!important}#view-hstat > header.topbar > div:first-child h1{font-size:19px;gap:6px}#view-hstat > header.topbar > div:first-child h1 svg:first-child,#view-hstat > header.topbar > div:first-child h1 .hstat-ico{width:26px;height:26px}#hstat-title-info>button{width:22px;height:22px}}
 #view-hstat > header.topbar #hstat-tabs-row{margin:0 0 0 10px!important;display:inline-flex!important;vertical-align:middle;flex-wrap:nowrap}
 #view-hstat > header.topbar > div:first-child{display:flex;align-items:center;flex-wrap:wrap;gap:0}
 #view-hstat > header.topbar > div:first-child h1{display:inline-flex;align-items:center;margin:0}
@@ -45896,7 +45906,17 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 
   /* ---- Rappels de tâches ---- */
   var LAB={0:'à l’heure',30:'30 min avant',60:'1 h avant',120:'2 h avant',1440:'1 jour avant',2880:'2 jours avant',4320:'3 jours avant',10080:'1 semaine avant',20160:'2 semaines avant'};
-  window.hnRemLabels=function(a){ return a.slice().sort(function(x,y){return x-y;}).map(function(m){ return LAB[m]||(m+' min avant'); }).join(', '); };
+  function fmtMin(m){ if(m===0) return 'au début'; if(m%10080===0) return (m/10080)+(m===10080?' semaine':' semaines')+' avant'; if(m%1440===0) return (m/1440)+(m===1440?' jour':' jours')+' avant'; if(m%60===0) return (m/60)+' h avant'; return m+' min avant'; }
+  window.hnRemLabels=function(a){ return a.slice().sort(function(x,y){return x-y;}).map(function(m){ return LAB[m]||fmtMin(m); }).join(', '); };
+  var cuAdd=document.getElementById('task-rem-cu-add');
+  if(cuAdd) cuAdd.addEventListener('click',function(){
+    var n=parseInt(document.getElementById('task-rem-cu-n').value,10), u=parseInt(document.getElementById('task-rem-cu-u').value,10), m=n*u;
+    if(!(n>=1)||m>40320){ alert('Choisissez un délai entre 1 minute et 4 semaines.'); return; }
+    var ex=document.querySelector('input[name="task-rappel"][value="'+m+'"]');
+    if(ex){ ex.checked=true; return; }
+    var l=document.createElement('label'); l.className='task-rem-chip'; var i=document.createElement('input'); i.type='checkbox'; i.name='task-rappel'; i.value=String(m); i.checked=true;
+    l.appendChild(i); l.appendChild(document.createTextNode(' '+fmtMin(m))); document.getElementById('task-rem-chips').appendChild(l);
+  });
   window.hnAskNotify=function(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} };
   var FIRED='helpnaud_task_reminders_fired';
   function lget(k,d){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
@@ -45921,7 +45941,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
         fired[key]=1; changed=true;
         if(now>due+60*60000) return;           /* trop ancien : on ne réveille pas pour un événement déjà passé */
         var when=new Date(due).toLocaleString('fr-CA',{weekday:'long',day:'numeric',month:'long',hour:t.heure?'2-digit':undefined,minute:t.heure?'2-digit':undefined});
-        notify(t, m===0 ? 'C’est maintenant : '+when+'.' : 'Prévu '+when+' ('+(LAB[m]||m+' min avant')+').');
+        notify(t, m===0 ? 'C’est maintenant : '+when+'.' : 'Prévu '+when+' ('+(LAB[m]||fmtMin(m))+').');
       });
     });
     if(changed){ try{ localStorage.setItem(FIRED,JSON.stringify(fired)); }catch(e){} }
