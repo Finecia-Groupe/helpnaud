@@ -45180,6 +45180,8 @@ html.hn-private-tab .chat-shell{ min-height:0; }
 .chat-log{ overscroll-behavior:contain; }
 @media (max-width:640px){ html.hn-private-tab #hn-priv-head .hn-priv-note{ display:none; } html.hn-private-tab #hn-priv-head{ padding:8px 0 6px; } html.hn-private-tab #hn-priv-head .brand-mark{ width:32px; height:32px; } }
 html, body{ max-width:100%; overflow-x:hidden; }
+  /* Ordinateur : 'overflow-x:hidden' sur html/body transforme body en conteneur de défilement et casse le menu latéral collant (il montait avec la page). 'clip' coupe pareillement le débordement horizontal SANS créer de conteneur de défilement. */
+  @supports (overflow:clip){ html, body{ overflow-x:clip; } }
 .view, .card, .chat-shell, .chat-log{ min-width:0; max-width:100%; }
 </style>
 <script id="hn-cl-js">
