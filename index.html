@@ -45979,4 +45979,152 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   window.hnSyncRem=function(interactive){ clearTimeout(timer); timer=setTimeout(function(){ run(!!interactive); },800); };
   setTimeout(function(){ run(false); },6000);   /* au chargement : resynchronise (ex. tâche terminée ou supprimée sur cet appareil) */
 })();
-</script></body></html>
+</script><!-- hn-stripe : paiement en ligne Stripe (forfaits, packs de crédits, gestion de l'abonnement) -->
+<style id="hn-stripe-css">
+#hnst-bar{margin:0 0 14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--surface-2);display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;font-size:13px}
+#hnst-bar .hnst-tog{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+#hnst-bar .hnst-tog button{border:0;background:var(--surface);color:var(--ink);padding:6px 14px;font-size:13px;cursor:pointer}
+#hnst-bar .hnst-tog button.on{background:var(--ink);color:var(--surface)}
+#hnst-bar .hnst-st{flex:1;min-width:200px;color:var(--muted);line-height:1.45}
+#hnst-bar .hnst-manage{border:1px solid var(--line);border-radius:10px;padding:7px 12px;background:var(--surface);color:var(--ink);font-size:13px;cursor:pointer}
+.hnst-buy{width:100%}
+#hnst-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:10050;max-width:min(560px,92vw);background:var(--ink);color:var(--surface);border-radius:12px;padding:12px 16px;font-size:13.5px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+</style>
+<script id="hn-stripe-js">
+(function(){
+  'use strict';
+  var EP = '/.netlify/functions/stripe-checkout', interval = 'mensuel', prices = null, status = null;
+  var NAMES = { 'Essentiel':'essentiel', 'Avancée':'avancee', 'Professionnel':'pro', 'Affaires':'affaires', 'Institution':'institution' };
+  var PLAN_LABEL = { gratuit:'Gratuit', essentiel:'Essentiel', avancee:'Avancée', pro:'Professionnel', affaires:'Affaires', institution:'Institution', pilote:'Pilote', proprietaire:'Propriétaire' };
+  function $(s, r){ return (r || document).querySelector(s); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  function toast(msg, ms){
+    var t = $('#hnst-toast'); if(t) t.remove();
+    t = document.createElement('div'); t.id = 'hnst-toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t);
+    setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, ms || 9000);
+  }
+  function money(a, cur){ try{ return new Intl.NumberFormat('fr-CA', { style:'currency', currency:(cur || 'usd').toUpperCase(), minimumFractionDigits: (a % 100 ? 2 : 0), maximumFractionDigits: 2 }).format(a / 100); }catch(e){ return (a / 100) + ' ' + String(cur || '').toUpperCase(); } }
+  function token(){ return typeof window.__hnAiToken === 'function' ? Promise.resolve(window.__hnAiToken()).catch(function(){ return null; }) : Promise.resolve(null); }
+  function api(body, needAuth){
+    return token().then(function(tk){
+      if(needAuth && !tk) return { ok:false, error:'auth', message:'Connectez-vous pour continuer.' };
+      var h = { 'Content-Type':'application/json' }; if(tk) h.Authorization = 'Bearer ' + tk;
+      return fetch(EP, { method:'POST', headers:h, body:JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+        .catch(function(){ return { ok:false, error:'network', message:'Connexion impossible. Vérifiez votre réseau.' }; });
+    });
+  }
+  function go(body, btn){
+    if(btn){ btn.disabled = true; btn.dataset.t = btn.textContent; btn.textContent = 'Redirection vers le paiement sécurisé…'; }
+    return api(body, true).then(function(r){
+      if(r && r.ok && r.url){ window.location.href = r.url; return; }
+      if(btn){ btn.disabled = false; btn.textContent = btn.dataset.t || btn.textContent; }
+      toast((r && r.message) || 'Le paiement n’a pas pu démarrer. Réessayez dans un instant.');
+    });
+  }
+  function loadPrices(){ return prices ? Promise.resolve(prices) : api({ action:'prices' }).then(function(r){ if(r && r.ok) prices = r.prices; return prices; }); }
+  function loadStatus(){ return api({ action:'status' }, true).then(function(r){ status = r && r.ok ? r : null; return status; }); }
+
+  /* ---------- Fenêtre « Abonnements » ---------- */
+  function statusText(){
+    if(!status) return 'Connectez-vous pour souscrire à un forfait.';
+    var s = status, lab = PLAN_LABEL[s.plan] || s.plan, out = 'Forfait actuel : <strong>' + esc(lab) + '</strong>';
+    if(s.subscription){
+      var d = s.subscription.renews ? new Date(s.subscription.renews).toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' }) : '';
+      if(s.subscription.status === 'past_due') out += ' — <span style="color:var(--bad)">paiement à régulariser</span> (« Gérer mon abonnement »)';
+      else if(s.subscription.cancels) out += ' — se termine le ' + esc(d);
+      else if(d) out += ' (' + esc(s.subscription.interval === 'annuel' ? 'annuel' : 'mensuel') + ', renouvelé le ' + esc(d) + ')';
+    }
+    if(s.packCredits) out += '<br>Crédits achetés disponibles : <strong>' + s.packCredits + '</strong>' + (s.packExpires ? ' (valides jusqu’au ' + esc(new Date(s.packExpires).toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' })) + ')' : '');
+    return out;
+  }
+  function drawBar(){
+    var grid = $('#abonnements-grid'); if(!grid) return;
+    var bar = $('#hnst-bar');
+    if(!bar){ bar = document.createElement('div'); bar.id = 'hnst-bar'; grid.parentNode.insertBefore(bar, grid); }
+    bar.innerHTML = '<div class="hnst-tog" role="group" aria-label="Rythme de facturation"><button type="button" data-hnst-int="mensuel" class="' + (interval === 'mensuel' ? 'on' : '') + '">Mensuel</button><button type="button" data-hnst-int="annuel" class="' + (interval === 'annuel' ? 'on' : '') + '">Annuel</button></div>' +
+      '<div class="hnst-st">' + statusText() + '</div>' + (status && status.hasCustomer ? '<button type="button" class="hnst-manage" data-hnst-manage>Gérer mon abonnement</button>' : '');
+  }
+  function decorateGrid(){
+    var grid = $('#abonnements-grid'); if(!grid) return;
+    drawBar();
+    Array.prototype.forEach.call(grid.children, function(card){
+      var h = $('h3', card), id = h && NAMES[h.textContent.trim()], btn = $('button.btn', card);
+      if(h && h.textContent.trim() === 'Gratuit' && btn && !card.dataset.hnstg){ card.dataset.hnstg = '1'; btn.innerHTML = 'Forfait de départ'; btn.style.opacity = '.7'; }
+      if(!id || !btn || card.dataset.hnst === interval + (prices ? 'p' : '') + (status ? 's' : '')) return;
+      card.dataset.hnst = interval + (prices ? 'p' : '') + (status ? 's' : '');
+      var priceEl = $('.mono', card), p = prices && prices.plans && prices.plans[id] && prices.plans[id][interval];
+      if(id === 'institution'){
+        btn.disabled = false; btn.style.cssText = 'width:100%'; btn.removeAttribute('title'); btn.textContent = 'Demander un devis';
+        btn.setAttribute('data-hnst-quote', '1'); return;
+      }
+      if(priceEl && p){
+        var mo = prices.plans[id].mensuel, save = mo ? mo.amount * 12 - p.amount : 0;
+        var sub = interval === 'annuel' ? '≈ ' + money(Math.round(p.amount / 12), p.currency) + ' / mois' + (save > 0 ? ' · vous économisez ' + money(save, p.currency) : '') + ' · hors taxes' : 'hors taxes';
+        priceEl.innerHTML = esc(money(p.amount, p.currency) + (interval === 'annuel' ? ' / an' : ' / mois')) + '<span style="display:block;font-family:inherit;font-weight:400;font-size:11.5px;color:var(--muted)">' + esc(sub) + '</span>';
+      }
+      var cur = status && status.subscription && status.subscription.plan === id && ['active', 'trialing', 'past_due'].indexOf(status.subscription.status) >= 0;
+      btn.disabled = false; btn.style.cssText = 'width:100%'; btn.removeAttribute('title'); btn.className = 'btn hnst-buy';
+      if(cur){ btn.textContent = 'Votre forfait actuel'; btn.disabled = true; btn.style.opacity = '.7'; }
+      else if(status && status.subscription && ['active', 'trialing', 'past_due'].indexOf(status.subscription.status) >= 0){ btn.textContent = 'Changer pour ce forfait'; btn.setAttribute('data-hnst-manage', '1'); }
+      else { btn.textContent = 'Choisir ce forfait'; btn.setAttribute('data-hnst-plan', id); }
+    });
+  }
+  var grid = $('#abonnements-grid');
+  if(grid){
+    var obs = new MutationObserver(function(){ obs.disconnect(); try{ decorateGrid(); }finally{ obs.observe(grid, { childList:true }); } });
+    obs.observe(grid, { childList:true });
+  }
+  var btnAb = $('#btn-abonnements');
+  if(btnAb) btnAb.addEventListener('click', function(){
+    Promise.all([loadPrices(), loadStatus()]).then(function(){ var g = $('#abonnements-grid'); if(g){ Array.prototype.forEach.call(g.children, function(c){ delete c.dataset.hnst; }); decorateGrid(); } });
+  });
+  // Mise à jour du texte d'introduction (ancienne mention « aucun paiement n'est actif »)
+  function fixIntro(){
+    var m = $('#abonnements-modal .lead'); if(m && /Aucun paiement/.test(m.textContent)) m.textContent = 'Choisissez votre forfait : paiement sécurisé par Stripe, annulable à tout moment depuis « Gérer mon abonnement ». Le forfait Institution se fait sur devis.';
+    var a = $('#abonnements-modal .alert-banner'); if(a && /indicatifs/.test(a.textContent)) a.innerHTML = 'Les prix sont en dollars américains (USD), hors taxes. Le paiement annuel inclut un mois offert. Les crédits IA du forfait se renouvellent chaque mois, y compris pour un abonnement annuel.';
+  }
+  document.addEventListener('click', function(e){
+    var t = e.target, el;
+    if(!t.closest) return;
+    if((el = t.closest('[data-hnst-int]'))){ interval = el.getAttribute('data-hnst-int'); var g = $('#abonnements-grid'); if(g) Array.prototype.forEach.call(g.children, function(c){ delete c.dataset.hnst; }); decorateGrid(); return; }
+    if((el = t.closest('[data-hnst-plan]'))){ e.preventDefault(); go({ action:'checkout', kind:'plan', plan:el.getAttribute('data-hnst-plan'), interval:interval }, el); return; }
+    if((el = t.closest('[data-hnst-manage]'))){ e.preventDefault(); el.disabled = true; api({ action:'portal' }, true).then(function(r){ el.disabled = false; if(r && r.ok && r.url) window.location.href = r.url; else toast((r && r.message) || 'Impossible d’ouvrir la gestion de l’abonnement.'); }); return; }
+    if((el = t.closest('[data-hnst-quote]'))){ e.preventDefault(); window.location.href = 'mailto:contact@helpnaud.ai?subject=' + encodeURIComponent('Devis forfait Institution HelpNaud') + '&body=' + encodeURIComponent('Bonjour,\n\nNous souhaitons un devis pour le forfait Institution (organisation, nombre d’utilisateurs, besoins) :\n'); return; }
+    // Fenêtre « Besoin de plus d'utilisation ? » : l'achat de crédits passe maintenant par Stripe (remplace la simple demande)
+    if((el = t.closest('#ai-credits-modal [data-aic-buy]'))){
+      e.preventDefault(); e.stopImmediatePropagation();
+      var sel = $('#aic-pack'), credits = (Number(sel ? sel.value : 5) || 5) * 20;
+      go({ action:'checkout', kind:'pack', credits:credits }, el); return;
+    }
+  }, true);
+
+  /* ---------- Fenêtre « Besoin de plus d'utilisation ? » : libellés réels ---------- */
+  function fixCreditsModal(){
+    var m = $('#ai-credits-modal'); if(!m || m.dataset.hnst) return;
+    var sel = $('#aic-pack', m); if(!sel) return;
+    m.dataset.hnst = '1';
+    loadPrices().then(function(){
+      Array.prototype.forEach.call(sel.options, function(o){
+        var credits = Number(o.value) * 20, p = prices && prices.packs && prices.packs[credits];
+        o.textContent = credits + ' crédits IA' + (p ? ' — ' + money(p.amount, p.currency) : '');
+      });
+    });
+    var msg = $('#aic-msg', m); if(msg) msg.textContent = 'Paiement sécurisé par Stripe. Les crédits achetés sont valides 12 mois et s’ajoutent à ceux de votre forfait.';
+    var spent = m.querySelector('#aic-cap'); if(spent){ var box = spent.closest('div[style*="border"]'); if(box && box.parentNode) box.style.display = 'none'; }
+    Array.prototype.forEach.call(m.querySelectorAll('[data-aic-auto]'), function(b){ b.style.display = 'none'; });
+  }
+  new MutationObserver(function(){ fixCreditsModal(); fixIntro(); }).observe(document.body, { childList:true, subtree:true });
+
+  /* ---------- Retour depuis Stripe ---------- */
+  try{
+    var q = new URLSearchParams(location.search), st = q.get('stripe');
+    if(st){
+      if(st === 'success') toast(q.get('kind') === 'pack' ? 'Merci ! Paiement reçu : vos crédits apparaissent dans quelques secondes.' : 'Merci ! Paiement reçu : votre forfait est activé dans quelques secondes.', 12000);
+      else if(st === 'cancel') toast('Paiement annulé : aucun montant n’a été débité.');
+      q.delete('stripe'); q.delete('kind'); var qs = q.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    }
+  }catch(e){}
+})();
+</script>
+</body></html>
