@@ -50,7 +50,7 @@ exports.handler = async function (event) {
       const acc = await rest('GET', 'ai_accounts?user_id=eq.' + eq(user.id) + '&select=plan,used,extra,period', null);
       const packs = await rest('GET', 'credit_packs?user_id=eq.' + eq(user.id) + '&remaining=gt.0&expires_at=gt.' + eq(new Date().toISOString()) + '&select=remaining,expires_at&order=expires_at', null) || [];
       return reply(200, { ok: true, plan: (acc && acc[0] && acc[0].plan) || 'gratuit', used: acc && acc[0] ? acc[0].used : 0,
-        subscription: row && row.subscription_id ? { plan: row.plan, interval: row.billing_interval, status: row.status, renews: row.current_period_end, cancels: !!row.cancel_at_period_end } : null,
+        subscription: row && row.subscription_id && ['active', 'trialing', 'past_due'].indexOf(row.status) >= 0 ? { plan: row.plan, interval: row.billing_interval, status: row.status, renews: row.current_period_end, cancels: !!row.cancel_at_period_end } : null,
         hasCustomer: !!(row && row.stripe_customer_id), packCredits: packs.reduce((s, p) => s + p.remaining, 0), packExpires: packs[0] ? packs[0].expires_at : null });
     }
 
