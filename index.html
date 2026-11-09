@@ -5192,8 +5192,13 @@
             <button type="button" class="btn" id="cust-forgot-btn" style="padding:6px 12px; font-size:12.5px;">Mot de passe oublié</button>
           </form>
           <form id="cust-form-signup" hidden style="display:none; gap:8px; flex-wrap:wrap; align-items:center;">
-            <input type="text" id="cust-su-name" autocomplete="name" placeholder="Nom complet" required maxlength="120" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="text" id="cust-su-first" autocomplete="given-name" placeholder="Prénom" required maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="text" id="cust-su-last" autocomplete="family-name" placeholder="Nom" required maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
             <input type="email" id="cust-su-email" autocomplete="username" placeholder="Courriel" required style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="tel" id="cust-su-phone" autocomplete="tel" placeholder="Téléphone (ex. +1 514 555 0100)" maxlength="40" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="text" id="cust-su-country" list="hn-countries" autocomplete="country-name" placeholder="Pays de résidence" maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="text" id="cust-su-city" autocomplete="address-level2" placeholder="Ville de résidence" maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <datalist id="hn-countries"><option value="Canada"><option value="Togo"><option value="France"><option value="États-Unis"><option value="Bénin"><option value="Côte d’Ivoire"><option value="Sénégal"><option value="Cameroun"><option value="Belgique"><option value="Suisse"><option value="Maroc"><option value="Autre"></datalist>
             <input type="password" id="cust-su-pw" autocomplete="new-password" placeholder="Mot de passe (8 caractères min.)" required minlength="8" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
             <label class="hint" style="margin:0; display:flex; gap:6px; align-items:flex-start; width:100%;"><input type="checkbox" id="cust-su-terms" style="margin-top:3px;"> <span>J'accepte les conditions d'utilisation de HelpNaud.ai et le traitement de mes renseignements personnels pour la gestion de mon compte.</span></label>
             <button type="submit" class="btn primary" style="padding:6px 12px; font-size:12.5px;">Créer mon compte</button>
@@ -5288,7 +5293,7 @@
         <p class="hint" id="cust-admin-msg" hidden role="status" style="margin:0 0 10px; font-weight:600;"></p>
         <div id="cust-admin-list-screen">
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
-            <input type="search" id="cust-admin-q" placeholder="Rechercher (nom ou courriel)" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:240px;">
+            <input type="search" id="cust-admin-q" placeholder="Rechercher (nom, courriel, téléphone, pays, ville)" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:240px;">
             <button type="button" class="btn" id="cust-admin-refresh" style="padding:6px 12px; font-size:12.5px;">Actualiser</button>
             <span class="hint" id="cust-admin-count" style="margin:0;"></span>
           </div>
@@ -13767,7 +13772,8 @@
       return custRefreshSession();
     }).catch(function(e){ custMsg('error', custErrText(e)); }).then(function(){ custBusy = false; });
   }
-  function custSignUp(name, email, pw, terms){
+  function custSignUp(name, email, pw, terms, extra){
+    extra = extra || {};
     var cs = custSbInit();
     if(!cs){ custMsg('error', 'Service de connexion indisponible.'); return; }
     name = String(name || '').trim(); email = String(email || '').trim();
@@ -13775,7 +13781,7 @@
     if(pw.length < 8){ custMsg('error', 'Mot de passe : 8 caractères minimum.'); return; }
     if(!terms){ custMsg('error', 'Acceptez les conditions pour créer votre compte.'); return; }
     if(custBusy) return; custBusy = true; custMsg('', '');
-    hnCaptchaToken().then(function(ct){ return cs.auth.signUp({ email: email, password: pw, options: { data: { full_name: name, terms: true }, emailRedirectTo: location.origin + '/?account=confirmed', captchaToken: ct } }); }).then(function(res){
+    hnCaptchaToken().then(function(ct){ return cs.auth.signUp({ email: email, password: pw, options: { data: { full_name: name, terms: true, first_name: String(extra.first || '').trim(), last_name: String(extra.last || '').trim(), phone: String(extra.phone || '').trim(), country: String(extra.country || '').trim(), city: String(extra.city || '').trim() }, emailRedirectTo: location.origin + '/?account=confirmed', captchaToken: ct } }); }).then(function(res){
       if(res.error) throw res.error;
       if(res.data && res.data.session){ custMsg('ok', 'Compte créé. Bienvenue !'); return custRefreshSession(); }
       /* Confirmation par courriel activée : le profil client sera créé à la première connexion. */
@@ -13814,10 +13820,17 @@
     if(l) l.style.display = screen === 'edit' ? 'none' : '';
     if(e) e.style.display = screen === 'edit' ? '' : 'none';
   }
+  function custAdminProfileLine(r){
+    var bits = [];
+    if(r.phone) bits.push('Tél. ' + escapeHtml(r.phone));
+    var loc = [r.city, r.country].filter(Boolean).map(escapeHtml).join(', ');
+    if(loc) bits.push(loc);
+    return bits.length ? bits.join(' · ') : '<span style="opacity:.7;">Profil non renseigné</span>';
+  }
   function custAdminRender(){
     var box = cEl('cust-admin-rows'); if(!box) return;
     var q = String((cEl('cust-admin-q') || {}).value || '').trim().toLowerCase();
-    var rows = custAdminState.rows.filter(function(r){ return !q || (String(r.email || '') + ' ' + String(r.full_name || '')).toLowerCase().indexOf(q) >= 0; });
+    var rows = custAdminState.rows.filter(function(r){ return !q || (String(r.email || '') + ' ' + String(r.full_name || '') + ' ' + String(r.first_name || '') + ' ' + String(r.last_name || '') + ' ' + String(r.phone || '') + ' ' + String(r.country || '') + ' ' + String(r.city || '')).toLowerCase().indexOf(q) >= 0; });
     var cnt = cEl('cust-admin-count'); if(cnt) cnt.textContent = rows.length + ' client' + (rows.length > 1 ? 's' : '') + (q ? ' trouvé' + (rows.length > 1 ? 's' : '') : '');
     if(!rows.length){ box.innerHTML = '<p class="hint" style="margin:0;">' + (custAdminState.loaded ? 'Aucun client pour le moment.' : 'Chargement…') + '</p>'; return; }
     box.innerHTML = rows.map(function(r){
@@ -13825,6 +13838,7 @@
       return '<div style="border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--surface); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">' +
         '<div style="flex:1; min-width:200px;"><b>' + escapeHtml(r.full_name || '(sans nom)') + '</b>' + (susp ? ' <span style="color:var(--bad); font-size:12px; font-weight:700;">SUSPENDU</span>' : '') +
         '<div class="hint" style="margin:2px 0 0; word-break:break-all;">' + escapeHtml(r.email || '') + '</div>' +
+        '<div class="hint" style="margin:2px 0 0;">' + custAdminProfileLine(r) + '</div>' +
         '<div class="hint" style="margin:2px 0 0;">Forfait ' + escapeHtml(custAdminPlanName(r.plan)) + ' · ' + Number(r.used || 0) + ' crédits ce mois-ci' + (r.cost_usd != null ? ' · coût API ≈ ' + Number(r.cost_usd).toFixed(2) + ' $ US' : '') + ' · inscrit le ' + escapeHtml(custAdminDate(r.created_at)) + '</div></div>' +
         '<button type="button" class="btn" data-cadm-edit="' + escapeHtml(r.email || '') + '" style="padding:6px 12px; font-size:12.5px;">Gérer</button></div>';
     }).join('');
@@ -13836,6 +13850,12 @@
       if(r.error) throw r.error;
       custAdminState.rows = Array.isArray(r.data) ? r.data : []; custAdminState.loaded = true;
       custAdminRender();
+      return sb.rpc('customer_profiles_admin_list').then(function(p){   /* profils (prénom, nom, téléphone, pays, ville) : facultatif, ignoré si le SQL n'est pas installé */
+        if(!p || p.error || !Array.isArray(p.data)) return;
+        var by = {}; p.data.forEach(function(x){ by[String(x.email || '').toLowerCase()] = x; });
+        custAdminState.rows.forEach(function(row){ var x = by[String(row.email || '').toLowerCase()]; if(x){ row.first_name = x.first_name; row.last_name = x.last_name; row.phone = x.phone; row.country = x.country; row.city = x.city; } });
+        custAdminRender();
+      }, function(){});
     }).catch(function(){
       custAdminState.loaded = true; custAdminRender();
       custAdminMsg('error', 'Liste des clients indisponible. Vérifiez que le fichier SQL « phase 3n » est bien exécuté dans Supabase.');
@@ -13859,8 +13879,8 @@
       return '<option value="' + escapeHtml(t.id) + '">' + escapeHtml(t.nom) + (t.credits != null ? ' (' + t.credits + ' crédits/mois)' : ' (sur mesure)') + '</option>';
     }).join('');
     if(ps) ps.value = row.plan === 'pilote' ? 'gratuit' : row.plan;
-    cEl('cust-admin-e-name').textContent = row.full_name || '(sans nom)';
-    cEl('cust-admin-e-info').textContent = (row.email || '') + ' — ' + Number(row.used || 0) + ' crédits utilisés ce mois-ci — inscrit le ' + custAdminDate(row.created_at);
+    cEl('cust-admin-e-name').textContent = ((row.first_name || row.last_name) ? [row.first_name, row.last_name].filter(Boolean).join(' ') : '') || row.full_name || '(sans nom)';
+    cEl('cust-admin-e-info').textContent = (row.email || '') + (row.phone ? ' — Tél. ' + row.phone : '') + ([row.city, row.country].filter(Boolean).length ? ' — ' + [row.city, row.country].filter(Boolean).join(', ') : '') + ' — ' + Number(row.used || 0) + ' crédits utilisés ce mois-ci — inscrit le ' + custAdminDate(row.created_at);
     cEl('cust-admin-e-extra').value = '0';
     cEl('cust-admin-e-status').value = row.status === 'suspended' ? 'suspended' : 'active';
     custAdminMsg('', ''); custAdminShow('edit');
@@ -14688,7 +14708,7 @@
     if((f = cEl('cust-tab-login'))) f.addEventListener('click', function(){ custTab('login'); });
     if((f = cEl('cust-tab-signup'))) f.addEventListener('click', function(){ custTab('signup'); });
     if((f = cEl('cust-form-login'))) f.addEventListener('submit', function(ev){ ev.preventDefault(); custSignIn(cEl('cust-login-email').value, cEl('cust-login-pw').value); });
-    if((f = cEl('cust-form-signup'))) f.addEventListener('submit', function(ev){ ev.preventDefault(); custSignUp(cEl('cust-su-name').value, cEl('cust-su-email').value, cEl('cust-su-pw').value, cEl('cust-su-terms').checked); });
+    if((f = cEl('cust-form-signup'))) f.addEventListener('submit', function(ev){ ev.preventDefault(); var fn = cEl('cust-su-first').value.trim(), ln = cEl('cust-su-last').value.trim(); custSignUp((fn + ' ' + ln).trim(), cEl('cust-su-email').value, cEl('cust-su-pw').value, cEl('cust-su-terms').checked, { first: fn, last: ln, phone: cEl('cust-su-phone').value, country: cEl('cust-su-country').value, city: cEl('cust-su-city').value }); });
     if((f = cEl('cust-forgot-btn'))) f.addEventListener('click', function(){ custForgot(cEl('cust-login-email').value); });
     if((f = cEl('cust-logout-btn'))) f.addEventListener('click', custSignOut);
     if((f = cEl('cust-plans-btn'))) f.addEventListener('click', function(){ var b = cEl('btn-abonnements'); if(b) b.click(); });
@@ -40563,7 +40583,7 @@
   document.addEventListener('click', function(e){
     var t = e.target; if(!t || !t.closest) return;
     var head = t.closest('.hn-fold-head'); if(!head) return;
-    if(t.closest('button, a, input, select, textarea, summary, label, details')) return;
+    if(t.closest('button, a, input, select, textarea, summary, label')) return;   /* « details » retiré de la liste : les cartes imbriquées dans une section FGH-Colab (details) ne se repliaient jamais */
     toggle(head);
   });
   document.addEventListener('keydown', function(e){
@@ -46125,6 +46145,101 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
       history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
     }
   }catch(e){}
+})();
+</script>
+<!-- hn-prof : « Mon profil » du client (prénom, nom, téléphone, pays, ville) + sections Réglages pliables -->
+<style id="hn-prof-css">
+#cust-admin-q{width:min(100%,360px)!important}
+#view-settings .hn-fold-head, #view-fghlab .hn-fold-head{overflow-wrap:anywhere;min-width:0}
+#view-settings .hn-fold-head .hn-fold-caret, #view-fghlab .hn-fold-head .hn-fold-caret{flex:none}
+.hn-fold-left{cursor:pointer}
+#hn-prof{margin:10px 0;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface-2)}
+#hn-prof summary{cursor:pointer;font-size:13.5px;font-weight:600}
+#hn-prof .hp-grid{display:grid;gap:8px;margin-top:10px;max-width:420px}
+#hn-prof input{border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:var(--surface);color:var(--ink);font-size:13px;width:100%;box-sizing:border-box}
+</style>
+<script id="hn-prof-js">
+(function(){
+  'use strict';
+  var SB = 'https://elzdsyfxpeqnrhlxbgbk.supabase.co', KEY = 'sb_publishable_5ZLQ6FIGJMATE6YslnS_Dw_D9x8TL7P';
+  function $(s, r){ return (r || document).querySelector(s); }
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+
+  /* ---------- Cartes pliables : flèche toujours visible, à GAUCHE du titre (sur téléphone, la flèche de droite sortait de l'écran) ---------- */
+  function leftCarets(){
+    Array.prototype.forEach.call(document.querySelectorAll('#view-settings .hn-fold-head, #view-fghlab .hn-fold-head'), function(h){
+      if(h.dataset.hnLeft || h.classList.contains('hn-fold-member-head')) return;
+      var c = null; Array.prototype.forEach.call(h.children, function(k){ if(k.classList.contains('hn-fold-caret')) c = k; });
+      if(!c) return;
+      h.dataset.hnLeft = '1'; h.classList.add('hn-fold-member-head'); h.insertBefore(c, h.firstChild);
+    });
+  }
+  /* Sections réservées au propriétaire : repliées par défaut la première fois (puis l'état choisi est mémorisé par l'application) */
+  var SEED = ['mgr-card', 'pool-card', 'cust-admin-card', 'spc-card'];
+  function seedFolds(){
+    SEED.forEach(function(id){
+      if(lsGet('hn_fold_seed2_' + id)) return;
+      var card = document.getElementById(id); if(!card || !card.classList.contains('hn-fold-card')) return;
+      lsSet('hn_fold_seed2_' + id, '1');
+      if(!card.classList.contains('hn-collapsed')){ var h = card.querySelector('.hn-fold-head'); if(h) h.click(); }
+    });
+  }
+  var foldTimer = null;
+  function foldTick(){ if(foldTimer) return; foldTimer = setTimeout(function(){ foldTimer = null; try{ leftCarets(); seedFolds(); }catch(e){} }, 120); }
+  ['view-settings', 'view-fghlab'].forEach(function(id){ var r = document.getElementById(id); if(r) new MutationObserver(foldTick).observe(r, { childList:true, subtree:true }); });
+  setTimeout(foldTick, 400); setTimeout(foldTick, 1500);
+
+  /* ---------- « Mon profil » du client connecté ---------- */
+  var loadedFor = null;
+  function token(){ return typeof window.__hnAiToken === 'function' ? Promise.resolve(window.__hnAiToken()).catch(function(){ return null; }) : Promise.resolve(null); }
+  function rpc(name, args, tk){
+    return fetch(SB + '/rest/v1/rpc/' + name, { method:'POST', headers:{ 'Content-Type':'application/json', apikey:KEY, Authorization:'Bearer ' + tk }, body:JSON.stringify(args || {}) })
+      .then(function(r){ if(!r.ok) throw new Error('rpc ' + r.status); return r.json(); });
+  }
+  function ensureForm(){
+    var inn = $('#cust-in'); if(!inn) return null;
+    var d = $('#hn-prof'); if(d) return d;
+    d = document.createElement('details'); d.id = 'hn-prof';
+    d.innerHTML = '<summary>Mon profil (prénom, nom, téléphone, pays, ville)</summary><div class="hp-grid">' +
+      '<input id="hp-first" placeholder="Prénom" maxlength="80" autocomplete="given-name">' +
+      '<input id="hp-last" placeholder="Nom" maxlength="80" autocomplete="family-name">' +
+      '<input id="hp-phone" type="tel" placeholder="Téléphone" maxlength="40" autocomplete="tel">' +
+      '<input id="hp-country" list="hn-countries" placeholder="Pays de résidence" maxlength="80" autocomplete="country-name">' +
+      '<input id="hp-city" placeholder="Ville de résidence" maxlength="80" autocomplete="address-level2">' +
+      '<div><button type="button" class="btn primary" id="hp-save" style="padding:6px 14px;font-size:12.5px;">Enregistrer mon profil</button></div>' +
+      '<p class="hint" id="hp-msg" role="status" style="margin:0;"></p></div>';
+    var anchor = $('#cust-plans-btn'); inn.insertBefore(d, anchor || null);
+    $('#hp-save', d).addEventListener('click', save);
+    return d;
+  }
+  function msg(t, bad){ var m = $('#hp-msg'); if(m){ m.textContent = t || ''; m.style.color = bad ? 'var(--bad)' : 'var(--muted)'; } }
+  function load(){
+    var inn = $('#cust-in'); if(!inn || inn.style.display === 'none') { loadedFor = null; return; }
+    var plan = $('#cust-plan'); if(plan && /équipe FGH-Colab/.test(plan.textContent)) return;   // comptes d'équipe : pas de profil client
+    token().then(function(tk){
+      if(!tk || loadedFor === tk) return; loadedFor = tk;
+      ensureForm();
+      return rpc('customer_profile_get', {}, tk).then(function(p){
+        if(!p) return; var set = function(id, v){ var e = $('#' + id); if(e && !e.dataset.dirty) e.value = v || ''; };
+        set('hp-first', p.first_name); set('hp-last', p.last_name); set('hp-phone', p.phone); set('hp-country', p.country); set('hp-city', p.city);
+        var d = $('#hn-prof'); if(d && !(p.first_name && p.last_name)) d.open = true;   // profil incomplet : on invite à le remplir
+      }).catch(function(){ var d = $('#hn-prof'); if(d) d.style.display = 'none'; });   // SQL pas encore installé : on masque
+    });
+  }
+  function save(){
+    var b = $('#hp-save'); if(b) b.disabled = true; msg('Enregistrement…');
+    token().then(function(tk){
+      if(!tk){ msg('Connectez-vous pour enregistrer.', true); return; }
+      return rpc('customer_profile_save', { p_first: $('#hp-first').value, p_last: $('#hp-last').value, p_phone: $('#hp-phone').value, p_country: $('#hp-country').value, p_city: $('#hp-city').value }, tk)
+        .then(function(ok){ msg(ok ? 'Profil enregistré.' : 'Impossible d’enregistrer. Reconnectez-vous.', !ok); });
+    }).catch(function(){ msg('Impossible d’enregistrer pour le moment.', true); }).then(function(){ if(b) b.disabled = false; });
+  }
+  var inn = $('#cust-in');
+  if(inn){
+    new MutationObserver(load).observe(inn, { attributes:true, attributeFilter:['style'] });
+    setTimeout(load, 1500);
+  }
 })();
 </script>
 </body></html>
