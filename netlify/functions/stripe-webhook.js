@@ -32,7 +32,7 @@ async function applySubscription(sub) {
   const pi = L.planFromSubscription(sub);
   const st = sub.status, live = st === 'active' || st === 'trialing', dead = st === 'canceled' || st === 'unpaid' || st === 'incomplete_expired';
   const base = { user_id: uid, stripe_customer_id: customerId || undefined, subscription_id: sub.id, status: st, current_period_end: iso(sub.current_period_end || (sub.items && sub.items.data[0] && sub.items.data[0].current_period_end)),
-    cancel_at_period_end: !!sub.cancel_at_period_end, meta: md };
+    cancel_at_period_end: !!(sub.cancel_at_period_end || sub.cancel_at), meta: md };   // l'API récente renseigne « cancel_at » (date) pour une annulation programmée
   if (live) {
     if (!pi.plan) throw new Error('forfait introuvable pour ' + sub.id);
     await rpc('svc_stripe_set_plan', { p_uid: uid, p_plan: pi.plan });
