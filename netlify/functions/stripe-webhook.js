@@ -1,7 +1,7 @@
 /* HelpNaud.ai — webhook Stripe (Netlify Function). Fichier : netlify/functions/stripe-webhook.js
  * URL à déclarer dans Stripe : https://helpnaud.ai/.netlify/functions/stripe-webhook
  * Événements : checkout.session.completed, checkout.session.async_payment_succeeded, customer.subscription.created,
- *   customer.subscription.updated, customer.subscription.deleted, invoice.paid, invoice.payment_failed.
+ *   customer.subscription.updated, customer.subscription.deleted, invoice.paid, invoice.payment_failed, charge.refunded.
  * Variables Netlify : STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET (whsec_…), SUPABASE_SECRET_KEY.
  * Sécurité : signature vérifiée (HMAC-SHA256, tolérance 5 min) ; chaque événement n'est traité qu'une fois (table stripe_events). */
 'use strict';
@@ -80,6 +80,16 @@ async function handle(ev) {
       const sid = o.subscription || (o.parent && o.parent.subscription_details && o.parent.subscription_details.subscription);
       if (sid) return applySubscription(await stripe('GET', 'subscriptions/' + sid, {}));
       return 'facture sans abonnement';
+    }
+    case 'charge.refunded': {
+      // Remboursement total d'un pack : les crédits restants du pack sont retirés (les crédits déjà utilisés ne peuvent pas être repris).
+      if (!o.payment_intent) return 'remboursement sans paiement associé';
+      if (!(o.refunded || (o.amount_refunded && o.amount_refunded >= o.amount))) return 'remboursement partiel : aucun crédit retiré';
+      const list = await stripe('GET', 'checkout/sessions', { payment_intent: o.payment_intent, limit: 1 });
+      const sess = list && list.data && list.data[0];
+      if (!sess || sess.mode !== 'payment') return 'remboursement hors pack';
+      const removed = await rpc('svc_stripe_revoke_pack', { p_session: sess.id });
+      return removed + ' crédits retirés (pack remboursé)';
     }
     default: return 'ignoré';
   }
