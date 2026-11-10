@@ -1820,9 +1820,9 @@
       onclick="var m=document.getElementById('abonnements-modal'); if(m) m.hidden=true;"
       style="position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:99px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:16px; line-height:1; cursor:pointer;">✕</button>
     <h2>Abonnements HelpNaud.ai</h2>
-    <p class="lead">Six forfaits sont prévus pour le déploiement futur de HelpNaud.ai, du pilote gratuit jusqu'aux grandes institutions. Aucun paiement n'est actif pour l'instant.</p>
+    <p class="lead">Choisissez le forfait qui vous convient, du gratuit jusqu'aux grandes institutions. Paiement sécurisé par Stripe.</p>
     <div class="alert-banner" style="margin:10px 0 16px; background:var(--accent-soft); border:1px solid var(--accent); color:var(--accent-ink); border-radius:10px; padding:10px 14px; font-size:12.5px; line-height:1.5;">
-      Les forfaits et limites ci-dessous sont indicatifs et seront ajustés lors du déploiement officiel des abonnements payants de HelpNaud.ai.
+      Prix en dollars américains (USD), hors taxes.
     </div>
     <div class="plans-grid" id="abonnements-grid" style="grid-template-columns:repeat(auto-fill, minmax(250px,1fr));"></div>
   </div>
@@ -5320,7 +5320,7 @@
 
 <div class="card">
         <h2>Abonnements</h2>
-        <p class="hint">Consultez les 6 forfaits prévus pour HelpNaud.ai (Gratuit, Essentiel, Avancée, Professionnel, Affaires, Institution ; prix en dollars américains) — à titre indicatif, aucun paiement n'est actif pendant la phase pilote.</p>
+        <p class="hint">Consultez et choisissez votre forfait HelpNaud.ai (Gratuit, Essentiel, Avancée, Professionnel, Affaires, Institution ; prix en dollars américains, hors taxes). Paiement sécurisé par Stripe.</p>
         <button class="btn primary" id="btn-abonnements" type="button">
           <svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h10"/></svg>
           Voir les forfaits
@@ -5329,9 +5329,9 @@
 
       <div class="card">
         <h2>Crédits IA</h2>
-        <p class="hint">Un « crédit IA » = un message envoyé à l'assistant (Assistant, Co-work &gt; Discussion ou Consult, confondus — les calculateurs hors-ligne de Consult n'en consomment pas). Suivi uniquement sur cet appareil, remis à zéro chaque mois civil. Choisissez ci-dessous le palier à titre indicatif (aucun abonnement payant n'est actif pendant la phase pilote) pour voir l'allocation mensuelle correspondante.</p>
+        <p class="hint">Un « crédit IA » = un message envoyé à l'assistant (Assistant, Co-work &gt; Discussion ou Consult, confondus — les calculateurs hors-ligne de Consult n'en consomment pas). Remis à zéro chaque mois. Le palier ci-dessous correspond à votre forfait actuel et indique votre allocation mensuelle.</p>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-          <label class="hint" style="margin:0;" for="ai-credits-tier-select">Palier (indicatif) :</label>
+          <label class="hint" style="margin:0;" for="ai-credits-tier-select">Votre palier :</label>
           <select id="ai-credits-tier-select" style="width:auto;"></select>
         </div>
         <div class="progress-bar ai-credits-indicator-bar" style="height:8px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; margin-bottom:8px;">
@@ -8239,7 +8239,7 @@
   }
   function showAiCreditsLimitNotice(addNoticeFn){
     var tier = getAiCreditsTier();
-    var notice = "Vous avez épuisé vos crédits d'utilisation (palier " + tier.nom + "). Obtenez plus de crédits pour continuer maintenant, ou attendez jusqu'au " + aiCreditsResetLabel() + " à 00:00 lorsque votre limite se réinitialise. Vos conversations continuent de fonctionner pendant la phase pilote.";
+    var notice = "Vous avez épuisé vos crédits d'utilisation (palier " + tier.nom + "). Obtenez plus de crédits pour continuer maintenant, ou attendez jusqu'au " + aiCreditsResetLabel() + " à 00:00 lorsque votre limite se réinitialise.";
     var banner = document.getElementById('ai-credits-limit-notice');
     if(banner){ banner.hidden = false; banner.textContent = notice; }
     if(typeof addNoticeFn === 'function') addNoticeFn(notice);
