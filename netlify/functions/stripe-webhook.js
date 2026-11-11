@@ -21,8 +21,30 @@ async function rowByCustomer(cid) { const r = await rest('GET', 'stripe_customer
 async function rowByUser(uid) { const r = await rest('GET', 'stripe_customers?user_id=eq.' + eq(uid) + '&select=*', null); return r && r[0] || null; }
 const upsert = row => rest('POST', 'stripe_customers?on_conflict=user_id', Object.assign({ updated_at: new Date().toISOString() }, row), { Prefer: 'resolution=merge-duplicates,return=minimal' });
 
+/* TAISO / iTAF : abonnement rattaché à une organisation (table ops_orgs). */
+async function applyOrgSubscription(sub) {
+  const md = sub.metadata || {}, customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer && sub.customer.id;
+  let orgId = md.org_id || null;
+  if (!orgId) { const r = await rest('GET', 'ops_orgs?stripe_subscription=eq.' + eq(sub.id) + '&select=id', null); orgId = r && r[0] && r[0].id; }
+  if (!orgId) throw new Error('abonnement sans organisation : ' + sub.id);
+  const st = sub.status, live = st === 'active' || st === 'trialing', dead = st === 'canceled' || st === 'unpaid' || st === 'incomplete_expired';
+  if (live) {
+    const pi = L.opsFromSubscription(sub);
+    if (!pi.plan) throw new Error('forfait TAISO/iTAF introuvable pour ' + sub.id);
+    const pe = sub.current_period_end || (sub.items && sub.items.data[0] && sub.items.data[0].current_period_end);
+    if (!pe) throw new Error('fin de période inconnue pour ' + sub.id);
+    const ok = await rpc('svc_ops_apply_subscription', { p_org: orgId, p_plan: pi.plan, p_interval: pi.interval, p_paid_until: iso(pe + 2 * 86400),   // 2 jours de grâce pour le renouvellement
+      p_extra_seats: Math.min(pi.extra, L.OPS_MAX_EXTRA_SEATS), p_customer: customerId || null, p_sub: sub.id });
+    if (!ok) throw new Error('organisation introuvable : ' + orgId);
+    return 'organisation ' + pi.plan + ' (+' + pi.extra + ' utilisateur(s))';
+  }
+  if (dead) { const ok = await rpc('svc_ops_end_subscription', { p_org: orgId, p_sub: sub.id }); return ok ? 'abonnement d’organisation terminé' : 'ancien abonnement d’organisation ignoré'; }
+  return 'organisation : état ' + st;
+}
+
 /* Applique l'état d'un abonnement Stripe au compte HelpNaud. */
 async function applySubscription(sub) {
+  if (L.isOpsSubscription(sub)) return applyOrgSubscription(sub);
   const md = sub.metadata || {}, customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer && sub.customer.id;
   let uid = md.uid || null, stored = null;
   if (customerId) stored = await rowByCustomer(customerId);
@@ -61,6 +83,12 @@ async function handle(ev) {
       if (o.mode === 'subscription' && o.subscription) return applySubscription(await stripe('GET', 'subscriptions/' + o.subscription, {}));
       if (o.mode === 'payment') {
         if (o.payment_status !== 'paid') return 'paiement non encore reçu';
+        const lot = o.metadata && o.metadata.lot && L.OPS_LOTS[o.metadata.lot];
+        if (lot) {
+          if (!o.metadata.org_id) throw new Error('lot sans organisation : ' + o.id);
+          const addedLot = await rpc('svc_ops_add_pack', { p_org: o.metadata.org_id, p_doc: lot.doc, p_ai: lot.ai, p_session: o.id, p_months: 12 });
+          return addedLot ? 'lot ' + o.metadata.lot + ' ajouté' : 'lot déjà ajouté';
+        }
         const credits = Number(o.metadata && o.metadata.credits);
         if (L.PACKS.indexOf(credits) < 0) throw new Error('pack inconnu : ' + (o.metadata && o.metadata.credits));
         const added = await rpc('svc_stripe_add_pack', { p_uid: uid, p_credits: credits, p_session: o.id, p_months: 12 });
@@ -88,6 +116,7 @@ async function handle(ev) {
       const list = await stripe('GET', 'checkout/sessions', { payment_intent: o.payment_intent, limit: 1 });
       const sess = list && list.data && list.data[0];
       if (!sess || sess.mode !== 'payment') return 'remboursement hors pack';
+      if (sess.metadata && sess.metadata.lot) { const n = await rpc('svc_ops_revoke_pack', { p_session: sess.id }); return n + ' unités retirées (lot remboursé)'; }
       const removed = await rpc('svc_stripe_revoke_pack', { p_session: sess.id });
       return removed + ' crédits retirés (pack remboursé)';
     }
