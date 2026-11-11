@@ -78,3 +78,15 @@
   to = "/index.html"
   status = 200
   force = true
+
+# Textes légaux publics (URL à déclarer aussi dans Stripe)
+[[redirects]]
+  from = "/conditions"
+  to = "/conditions.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/confidentialite"
+  to = "/confidentialite.html"
+  status = 200
+  force = true
