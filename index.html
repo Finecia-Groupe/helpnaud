@@ -42456,13 +42456,13 @@ var PNAME = { taiso:'TAISO', itaf:'iTAF' };
 var ST = { usage:null, orgs:[], invites:[], demo:false, org:null, sb:null, email:'', err:'', ready:false, cache:{}, prod:'taiso', loading:false };
 var UI = { taiso:{ tab:'dash', f:{} }, itaf:{ tab:'dash', f:{} } };
 var LSK = 'hn_ops_local', DEMOK = 'hn_ops_demo', ORGK = 'hn_ops_org', AUDK = 'hn_ops_audit';
-var PRICE_NOTE = 'Tarifs de départ (hypothèses à tester avec des clients pilotes, avant taxes, en dollars US, facturés annuellement) : TAISO dès 199 $/mois, iTAF dès 149 $/mois, TAISO + iTAF dès 299 $/mois. Inclus : 250 unités de traitement documentaire par mois et 5 utilisateurs. Chaque fichier consomme une unité par tranche de 3 pages commencée ; le décompte est affiché avant confirmation. Analyses IA : 25 par mois incluses (1 par analyse, annoncée avant). Dépassements par lots supplémentaires. Institutions et grandes organisations : sur devis.';
+var PRICE_NOTE = 'Prix en dollars US, hors taxes. Abonnement annuel : environ 20 % d’économie. Inclus : 250 unités de traitement documentaire par mois, 25 analyses IA par mois et 5 utilisateurs (utilisateur supplémentaire : 25 $ US/mois ou 250 $ US/an, jusqu’à 15 ; au-delà : Institution sur devis). Chaque fichier consomme une unité par tranche de 3 pages commencée ; le décompte est affiché avant confirmation. Les unités du mois sont consommées en premier ; des lots supplémentaires (100 unités, 10 analyses IA ou les deux) sont valables 12 mois tant que l’abonnement est actif. Institutions et grandes organisations : sur devis.';
 var UNIT_RULES = ['Un fichier (PDF ou image) de 1 à 3 pages = 1 unité ; 1 unité de plus par tranche de 3 pages commencée (5 pages = 2, 7 = 3, 12 = 4, 30 = 10).', 'Le corps d’un courriel n’est pas décompté ; chaque pièce jointe traitée suit la règle des fichiers.', 'Un fichier identique déjà traité (même empreinte) n’est jamais décompté une seconde fois, même s’il sert à TAISO et à iTAF dans la même organisation.', 'Un traitement échoué ne consomme aucune unité.', 'Les CSV, textes collés, saisies manuelles et analyses sans IA ne consomment pas d’unité (stockage et synchronisation inclus, avec des limites adaptées).', 'Une analyse IA supplémentaire a son propre compteur : 1 analyse IA par demande, annoncée avant la confirmation, en plus du crédit IA HelpNaud.', 'Deux abonnements distincts (organisations séparées) comptent chacun leurs unités.'];
 var PLANS = [
-  ['trial', 'Essai gratuit de 14 jours', 'TAISO + iTAF, sans engagement', 'Gratuit'],
-  ['taiso', 'TAISO', 'Gestion et rapprochement des opérations', 'dès 199 $ US/mois*'],
-  ['itaf', 'iTAF', 'Contrôles et analyse des anomalies', 'dès 149 $ US/mois*'],
-  ['both', 'TAISO + iTAF', 'Suite intégrée', 'dès 299 $ US/mois*']
+  ['trial', 'Essai gratuit de 14 jours', 'TAISO + iTAF, sans carte bancaire : 2 utilisateurs, 50 unités, 5 analyses IA', 'Gratuit'],
+  ['taiso', 'TAISO', 'Gestion et rapprochement des opérations', '199 $ US/mois (annuel) · 249 $ US/mois (mensuel)'],
+  ['itaf', 'iTAF', 'Contrôles et analyse des anomalies', '149 $ US/mois (annuel) · 189 $ US/mois (mensuel)'],
+  ['both', 'TAISO + iTAF', 'Suite intégrée', '299 $ US/mois (annuel) · 379 $ US/mois (mensuel)']
 ];
 
 /* ---------- utilitaires ---------- */
@@ -42757,14 +42757,14 @@ function ctxBar(prod){
 function lockScreen(prod){
   var o = ST.org, why = !o['active_' + prod];
   return '<div class="card"><h2>' + (why ? 'Essai terminé ou produit non inclus' : 'Accès non accordé') + '</h2><p class="hint">' + (why
-    ? PNAME[prod] + ' n’est pas actif pour « ' + esc(o.name) + ' » (essai de 14 jours terminé ou produit non inclus). Contactez HelpNaud pour activer ou prolonger l’abonnement. ' + esc(PRICE_NOTE)
+    ? PNAME[prod] + ' n’est pas actif pour « ' + esc(o.name) + ' » (essai de 14 jours terminé ou produit non inclus). ' + (o.role === 'admin' ? 'Choisissez un abonnement pour l’activer. ' + esc(PRICE_NOTE) + '</p><p>' + btn('Choisir un abonnement', 'org-billing', null, 'primary') : 'Demandez à l’administrateur de l’organisation de l’activer.')
     : 'Votre administrateur ne vous a pas encore donné accès à ' + PNAME[prod] + '. Demandez-lui d’ouvrir vos accès dans « Équipe & accès ».') + '</p></div>';
 }
 function statusLine(prod){
   if(ST.demo) return '<div class="ops-note warn">Espace de démonstration : données d’exemple séparées de vos vraies données. ' + btn('Réinitialiser la démonstration', 'demo-clear', null, 'ops-sm') + '</div>';
   if(!isCloud()) return '<div class="ops-note warn"><b>Mode local = essai personnel.</b> Les données restent uniquement dans ce navigateur : elles peuvent être perdues (navigateur vidé, autre appareil) et ne sont partagées avec personne. <b>Pour une utilisation professionnelle, créez une organisation</b> (données sauvegardées sur le serveur, comptes administrateurs et employés) avec « + Organisation / Abonnement ».</div>';
   var o = ST.org, until = o.paid_until && new Date(o.paid_until) > new Date() ? 'Abonnement actif jusqu’au ' + String(o.paid_until).slice(0, 10) : (new Date(o.trial_until) > new Date() ? 'Essai gratuit jusqu’au ' + String(o.trial_until).slice(0, 10) : 'Essai terminé');
-  return '<div class="ops-note">Organisation « ' + esc(o.name) + ' » · ' + (o.role === 'admin' ? 'administrateur' : 'employé (' + (lvl(prod) === 'edit' ? 'modification' : 'lecture seule') + ')') + ' · ' + esc(until) + ' · ' + o.members + ' compte(s)</div>';
+  return '<div class="ops-note">Organisation « ' + esc(o.name) + ' » · ' + (o.role === 'admin' ? 'administrateur' : 'employé (' + (lvl(prod) === 'edit' ? 'modification' : 'lecture seule') + ')') + ' · ' + esc(until) + ' · ' + o.members + ' compte(s) ' + (o.role === 'admin' ? btn('Abonnement', 'org-billing', null, 'ops-sm') : '') + '</div>';
 }
 function render(){
   ['taiso', 'itaf'].forEach(function(prod){
@@ -42828,13 +42828,84 @@ OPS.A['org-new'] = function(){
   }
   var h = '<div class="ops-form"><div class="ops-fw w2"><label class="ops-fl">1. Nom de l’entreprise ou de l’institution *</label><input id="ops-on" placeholder="Ex. Entreprise Alpha inc."></div></div>' +
     '<p class="ops-fl" style="margin-top:12px">2. Votre choix</p>' + PLANS.map(function(p, i){ return '<label class="ops-note" style="display:block;cursor:pointer"><input type="radio" name="ops-plan" value="' + p[0] + '"' + (i === 0 ? ' checked' : '') + '> <b>' + esc(p[1]) + '</b> — ' + esc(p[3]) + '<br><span class="hint" style="margin:0">' + esc(p[2]) + '</span></label>'; }).join('') +
-    '<p class="hint">* ' + esc(PRICE_NOTE) + '</p><p class="hint"><b>Règles de décompte :</b></p><ul class="hint" style="margin:0 0 8px 18px">' + UNIT_RULES.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join('') + '</ul><p class="hint"><b>Entreprises et institutions : utilisez une organisation.</b> Ses données sont enregistrées sur le serveur, séparées de celles des autres clients et accessibles selon les droits de chaque compte ; le mode local, lui, est réservé à l’essai personnel.</p><p class="hint">Dans tous les cas, l’organisation démarre avec 14 jours d’essai, et vous en êtes l’administrateur. Pour un abonnement, le paiement en ligne automatique n’est pas encore ouvert : votre choix est enregistré et HelpNaud confirme l’activation après paiement. Une page « paiement réussi » ne débloque jamais les accès à elle seule.</p>';
+    '<p class="hint">* ' + esc(PRICE_NOTE) + '</p><p class="hint"><b>Règles de décompte :</b></p><ul class="hint" style="margin:0 0 8px 18px">' + UNIT_RULES.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join('') + '</ul><p class="hint"><b>Entreprises et institutions : utilisez une organisation.</b> Ses données sont enregistrées sur le serveur, séparées de celles des autres clients et accessibles selon les droits de chaque compte ; le mode local, lui, est réservé à l’essai personnel.</p><p class="hint">Vous êtes l’administrateur de l’organisation. L’essai gratuit de 14 jours (2 utilisateurs, 50 unités, 5 analyses IA, sans carte bancaire) est offert une seule fois par organisation et par domaine professionnel, sans renouvellement automatique. Pour un abonnement, vous passez ensuite au paiement sécurisé par Stripe : l’accès est activé par le serveur après confirmation du paiement, jamais par la seule page « paiement réussi ».</p>';
   modal('Organisation et abonnement', h, [{ label: 'Créer l’organisation', cls: 'primary', fn: function(d){
     var name = d.querySelector('#ops-on').value.trim(), plan = (d.querySelector('input[name=ops-plan]:checked') || {}).value || 'trial';
     if(name.length < 2){ toast('Nom requis.'); return false; }
     var pr = plan === 'taiso' ? ['taiso'] : (plan === 'itaf' ? ['itaf'] : ['taiso', 'itaf']);
-    rpc('ops_org_create', { p_name: name, p_products: pr }).then(function(r){ S(ORGK, r.id); return (plan === 'trial' ? Promise.resolve() : rpc('ops_org_request_plan', { p_org: r.id, p_plan: plan }).catch(function(){})).then(function(){ return loadOrgs(); }); }).then(function(){ pickOrg(); return loadAll(); }).then(function(){ render(); toast(plan === 'trial' ? 'Organisation créée — essai de 14 jours.' : 'Organisation créée. Votre choix est enregistré ; l’activation suivra le paiement.'); }).catch(function(e){ toast(errTxt(e)); });
+    var noTrial = false;
+    rpc('ops_org_create', { p_name: name, p_products: pr }).then(function(r){ S(ORGK, r.id); noTrial = r.trial === false; return (plan === 'trial' ? Promise.resolve() : rpc('ops_org_request_plan', { p_org: r.id, p_plan: plan }).catch(function(){})).then(function(){ return loadOrgs(); }); }).then(function(){ pickOrg(); return loadAll(); }).then(function(){ render(); if(plan === 'trial' && !noTrial){ toast('Organisation créée — essai de 14 jours.'); return; } toast(noTrial ? 'Organisation créée. L’essai gratuit a déjà été utilisé pour ce domaine ou ce compte : choisissez un abonnement.' : 'Organisation créée : choisissez le paiement de votre abonnement.'); setTimeout(function(){ OPS.A['org-billing'](null, plan === 'trial' ? 'both' : plan); }, 300); }).catch(function(e){ toast(errTxt(e)); });
   } }, { label: 'Annuler' }], true);
+};
+
+/* ---------- abonnement de l’organisation (Stripe) ---------- */
+function opsApi(body){
+  var tk = typeof window.__hnAiToken === 'function' ? Promise.resolve(window.__hnAiToken()).catch(function(){ return null; }) : Promise.resolve(null);
+  return tk.then(function(t){
+    if(!t) return { ok: false, message: 'Connectez-vous à votre compte HelpNaud pour continuer.' };
+    return fetch('/.netlify/functions/stripe-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }); }).catch(function(){ return { ok: false, message: 'Connexion impossible. Vérifiez votre réseau.' }; });
+  });
+}
+function usd(c){ return c && typeof c.amount === 'number' ? (c.amount / 100).toLocaleString('fr-CA', { maximumFractionDigits: 2 }) + ' $ US' : '—'; }
+var BILL_PLANS = [['taiso', 'TAISO', 'Gestion et rapprochement des opérations'], ['itaf', 'iTAF', 'Contrôles et analyse des anomalies'], ['suite', 'TAISO + iTAF', 'Suite intégrée']];
+var BILL_LOTS = [['taiso', 'Lot TAISO', '100 unités documentaires'], ['itaf', 'Lot iTAF', '10 analyses IA'], ['suite', 'Lot Suite', '100 unités + 10 analyses IA']];
+OPS.A['org-billing'] = function(a, pref){
+  if(!pref && a && a.getAttribute) pref = a.getAttribute('data-plan');
+  if(!isCloud() || !ST.org || ST.org.role !== 'admin'){ toast('Réservé à l’administrateur d’une organisation.'); return; }
+  var org = ST.org, pay = null;
+  var d = modal('Abonnement — ' + org.name, '<p class="hint">Chargement…</p>', [{ label: 'Payer avec Stripe', cls: 'primary', fn: function(m){ if(pay) pay(m); return false; } }, { label: 'Fermer' }], true);
+  var payBtn = d.querySelector('.ops-mfoot .btn'); if(payBtn) payBtn.hidden = true;
+  var body = d.querySelector('.ops-mbody');
+  function go(req, el){
+    if(el){ el.disabled = true; }
+    opsApi(req).then(function(r){
+      if(r && r.ok && r.url){ window.location.href = r.url; return; }
+      if(el) el.disabled = false;
+      if(r && r.ok){ toast('Mise à jour envoyée : elle apparaît dans quelques secondes.'); closeModal(); setTimeout(function(){ ST.ready = false; init(true); }, 2500); return; }
+      toast((r && r.message) || 'Le paiement n’a pas pu démarrer. Réessayez dans un instant.');
+    });
+  }
+  Promise.all([opsApi({ action: 'ops_prices' }), opsApi({ action: 'ops_status', org_id: org.id }), rpc('ops_usage_status', { p_org: org.id }).catch(function(){ return null; })]).then(function(res){
+    var pr = res[0] && res[0].prices, st = res[1], us = res[2];
+    if(!pr || !st || !st.ok){ body.innerHTML = '<p class="ops-note warn">' + esc((st && st.message) || (res[0] && res[0].message) || 'Le paiement en ligne est momentanément indisponible. Réessayez dans un instant.') + '</p>'; return; }
+    var until = org.paid_until && new Date(org.paid_until) > new Date() ? 'Abonnement actif jusqu’au ' + String(org.paid_until).slice(0, 10) : (new Date(org.trial_until) > new Date() ? 'Essai gratuit jusqu’au ' + String(org.trial_until).slice(0, 10) : 'Essai terminé');
+    var h = '<p class="ops-note">' + esc(until) + ' · ' + (org.seats || 5) + ' utilisateur(s) autorisé(s)</p>';
+    if(st.subscribed){
+      var packs = us ? 'Lots disponibles : ' + (us.docs_packs || 0) + ' unité(s) documentaire(s), ' + (us.ai_packs || 0) + ' analyse(s) IA (valables 12 mois, utilisés après les unités du mois).' : '';
+      h += '<h3 class="ops-h3">Gérer l’abonnement</h3><p class="hint">Changer de forfait ou de rythme de paiement, mettre à jour la carte, consulter les factures ou annuler.</p><p><button type="button" class="btn" data-b="portal">Gérer l’abonnement et les factures</button></p>' +
+        '<h3 class="ops-h3">Utilisateurs supplémentaires</h3><p class="hint">5 utilisateurs inclus. Chaque utilisateur supplémentaire : ' + esc(usd(pr.seat.mensuel)) + '/mois ou ' + esc(usd(pr.seat.annuel)) + '/an (jusqu’à 15 au total ; au-delà : Institution sur devis). Facturé au prorata.</p>' +
+        '<p><select id="ops-b-seats" style="width:auto">' + [0,1,2,3,4,5,6,7,8,9,10].map(function(n){ return '<option value="' + n + '"' + (n === st.extraSeats ? ' selected' : '') + '>' + n + ' supplémentaire(s) — ' + (5 + n) + ' au total</option>'; }).join('') + '</select> <button type="button" class="btn" data-b="seats">Mettre à jour</button></p>' +
+        '<h3 class="ops-h3">Lots supplémentaires</h3><p class="hint">Achat unique, valable 12 mois tant que l’abonnement est actif. ' + esc(packs) + '</p>' +
+        BILL_LOTS.map(function(l){ return '<div class="ops-note" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span><b>' + esc(l[1]) + '</b> — ' + esc(l[2]) + '</span><span>' + esc(usd(pr.lots[l[0]])) + ' <button type="button" class="btn ops-sm" data-b="lot" data-lot="' + l[0] + '">Acheter</button></span></div>'; }).join('');
+      body.innerHTML = h;
+      body.addEventListener('click', function(e){
+        var el = e.target.closest && e.target.closest('[data-b]'); if(!el) return;
+        var k = el.getAttribute('data-b');
+        if(k === 'portal') go({ action: 'ops_portal', org_id: org.id }, el);
+        else if(k === 'seats') go({ action: 'ops_seats', org_id: org.id, extra: Number(body.querySelector('#ops-b-seats').value) }, el);
+        else if(k === 'lot') go({ action: 'ops_checkout', kind: 'lot', org_id: org.id, lot: el.getAttribute('data-lot') }, el);
+      });
+      return;
+    }
+    h += '<p class="hint">Paiement sécurisé par Stripe. Prix en dollars US, hors taxes. 5 utilisateurs, 250 unités de traitement documentaire et 25 analyses IA par mois inclus.</p>' +
+      '<p class="ops-fl">1. Rythme de paiement</p><label class="ops-note" style="display:block;cursor:pointer"><input type="radio" name="ops-bi" value="annuel" checked> <b>Annuel</b> — environ 20 % d’économie</label><label class="ops-note" style="display:block;cursor:pointer"><input type="radio" name="ops-bi" value="mensuel"> <b>Mensuel</b> — sans engagement</label>' +
+      '<p class="ops-fl" style="margin-top:12px">2. Forfait</p>' + BILL_PLANS.map(function(p, i){ return '<label class="ops-note" style="display:block;cursor:pointer"><input type="radio" name="ops-bp" value="' + p[0] + '"' + ((pref === p[0] || (pref === 'both' && p[0] === 'suite') || (!pref && i === 0)) ? ' checked' : '') + '> <b>' + esc(p[1]) + '</b> — <span data-pp="' + p[0] + '"></span><br><span class="hint" style="margin:0">' + esc(p[2]) + '</span></label>'; }).join('') +
+      '<p class="ops-fl" style="margin-top:12px">3. Utilisateurs supplémentaires</p><p class="hint">5 inclus. ' + esc(usd(pr.seat.mensuel)) + '/mois ou ' + esc(usd(pr.seat.annuel)) + '/an par utilisateur de plus (jusqu’à 15 ; au-delà : Institution sur devis).</p>' +
+      '<select id="ops-b-extra" style="width:auto">' + [0,1,2,3,4,5,6,7,8,9,10].map(function(n){ return '<option value="' + n + '">' + n + ' supplémentaire(s) — ' + (5 + n) + ' au total</option>'; }).join('') + '</select>' +
+      '<p class="ops-note" style="margin-top:12px"><b id="ops-b-total"></b></p><p class="hint">Entreprises de plus de 15 utilisateurs et institutions : écrivez à contact@helpnaud.ai pour un devis.</p>';
+    body.innerHTML = h;
+    function cur(){ return { i: (body.querySelector('input[name=ops-bi]:checked') || {}).value || 'annuel', p: (body.querySelector('input[name=ops-bp]:checked') || {}).value || 'taiso', x: Number(body.querySelector('#ops-b-extra').value) || 0 }; }
+    function refresh(){
+      var c = cur(), per = c.i === 'annuel' ? ' / an' : ' / mois';
+      BILL_PLANS.forEach(function(p){ var el = body.querySelector('[data-pp="' + p[0] + '"]'), pp = pr.plans[p[0]] && pr.plans[p[0]][c.i]; if(el) el.textContent = pp ? usd(pp) + per + (c.i === 'annuel' ? ' (soit ' + usd({ amount: Math.round(pp.amount / 12) }) + '/mois)' : '') : 'tarif indisponible'; });
+      var pp = pr.plans[c.p] && pr.plans[c.p][c.i], sp = pr.seat[c.i], t = body.querySelector('#ops-b-total');
+      t.textContent = pp ? 'Total : ' + usd({ amount: pp.amount + c.x * (sp ? sp.amount : 0) }) + per + ' (hors taxes)' : '';
+    }
+    body.addEventListener('change', refresh); refresh();
+    if(payBtn) payBtn.hidden = false;
+    pay = function(m){ var c = cur(); go({ action: 'ops_checkout', kind: 'plan', org_id: org.id, plan: c.p, interval: c.i, extra_seats: c.x }, m.querySelector('.ops-mfoot .btn')); };
+  });
 };
 OPS.A['invite-accept'] = function(a){ rpc('ops_invite_accept', { p_member: a.getAttribute('data-id') }).then(function(){ return loadOrgs(); }).then(function(){ if(!ST.org && ST.orgs.length){ S(ORGK, ST.orgs[ST.orgs.length - 1].id); } pickOrg(); return loadAll(); }).then(function(){ render(); toast('Invitation acceptée.'); }).catch(function(e){ toast(errTxt(e)); }); };
 OPS.A['invite-decline'] = function(a){ if(!confirm('Refuser cette invitation ?')) return; rpc('ops_invite_decline', { p_member: a.getAttribute('data-id') }).then(function(){ return loadOrgs(); }).then(function(){ render(); }).catch(function(e){ toast(errTxt(e)); }); };
@@ -46139,7 +46210,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   try{
     var q = new URLSearchParams(location.search), st = q.get('stripe');
     if(st){
-      if(st === 'success') toast(q.get('kind') === 'pack' ? 'Merci ! Paiement reçu : vos crédits apparaissent dans quelques secondes.' : 'Merci ! Paiement reçu : votre forfait est activé dans quelques secondes.', 12000);
+      if(st === 'success') toast(q.get('kind') === 'pack' ? 'Merci ! Paiement reçu : vos crédits apparaissent dans quelques secondes.' : (/^ops_/.test(q.get('kind') || '') ? 'Merci ! Paiement reçu : l’abonnement de votre organisation (ou votre lot) est activé dans quelques secondes. Rechargez TAISO/iTAF si besoin.' : 'Merci ! Paiement reçu : votre forfait est activé dans quelques secondes.'), 12000);
       else if(st === 'cancel') toast('Paiement annulé : aucun montant n’a été débité.');
       q.delete('stripe'); q.delete('kind'); var qs = q.toString();
       history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
