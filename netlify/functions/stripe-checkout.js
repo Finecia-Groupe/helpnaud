@@ -76,7 +76,10 @@ async function opsAction(action, body, user) {
     if (seatItem) items = extra === 0 ? [{ id: seatItem.id, deleted: true }] : [{ id: seatItem.id, quantity: extra }];
     else if (extra === 0) return reply(200, { ok: true, unchanged: true });
     else { const sk = L.opsSeatKey(pi.interval), pr = await L.fetchPrices([sk]); if (!pr[sk]) return reply(502, { error: 'price_missing', message: 'Tarif introuvable (' + sk + ').' }); items = [{ price: pr[sk].id, quantity: extra }]; }
-    await stripe('POST', 'subscriptions/' + sub.id, { items, proration_behavior: 'create_prorations' });
+    // Ajout : le prorata du temps restant est facturé et payé tout de suite (le changement échoue si le paiement échoue).
+    // Réduction : aucun crédit ni remboursement (évite d'ajouter des utilisateurs puis de les retirer en fin de période).
+    const up = extra > pi.extra ? { proration_behavior: 'always_invoice', payment_behavior: 'error_if_incomplete' } : { proration_behavior: 'none' };
+    await stripe('POST', 'subscriptions/' + sub.id, Object.assign({ items }, up));
     return reply(200, { ok: true });   // le webhook met à jour le nombre de sièges de l'organisation
   }
   if (action === 'ops_checkout') {
