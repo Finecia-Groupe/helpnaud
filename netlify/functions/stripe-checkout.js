@@ -84,7 +84,7 @@ async function opsAction(action, body, user) {
   }
   if (action === 'ops_checkout') {
     const kind = String(body.kind || ''), cust = await ensureCustomer(user);
-    const base = { customer: cust.id, client_reference_id: user.id, allow_promotion_codes: true, billing_address_collection: 'auto', cancel_url: L.SITE + '/?stripe=cancel' };
+    const base = Object.assign({},L.CONSENT,{ customer: cust.id, client_reference_id: user.id, allow_promotion_codes: true, billing_address_collection: 'auto', cancel_url: L.SITE + '/?stripe=cancel' });
     if (kind === 'plan') {
       const plan = String(body.plan || ''), interval = String(body.interval || ''), extra = Math.floor(Number(body.extra_seats || 0));
       if (L.OPS_PLANS.indexOf(plan) < 0 || L.INTERVALS.indexOf(interval) < 0 || !(extra >= 0 && extra <= L.OPS_MAX_EXTRA_SEATS)) return reply(400, { error: 'bad_request', message: 'Demande invalide (jusqu’à ' + L.OPS_MAX_EXTRA_SEATS + ' utilisateurs supplémentaires ; au-delà : Institution sur devis).' });
@@ -148,8 +148,8 @@ exports.handler = async function (event) {
     if (action === 'checkout') {
       const kind = String(body.kind || '');
       const cust = await ensureCustomer(user);
-      const base = { customer: cust.id, client_reference_id: user.id, allow_promotion_codes: true, billing_address_collection: 'auto',
-        success_url: L.SITE + '/?stripe=success&kind=' + kind, cancel_url: L.SITE + '/?stripe=cancel' };
+      const base = Object.assign({}, L.CONSENT, { customer: cust.id, client_reference_id: user.id, allow_promotion_codes: true, billing_address_collection: 'auto',
+        success_url: L.SITE + '/?stripe=success&kind=' + kind, cancel_url: L.SITE + '/?stripe=cancel' });
       if (kind === 'plan') {
         const plan = String(body.plan || ''), interval = String(body.interval || '');
         if (plan === 'institution') return reply(400, { error: 'quote', message: 'Le forfait Institution se fait sur devis : contactez FINECIA GROUPE.' });
