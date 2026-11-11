@@ -14,6 +14,14 @@ const packKey = credits => 'helpnaud_credits_' + credits;
 const ALL_KEYS = [].concat(
   PLANS.reduce((a, p) => a.concat(INTERVALS.map(i => planKey(p, i))), []), PACKS.map(packKey), [INSTITUTION_KEY]);
 
+/* TAISO / iTAF : abonnement par organisation (clés de recherche ops_…) */
+const OPS_PLANS = ['taiso', 'itaf', 'suite'];
+const opsPlanKey = (plan, interval) => 'ops_' + plan + '_' + interval;
+const opsSeatKey = interval => 'ops_utilisateur_' + interval;
+const OPS_LOTS = { taiso: { key: 'ops_lot_taiso_100', doc: 100, ai: 0 }, itaf: { key: 'ops_lot_itaf_10', doc: 0, ai: 10 }, suite: { key: 'ops_lot_suite', doc: 100, ai: 10 } };
+const OPS_MAX_EXTRA_SEATS = 10;   // 5 inclus + 10 = 15 ; au-delà : Institution sur devis
+const OPS_KEYS = [].concat(OPS_PLANS.reduce((a, p) => a.concat(INTERVALS.map(i => opsPlanKey(p, i))), []), INTERVALS.map(opsSeatKey), Object.keys(OPS_LOTS).map(k => OPS_LOTS[k].key));
+
 const reply = (code, o) => ({ statusCode: code, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(o) });
 
 /* Corps « formulaire » de Stripe : { a: { b: 1 }, c: [x, y] } → a[b]=1&c[0]=x&c[1]=y */
@@ -75,4 +83,17 @@ function planFromSubscription(sub) {
   if (!interval) interval = price && price.recurring ? (price.recurring.interval === 'year' ? 'annuel' : 'mensuel') : (md.interval || null);
   return { plan, interval };
 }
-module.exports = { SB_URL, SB_PUB, SB_SECRET, SITE, PLANS, INTERVALS, PACKS, INSTITUTION_KEY, ALL_KEYS, planKey, packKey, reply, stripe, userFromToken, rest, rpc, eq, fetchPrices, planFromSubscription };
+/* Forfait d'organisation, rythme et sièges supplémentaires à partir d'un abonnement Stripe. */
+function opsFromSubscription(sub) {
+  const items = (sub && sub.items && sub.items.data) || [];
+  let plan = null, interval = null, extra = 0, m;
+  items.forEach(it => {
+    const lk = (it.price && it.price.lookup_key) || '';
+    if ((m = /^ops_(taiso|itaf|suite)_(mensuel|annuel)$/.exec(lk))) { plan = m[1]; interval = m[2]; }
+    else if (/^ops_utilisateur_(mensuel|annuel)$/.test(lk)) extra += Number(it.quantity || 0);
+  });
+  return { plan, interval, extra };
+}
+const isOpsSubscription = sub => !!((sub && sub.metadata && sub.metadata.org_id) || ((sub && sub.items && sub.items.data) || []).some(it => /^ops_/.test((it.price && it.price.lookup_key) || '')));
+
+module.exports = { OPS_PLANS, OPS_LOTS, OPS_KEYS, OPS_MAX_EXTRA_SEATS, opsPlanKey, opsSeatKey, opsFromSubscription, isOpsSubscription, SB_URL, SB_PUB, SB_SECRET, SITE, PLANS, INTERVALS, PACKS, INSTITUTION_KEY, ALL_KEYS, planKey, packKey, reply, stripe, userFromToken, rest, rpc, eq, fetchPrices, planFromSubscription };
