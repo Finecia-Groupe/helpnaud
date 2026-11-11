@@ -96,4 +96,8 @@ function opsFromSubscription(sub) {
 }
 const isOpsSubscription = sub => !!((sub && sub.metadata && sub.metadata.org_id) || ((sub && sub.items && sub.items.data) || []).some(it => /^ops_/.test((it.price && it.price.lookup_key) || '')));
 
-module.exports = { OPS_PLANS, OPS_LOTS, OPS_KEYS, OPS_MAX_EXTRA_SEATS, opsPlanKey, opsSeatKey, opsFromSubscription, isOpsSubscription, SB_URL, SB_PUB, SB_SECRET, SITE, PLANS, INTERVALS, PACKS, INSTITUTION_KEY, ALL_KEYS, planKey, packKey, reply, stripe, userFromToken, rest, rpc, eq, fetchPrices, planFromSubscription };
+/* Case obligatoire « J'accepte les conditions d'utilisation » au paiement (URL des conditions à déclarer dans Stripe).
+ * Désactivable sans changer le code : variable Netlify STRIPE_REQUIRE_TERMS = 0. */
+const CONSENT = process.env.STRIPE_REQUIRE_TERMS === '0' ? {} : { consent_collection: { terms_of_service: 'required' } };
+
+module.exports = { CONSENT, OPS_PLANS, OPS_LOTS, OPS_KEYS, OPS_MAX_EXTRA_SEATS, opsPlanKey, opsSeatKey, opsFromSubscription, isOpsSubscription, SB_URL, SB_PUB, SB_SECRET, SITE, PLANS, INTERVALS, PACKS, INSTITUTION_KEY, ALL_KEYS, planKey, packKey, reply, stripe, userFromToken, rest, rpc, eq, fetchPrices, planFromSubscription };
