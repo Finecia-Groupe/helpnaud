@@ -1778,7 +1778,7 @@
       onclick="var m=document.getElementById('feedback-modal'); if(m) m.hidden=true;"
       style="position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:99px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:16px; line-height:1; cursor:pointer;">✕</button>
     <h2>Envoyer un commentaire</h2>
-    <p class="lead">HelpNaud est en phase pilote — vos retours (bug, suggestion, question) sont précieux. Rien n'est envoyé automatiquement : « Ouvrir dans le courriel » pré-remplit un brouillon adressé à l'équipe HelpNaud (support@helpnaud.ai), à vous d'appuyer sur Envoyer dans votre client de courriel. Si rien ne s'ouvre, utilisez « Copier le texte ».</p>
+    <p class="lead">Vos retours (bug, suggestion, question) sont précieux. Rien n'est envoyé automatiquement : « Ouvrir dans le courriel » pré-remplit un brouillon adressé à l'équipe HelpNaud (support@helpnaud.ai), à vous d'appuyer sur Envoyer dans votre client de courriel. Si rien ne s'ouvre, utilisez « Copier le texte ».</p>
     <textarea id="feedback-text" rows="5" placeholder="Décrivez le bug ou la suggestion…"
       style="width:100%; border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:var(--surface); color:var(--ink); font-size:13.5px; font-family:inherit; resize:vertical;"></textarea>
     <div class="modal-actions" style="justify-content:space-between; margin-top:14px; align-items:center;">
@@ -5806,24 +5806,16 @@
         </div>
       </details>
 
-      <div class="card">
-        <details class="collapsible">
-          <summary><h2>Conditions d'utilisation <span class="badge-soon">Ébauche</span></h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
-          <div class="collapsible-body">
-            <p class="hint">Ceci est une ébauche générée pour la phase pilote — à faire réviser par un professionnel du droit avant tout usage commercial ou diffusion à des tiers.</p>
-            <div class="legal-text" id="legal-terms"></div>
-          </div>
-        </details>
+      <div class="card" id="hn-legal-terms-card">
+        <h2>Conditions d’utilisation</h2>
+        <p style="color:var(--muted); margin:6px 0 12px;">Les conditions qui s’appliquent à l’utilisation de HelpNaud.ai, aux abonnements et aux paiements. L’entité contractante est précisée dans chaque offre et chaque transaction.</p>
+        <a class="btn" href="/conditions" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">Lire les Conditions d’utilisation</a>
       </div>
 
-      <div class="card">
-        <details class="collapsible">
-          <summary><h2>Politique de confidentialité <span class="badge-soon">Ébauche</span></h2><svg class="collapsible-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
-          <div class="collapsible-body">
-            <p class="hint">Ceci est une ébauche générée pour la phase pilote — à faire réviser par un professionnel du droit avant tout usage commercial ou diffusion à des tiers.</p>
-            <div class="legal-text" id="legal-privacy"></div>
-          </div>
-        </details>
+      <div class="card" id="hn-legal-privacy-card">
+        <h2>Politique de confidentialité</h2>
+        <p style="color:var(--muted); margin:6px 0 12px;">Comment FINECIA GROUPE recueille, utilise, conserve et protège vos renseignements personnels, et comment exercer vos droits. Contact : support@helpnaud.ai.</p>
+        <a class="btn" href="/confidentialite" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">Lire la Politique de confidentialité</a>
       </div>
     </section>
     <div class="card" id="hn-site-plat-card"><h2>🌐 Site Plateforme</h2><p style="color:var(--muted); margin:6px 0 12px;">Guides, FAQ, rôle de chaque espace (Chat, Co-work, Consult, HelpNaud Web) et notre mission : tout HelpNaud en un site, en français et en anglais.</p><a class="btn" href="https://helpnaud.ai/Platforme" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">Ouvrir le site Plateforme ↗</a></div>
@@ -31913,7 +31905,7 @@
     "Des chiffres aux décisions, en quelques clics. HelpNaud.ai transforme vos données financières ou économiques en rapports clairs, grâce à l'intelligence artificielle. #Finance #Automatisation #Économie",
     "Des astuces aux créations, en quelques clics. HelpNaud.ai transforme vos idées en projet clair et présentable, grâce à l'intelligence artificielle. #Projet #Contenus #Transformation #Crédibilité",
     "Universités, banques, administrations publiques : Consult par HelpNaud.ai met 42 domaines d'expertise et des dizaines de calculateurs à votre portée. #Institutions #DataDriven",
-    "Essayez HelpNaud.ai gratuitement avec le forfait Pilote — aucune carte de crédit requise. Le contrôle financier, augmenté par l'IA. #Essai #FinTech",
+    "Essayez HelpNaud.ai gratuitement — aucune carte de crédit requise. Le contrôle financier, augmenté par l'IA. #Essai #FinTech",
     "Un conseiller IA dans votre poche 📱 HelpNaud.ai s'utilise sur mobile, directement dans le navigateur : Chat, Co-work et Consult, partout où vous travaillez. #IA #Mobile",
     "Vérifier, comparer, décider, avec la recherche web et les données publiques. #DonnéesPubliques #Finance #Économie #Santé #Statistique #Éducation&Recherche #42domaines",
     "Entrepreneurs, PME, étudiants : HelpNaud.ai vous aide à structurer un projet, calculer vos coûts et préparer vos présentations. Essayez-le. #Entrepreneuriat #PME",
