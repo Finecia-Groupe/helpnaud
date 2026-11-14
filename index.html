@@ -1752,6 +1752,26 @@
   .query-qa{ border:1px solid var(--line); border-radius:10px; padding:11px 13px; background:var(--surface-2); }
   .query-qa .q{ font-weight:700; font-size:13px; margin-bottom:6px; }
   .query-qa .a{ font-size:13px; line-height:1.55; white-space:pre-line; color:var(--ink); }
+
+  /* ===== Page d'entrée : connexion / création de compte avant d'ouvrir HelpNaud ===== */
+  .hn-gate{ position:fixed; inset:0; z-index:100000; background:var(--bg); overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; justify-content:center; align-items:flex-start; padding:max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); box-sizing:border-box; }
+  .hn-gate[hidden]{ display:none !important; }
+  .hn-gate-box{ width:100%; max-width:520px; margin:auto 0; text-align:center; }
+  .hn-gate-logo{ width:72px; height:72px; margin:0 auto 8px; }
+  .hn-gate-logo svg{ width:100%; height:100%; display:block; }
+  .hn-gate-brand{ font-size:22px; font-weight:700; color:var(--ink); margin:0 0 2px; }
+  .hn-gate-lead{ margin:6px 0 16px; font-size:16px; font-weight:600; color:var(--accent-ink); }
+  .hn-gate-wait{ display:none; color:var(--muted); font-size:13px; margin:18px 0; }
+  .hn-gate--loading .hn-gate-wait{ display:block; }
+  .hn-gate--loading .hn-gate-lead, .hn-gate--loading #hn-gate-slot, .hn-gate--loading .hn-gate-foot{ visibility:hidden; }
+  #hn-gate-slot{ text-align:left; }
+  #hn-gate #cust-card{ margin:0; }
+  #hn-gate #cust-card > h2, #hn-gate #cust-intro{ display:none; }
+  #hn-gate #cust-card form input:not([type=checkbox]){ flex:1 1 100%; width:100%; min-width:0; box-sizing:border-box; }
+  #hn-gate #cust-card #cust-form-login input[type=password]{ flex:1 1 60%; width:auto; }
+  .hn-gate-foot{ margin:16px 0 0; font-size:12.5px; color:var(--muted); line-height:1.7; }
+  .hn-gate-foot a{ color:inherit; text-decoration:underline; }
+  body.hn-gate-on{ overflow:hidden; }
 </style>
 
 <div class="modal-overlay" id="onboarding-modal" hidden>
@@ -1888,6 +1908,18 @@
   <p>Créez un site pour un projet, un portfolio, une startup ou une idée.</p>
   <button type="button" class="btn primary" id="promo-website-cta">Créer mon site</button>
 </div>
+
+<div id="hn-gate" class="hn-gate hn-gate--loading" role="dialog" aria-modal="true" aria-label="Connexion à HelpNaud">
+  <div class="hn-gate-box">
+    <div class="hn-gate-logo"><svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HelpNaud"><rect x="20" y="20" width="200" height="200" rx="40" fill="#16304A"/><g><rect x="58" y="55" width="26" height="148" fill="#F7F5F0"/><rect x="156" y="55" width="26" height="148" fill="#F7F5F0"/><rect x="58" y="116" width="124" height="26" fill="#F7F5F0"/><rect x="164" y="52" width="20" height="20" fill="#C89B3C" transform="rotate(45 174 62)"/></g><circle cx="208" cy="40" r="16" fill="#2D9C93"/></svg></div>
+    <div class="hn-gate-brand">HelpNaud</div>
+    <p class="hn-gate-lead">Créez votre compte gratuit pour essayer HelpNaud IA</p>
+    <div class="hn-gate-wait" role="status">Chargement…</div>
+    <div id="hn-gate-slot"></div>
+    <p class="hn-gate-foot"><a href="/conditions" target="_blank" rel="noopener">Conditions d’utilisation</a> · <a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="https://fineciagroupe.com" target="_blank" rel="noopener">FINECIA GROUPE</a><br><a href="mailto:support@helpnaud.ai">support@helpnaud.ai</a></p>
+  </div>
+</div>
+<script>setTimeout(function(){var g=document.getElementById('hn-gate');if(g&&g.classList.contains('hn-gate--loading')){g.hidden=true;}},12000);</script>
 
 <div class="shell">
   <aside class="sidebar">
@@ -5032,7 +5064,7 @@
 
       <div class="card">
         <h2 style="margin:0 0 4px;">🔐 Sécurité et connexion</h2>
-        <p class="hint" style="margin:0 0 12px;">HelpNaud est actuellement une application locale à votre navigateur — vos données restent sur cet appareil. Une gestion complète des comptes et de la sécurité arrivera avec l'hébergement de HelpNaud.ai.</p>
+        <p class="hint" style="margin:0 0 12px;">Votre compte HelpNaud.ai est géré par le serveur (mot de passe et abonnement). Le verrouillage ci-dessous est un simple écran de protection local à cet appareil : il ne remplace pas votre mot de passe.</p>
         <div class="db-stat-grid" style="margin-bottom:14px;">
           <div class="db-stat-card"><div class="db-stat-num" id="security-last-session" style="font-size:15px;">—</div><div class="db-stat-label">Dernière connexion</div></div>
           <div class="db-stat-card"><div class="db-stat-num" id="security-lock-status" style="font-size:15px;">Désactivé</div><div class="db-stat-label">Verrouillage par code local</div></div>
@@ -13668,6 +13700,7 @@
     return custSb;
   }
   var custUser = null, custProfile = null, custBusy = false, custRecovery = false;
+  var hnEntryHome = null;
   function cEl(id){ return document.getElementById(id); }
   function custMsg(kind, text){
     var m = cEl('cust-msg'); if(!m) return;
@@ -13704,6 +13737,7 @@
   function custRender(){
     var out = cEl('cust-out'), inn = cEl('cust-in'), rs = cEl('cust-form-reset'), intro = cEl('cust-intro');
     if(!out) return;
+    try{ hnEntrySync(); }catch(e){}
     var team = !!(custProfile && custProfile.kind === 'team');
     out.style.display = (custUser || custRecovery) ? 'none' : '';
     if(rs) rs.style.display = custRecovery ? 'flex' : 'none';
@@ -14726,6 +14760,39 @@
     var q = ''; try{ q = new URLSearchParams(location.search).get('account') || ''; }catch(e){}
     if(q === 'confirmed' || q === 'reset'){ setTimeout(function(){ try{ showView('settings'); }catch(e){} if(q === 'confirmed') custMsg('ok', 'Courriel confirmé : vous pouvez vous connecter.'); }, 600); }
   })();
+  /* ----- Page d'entrée : l'application ne s'ouvre qu'après connexion -----
+     Sans session (compte client, équipe ou propriétaire), la carte « Mon compte HelpNaud » est déplacée dans une page
+     plein écran (connexion, création de compte, mot de passe oublié). Dès qu'une session existe, la carte retourne dans
+     Réglages et l'application s'ouvre. Accès équipe/propriétaire : ouvrir une fois /?equipe=1 (appareil mémorisé, même réglage que les cartes réservées). Si le service de
+     connexion est indisponible, la page ne bloque pas l'application. */
+  function hnEntryBypass(){
+    var b = HN_SAFE_MAIN || /[?&]equipe=1(&|$)/.test(location.search);
+    try{ if(localStorage.getItem('helpnaud_team_ui') === '1') b = true; }catch(e){}   // appareil du propriétaire/équipe : ouvert une fois via /?equipe=1
+    return b;
+  }
+  function hnEntryOpen(){
+    var g = document.getElementById('hn-gate'), slot = document.getElementById('hn-gate-slot'), card = document.getElementById('cust-card');
+    if(!g || !slot || !card) return;
+    if(!hnEntryHome && card.parentNode && card.parentNode !== slot){ hnEntryHome = document.createComment('cust-card-home'); card.parentNode.insertBefore(hnEntryHome, card); }
+    if(card.parentNode !== slot) slot.appendChild(card);
+    g.classList.remove('hn-gate--loading'); g.hidden = false;
+    document.body.classList.add('hn-gate-on');
+    var shell = document.querySelector('.shell'); if(shell) shell.setAttribute('inert', '');
+  }
+  function hnEntryClose(){
+    var g = document.getElementById('hn-gate'), slot = document.getElementById('hn-gate-slot'), card = document.getElementById('cust-card');
+    if(card && slot && card.parentNode === slot && hnEntryHome && hnEntryHome.parentNode) hnEntryHome.parentNode.insertBefore(card, hnEntryHome.nextSibling);
+    if(g){ g.hidden = true; g.classList.remove('hn-gate--loading'); }
+    document.body.classList.remove('hn-gate-on');
+    var shell = document.querySelector('.shell'); if(shell) shell.removeAttribute('inert');
+  }
+  function hnEntrySync(){
+    if(!document.getElementById('hn-gate')) return;
+    if(hnEntryBypass() || !custSbInit()){ hnEntryClose(); return; }
+    if(custRecovery){ hnEntryOpen(); return; }
+    aiServerSession().then(function(s){ if(s) hnEntryClose(); else hnEntryOpen(); }).catch(function(){ hnEntryOpen(); });
+  }
+  hnEntrySync();
   var sampleReady = Promise.race([
     sampleUsePromise,
     new Promise(function(resolve){ setTimeout(function(){ resolve(sampleCap); }, 6000); })
