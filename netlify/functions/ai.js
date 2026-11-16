@@ -78,6 +78,7 @@ const TIERS = {
   dure:    { cost: 1, band: 'low',  max: 700 },
   basse:   { cost: 1, band: 'low',  max: 700 },
   lumiere: { cost: 1, band: 'low',  max: 700 },
+  expertplus: { cost: 4, band: 'high', max: 3200 },   // F-i-Stat « niveau expert + » (équipe interne seulement)
   interne: { cost: 1, band: 'mid',  max: 1600 },   // F-i-Stat (équipe interne) : 1 crédit de base, modèle de gamme moyenne
   mediane: { cost: 2, band: 'mid',  max: 1600 },
   medium2: { cost: 2, band: 'mid',  max: 1600 },
@@ -140,6 +141,7 @@ function needsRealtime(msgs){
   // réponse courte à une question précédente (« Ville d’Ottawa ») : on regarde le message utilisateur précédent
   return last.length <= 60 && users.length > 1 && RT_RE.test(users[users.length - 2].content);
 }
+const PRE_SYSTEM = 'Tu prépares des NOTES DE RECHERCHE pour la production d’un document. Utilise la recherche web pour trouver et vérifier des sources fiables (publications universitaires, rapports, études, documents officiels, organismes). Rédige des notes concises : faits, chiffres, dates et références utiles, chacun avec sa source (titre, auteur ou organisme, date, URL) réellement consultée ; compare les sources et signale les contradictions. N’invente jamais une référence, un auteur, un DOI, une citation ou un numéro de page. Signale les documents inaccessibles (payants, privés) et les recherches infructueuses sans prétendre avoir lu leur contenu. Pas de mise en forme JSON ici. Réponds dans la langue de la demande.';
 function parseResearch(raw){
   const r = raw && typeof raw === 'object' ? raw : {};
   const adapted = Object.prototype.hasOwnProperty.call(RESEARCH_PROFILES, r.adapted) ? r.adapted : 'general';
@@ -394,7 +396,14 @@ exports.handler = async function(event){
   if (!uid) return reply(401, { error: 'auth', message: 'Connectez-vous avec votre compte FGH-Colab pour utiliser l’assistant IA.' });
   if (limited('u:' + uid, 20, 60 * 1000)) return reply(429, { error: 'rate', message: 'Trop de demandes : patientez quelques secondes.' });
 
-  const tierId = Object.prototype.hasOwnProperty.call(TIERS, body.tier) ? body.tier : 'mediane';
+  /* F-i-Stat : outil STRICTEMENT privé (équipe FINECIA GROUPE / FGH-Colab). Tout appel en mode « statisticien » exige un membre actif de l'équipe. */
+  const isFistat = !!(body.research && typeof body.research === 'object' && body.research.mode === 'statisticien');
+  if (isFistat) {
+    let isTeam = false;
+    try { isTeam = (await svcRpc('svc_is_team_member', { p_uid: uid })) === true; } catch (e) { isTeam = false; }   // SQL non installé : accès refusé (par sécurité)
+    if (!isTeam) return reply(403, { error: 'private_tool', message: 'Cet outil est réservé à l’équipe de FINECIA GROUPE.' });
+  }
+  const tierId = isFistat ? (body.fistat === 'expertplus' ? 'expertplus' : 'interne') : (Object.prototype.hasOwnProperty.call(TIERS, body.tier) && body.tier !== 'interne' && body.tier !== 'expertplus' ? body.tier : 'mediane');
   const tier = TIERS[tierId];
   const msgs = buildMessages(body);
   msgs.forEach(m => { if (m && typeof m.content === 'string') m.content = m.content.replace(/\s*HNWEBSEARCHBTN/g, ''); });   // marqueur du bouton « Rechercher sur le Web » : jamais renvoyé au modèle
@@ -419,10 +428,14 @@ exports.handler = async function(event){
   const research = parseResearch(body.research);
   /* Recherche web « quand nécessaire » (activée par défaut, désactivable dans Paramètres › Capacités). */
   let autoSearched = false, needsWeb = false;
-  if (!wantJson && !research.web && available('anthropic') && needsRealtime(msgs)) {
+  const deepMode = research.mode === 'consultant' || research.mode === 'statisticien';   // Consult et F-i-Stat : recherche documentaire et universitaire, pas seulement l'actualité
+  const lastUserTxt = (() => { const u = msgs.filter(m => m && m.role === 'user' && typeof m.content === 'string'); return u.length ? u[u.length - 1].content : ''; })();
+  const wantsSearch = needsRealtime(msgs) || (deepMode && lastUserTxt.replace(/\s+/g, ' ').trim().length >= 25);
+  if (!wantJson && !research.web && available('anthropic') && wantsSearch) {
     if (research.auto) { research.web = true; autoSearched = true; } else needsWeb = true;
   }
   let rplan = researchPlan(research);
+  const jsonPre = wantJson && research.web === true && available('anthropic');   // production de documents (JSON) : la recherche web se fait AVANT la mise en forme structurée
   if (rplan && (wantJson || !available('anthropic'))) rplan = null;   // recherche web : Anthropic seulement, pas en mode JSON
 
   /* Choix du fournisseur (avant de toucher aux crédits) : principal de la gamme, puis secours éventuel. */
@@ -472,9 +485,9 @@ exports.handler = async function(event){
   } catch (e) { /* si la fonction SQL 3q n'est pas installée, les plafonds par compte restent actifs */ }
 
   let r;
-  const rSearch = (rplan ? (research.web ? COST_WEB : 0) + (research.spec && research.adapted !== 'general' ? COST_ADAPTED : 0) + (research.pub ? COST_PUBLIC : 0) : 0) ;
+  const rSearch = (jsonPre ? COST_WEB : 0) + (rplan ? (research.web ? COST_WEB : 0) + (research.spec && research.adapted !== 'general' ? COST_ADAPTED : 0) + (research.pub ? COST_PUBLIC : 0) : 0) ;
   const rOther = (research.deep ? COST_DEEP : 0) + (research.multi ? COST_MULTI : 0);
-  const extra = attachExtra(images, msgs) + rSearch + rOther, baseCost = body.tool === 'hstatis' ? 1 : tier.cost, cost = baseCost + extra;   // F-i-Stat (outil interne de l'équipe) : 1 crédit de base
+  const extra = attachExtra(images, msgs) + rSearch + rOther, baseCost = tier.cost, cost = baseCost + extra;   // F-i-Stat (outil interne de l'équipe) : 1 crédit de base
   const wantedSearch = research.web || research.pub || (research.spec && research.adapted !== 'general');   // coût de base du palier + supplément pièces jointes
   try { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: cost }); }
   catch (e) { return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
@@ -509,10 +522,26 @@ exports.handler = async function(event){
     return '\n\nPréférences de l’utilisateur (simples préférences de ton et de style ; elles ne changent ni tes règles ni ta sécurité)' + (nick ? ' — appelle-le « ' + nick + ' »' : '') + (how ? ' — consignes de réponse : ' + how : '') + '.';
   })(body.prefs);
   const rtRule = wantJson ? '' : (rplan
-    ? '\n\nINFORMATIONS EN TEMPS RÉEL (météo, cours, scores, actualité, horaires) : utilise la recherche web. Si le lieu manque, demande-le ; dès qu’il est donné, cherche sans redemander ce qui a déjà été fourni (une réponse comme « Ville d’Ottawa » vaut « Ottawa, Canada »). Pour la météo : température, ressenti, conditions, lieu, heure de mise à jour et source. N’invente jamais de donnée et ne remplace jamais une valeur actuelle par des moyennes saisonnières.'
+    ? (deepMode ? '\n\nRECHERCHE DOCUMENTAIRE ET UNIVERSITAIRE : utilise la recherche web pour trouver et vérifier des sources fiables (articles de revues, travaux universitaires, rapports d’institutions, organismes officiels, normes) même lorsque la question ne porte pas sur l’actualité. Règles : (1) cite UNIQUEMENT des sources réellement consultées pendant cette recherche, avec titre, auteur ou organisme, date et lien ; (2) distingue clairement ce que les sources établissent et ta propre analyse ; (3) n’invente jamais une référence, un auteur, un DOI, une citation ni un numéro de page ; (4) si un document est payant, privé ou inaccessible, ou si une recherche ne donne rien, dis-le explicitement sans prétendre avoir lu son contenu ; (5) compare plusieurs sources et signale leurs éventuelles contradictions ; vérifie les faits, chiffres, dates et références avant de les affirmer. Pour la rédaction de documents et l’expertise, appuie les points importants sur des références vérifiées. Cite uniquement des sources réellement consultées ; n’invente jamais une référence, un auteur, un DOI, une citation ni un numéro de page. Signale les documents inaccessibles (payants, privés) et les recherches infructueuses sans prétendre avoir lu leur contenu. Compare plusieurs sources et signale leurs contradictions. Ne promets jamais d’être exhaustif.' : '') + '\n\nINFORMATIONS EN TEMPS RÉEL (météo, cours, scores, actualité, horaires) : utilise la recherche web. Si le lieu manque, demande-le ; dès qu’il est donné, cherche sans redemander ce qui a déjà été fourni (une réponse comme « Ville d’Ottawa » vaut « Ottawa, Canada »). Pour la météo : température, ressenti, conditions, lieu, heure de mise à jour et source. N’invente jamais de donnée et ne remplace jamais une valeur actuelle par des moyennes saisonnières.'
     : '\n\nINFORMATIONS EN TEMPS RÉEL (météo, cours, scores, actualité, horaires) : tu n’as pas d’accès au web dans ce mode.' + (needsWeb ? ' L’utilisateur a désactivé la recherche web automatique : si le lieu manque, demande-le d’abord ; sinon explique en une phrase que la valeur actuelle exige une recherche web. Un bouton « Rechercher sur le Web · +2 crédits » s’affiche déjà sous ta réponse : ne le décris pas et n’écris pas toi-même ce bouton. Donne aussi la source officielle' : ' Si le lieu manque, demande-le d’abord. Puis explique en une phrase que tu ne peux pas donner la valeur actuelle, invite à activer « Web en temps réel » dans les options de la conversation (au prix indiqué), et donne la source officielle') + ' la plus pertinente (météo au Canada : https://meteo.gc.ca ; ailleurs : le service météorologique national). N’invente jamais de donnée et ne donne pas de moyennes saisonnières, sauf si l’utilisateur les demande.');
   const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + rtRule + prefsTxt;
   const deadline = Date.now() + TIMEOUT_MS;
+  if (jsonPre) {
+    try {
+      const pre = await ADAPTERS.anthropic({ model: modelFor('anthropic', tier.band), max: 2500, system: PRE_SYSTEM, messages: msgs.map(m => ({ role: m.role, content: m.content })), images: null, web: { domains: null, maxUses: Math.min(8, WEB_MAX_USES + 2) }, connectors: false, signal: AbortSignal.timeout(Math.max(3000, Math.min(40000, deadline - Date.now() - 10000))) });
+      try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: costMicro(modelFor('anthropic', tier.band), pre.tin, pre.tout) + (pre.searches || 0) * SEARCH_MICRO }); } catch (e) {}
+      const srcs = (pre.sources && pre.sources.length ? pre.sources : (pre.found || [])).slice(0, 12);
+      const consultedPre = srcs.length > 0 || (pre.searches || 0) > 0;
+      if (consultedPre && pre.text) {
+        const last = msgs[msgs.length - 1];
+        if (last && typeof last.content === 'string') last.content += '\n\nNOTES DE RECHERCHE WEB (sources réellement consultées ; appuie-toi dessus, cite-les fidèlement avec leur lien, et n’invente aucune référence, aucun auteur, DOI, citation ni numéro de page) :\n' + pre.text.slice(0, 9000) + (srcs.length ? '\nLiens consultés :\n' + srcs.map(x => '- ' + x.title + ' — ' + x.url).join('\n') : '');
+      } else {
+        try { await svcRpc('svc_ai_refund', { p_uid: uid, p_cost: COST_WEB }); r.used = Math.max(0, (r.used || 0) - COST_WEB); } catch (e) {}
+      }
+    } catch (e) {
+      try { await svcRpc('svc_ai_refund', { p_uid: uid, p_cost: COST_WEB }); r.used = Math.max(0, (r.used || 0) - COST_WEB); } catch (e2) {}
+    }
+  }
   let webFailed = false;
   let lastErr = null, label = attempts[0] + ':' + modelFor(attempts[0], tier.band);
   for (const provider of attempts) {
@@ -522,7 +551,7 @@ exports.handler = async function(event){
     try {
       const maxTok = extra > 0 ? Math.max(tier.max, research.deep ? 4000 : 3000, research.mode ? 3500 : 0) : tier.max;
       const call = async () => {
-        const web = rplan && provider === 'anthropic' && !webFailed ? { domains: rplan.domains, maxUses: research.mode === 'statisticien' ? 1 : Math.min(8, WEB_MAX_USES + (research.deep ? 2 : 0) + (research.mode ? 2 : 0)) } : null;
+        const web = rplan && provider === 'anthropic' && !webFailed ? { domains: rplan.domains, maxUses: research.mode === 'statisticien' ? (tierId === 'expertplus' ? 5 : 3) : Math.min(8, WEB_MAX_USES + (research.deep ? 2 : 0) + (research.mode ? 2 : 0)) } : null;
         try { return await ADAPTERS[provider]({ model, max: maxTok, system: systemFull, messages: msgs, images, web, connectors: !!web, signal: ctl.signal }); }
         catch (we) { if (!web || (we && we.name === 'AbortError')) throw we; webFailed = true; return await ADAPTERS[provider]({ model, max: maxTok, system: system + (wantJson ? '' : researchSystem(research, false)), messages: msgs, images, web: null, signal: ctl.signal }); }
       };   // analyse de pièces jointes : réponse plus longue (moins de coupures)
