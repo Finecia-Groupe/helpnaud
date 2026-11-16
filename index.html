@@ -13626,9 +13626,10 @@
       var body = { tier:tier, json:!!wantJson };
       try{ var cv = document.querySelector('.view:not([hidden])'); if(cv && cv.id) body.tool = cv.id.replace(/^view-/, ''); }catch(e){}
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
+      if(opts.expert) body.fistat = 'expertplus';
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
       try{ var pf = JSON.parse(localStorage.getItem('helpnaud_prof_prefs') || 'null'); if(pf && (pf.nick || pf.how)) body.prefs = { nick:String(pf.nick || '').slice(0, 40), how:String(pf.how || '').slice(0, 600) }; }catch(e){}
-      try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); var wOff = false; try{ wOff = localStorage.getItem('helpnaud_web_auto') === '0'; }catch(e){} if(window.__hnWebOnce && !wantJson){ rp.web = true; window.__hnWebOnce = false; } if(wOff) rp.auto = false; if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi || wOff) body.research = rp; } }catch(e){}
+      try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); var wOff = false; try{ wOff = localStorage.getItem('helpnaud_web_auto') === '0'; }catch(e){} if(window.__hnWebOnce && !wantJson){ rp.web = true; window.__hnWebOnce = false; } if(wOff) rp.auto = false; if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi || rp.mode || wOff) body.research = rp; } }catch(e){}
       if(a[1] && a[1].length){ body.image = a[1][0]; if(a[1].length > 1) body.images = a[1]; }
       return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) })
         .catch(function(){ throw Object.assign(new Error('Impossible de joindre le serveur IA (réseau ou déploiement).'), { code:'network' }); });
@@ -28307,6 +28308,7 @@
           '<div class="chat-log" id="hstatis-log" style="flex:1 1 auto;"></div>' +
           '<p class="voicemode-status-line" id="hstatis-voicemode-status" hidden></p>' +
           '<div class="attach-chip-row" id="hstatis-attach-chip-row" hidden></div>' +
+          '<label class="hint" style="display:flex; align-items:center; gap:8px; margin:6px 2px;"><input type="checkbox" id="hstatis-expertplus"> 🧠 Niveau expert + (modèle le plus approfondi : 4 crédits de base ; la recherche web ajoute 2 crédits par consultation)</label>' +
           '<form class="chat-form" id="hstatis-form">' +
             '<div class="attach-menu-wrap" id="hstatis-attach-menu-wrap">' +
               '<button class="btn icon-only" id="hstatis-btn-attach" type="button" title="Joindre une photo ou un fichier" aria-label="Joindre une photo ou un fichier" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>' +
@@ -29106,7 +29108,7 @@
         if(hs.length && hs[hs.length - 1].role === 'user') hs[hs.length - 1].content = prefix + researchPromptInstruction('hstatis') + "\n\nQuestion : " + q + attText;
         else hs.push({ role:'user', content: prefix + researchPromptInstruction('hstatis') + "\n\nQuestion : " + q + attText });
         while(hs.length && hs[0].role !== 'user') hs.shift();
-        var hsOpts = { modelTier:'default', cache:false, researchView:'hstatis' };
+        var hsOpts = { modelTier:'default', cache:false, researchView:'hstatis' }; try{ var xp = document.getElementById('hstatis-expertplus'); if(xp && xp.checked) hsOpts.expert = true; }catch(e){}
         var hsImgs = window.hnAttFiles(hsTh); if(hsImgs) hsOpts.images = hsImgs;
         sampleCap(hs, hsOpts).then(function(res){
           if(gen.cancelled) return;
@@ -42489,6 +42491,11 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       cx.addEventListener('click',hnOptClose);
       panel.addEventListener('keydown',function(e){ if(e.key==='Escape'){ e.stopPropagation(); hnOptClose(); } });
       panel.appendChild(cx);
+      if(scope.closest && scope.closest('#view-hstat')){
+        var wi = document.createElement('details'); wi.className = 'hn-websrc'; wi.style.cssText = 'margin:10px 0 4px; padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-2); font-size:13px; line-height:1.5;';
+        wi.innerHTML = '<summary style="cursor:pointer; font-weight:600;">🔎 Recherche Web et sources</summary><p style="margin:8px 0 4px;">HelpNaud utilise la recherche Web, selon les besoins de votre consultation, pour :</p><ul style="margin:0 0 6px 18px; padding:0;"><li>trouver des publications universitaires, rapports, études et documents officiels ;</li><li>appuyer les analyses et les documents rédigés sur des sources pertinentes et vérifiables ;</li><li>vérifier les faits, les chiffres, les dates et les références ;</li><li>comparer plusieurs sources et éclairer leurs éventuelles contradictions ;</li><li>fournir des citations accompagnées de liens vers les documents consultés.</li></ul><p style="margin:0; color:var(--muted); font-size:12px;">Coût : 2 crédits par réponse avec recherche, jusqu’à 5 recherches incluses. Certains documents (payants, privés) peuvent rester inaccessibles : HelpNaud le signale et ne cite que les sources réellement consultées. Réglage : Paramètres › Capacités.</p>';
+        ot.addEventListener('click', function(){ setTimeout(function(){ if(!panel.hidden && panel.lastElementChild !== wi) panel.appendChild(wi); }, 0); });
+      }
       var ph = scope.querySelector('.cowork-panel-head'); if(ph && !ph.closest('.hn-opts-panel')) panel.appendChild(ph);
       if(tb) panel.appendChild(tb);
       S.insertBefore(panel, S.firstChild); S.insertBefore(head, S.firstChild);
@@ -46676,7 +46683,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     } else if(k === 'capa'){
       h += '<h3>Capacités</h3><p class="hint">Ce que HelpNaud peut faire selon la page où vous êtes.</p>';
       var wa = true; try{ wa = localStorage.getItem('helpnaud_web_auto') !== '0'; }catch(e){}
-      h += '<div class="hnp-row"><div class="hnp-l">Rechercher sur le Web quand nécessaire<small>HelpNaud lance une recherche seulement si la question demande des données actuelles (météo, cours, actualité) : +2 crédits par recherche effectuée. Désactivé, il vous propose un bouton « Rechercher sur le Web · +2 crédits ».</small></div>' + sw('hnp-webauto', wa) + '</div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Rechercher sur le Web quand nécessaire<small>HelpNaud lance une recherche quand elle est utile : données actuelles (météo, cours, actualité) et, dans Consult, recherche documentaire et universitaire avec sources citées. +2 crédits par réponse avec recherche, quel que soit le nombre de recherches (jusqu’à 5 incluses). Désactivé, il vous propose un bouton « Rechercher sur le Web · +2 crédits ».</small></div>' + sw('hnp-webauto', wa) + '</div>';
       h += '<div class="hnp-row"><div class="hnp-l">Instructions personnalisées<small>Vos consignes (section Profil) sont transmises à l’IA à chaque réponse.</small></div><button type="button" class="btn" data-hnp-go="profil">Modifier</button></div>';
     } else if(k === 'code'){
       h += '<h3>Code</h3><p class="hint">Décrivez une page ou une interface : HelpNaud écrit le code, vous l’affichez en aperçu et vous l’enregistrez.</p>';
