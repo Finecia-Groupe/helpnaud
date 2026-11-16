@@ -13628,7 +13628,7 @@
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
       try{ var pf = JSON.parse(localStorage.getItem('helpnaud_prof_prefs') || 'null'); if(pf && (pf.nick || pf.how)) body.prefs = { nick:String(pf.nick || '').slice(0, 40), how:String(pf.how || '').slice(0, 600) }; }catch(e){}
-      try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi) body.research = rp; } }catch(e){}
+      try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); var wOff = false; try{ wOff = localStorage.getItem('helpnaud_web_auto') === '0'; }catch(e){} if(window.__hnWebOnce && !wantJson){ rp.web = true; window.__hnWebOnce = false; } if(wOff) rp.auto = false; if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi || wOff) body.research = rp; } }catch(e){}
       if(a[1] && a[1].length){ body.image = a[1][0]; if(a[1].length > 1) body.images = a[1]; }
       return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) })
         .catch(function(){ throw Object.assign(new Error('Impossible de joindre le serveur IA (réseau ou déploiement).'), { code:'network' }); });
@@ -46466,6 +46466,30 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 
 (function(){ function go(){ var c=document.getElementById('cust-su-country'), r=document.getElementById('cust-su-region'); if(c&&r) window.__hnGeo.bind(c,r); } if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go(); setTimeout(go,1200); })();
 </script>
+<script id="hn-webbtn">
+(function(){
+  var TOK = 'HNWEBSEARCHBTN';
+  function fix(el){
+    if(!el || el.__hnwb) return; var t = el.textContent || ''; if(t.indexOf(TOK) < 0) return;
+    var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null), n, hit = [];
+    while((n = w.nextNode())) if(n.nodeValue.indexOf(TOK) >= 0) hit.push(n);
+    hit.forEach(function(x){ x.nodeValue = x.nodeValue.replace(TOK, '').replace(/\s+$/, ''); });
+    var msg = el.closest('.msg'); if(!msg || msg.querySelector('.hn-webbtn')) return;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn hn-webbtn'; b.style.cssText = 'margin-top:8px; padding:7px 14px; font-weight:600;';
+    b.textContent = '🔎 Rechercher sur le Web · +2 crédits';
+    b.addEventListener('click', function(){
+      if(typeof window.__hnRetry !== 'function'){ b.textContent = 'Réessayez votre question avec « Web en temps réel » activé.'; b.disabled = true; return; }
+      b.disabled = true; b.textContent = 'Recherche en cours…'; window.__hnWebOnce = true;
+      try{ window.__hnRetry(msg); }catch(e){ window.__hnWebOnce = false; b.disabled = false; b.textContent = '🔎 Rechercher sur le Web · +2 crédits'; }
+      setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 1500);
+    });
+    el.parentNode.insertBefore(b, el.nextSibling);
+  }
+  function scan(root){ (root || document).querySelectorAll('.msg.bot .msg-text').forEach(fix); }
+  new MutationObserver(function(ms){ var go = false; ms.forEach(function(m){ if(m.target && m.target.nodeType === 1 || (m.target && m.target.parentElement)) go = true; }); if(go) scan(); }).observe(document.body, { childList:true, subtree:true, characterData:true });
+  setTimeout(scan, 800);
+})();
+</script>
 <style id="hnp-css">
 #hn-prof-btn{ display:flex; align-items:center; gap:10px; width:100%; padding:8px 8px; margin:6px 0 4px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); cursor:pointer; text-align:left; font:inherit; }
 #hn-prof-btn:hover{ background:var(--surface-2); }
@@ -46651,7 +46675,8 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
       ks.forEach(function(x){ var d = o[x]; h += '<div class="hnp-row"><div class="hnp-l">Conversation partagée<small>' + (d.at ? new Date(d.at).toLocaleDateString('fr-CA') : '') + (d.n ? ' · ' + d.n + ' messages' : '') + '</small></div><button type="button" class="btn" data-hnp-copy="' + esc(d.id) + '">Copier</button><button type="button" class="btn hnp-danger" data-hnp-off="' + esc(x) + '">Désactiver</button></div>'; });
     } else if(k === 'capa'){
       h += '<h3>Capacités</h3><p class="hint">Ce que HelpNaud peut faire selon la page où vous êtes.</p>';
-      h += '<div class="hnp-row"><div class="hnp-l">Recherche web et sources<small>Réglable dans chaque conversation (menu « + » de l’Assistant).</small></div></div>';
+      var wa = true; try{ wa = localStorage.getItem('helpnaud_web_auto') !== '0'; }catch(e){}
+      h += '<div class="hnp-row"><div class="hnp-l">Rechercher sur le Web quand nécessaire<small>HelpNaud lance une recherche seulement si la question demande des données actuelles (météo, cours, actualité) : +2 crédits par recherche effectuée. Désactivé, il vous propose un bouton « Rechercher sur le Web · +2 crédits ».</small></div>' + sw('hnp-webauto', wa) + '</div>';
       h += '<div class="hnp-row"><div class="hnp-l">Instructions personnalisées<small>Vos consignes (section Profil) sont transmises à l’IA à chaque réponse.</small></div><button type="button" class="btn" data-hnp-go="profil">Modifier</button></div>';
     } else if(k === 'code'){
       h += '<h3>Code</h3><p class="hint">Décrivez une page ou une interface : HelpNaud écrit le code, vous l’affichez en aperçu et vous l’enregistrez.</p>';
@@ -46753,6 +46778,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(t.id === 'hnp-vlang'){ try{ localStorage.setItem('helpnaud_voice_lang', t.value); }catch(x){} toast('Langue vocale enregistrée.'); return; }
     if(t.name === 'hnp-lt'){ try{ localStorage.setItem('helpnaud_link_target', t.value); }catch(x){} toast('Préférence enregistrée.'); return; }
     if(t.id === 'hnp-hapt'){ try{ localStorage.setItem('helpnaud_haptic', t.checked ? '1' : '0'); }catch(x){} if(t.checked && navigator.vibrate) navigator.vibrate(15); return; }
+    if(t.id === 'hnp-webauto'){ try{ localStorage.setItem('helpnaud_web_auto', t.checked ? '1' : '0'); }catch(x){} toast(t.checked ? 'Recherche web automatique activée.' : 'Recherche web automatique désactivée.'); return; }
     if(t.id === 'hnp-pause'){ c = focusCfg(); c.pause = t.checked; S(FK, c); active = 0; return; }
     if(t.id === 'hnp-quiet'){ c = focusCfg(); c.quiet = t.checked; S(FK, c); return; }
     if(t.id === 'hnp-every'){ c = focusCfg(); c.every = Math.max(15, Math.min(180, +t.value || 45)); S(FK, c); render(); return; }
