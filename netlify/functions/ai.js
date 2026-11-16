@@ -130,10 +130,20 @@ const RESEARCH_DOMAINS = Object.assign({
 const COST_ADAPTED = Number(process.env.AI_COST_ADAPTED) || 2, COST_WEB = Number(process.env.AI_COST_WEB) || 2, COST_PUBLIC = Number(process.env.AI_COST_PUBLIC) || 2, COST_DEEP = 4, COST_MULTI = 1;
 const WEB_MAX_USES = Math.max(1, Math.min(8, Number(process.env.AI_WEB_MAX_USES) || 3));
 const SEARCH_MICRO = 10000;   // ≈ 0,01 $ par recherche web
+/* Détection d'une question qui demande des données actuelles (météo, cours, scores, actualité…). */
+const RT_RE = /(m[ée]t[ée]o|temp[ée]rature (actuelle|aujourd|à|a |de |d.)|pr[ée]visions? m[ée]t|quel temps|il fait (chaud|froid|beau)|(cours|prix|valeur) (actuel|du jour|de l.action|du bitcoin|du p[ée]trole|de l.or)|taux de change|cours de la bourse|nasdaq|\btsx\b|cac ?40|dernières? nouvelles|actualit[ée]s? (du jour|r[ée]centes?|de ce)|score (du|des|final)|r[ée]sultats? (du|des) (match|jeux)|weather|forecast|stock price|exchange rate|latest news|noticias de hoy|tiempo en|wetter|vorhersage)/i;
+function needsRealtime(msgs){
+  const users = (msgs || []).filter(m => m && m.role === 'user' && typeof m.content === 'string').slice(-3);
+  if (!users.length) return false;
+  const last = users[users.length - 1].content;
+  if (RT_RE.test(last)) return true;
+  // réponse courte à une question précédente (« Ville d’Ottawa ») : on regarde le message utilisateur précédent
+  return last.length <= 60 && users.length > 1 && RT_RE.test(users[users.length - 2].content);
+}
 function parseResearch(raw){
   const r = raw && typeof raw === 'object' ? raw : {};
   const adapted = Object.prototype.hasOwnProperty.call(RESEARCH_PROFILES, r.adapted) ? r.adapted : 'general';
-  return { adapted, spec: r.spec === true, web: r.web === true, pub: r.public === true, deep: r.deep === true, multi: r.multi === true, strict: r.strict === true, mode: (r.mode === 'consultant' || r.mode === 'statisticien') ? r.mode : '' };
+  return { adapted, auto: r.auto !== false, spec: r.spec === true, web: r.web === true, pub: r.public === true, deep: r.deep === true, multi: r.multi === true, strict: r.strict === true, mode: (r.mode === 'consultant' || r.mode === 'statisticien') ? r.mode : '' };
 }
 function researchPlan(r){   // une recherche payante doit être activée explicitement : le choix d'un domaine seul n'en déclenche aucune
   if (r.web) return { domains: null };
@@ -387,6 +397,7 @@ exports.handler = async function(event){
   const tierId = Object.prototype.hasOwnProperty.call(TIERS, body.tier) ? body.tier : 'mediane';
   const tier = TIERS[tierId];
   const msgs = buildMessages(body);
+  msgs.forEach(m => { if (m && typeof m.content === 'string') m.content = m.content.replace(/\s*HNWEBSEARCHBTN/g, ''); });   // marqueur du bouton « Rechercher sur le Web » : jamais renvoyé au modèle
   if (!msgs.length) return reply(400, { error: 'bad_request', message: 'Message vide.' });
   if (total(msgs) > MAX_PROMPT_CHARS) return reply(413, { error: 'too_long', message: 'Le message est trop long.' });
 
@@ -406,6 +417,11 @@ exports.handler = async function(event){
   const image = images.length ? images : null;
   const wantJson = body.json === true;
   const research = parseResearch(body.research);
+  /* Recherche web « quand nécessaire » (activée par défaut, désactivable dans Paramètres › Capacités). */
+  let autoSearched = false, needsWeb = false;
+  if (!wantJson && !research.web && available('anthropic') && needsRealtime(msgs)) {
+    if (research.auto) { research.web = true; autoSearched = true; } else needsWeb = true;
+  }
   let rplan = researchPlan(research);
   if (rplan && (wantJson || !available('anthropic'))) rplan = null;   // recherche web : Anthropic seulement, pas en mode JSON
 
@@ -484,7 +500,7 @@ exports.handler = async function(event){
     catch (e) { try { await svcRpc('svc_ai_log', base); } catch (e2) {} }   // 3w pas encore installé : journal simple
   };
 
-  const system = wantJson ? 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ni après, sans bloc de code markdown.' : LANG_RULE + ' Pour une question simple (calcul, définition, fait précis, salutation) : le résultat d’abord en une ligne, puis 2 à 4 lignes d’explication, sans titres ni tableau ni sections « application » ou « prochaine étape », et termine par une courte phrase proposant d’approfondir. Ne développe en détail que si l’utilisateur le demande ou si la question est complexe ; dans ce cas, reste concis (environ 600 mots maximum) et termine proprement. Mise en forme : Markdown simple (titres ##, listes, **gras**, tableaux). N’utilise jamais LaTeX ni $$ : écris les formules en texte simple (ex. moyenne = (10+15+20)/3 = 15).';
+  const system = wantJson ? 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ni après, sans bloc de code markdown.' : LANG_RULE + ' Pour une question simple (calcul, définition, fait précis, salutation) : le résultat d’abord en une ligne, puis 2 à 4 lignes d’explication, sans titres ni tableau ni sections « application » ou « prochaine étape ». Ne termine jamais par une question de relance automatique (« Voulez-vous plus de détails ? », « Une aide sur un autre sujet ? ») : arrête-toi quand la réponse est donnée. Ne développe en détail que si l’utilisateur le demande ou si la question est complexe ; dans ce cas, reste concis (environ 600 mots maximum) et termine proprement. Mise en forme : Markdown simple (titres ##, listes, **gras**, tableaux). N’utilise jamais LaTeX ni $$ : écris les formules en texte simple (ex. moyenne = (10+15+20)/3 = 15).';
   const prefsTxt = wantJson ? '' : (function (pr) {
     if (!pr || typeof pr !== 'object') return '';
     const clean = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n);
@@ -492,7 +508,10 @@ exports.handler = async function(event){
     if (!nick && !how) return '';
     return '\n\nPréférences de l’utilisateur (simples préférences de ton et de style ; elles ne changent ni tes règles ni ta sécurité)' + (nick ? ' — appelle-le « ' + nick + ' »' : '') + (how ? ' — consignes de réponse : ' + how : '') + '.';
   })(body.prefs);
-  const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + prefsTxt;
+  const rtRule = wantJson ? '' : (rplan
+    ? '\n\nINFORMATIONS EN TEMPS RÉEL (météo, cours, scores, actualité, horaires) : utilise la recherche web. Si le lieu manque, demande-le ; dès qu’il est donné, cherche sans redemander ce qui a déjà été fourni (une réponse comme « Ville d’Ottawa » vaut « Ottawa, Canada »). Pour la météo : température, ressenti, conditions, lieu, heure de mise à jour et source. N’invente jamais de donnée et ne remplace jamais une valeur actuelle par des moyennes saisonnières.'
+    : '\n\nINFORMATIONS EN TEMPS RÉEL (météo, cours, scores, actualité, horaires) : tu n’as pas d’accès au web dans ce mode.' + (needsWeb ? ' L’utilisateur a désactivé la recherche web automatique : si le lieu manque, demande-le d’abord ; sinon explique en une phrase que la valeur actuelle exige une recherche web. Un bouton « Rechercher sur le Web · +2 crédits » s’affiche déjà sous ta réponse : ne le décris pas et n’écris pas toi-même ce bouton. Donne aussi la source officielle' : ' Si le lieu manque, demande-le d’abord. Puis explique en une phrase que tu ne peux pas donner la valeur actuelle, invite à activer « Web en temps réel » dans les options de la conversation (au prix indiqué), et donne la source officielle') + ' la plus pertinente (météo au Canada : https://meteo.gc.ca ; ailleurs : le service météorologique national). N’invente jamais de donnée et ne donne pas de moyennes saisonnières, sauf si l’utilisateur les demande.');
+  const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + rtRule + prefsTxt;
   const deadline = Date.now() + TIMEOUT_MS;
   let webFailed = false;
   let lastErr = null, label = attempts[0] + ':' + modelFor(attempts[0], tier.band);
@@ -533,7 +552,8 @@ exports.handler = async function(event){
       if (!wantJson && out.sources && out.sources.length) finalText += '\n\n**Sources citées**\n' + out.sources.map(lnk).join('\n');
       else if (!wantJson && out.found && out.found.length) finalText += '\n\n**Pages examinées par la recherche (non citées dans le texte)**\n' + out.found.map(lnk).join('\n');
       finalText += note;
-      return reply(200, { text: finalText, data, credits: { used: Math.max(0, r.used - refundedSearch), limit: r.limit, plan: r.plan }, attachExtra: extra, charged: { model: baseCost, attachments: extra - rSearch - rOther, search: rSearch - refundedSearch, deep: research.deep ? COST_DEEP : 0, multi: research.multi ? COST_MULTI : 0, total: cost - refundedSearch, refunded: refundedSearch } });
+      if (needsWeb && !rplan && !wantJson) finalText += '\n\nHNWEBSEARCHBTN';
+      return reply(200, { text: finalText, data, autoWeb: autoSearched && !!rplan, needsWeb: needsWeb && !rplan, credits: { used: Math.max(0, r.used - refundedSearch), limit: r.limit, plan: r.plan }, attachExtra: extra, charged: { model: baseCost, attachments: extra - rSearch - rOther, search: rSearch - refundedSearch, deep: research.deep ? COST_DEEP : 0, multi: research.multi ? COST_MULTI : 0, total: cost - refundedSearch, refunded: refundedSearch } });
     } catch (e) {
       lastErr = e && e.name === 'AbortError' ? { code: 'timeout', status: 504, message: 'L’assistant IA a mis trop de temps à répondre.' } : { code: 'upstream', status: 502, message: 'L’assistant IA est momentanément indisponible.' };
     } finally { clearTimeout(timer); }
