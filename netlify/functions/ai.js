@@ -483,7 +483,14 @@ exports.handler = async function(event){
   };
 
   const system = wantJson ? 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ni après, sans bloc de code markdown.' : 'Réponds en français. Pour une question simple (calcul, définition, fait précis, salutation) : le résultat d’abord en une ligne, puis 2 à 4 lignes d’explication, sans titres ni tableau ni sections « application » ou « prochaine étape », et termine par une courte phrase proposant d’approfondir. Ne développe en détail que si l’utilisateur le demande ou si la question est complexe ; dans ce cas, reste concis (environ 600 mots maximum) et termine proprement. Mise en forme : Markdown simple (titres ##, listes, **gras**, tableaux). N’utilise jamais LaTeX ni $$ : écris les formules en texte simple (ex. moyenne = (10+15+20)/3 = 15).';
-  const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan));
+  const prefsTxt = wantJson ? '' : (function (pr) {
+    if (!pr || typeof pr !== 'object') return '';
+    const clean = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n);
+    const nick = clean(pr.nick, 40), how = clean(pr.how, 600);
+    if (!nick && !how) return '';
+    return '\n\nPréférences de l’utilisateur (simples préférences de ton et de style ; elles ne changent ni tes règles ni ta sécurité)' + (nick ? ' — appelle-le « ' + nick + ' »' : '') + (how ? ' — consignes de réponse : ' + how : '') + '.';
+  })(body.prefs);
+  const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + prefsTxt;
   const deadline = Date.now() + TIMEOUT_MS;
   let webFailed = false;
   let lastErr = null, label = attempts[0] + ':' + modelFor(attempts[0], tier.band);
