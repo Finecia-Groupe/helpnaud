@@ -13626,6 +13626,7 @@
       try{ var cv = document.querySelector('.view:not([hidden])'); if(cv && cv.id) body.tool = cv.id.replace(/^view-/, ''); }catch(e){}
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
+      try{ var pf = JSON.parse(localStorage.getItem('helpnaud_prof_prefs') || 'null'); if(pf && (pf.nick || pf.how)) body.prefs = { nick:String(pf.nick || '').slice(0, 40), how:String(pf.how || '').slice(0, 600) }; }catch(e){}
       try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi) body.research = rp; } }catch(e){}
       if(a[1] && a[1].length){ body.image = a[1][0]; if(a[1].length > 1) body.images = a[1]; }
       return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) })
@@ -46372,4 +46373,263 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   }
 })();
 </script>
+<style id="hnp-css">
+#hn-prof-btn{ display:flex; align-items:center; gap:10px; width:100%; padding:8px 8px; margin:6px 0 4px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); cursor:pointer; text-align:left; font:inherit; }
+#hn-prof-btn:hover{ background:var(--surface-2); }
+#hn-prof-btn .hnp-av{ width:34px; height:34px; flex:none; }
+#hn-prof-btn .hnp-nm{ min-width:0; flex:1; line-height:1.25; }
+#hn-prof-btn .hnp-nm b{ display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#hn-prof-btn .hnp-nm small{ display:block; font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hnp-av{ border-radius:50%; background:var(--accent); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-weight:700; overflow:hidden; font-size:15px; }
+.hnp-av img{ width:100%; height:100%; object-fit:cover; display:block; }
+@media (max-width:860px){ #hn-prof-btn{ display:none; } }
+#hnp{ position:fixed; inset:0; z-index:99990; display:none; align-items:center; justify-content:center; background:rgba(16,24,40,.55); }
+#hnp.on{ display:flex; }
+#hnp .hnp-box{ background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:16px; width:min(820px,94vw); height:min(86vh,760px); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.35); }
+#hnp .hnp-head{ display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--line); }
+#hnp .hnp-head h2{ margin:0; font-size:17px; flex:1; }
+#hnp .hnp-x, #hnp .hnp-back{ border:1px solid var(--line); background:var(--surface); color:var(--ink); width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:16px; }
+#hnp .hnp-back{ display:none; }
+#hnp .hnp-body{ flex:1; display:flex; min-height:0; }
+#hnp .hnp-nav{ width:230px; flex:none; border-right:1px solid var(--line); overflow-y:auto; padding:8px; }
+#hnp .hnp-nav button{ display:flex; align-items:center; gap:10px; width:100%; padding:10px; border:0; background:transparent; color:var(--ink); font:inherit; font-size:14px; border-radius:10px; cursor:pointer; text-align:left; }
+#hnp .hnp-nav button:hover{ background:var(--surface-2); }
+#hnp .hnp-nav button.on{ background:var(--accent-soft); font-weight:600; }
+#hnp .hnp-nav .hnp-chev{ margin-left:auto; color:var(--muted); display:none; }
+#hnp .hnp-pane{ flex:1; overflow-y:auto; padding:18px 20px 28px; }
+#hnp .hnp-pane h3{ margin:0 0 4px; font-size:16px; }
+#hnp .hnp-pane .hint{ color:var(--muted); font-size:12.5px; margin:2px 0 12px; line-height:1.45; }
+#hnp .hnp-row{ display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line); flex-wrap:wrap; }
+#hnp .hnp-row:first-of-type{ border-top:0; }
+#hnp .hnp-row > .hnp-l{ flex:1; min-width:180px; font-size:14px; }
+#hnp .hnp-row > .hnp-l small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+#hnp .hnp-f{ display:grid; gap:10px; margin-bottom:6px; }
+#hnp .hnp-f label{ font-size:12.5px; color:var(--muted); display:grid; gap:4px; }
+#hnp input[type=text], #hnp input[type=time], #hnp input[type=number], #hnp textarea{ border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; width:100%; box-sizing:border-box; }
+#hnp textarea{ min-height:84px; resize:vertical; }
+#hnp .btn{ padding:7px 14px; font-size:13px; }
+#hnp .hnp-photo{ display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+#hnp .hnp-photo .hnp-av{ width:72px; height:72px; font-size:28px; }
+#hnp .hnp-sw{ position:relative; width:42px; height:24px; flex:none; }
+#hnp .hnp-sw input{ opacity:0; position:absolute; inset:0; margin:0; cursor:pointer; width:100%; height:100%; z-index:1; }
+#hnp .hnp-sw i{ position:absolute; inset:0; background:var(--line); border-radius:99px; transition:.15s; }
+#hnp .hnp-sw i:after{ content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:.15s; }
+#hnp .hnp-sw input:checked + i{ background:var(--accent); }
+#hnp .hnp-sw input:checked + i:after{ left:21px; }
+#hnp .hnp-days{ display:flex; gap:6px; }
+#hnp .hnp-days button{ width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer; font-size:13px; }
+#hnp .hnp-days button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+#hnp .hnp-bar{ height:8px; border-radius:99px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; margin:8px 0; }
+#hnp .hnp-bar i{ display:block; height:100%; background:var(--accent); width:0; }
+#hnp .hnp-danger{ color:#c0392b; border-color:#c0392b; }
+#hnp a.btn{ text-decoration:none; display:inline-block; }
+@media (max-width:860px){
+  #hnp.on{ align-items:stretch; }
+  #hnp .hnp-box{ width:100vw; height:100dvh; max-height:none; border-radius:0; border:0; }
+  #hnp .hnp-nav{ width:100%; border-right:0; }
+  #hnp .hnp-nav .hnp-chev{ display:inline; }
+  #hnp .hnp-nav button{ padding:14px 12px; font-size:15px; }
+  #hnp .hnp-pane{ width:100%; }
+  #hnp[data-m="list"] .hnp-pane{ display:none; }
+  #hnp[data-m="det"] .hnp-nav{ display:none; }
+  #hnp[data-m="det"] .hnp-back{ display:inline-block; }
+}
+</style>
+<script id="hnp-js">
+(function(){
+  'use strict';
+  var PK = 'helpnaud_prof_prefs', FK = 'helpnaud_focus', PH = 'helpnaud_user_photo';
+  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['temps','⏱️','Temps et concentration'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['capa','✨','Capacités']];
+  var cur = 'profil', root = null;
+  function $(id){ return document.getElementById(id); }
+  function J(k, d){ try{ var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; }catch(e){ return d; } }
+  function S(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  function toast(t){ var d = document.createElement('div'); d.textContent = t; d.setAttribute('role','status'); d.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 14px;border-radius:10px;font-size:13px;z-index:99999;max-width:90vw;'; document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 2600); }
+  function photo(){ try{ return localStorage.getItem(PH) || ''; }catch(e){ return ''; } }
+  function who(){ var w = $('cust-who'); var t = w ? w.textContent.trim() : ''; var i = t.indexOf(' — '); return i > 0 ? { name:t.slice(0, i), email:t.slice(i + 3) } : { name:'', email:t }; }
+  function signedIn(){ var i = $('cust-in'); return !!(i && i.style.display !== 'none'); }
+  function displayName(){ var p = J(PK, {}), w = who(); return (p.nick || '').trim() || w.name || (w.email ? w.email.split('@')[0] : '') || 'Mon compte'; }
+  function planTxt(){ var e = $('cust-plan'); return e ? e.textContent.trim() : ''; }
+  function avHtml(cls){ var u = photo(); return '<span class="hnp-av ' + (cls || '') + '">' + (u ? '<img alt="" src="' + esc(u) + '">' : esc((displayName().charAt(0) || 'H').toUpperCase())) + '</span>'; }
+
+  /* ---------- Bouton avatar du menu latéral (ordinateur) ---------- */
+  function ensureBtn(){
+    var foot = $('sidebar-foot-text'); if(!foot || $('hn-prof-btn')) return;
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'hn-prof-btn'; b.setAttribute('aria-label', 'Mon profil et paramètres');
+    foot.parentNode.insertBefore(b, foot);
+    b.addEventListener('click', function(){ openPanel(); });
+    renderBtn();
+  }
+  function renderBtn(){
+    var b = $('hn-prof-btn'); if(!b) return;
+    var li = signedIn();
+    b.innerHTML = avHtml() + '<span class="hnp-nm"><b>' + esc(li ? displayName() : 'Mon profil') + '</b><small>' + esc(li ? (planTxt().split(' — ')[0] || who().email) : 'Se connecter / paramètres') + '</small></span><span style="color:var(--muted)">⚙</span>';
+    var m = $('hnd-avatar-in'); if(m){ var u = photo(); if(u){ m.innerHTML = '<img alt="" src="' + esc(u) + '" style="width:100%;height:100%;object-fit:cover;display:block;">'; m.style.cssText = 'width:100%;height:100%;display:block;'; } else { m.textContent = (displayName().charAt(0) || 'H').toUpperCase(); m.style.cssText = ''; } }
+  }
+
+  /* ---------- Photo (recadrée 160×160, stockée sur cet appareil) ---------- */
+  function pickPhoto(){ var f = $('hnp-file'); if(!f){ f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*'; f.id = 'hnp-file'; f.hidden = true; document.body.appendChild(f); f.addEventListener('change', onFile); } f.click(); }
+  function onFile(e){
+    var f = e.target.files && e.target.files[0]; e.target.value = ''; if(!f) return;
+    if(!/^image\//.test(f.type)){ toast('Choisissez un fichier image.'); return; }
+    var fr = new FileReader();
+    fr.onload = function(ev){ var img = new Image();
+      img.onload = function(){ var c = document.createElement('canvas'); c.width = c.height = 160; var x = c.getContext('2d'); var w = img.naturalWidth || 160, h = img.naturalHeight || 160, k = Math.max(160 / w, 160 / h); x.imageSmoothingQuality = 'high'; x.drawImage(img, (160 - w * k) / 2, (160 - h * k) / 2, w * k, h * k);
+        try{ localStorage.setItem(PH, c.toDataURL('image/jpeg', 0.85)); }catch(err){ toast('Stockage impossible sur cet appareil.'); return; }
+        renderBtn(); render(); toast('Photo de profil mise à jour ✓'); };
+      img.onerror = function(){ toast('Image illisible.'); }; img.src = ev.target.result; };
+    fr.readAsDataURL(f);
+  }
+
+  /* ---------- Rappels de pause / heures silencieuses ---------- */
+  function focusCfg(){ var f = J(FK, {}); return { pause:!!f.pause, every:+f.every || 45, quiet:!!f.quiet, from:f.from || '22:00', to:f.to || '07:00', days:Array.isArray(f.days) ? f.days : [0,1,2,3,4,5,6] }; }
+  function inQuiet(c, d){
+    if(!c.quiet) return false; d = d || new Date();
+    var mins = d.getHours() * 60 + d.getMinutes(), a = c.from.split(':'), b = c.to.split(':'), s = (+a[0]) * 60 + (+a[1]), e = (+b[0]) * 60 + (+b[1]);
+    var day = d.getDay(), prev = (day + 6) % 7;
+    if(s === e) return c.days.indexOf(day) >= 0;
+    if(s < e) return c.days.indexOf(day) >= 0 && mins >= s && mins < e;
+    return (c.days.indexOf(day) >= 0 && mins >= s) || (c.days.indexOf(prev) >= 0 && mins < e);
+  }
+  var active = 0;
+  setInterval(function(){
+    var c = focusCfg(); if(!c.pause || document.hidden) { return; }
+    if(inQuiet(c)){ active = 0; return; }
+    active++; if(active >= c.every){ active = 0; toast('☕ Pause : levez-vous et reposez vos yeux 2 minutes.'); }
+  }, 60000);
+  window.__hnQuiet = function(){ return inQuiet(focusCfg()); };
+
+  /* ---------- Sections ---------- */
+  function sw(id, on){ return '<label class="hnp-sw"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '><i></i></label>'; }
+  function secHtml(k){
+    var p = J(PK, {}), w = who(), li = signedIn(), h = '';
+    if(k === 'profil'){
+      var fi = $('hp-first'), la = $('hp-last');
+      h += '<h3>Profil</h3><p class="hint">Votre photo reste sur cet appareil. Le nom est enregistré dans votre compte.</p>';
+      h += '<div class="hnp-photo">' + avHtml() + '<div><button type="button" class="btn" data-hnp="pick">📷 ' + (photo() ? 'Changer la photo' : 'Ajouter une photo') + '</button> ' + (photo() ? '<button type="button" class="btn" data-hnp="rmphoto">Retirer</button>' : '') + '</div></div>';
+      h += '<div class="hnp-f">';
+      if(li) h += '<label>Prénom<input type="text" id="hnp-first" maxlength="80" value="' + esc(fi ? fi.value : '') + '" autocomplete="given-name"></label><label>Nom<input type="text" id="hnp-last" maxlength="80" value="' + esc(la ? la.value : '') + '" autocomplete="family-name"></label>';
+      h += '<label>Comment HelpNaud doit vous appeler (surnom)<input type="text" id="hnp-nick" maxlength="40" value="' + esc(p.nick || '') + '"></label>';
+      h += '<label>Instructions : comment HelpNaud doit répondre<textarea id="hnp-how" maxlength="600" placeholder="Ex. : réponses courtes, ton formel, exemples en euros…">' + esc(p.how || '') + '</textarea></label>';
+      h += '<div><button type="button" class="btn primary" data-hnp="saveprof">Enregistrer</button></div></div>';
+      if(li){ h += '<div class="hnp-row"><div class="hnp-l">Courriel du compte<small>' + esc(w.email) + '</small></div><button type="button" class="btn" data-hnp="logout">Se déconnecter / changer de compte</button></div>';
+        h += '<div class="hnp-row"><div class="hnp-l">Supprimer le compte<small>La demande est traitée par notre équipe (suppression de vos données).</small></div><a class="btn hnp-danger" href="mailto:contacts@fineciagroupe.com?subject=' + encodeURIComponent('Demande de suppression de compte HelpNaud.ai') + '&body=' + encodeURIComponent('Bonjour,\n\nJe demande la suppression de mon compte HelpNaud.ai : ' + w.email + '\n') + '">Demander la suppression</a></div>'; }
+      else h += '<div class="hnp-row"><div class="hnp-l">Vous n’êtes pas connecté<small>Connectez-vous pour enregistrer votre nom et retrouver votre forfait.</small></div><button type="button" class="btn primary" data-hnp="login">Se connecter</button></div>';
+    } else if(k === 'factu'){
+      h += '<h3>Facturation</h3><p class="hint">Forfait, paiement et factures.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Forfait actuel<small>' + esc(li ? (planTxt() || 'Chargement…') : 'Connectez-vous pour voir votre forfait.') + '</small></div><button type="button" class="btn primary" data-hnp="plans">Gérer l’abonnement</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Besoin d’aide sur un paiement ?<small>Écrivez-nous, nous répondons rapidement.</small></div><a class="btn" href="mailto:contacts@fineciagroupe.com">Contacter le support</a></div>';
+    } else if(k === 'usage'){
+      var lb = $('ai-credits-label'), fl = $('ai-credits-fill');
+      h += '<h3>Utilisation</h3><p class="hint">Crédits IA utilisés ce mois-ci.</p><div class="hnp-bar"><i style="width:' + esc(fl ? fl.style.width || '0%' : '0%') + '"></i></div><p class="hint">' + esc((li ? planTxt() : '') || (lb ? lb.textContent : '') || 'Aucune donnée pour le moment.') + '</p>';
+      h += '<button type="button" class="btn primary" data-hnp="more">Obtenir plus d’utilisation</button>';
+    } else if(k === 'notif'){
+      var tipsOff = false; try{ tipsOff = localStorage.getItem('helpnaud_tips_off') === '1'; }catch(e){}
+      h += '<h3>Notifications</h3><p class="hint">Messages discrets dans l’application.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Rappels et astuces HelpNaud<small>Un court message de temps en temps (par exemple dans Consult).</small></div>' + sw('hnp-tips', !tipsOff) + '</div>';
+    } else if(k === 'temps'){
+      var c = focusCfg(), dl = ['D','L','M','M','J','V','S'];
+      h += '<h3>Temps et concentration</h3><p class="hint">Réglages enregistrés sur cet appareil.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Rappels de pause<small>Un message toutes les ' + c.every + ' minutes d’utilisation active.</small></div>' + sw('hnp-pause', c.pause) + '</div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Intervalle (minutes)</div><input type="number" id="hnp-every" min="15" max="180" step="5" value="' + c.every + '" style="width:90px"></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Heures silencieuses<small>Aucun rappel de pause pendant ces heures.</small></div>' + sw('hnp-quiet', c.quiet) + '</div>';
+      h += '<div class="hnp-row"><div class="hnp-l">De</div><input type="time" id="hnp-from" value="' + esc(c.from) + '" style="width:130px"><div>à</div><input type="time" id="hnp-to" value="' + esc(c.to) + '" style="width:130px"></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Jours</div><div class="hnp-days">' + dl.map(function(d, i){ return '<button type="button" data-hnp-day="' + i + '" class="' + (c.days.indexOf(i) >= 0 ? 'on' : '') + '" aria-pressed="' + (c.days.indexOf(i) >= 0) + '">' + d + '</button>'; }).join('') + '</div></div>';
+    } else if(k === 'conf'){
+      h += '<h3>Confidentialité</h3><p class="hint">Vos données et votre sécurité.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Conditions d’utilisation</div><a class="btn" href="/conditions" target="_blank" rel="noopener">Lire</a></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Politique de confidentialité</div><a class="btn" href="/confidentialite" target="_blank" rel="noopener">Lire</a></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Verrouillage par code (cet appareil)<small>Écran de protection local, il ne remplace pas votre mot de passe.</small></div><button type="button" class="btn" data-hnp="pin">Configurer</button></div>';
+    } else if(k === 'liens'){
+      var o = J('hn_shared_links', {}), ks = Object.keys(o).filter(function(x){ return o[x] && o[x].id; });
+      h += '<h3>Liens partagés</h3><p class="hint">Conversations que vous avez rendues lisibles par lien public (texte seul).</p>';
+      if(!ks.length) h += '<p class="hint">Aucun lien partagé sur cet appareil.</p>';
+      ks.forEach(function(x){ var d = o[x]; h += '<div class="hnp-row"><div class="hnp-l">Conversation partagée<small>' + (d.at ? new Date(d.at).toLocaleDateString('fr-CA') : '') + (d.n ? ' · ' + d.n + ' messages' : '') + '</small></div><button type="button" class="btn" data-hnp-copy="' + esc(d.id) + '">Copier</button><button type="button" class="btn hnp-danger" data-hnp-off="' + esc(x) + '">Désactiver</button></div>'; });
+    } else if(k === 'capa'){
+      h += '<h3>Capacités</h3><p class="hint">Ce que HelpNaud peut faire selon la page où vous êtes.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Recherche web et sources<small>Réglable dans chaque conversation (menu « + » de l’Assistant).</small></div></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Instructions personnalisées<small>Vos consignes (section Profil) sont transmises à l’IA à chaque réponse.</small></div><button type="button" class="btn" data-hnp-go="profil">Modifier</button></div>';
+    }
+    return h;
+  }
+  function render(){
+    if(!root) return;
+    root.querySelector('.hnp-nav').innerHTML = SECS.map(function(s){ return '<button type="button" data-hnp-sec="' + s[0] + '" class="' + (s[0] === cur && root.getAttribute('data-m') !== 'list' ? 'on' : (s[0] === cur && window.innerWidth > 860 ? 'on' : '')) + '"><span>' + s[1] + '</span><span>' + s[2] + '</span><span class="hnp-chev">›</span></button>'; }).join('');
+    root.querySelector('.hnp-pane').innerHTML = secHtml(cur);
+    var t = root.querySelector('.hnp-head h2'); var s = SECS.filter(function(x){ return x[0] === cur; })[0];
+    t.textContent = (root.getAttribute('data-m') === 'det' && s) ? s[2] : 'Paramètres';
+  }
+  function build(){
+    root = document.createElement('div'); root.id = 'hnp'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Paramètres du profil');
+    root.innerHTML = '<div class="hnp-box"><div class="hnp-head"><button type="button" class="hnp-back" data-hnp="back" aria-label="Retour">‹</button><h2>Paramètres</h2><button type="button" class="hnp-x" data-hnp="close" aria-label="Fermer">✕</button></div><div class="hnp-body"><div class="hnp-nav"></div><div class="hnp-pane"></div></div></div>';
+    document.body.appendChild(root);
+    root.addEventListener('mousedown', function(e){ if(e.target === root) closePanel(); });
+    root.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ e.stopPropagation(); closePanel(); } });
+    root.addEventListener('click', onClick);
+    root.addEventListener('change', onChange);
+  }
+  function openPanel(sec){
+    if(!root) build();
+    try{ if(window.__hnDrawer && window.__hnDrawer.isOpen()) window.__hnDrawer.close(); }catch(e){}
+    cur = sec || cur || 'profil';
+    root.setAttribute('data-m', window.innerWidth > 860 ? 'desk' : (sec ? 'det' : 'list'));
+    render(); root.classList.add('on');
+    var f = root.querySelector('.hnp-x'); if(f) f.focus();
+  }
+  function closePanel(){ if(root) root.classList.remove('on'); }
+  function reveal(sel){ var el = document.querySelector(sel); if(!el) return false; var v = el.closest('.view'); if(v && v.hidden){ var id = v.id.replace(/^view-/, ''); var b = document.querySelector('[data-view="' + id + '"]'); if(b) b.click(); } setTimeout(function(){ try{ el.scrollIntoView({ block:'center' }); }catch(e){} }, 150); return true; }
+  function clickId(id){ var b = $(id); if(b) b.click(); return !!b; }
+  function onClick(e){
+    var t = e.target.closest('[data-hnp],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go]'); if(!t) return;
+    if(t.hasAttribute('data-hnp-sec')){ cur = t.getAttribute('data-hnp-sec'); if(window.innerWidth <= 860) root.setAttribute('data-m', 'det'); render(); return; }
+    if(t.hasAttribute('data-hnp-go')){ cur = t.getAttribute('data-hnp-go'); render(); return; }
+    if(t.hasAttribute('data-hnp-day')){ var c = focusCfg(), d = +t.getAttribute('data-hnp-day'), i = c.days.indexOf(d); if(i >= 0) c.days.splice(i, 1); else c.days.push(d); S(FK, c); render(); return; }
+    if(t.hasAttribute('data-hnp-copy')){ var u = location.origin + '/partage.html?c=' + t.getAttribute('data-hnp-copy'); if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(function(){ toast('Lien copié.'); }, function(){ toast(u); }); else toast(u); return; }
+    if(t.hasAttribute('data-hnp-off')){
+      var key = t.getAttribute('data-hnp-off'), o = J('hn_shared_links', {}), id = o[key] && o[key].id; if(!id) return;
+      t.disabled = true;
+      Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk) throw new Error('Connexion requise pour désactiver le lien.'); return fetch('/.netlify/functions/share', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify({ action:'revoke', id:id }) }); })
+        .then(function(r){ if(!r.ok) throw new Error('Échec de la désactivation.'); var o2 = J('hn_shared_links', {}); delete o2[key]; S('hn_shared_links', o2); toast('Lien désactivé : il ne fonctionne plus.'); render(); })
+        .catch(function(er){ t.disabled = false; toast(er.message || 'Échec.'); });
+      return;
+    }
+    switch(t.getAttribute('data-hnp')){
+      case 'close': closePanel(); break;
+      case 'back': root.setAttribute('data-m', 'list'); render(); break;
+      case 'pick': pickPhoto(); break;
+      case 'rmphoto': try{ localStorage.removeItem(PH); }catch(x){} renderBtn(); render(); toast('Photo retirée.'); break;
+      case 'saveprof':
+        var p = { nick:($('hnp-nick').value || '').trim().slice(0, 40), how:($('hnp-how').value || '').trim().slice(0, 600) };
+        S(PK, p);
+        var f1 = $('hnp-first'), l1 = $('hnp-last');
+        if(f1 && $('hp-first')){ $('hp-first').value = f1.value; $('hp-last').value = l1.value; clickId('hp-save'); }
+        renderBtn(); toast('Profil enregistré ✓'); break;
+      case 'logout': closePanel(); clickId('cust-logout-btn'); break;
+      case 'login': closePanel(); if(!reveal('#cust-card')) toast('Ouvrez Réglages › Mon compte.'); break;
+      case 'plans': closePanel(); if(!clickId('cust-plans-btn')) clickId('btn-abonnements'); break;
+      case 'more': closePanel(); if(!clickId('ai-credits-get-more-btn')) reveal('#ai-credits-get-more-btn'); break;
+      case 'pin': closePanel(); reveal('#security-lock-status'); break;
+    }
+  }
+  function onChange(e){
+    var t = e.target, c;
+    if(t.id === 'hnp-tips'){ try{ if(t.checked) localStorage.removeItem('helpnaud_tips_off'); else localStorage.setItem('helpnaud_tips_off', '1'); }catch(x){} var b = $('hn-tips-on'); if(b) b.checked = t.checked; toast(t.checked ? 'Rappels activés.' : 'Rappels désactivés.'); return; }
+    if(t.id === 'hnp-pause'){ c = focusCfg(); c.pause = t.checked; S(FK, c); active = 0; return; }
+    if(t.id === 'hnp-quiet'){ c = focusCfg(); c.quiet = t.checked; S(FK, c); return; }
+    if(t.id === 'hnp-every'){ c = focusCfg(); c.every = Math.max(15, Math.min(180, +t.value || 45)); S(FK, c); render(); return; }
+    if(t.id === 'hnp-from' || t.id === 'hnp-to'){ c = focusCfg(); if(t.value) c[t.id === 'hnp-from' ? 'from' : 'to'] = t.value; S(FK, c); }
+  }
+  /* L'avatar du tiroir mobile ouvre maintenant cet écran (au lieu du petit menu photo). */
+  document.addEventListener('click', function(e){
+    var a = e.target.closest && e.target.closest('#hnd-avatar'); if(!a) return;
+    e.stopPropagation(); e.preventDefault(); openPanel();
+  }, true);
+  window.__hnProfile = { open:openPanel, close:closePanel, refresh:renderBtn };
+  function init(){ ensureBtn(); renderBtn(); var inn = $('cust-in'); if(inn) new MutationObserver(function(){ renderBtn(); if(root && root.classList.contains('on')) render(); }).observe(inn, { attributes:true, subtree:true, childList:true, characterData:true }); }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  setTimeout(init, 1500);
+})();
+</script>
+
 </body></html>
