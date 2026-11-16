@@ -138,10 +138,30 @@ exports.handler = async function (event) {
         hasCustomer: !!(row && row.stripe_customer_id), packCredits: packs.reduce((s, p) => s + p.remaining, 0), packExpires: packs[0] ? packs[0].expires_at : null });
     }
 
+    if (action === 'billing') {   // facturation : e-mail, moyens de paiement (masqués) — l'écran « Paramètres › Facturation »
+      const row = await getRow(user.id);
+      const out = { ok: true, email: user.email || '', name: '', cards: [], hasCustomer: !!(row && row.stripe_customer_id) };
+      if (row && row.stripe_customer_id) {
+        try {
+          const c = await stripe('GET', 'customers/' + encodeURIComponent(row.stripe_customer_id));
+          out.email = c.email || out.email; out.name = c.name || '';
+          const pm = await stripe('GET', 'customers/' + encodeURIComponent(row.stripe_customer_id) + '/payment_methods', { type: 'card', limit: 5 });
+          out.cards = ((pm && pm.data) || []).map(x => ({ brand: x.card && x.card.brand, last4: x.card && x.card.last4, exp_month: x.card && x.card.exp_month, exp_year: x.card && x.card.exp_year }));
+        } catch (e) { /* on affiche au moins l'e-mail du compte */ }
+      }
+      return reply(200, out);
+    }
+
     if (action === 'portal') {
       const row = await getRow(user.id);
       if (!row || !row.stripe_customer_id) return reply(404, { error: 'no_customer', message: 'Aucun abonnement ni achat à gérer pour ce compte.' });
-      const s = await stripe('POST', 'billing_portal/sessions', { customer: row.stripe_customer_id, return_url: L.SITE + '/?stripe=portal' });
+      const params = { customer: row.stripe_customer_id, return_url: L.SITE + '/?stripe=portal' };
+      const flow = String(body.flow || '');
+      if (flow === 'payment') params.flow_data = { type: 'payment_method_update' };
+      else if (flow === 'cancel' && row.subscription_id && ['active', 'trialing', 'past_due'].indexOf(row.status) >= 0) params.flow_data = { type: 'subscription_cancel', subscription_cancel: { subscription: row.subscription_id } };
+      let s;
+      try { s = await stripe('POST', 'billing_portal/sessions', params); }
+      catch (e) { if (!params.flow_data) throw e; delete params.flow_data; s = await stripe('POST', 'billing_portal/sessions', params); }   // fonction non activée dans le portail Stripe : on ouvre le portail standard
       return reply(200, { ok: true, url: s.url });
     }
 
