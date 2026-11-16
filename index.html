@@ -5227,9 +5227,10 @@
             <input type="text" id="cust-su-first" autocomplete="given-name" placeholder="Prénom" required maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
             <input type="text" id="cust-su-last" autocomplete="family-name" placeholder="Nom" required maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
             <input type="email" id="cust-su-email" autocomplete="username" placeholder="Courriel" required style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
-            <input type="tel" id="cust-su-phone" autocomplete="tel" placeholder="Téléphone (ex. +1 514 555 0100)" maxlength="40" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
-            <input type="text" id="cust-su-country" list="hn-countries" autocomplete="country-name" placeholder="Pays de résidence" maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
-            <input type="text" id="cust-su-city" autocomplete="address-level2" placeholder="Ville de résidence" maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="tel" id="cust-su-phone" autocomplete="tel" placeholder="Téléphone (ex. +1 514 555 0100)" required maxlength="40" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="text" id="cust-su-country" list="hn-countries" autocomplete="country-name" placeholder="Pays de résidence" required maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="text" id="cust-su-region" autocomplete="address-level1" placeholder="Région, province ou État" required maxlength="80" disabled style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
+            <input type="text" id="cust-su-city" autocomplete="address-level2" placeholder="Ville de résidence" required maxlength="80" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
             <datalist id="hn-countries"><option value="Canada"><option value="Togo"><option value="France"><option value="États-Unis"><option value="Bénin"><option value="Côte d’Ivoire"><option value="Sénégal"><option value="Cameroun"><option value="Belgique"><option value="Suisse"><option value="Maroc"><option value="Autre"></datalist>
             <input type="password" id="cust-su-pw" autocomplete="new-password" placeholder="Mot de passe (8 caractères min.)" required minlength="8" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
             <label class="hint" style="margin:0; display:flex; gap:6px; align-items:flex-start; width:100%;"><input type="checkbox" id="cust-su-terms" style="margin-top:3px;"> <span>J'accepte les <a href="/conditions" target="_blank" rel="noopener">conditions d'utilisation</a> de HelpNaud.ai et le traitement de mes renseignements personnels pour la gestion de mon compte, selon la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
@@ -11377,7 +11378,7 @@
     }
     window.speechSynthesis.cancel();
     var utter = new SpeechSynthesisUtterance(text);
-    utter.lang = getStoredLang() === 'en' ? 'en-US' : 'fr-FR';
+    utter.lang = (function(){ var v=''; try{ v=localStorage.getItem('helpnaud_voice_lang')||''; }catch(e){} return (v && v!=='auto') ? v : (getStoredLang() === 'en' ? 'en-US' : 'fr-FR'); })();
     utter.onstart = function(){ speakingBtn = btn; btn.classList.add('active'); btn.innerHTML = msgActionIcon('stop'); btn.title = 'Arrêter la lecture'; };
     utter.onend = function(){ if(speakingBtn === btn) speakingBtn = null; btn.classList.remove('active'); btn.innerHTML = msgActionIcon('speak'); btn.title = 'Lire à haute voix'; if(onEnd) onEnd(); };
     utter.onerror = utter.onend;
@@ -11944,7 +11945,7 @@
           recognitionEnded = false;
           try{
             recognizer = new SpeechRecognitionCtor();
-            recognizer.lang = getStoredLang() === 'en' ? 'en-US' : 'fr-FR';
+            recognizer.lang = (function(){ var v=''; try{ v=localStorage.getItem('helpnaud_voice_lang')||''; }catch(e){} return (v && v!=='auto') ? v : (getStoredLang() === 'en' ? 'en-US' : 'fr-FR'); })();
             recognizer.continuous = true;
             recognizer.interimResults = false;
             recognizer.addEventListener('result', function(ev){
@@ -13807,8 +13808,9 @@
     if(!name || !email || !pw){ custMsg('error', 'Remplissez tous les champs.'); return; }
     if(pw.length < 8){ custMsg('error', 'Mot de passe : 8 caractères minimum.'); return; }
     if(!terms){ custMsg('error', 'Acceptez les conditions pour créer votre compte.'); return; }
+    if(window.__hnGeo && extra && extra.country !== undefined){ var ge = window.__hnGeo.check(extra.country, extra.region); if(ge){ custMsg('error', ge); return; } if(!String(extra.phone || '').trim() || !String(extra.city || '').trim()){ custMsg('error', 'Renseignez votre téléphone et votre ville de résidence.'); return; } }
     if(custBusy) return; custBusy = true; custMsg('', '');
-    hnCaptchaToken().then(function(ct){ return cs.auth.signUp({ email: email, password: pw, options: { data: { full_name: name, terms: true, first_name: String(extra.first || '').trim(), last_name: String(extra.last || '').trim(), phone: String(extra.phone || '').trim(), country: String(extra.country || '').trim(), city: String(extra.city || '').trim() }, emailRedirectTo: location.origin + '/?account=confirmed', captchaToken: ct } }); }).then(function(res){
+    hnCaptchaToken().then(function(ct){ return cs.auth.signUp({ email: email, password: pw, options: { data: { full_name: name, terms: true, first_name: String(extra.first || '').trim(), last_name: String(extra.last || '').trim(), phone: String(extra.phone || '').trim(), country: String(extra.country || '').trim(), region: String(extra.region || '').trim(), city: String(extra.city || '').trim() }, emailRedirectTo: location.origin + '/?account=confirmed', captchaToken: ct } }); }).then(function(res){
       if(res.error) throw res.error;
       if(res.data && res.data.session){ custMsg('ok', 'Compte créé. Bienvenue !'); return custRefreshSession(); }
       /* Confirmation par courriel activée : le profil client sera créé à la première connexion. */
@@ -13850,7 +13852,7 @@
   function custAdminProfileLine(r){
     var bits = [];
     if(r.phone) bits.push('Tél. ' + escapeHtml(r.phone));
-    var loc = [r.city, r.country].filter(Boolean).map(escapeHtml).join(', ');
+    var loc = [r.city, r.region, r.country].filter(Boolean).map(escapeHtml).join(', ');
     if(loc) bits.push(loc);
     return bits.length ? bits.join(' · ') : '<span style="opacity:.7;">Profil non renseigné</span>';
   }
@@ -13880,7 +13882,7 @@
       return sb.rpc('customer_profiles_admin_list').then(function(p){   /* profils (prénom, nom, téléphone, pays, ville) : facultatif, ignoré si le SQL n'est pas installé */
         if(!p || p.error || !Array.isArray(p.data)) return;
         var by = {}; p.data.forEach(function(x){ by[String(x.email || '').toLowerCase()] = x; });
-        custAdminState.rows.forEach(function(row){ var x = by[String(row.email || '').toLowerCase()]; if(x){ row.first_name = x.first_name; row.last_name = x.last_name; row.phone = x.phone; row.country = x.country; row.city = x.city; } });
+        custAdminState.rows.forEach(function(row){ var x = by[String(row.email || '').toLowerCase()]; if(x){ row.first_name = x.first_name; row.last_name = x.last_name; row.phone = x.phone; row.country = x.country; row.region = x.region; row.city = x.city; } });
         custAdminRender();
       }, function(){});
     }).catch(function(){
@@ -13907,7 +13909,7 @@
     }).join('');
     if(ps) ps.value = row.plan === 'pilote' ? 'gratuit' : row.plan;
     cEl('cust-admin-e-name').textContent = ((row.first_name || row.last_name) ? [row.first_name, row.last_name].filter(Boolean).join(' ') : '') || row.full_name || '(sans nom)';
-    cEl('cust-admin-e-info').textContent = (row.email || '') + (row.phone ? ' — Tél. ' + row.phone : '') + ([row.city, row.country].filter(Boolean).length ? ' — ' + [row.city, row.country].filter(Boolean).join(', ') : '') + ' — ' + Number(row.used || 0) + ' crédits utilisés ce mois-ci — inscrit le ' + custAdminDate(row.created_at);
+    cEl('cust-admin-e-info').textContent = (row.email || '') + (row.phone ? ' — Tél. ' + row.phone : '') + ([row.city, row.region, row.country].filter(Boolean).length ? ' — ' + [row.city, row.region, row.country].filter(Boolean).join(', ') : '') + ' — ' + Number(row.used || 0) + ' crédits utilisés ce mois-ci — inscrit le ' + custAdminDate(row.created_at);
     cEl('cust-admin-e-extra').value = '0';
     cEl('cust-admin-e-status').value = row.status === 'suspended' ? 'suspended' : 'active';
     custAdminMsg('', ''); custAdminShow('edit');
@@ -14735,7 +14737,7 @@
     if((f = cEl('cust-tab-login'))) f.addEventListener('click', function(){ custTab('login'); });
     if((f = cEl('cust-tab-signup'))) f.addEventListener('click', function(){ custTab('signup'); });
     if((f = cEl('cust-form-login'))) f.addEventListener('submit', function(ev){ ev.preventDefault(); custSignIn(cEl('cust-login-email').value, cEl('cust-login-pw').value); });
-    if((f = cEl('cust-form-signup'))) f.addEventListener('submit', function(ev){ ev.preventDefault(); var fn = cEl('cust-su-first').value.trim(), ln = cEl('cust-su-last').value.trim(); custSignUp((fn + ' ' + ln).trim(), cEl('cust-su-email').value, cEl('cust-su-pw').value, cEl('cust-su-terms').checked, { first: fn, last: ln, phone: cEl('cust-su-phone').value, country: cEl('cust-su-country').value, city: cEl('cust-su-city').value }); });
+    if((f = cEl('cust-form-signup'))) f.addEventListener('submit', function(ev){ ev.preventDefault(); var fn = cEl('cust-su-first').value.trim(), ln = cEl('cust-su-last').value.trim(); custSignUp((fn + ' ' + ln).trim(), cEl('cust-su-email').value, cEl('cust-su-pw').value, cEl('cust-su-terms').checked, { first: fn, last: ln, phone: cEl('cust-su-phone').value, country: cEl('cust-su-country').value, region: cEl('cust-su-region').value, city: cEl('cust-su-city').value }); });
     if((f = cEl('cust-forgot-btn'))) f.addEventListener('click', function(){ custForgot(cEl('cust-login-email').value); });
     if((f = cEl('cust-logout-btn'))) f.addEventListener('click', custSignOut);
     if((f = cEl('cust-plans-btn'))) f.addEventListener('click', function(){ var b = cEl('btn-abonnements'); if(b) b.click(); });
@@ -46353,16 +46355,18 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     var inn = $('#cust-in'); if(!inn) return null;
     var d = $('#hn-prof'); if(d) return d;
     d = document.createElement('details'); d.id = 'hn-prof';
-    d.innerHTML = '<summary>Mon profil (prénom, nom, téléphone, pays, ville)</summary><div class="hp-grid">' +
+    d.innerHTML = '<summary>Mon profil (prénom, nom, téléphone, pays, région, ville)</summary><div class="hp-grid">' +
       '<input id="hp-first" placeholder="Prénom" maxlength="80" autocomplete="given-name">' +
       '<input id="hp-last" placeholder="Nom" maxlength="80" autocomplete="family-name">' +
       '<input id="hp-phone" type="tel" placeholder="Téléphone" maxlength="40" autocomplete="tel">' +
       '<input id="hp-country" list="hn-countries" placeholder="Pays de résidence" maxlength="80" autocomplete="country-name">' +
+ '<input id="hp-region" placeholder="Région, province ou État" maxlength="80" autocomplete="address-level1">' +
       '<input id="hp-city" placeholder="Ville de résidence" maxlength="80" autocomplete="address-level2">' +
       '<div><button type="button" class="btn primary" id="hp-save" style="padding:6px 14px;font-size:12.5px;">Enregistrer mon profil</button></div>' +
       '<p class="hint" id="hp-msg" role="status" style="margin:0;"></p></div>';
     var anchor = $('#cust-plans-btn'); inn.insertBefore(d, anchor || null);
     $('#hp-save', d).addEventListener('click', save);
+    try{ window.__hnGeo.bind($('#hp-country', d), $('#hp-region', d)); }catch(e){}
     return d;
   }
   function msg(t, bad){ var m = $('#hp-msg'); if(m){ m.textContent = t || ''; m.style.color = bad ? 'var(--bad)' : 'var(--muted)'; } }
@@ -46374,17 +46378,23 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
       ensureForm();
       return rpc('customer_profile_get', {}, tk).then(function(p){
         if(!p) return; var set = function(id, v){ var e = $('#' + id); if(e && !e.dataset.dirty) e.value = v || ''; };
-        set('hp-first', p.first_name); set('hp-last', p.last_name); set('hp-phone', p.phone); set('hp-country', p.country); set('hp-city', p.city);
-        var d = $('#hn-prof'); if(d && !(p.first_name && p.last_name)) d.open = true;   // profil incomplet : on invite à le remplir
+        set('hp-first', p.first_name); set('hp-last', p.last_name); set('hp-phone', p.phone); set('hp-country', p.country); set('hp-region', p.region); set('hp-city', p.city);
+        try{ var rg = $('#hp-region'); if(rg && rg.__sync) rg.__sync(); var cc = $('#hp-country'); if(cc && window.__hnGeo){ var cn = window.__hnGeo.canon(cc.value); if(cn) cc.value = cn; if(rg && rg.__sync) rg.__sync(); } }catch(e){}
+        window.__hnProfData = p; try{ document.dispatchEvent(new CustomEvent('hn-profile-loaded', { detail:p })); }catch(e){}
+        var d = $('#hn-prof'); if(d && !(p.first_name && p.last_name && p.phone && p.country && p.region && p.city)) d.open = true;   // profil incomplet : on invite à le remplir
       }).catch(function(){ var d = $('#hn-prof'); if(d) d.style.display = 'none'; });   // SQL pas encore installé : on masque
     });
   }
   function save(){
+    var ge = window.__hnGeo ? window.__hnGeo.check($('#hp-country').value, $('#hp-region').value) : '';
+    if(ge){ msg(ge, true); return; }
     var b = $('#hp-save'); if(b) b.disabled = true; msg('Enregistrement…');
     token().then(function(tk){
       if(!tk){ msg('Connectez-vous pour enregistrer.', true); return; }
-      return rpc('customer_profile_save', { p_first: $('#hp-first').value, p_last: $('#hp-last').value, p_phone: $('#hp-phone').value, p_country: $('#hp-country').value, p_city: $('#hp-city').value }, tk)
-        .then(function(ok){ msg(ok ? 'Profil enregistré.' : 'Impossible d’enregistrer. Reconnectez-vous.', !ok); });
+      var a = { p_first: $('#hp-first').value, p_last: $('#hp-last').value, p_phone: $('#hp-phone').value, p_country: $('#hp-country').value, p_city: $('#hp-city').value };
+      return rpc('customer_profile_save', Object.assign({ p_region: $('#hp-region').value }, a), tk)
+        .catch(function(){ return rpc('customer_profile_save', a, tk); })   /* SQL « région » pas encore installé : on enregistre le reste */
+        .then(function(ok){ msg(ok ? 'Profil enregistré.' : 'Impossible d’enregistrer. Reconnectez-vous.', !ok); if(ok){ window.__hnProfData = { first_name:$('#hp-first').value, last_name:$('#hp-last').value, phone:$('#hp-phone').value, country:$('#hp-country').value, region:$('#hp-region').value, city:$('#hp-city').value }; try{ document.dispatchEvent(new CustomEvent('hn-profile-saved')); }catch(e){} } });
     }).catch(function(){ msg('Impossible d’enregistrer pour le moment.', true); }).then(function(){ if(b) b.disabled = false; });
   }
   var inn = $('#cust-in');
@@ -46393,6 +46403,68 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     setTimeout(load, 1500);
   }
 })();
+</script>
+<script id="hn-geo">
+/* HelpNaud — pays, régions / provinces / États (liste utilisée à l'inscription et dans « Mon profil ») */
+(function(){
+  var R = {
+    'Canada':['Alberta','Colombie-Britannique','Île-du-Prince-Édouard','Manitoba','Nouveau-Brunswick','Nouvelle-Écosse','Nunavut','Ontario','Québec','Saskatchewan','Terre-Neuve-et-Labrador','Territoires du Nord-Ouest','Yukon'],
+    'États-Unis':['Alabama','Alaska','Arizona','Arkansas','Californie','Caroline du Nord','Caroline du Sud','Colorado','Connecticut','Dakota du Nord','Dakota du Sud','Delaware','District de Columbia','Floride','Géorgie','Hawaï','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiane','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New York','Nouveau-Mexique','Ohio','Oklahoma','Oregon','Pennsylvanie','Rhode Island','Tennessee','Texas','Utah','Vermont','Virginie','Virginie-Occidentale','Washington','Wisconsin','Wyoming'],
+    'France':['Auvergne-Rhône-Alpes','Bourgogne-Franche-Comté','Bretagne','Centre-Val de Loire','Corse','Grand Est','Hauts-de-France','Île-de-France','Normandie','Nouvelle-Aquitaine','Occitanie','Pays de la Loire','Provence-Alpes-Côte d’Azur','Guadeloupe','Martinique','Guyane','La Réunion','Mayotte'],
+    'Togo':['Maritime','Plateaux','Centrale','Kara','Savanes'],
+    'Bénin':['Alibori','Atacora','Atlantique','Borgou','Collines','Couffo','Donga','Littoral','Mono','Ouémé','Plateau','Zou'],
+    'Côte d’Ivoire':['Abidjan','Bas-Sassandra','Comoé','Denguélé','Gôh-Djiboua','Lacs','Lagunes','Montagnes','Sassandra-Marahoué','Savanes','Vallée du Bandama','Woroba','Yamoussoukro','Zanzan'],
+    'Sénégal':['Dakar','Diourbel','Fatick','Kaffrine','Kaolack','Kédougou','Kolda','Louga','Matam','Saint-Louis','Sédhiou','Tambacounda','Thiès','Ziguinchor'],
+    'Cameroun':['Adamaoua','Centre','Est','Extrême-Nord','Littoral','Nord','Nord-Ouest','Ouest','Sud','Sud-Ouest'],
+    'Burkina Faso':['Boucle du Mouhoun','Cascades','Centre','Centre-Est','Centre-Nord','Centre-Ouest','Centre-Sud','Est','Hauts-Bassins','Nord','Plateau-Central','Sahel','Sud-Ouest'],
+    'Gabon':['Estuaire','Haut-Ogooué','Moyen-Ogooué','Ngounié','Nyanga','Ogooué-Ivindo','Ogooué-Lolo','Ogooué-Maritime','Woleu-Ntem'],
+    'Belgique':['Bruxelles-Capitale','Flandre','Wallonie'],
+    'Suisse':['Appenzell Rhodes-Extérieures','Appenzell Rhodes-Intérieures','Argovie','Bâle-Campagne','Bâle-Ville','Berne','Fribourg','Genève','Glaris','Grisons','Jura','Lucerne','Neuchâtel','Nidwald','Obwald','Saint-Gall','Schaffhouse','Schwytz','Soleure','Tessin','Thurgovie','Uri','Valais','Vaud','Zoug','Zurich'],
+    'Maroc':['Tanger-Tétouan-Al Hoceïma','L’Oriental','Fès-Meknès','Rabat-Salé-Kénitra','Béni Mellal-Khénifra','Casablanca-Settat','Marrakech-Safi','Drâa-Tafilalet','Souss-Massa','Guelmim-Oued Noun','Laâyoune-Sakia El Hamra','Dakhla-Oued Ed-Dahab'],
+    'Allemagne':['Bade-Wurtemberg','Bavière','Berlin','Brandebourg','Brême','Hambourg','Hesse','Mecklembourg-Poméranie-Occidentale','Basse-Saxe','Rhénanie-du-Nord-Westphalie','Rhénanie-Palatinat','Sarre','Saxe','Saxe-Anhalt','Schleswig-Holstein','Thuringe'],
+    'Royaume-Uni':['Angleterre','Écosse','Pays de Galles','Irlande du Nord']
+  };
+  var COUNTRIES = ['Canada','États-Unis','France','Togo','Bénin','Côte d’Ivoire','Sénégal','Cameroun','Burkina Faso','Gabon','Belgique','Suisse','Maroc','Allemagne','Royaume-Uni','Algérie','Tunisie','Mali','Niger','Guinée','République démocratique du Congo','Congo','Madagascar','Haïti','Luxembourg','Espagne','Italie','Portugal','Pays-Bas','Chine','Japon','Inde','Brésil','Mexique','Autre'];
+  var ALIAS = { 'usa':'États-Unis','us':'États-Unis','etats unis':'États-Unis','etats-unis':'États-Unis','united states':'États-Unis','united states of america':'États-Unis','uk':'Royaume-Uni','united kingdom':'Royaume-Uni','germany':'Allemagne','belgium':'Belgique','switzerland':'Suisse','morocco':'Maroc','benin':'Bénin','senegal':'Sénégal','cameroon':'Cameroun','gabon':'Gabon','ivory coast':'Côte d’Ivoire',"cote d'ivoire":'Côte d’Ivoire' };
+  function norm(s){ return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, "'").replace(/\s+/g, ' ').trim().toLowerCase(); }
+  var IDX = {}; Object.keys(R).forEach(function(k){ IDX[norm(k)] = k; });
+  function canon(c){ var n = norm(c); return IDX[n] || (ALIAS[n] && ALIAS[n]) || ''; }
+  function regionsFor(c){ var k = canon(c); return k ? R[k] : null; }
+  function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function countriesHtml(){ return COUNTRIES.map(function(c){ return '<option value="' + esc(c) + '">'; }).join(''); }
+  function fillCountries(){ var d = document.getElementById('hn-countries'); if(d) d.innerHTML = countriesHtml(); }
+  /* Relie un champ « pays » à un champ « région » (liste déroulante selon le pays). */
+  function bind(countryEl, regionEl){
+    if(!countryEl || !regionEl || regionEl.__hnGeo) return; regionEl.__hnGeo = true;
+    var dl = document.createElement('datalist'); dl.id = 'hn-reg-' + (regionEl.id || Math.random().toString(36).slice(2)); regionEl.parentNode.insertBefore(dl, regionEl.nextSibling); regionEl.setAttribute('list', dl.id);
+    function sync(){
+      var L = regionsFor(countryEl.value);
+      dl.innerHTML = L ? L.map(function(r){ return '<option value="' + esc(r) + '">'; }).join('') : '';
+      var k = canon(countryEl.value);
+      regionEl.placeholder = k === 'Canada' ? 'Province ou territoire' : k === 'États-Unis' ? 'État' : k === 'France' ? 'Région' : k === 'Suisse' ? 'Canton' : k === 'Bénin' ? 'Département' : 'Région, province ou État';
+      regionEl.disabled = !String(countryEl.value || '').trim();
+      if(regionEl.disabled) regionEl.title = 'Choisissez d’abord le pays'; else regionEl.removeAttribute('title');
+      if(L && regionEl.value && L.indexOf(regionEl.value) < 0){ var m = L.filter(function(r){ return norm(r) === norm(regionEl.value); })[0]; if(m) regionEl.value = m; }
+    }
+    countryEl.addEventListener('input', function(){ var before = regionsFor(countryEl.__last); countryEl.__last = countryEl.value; if(canon(countryEl.value) !== canon(countryEl.__prev)){ if(canon(countryEl.__prev)) regionEl.value = ''; countryEl.__prev = countryEl.value; } sync(); });
+    countryEl.addEventListener('change', function(){ var c = canon(countryEl.value); if(c) countryEl.value = c; sync(); });
+    countryEl.__prev = countryEl.value; sync();
+    regionEl.__sync = sync;
+  }
+  /* Message d'erreur si la région n'appartient pas à la liste du pays ; chaîne vide si tout va bien. */
+  function check(country, region){
+    country = String(country || '').trim(); region = String(region || '').trim();
+    if(!country) return 'Indiquez votre pays de résidence.';
+    var L = regionsFor(country);
+    if(!region) return L ? 'Sélectionnez votre région, province ou État.' : 'Indiquez votre région, province ou État.';
+    if(L && L.indexOf(region) < 0) return 'Sélectionnez une région, province ou État dans la liste proposée pour ' + canon(country) + '.';
+    return '';
+  }
+  window.__hnGeo = { regionsFor:regionsFor, canon:canon, bind:bind, check:check, countries:COUNTRIES, fillCountries:fillCountries };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillCountries); else fillCountries();
+})();
+
+(function(){ function go(){ var c=document.getElementById('cust-su-country'), r=document.getElementById('cust-su-region'); if(c&&r) window.__hnGeo.bind(c,r); } if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go(); setTimeout(go,1200); })();
 </script>
 <style id="hnp-css">
 #hn-prof-btn{ display:flex; align-items:center; gap:10px; width:100%; padding:8px 8px; margin:6px 0 4px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); cursor:pointer; text-align:left; font:inherit; }
@@ -46426,7 +46498,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 #hnp .hnp-row > .hnp-l small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
 #hnp .hnp-f{ display:grid; gap:10px; margin-bottom:6px; }
 #hnp .hnp-f label{ font-size:12.5px; color:var(--muted); display:grid; gap:4px; }
-#hnp input[type=text], #hnp input[type=time], #hnp input[type=number], #hnp textarea{ border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; width:100%; box-sizing:border-box; }
+#hnp input[type=text], #hnp input[type=tel], #hnp input[type=time], #hnp input[type=number], #hnp textarea{ border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; width:100%; box-sizing:border-box; }
 #hnp textarea{ min-height:84px; resize:vertical; }
 #hnp .btn{ padding:7px 14px; font-size:13px; }
 #hnp .hnp-photo{ display:flex; align-items:center; gap:14px; margin-bottom:12px; }
@@ -46442,6 +46514,9 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 #hnp .hnp-days button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
 #hnp .hnp-bar{ height:8px; border-radius:99px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; margin:8px 0; }
 #hnp .hnp-bar i{ display:block; height:100%; background:var(--accent); width:0; }
+#hnp .hnp-themes{ display:flex; gap:8px; flex-wrap:wrap; }
+#hnp .hnp-th.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+#hnp .hnp-invite{ background:var(--accent-soft); color:var(--accent-ink,var(--ink)); border-radius:10px; padding:10px 12px; font-size:13.5px; margin-bottom:12px; line-height:1.4; }
 #hnp .hnp-danger{ color:#c0392b; border-color:#c0392b; }
 #hnp a.btn{ text-decoration:none; display:inline-block; }
 @media (max-width:860px){
@@ -46460,8 +46535,8 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 (function(){
   'use strict';
   var PK = 'helpnaud_prof_prefs', FK = 'helpnaud_focus', PH = 'helpnaud_user_photo';
-  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['temps','⏱️','Temps et concentration'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['capa','✨','Capacités']];
-  var cur = 'profil', root = null;
+  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['temps','⏱️','Temps et concentration'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence']];
+  var cur = 'profil', root = null, invite = false;
   function $(id){ return document.getElementById(id); }
   function J(k, d){ try{ var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; }catch(e){ return d; } }
   function S(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
@@ -46526,11 +46601,18 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   function secHtml(k){
     var p = J(PK, {}), w = who(), li = signedIn(), h = '';
     if(k === 'profil'){
+      var fresh = invite;
       var fi = $('hp-first'), la = $('hp-last');
       h += '<h3>Profil</h3><p class="hint">Votre photo reste sur cet appareil. Le nom est enregistré dans votre compte.</p>';
       h += '<div class="hnp-photo">' + avHtml() + '<div><button type="button" class="btn" data-hnp="pick">📷 ' + (photo() ? 'Changer la photo' : 'Ajouter une photo') + '</button> ' + (photo() ? '<button type="button" class="btn" data-hnp="rmphoto">Retirer</button>' : '') + '</div></div>';
       h += '<div class="hnp-f">';
       if(li) h += '<label>Prénom<input type="text" id="hnp-first" maxlength="80" value="' + esc(fi ? fi.value : '') + '" autocomplete="given-name"></label><label>Nom<input type="text" id="hnp-last" maxlength="80" value="' + esc(la ? la.value : '') + '" autocomplete="family-name"></label>';
+      if(li){ var gv = function(id){ var e = $(id); return e ? e.value : ''; };
+        h += '<label>Téléphone<input type="tel" id="hnp-phone" maxlength="40" value="' + esc(gv('hp-phone')) + '" autocomplete="tel" placeholder="+1 514 555 0100"></label>';
+        h += '<label>Pays de résidence<input type="text" id="hnp-country" list="hn-countries" maxlength="80" value="' + esc(gv('hp-country')) + '" autocomplete="country-name"></label>';
+        h += '<label>Région, province ou État<input type="text" id="hnp-region" maxlength="80" value="' + esc(gv('hp-region')) + '" autocomplete="address-level1" placeholder="Choisissez d’abord le pays"></label>';
+        h += '<label>Ville de résidence<input type="text" id="hnp-city" maxlength="80" value="' + esc(gv('hp-city')) + '" autocomplete="address-level2"></label>'; }
+      if(fresh && li) h = '<div class="hnp-invite">👋 Bienvenue ! Pour finaliser votre compte HelpNaud.ai, complétez votre profil (téléphone, pays, région ou province, ville).</div>' + h;
       h += '<label>Comment HelpNaud doit vous appeler (surnom)<input type="text" id="hnp-nick" maxlength="40" value="' + esc(p.nick || '') + '"></label>';
       h += '<label>Instructions : comment HelpNaud doit répondre<textarea id="hnp-how" maxlength="600" placeholder="Ex. : réponses courtes, ton formel, exemples en euros…">' + esc(p.how || '') + '</textarea></label>';
       h += '<div><button type="button" class="btn primary" data-hnp="saveprof">Enregistrer</button></div></div>';
@@ -46571,6 +46653,29 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
       h += '<h3>Capacités</h3><p class="hint">Ce que HelpNaud peut faire selon la page où vous êtes.</p>';
       h += '<div class="hnp-row"><div class="hnp-l">Recherche web et sources<small>Réglable dans chaque conversation (menu « + » de l’Assistant).</small></div></div>';
       h += '<div class="hnp-row"><div class="hnp-l">Instructions personnalisées<small>Vos consignes (section Profil) sont transmises à l’IA à chaque réponse.</small></div><button type="button" class="btn" data-hnp-go="profil">Modifier</button></div>';
+    } else if(k === 'code'){
+      h += '<h3>Code</h3><p class="hint">Décrivez une page ou une interface : HelpNaud écrit le code, vous l’affichez en aperçu et vous l’enregistrez.</p>';
+      h += '<button type="button" class="btn primary" data-hnp="ifh">Ouvrir Interface Help</button>';
+    } else if(k === 'conn'){
+      h += '<h3>Connecteurs</h3><p class="hint">La connexion à vos messageries et applications (courriel, calendrier, documents) arrive bientôt. Vous serez informé dès qu’elle sera disponible.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Bientôt disponible<small>Aucun connecteur n’est actif pour le moment.</small></div></div>';
+    } else if(k === 'voix'){
+      var vl = ''; try{ vl = localStorage.getItem('helpnaud_voice_lang') || 'auto'; }catch(e){}
+      var VL = [['auto','Automatique (langue de l’interface)'],['fr-FR','Français'],['en-US','English'],['es-ES','Español'],['de-DE','Deutsch'],['pt-PT','Português'],['it-IT','Italiano'],['ar-SA','العربية'],['zh-CN','中文']];
+      h += '<h3>Voix et dictée</h3><p class="hint">Langue utilisée pour la dictée (micro) et la lecture à voix haute. Le mode vocal se lance depuis l’Assistant, Co-work ou Consult.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Langue de la dictée et de la lecture</div><select id="hnp-vlang" style="border:1px solid var(--line);border-radius:9px;padding:8px;background:var(--surface);color:var(--ink);font:inherit;">' + VL.map(function(o){ return '<option value="' + o[0] + '"' + (o[0] === vl ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
+    } else if(k === 'nav'){
+      var lt = 'blank'; try{ lt = localStorage.getItem('helpnaud_link_target') || 'blank'; }catch(e){}
+      h += '<h3>Navigateur pour les liens</h3><p class="hint">Où s’ouvrent les liens externes (sources dans les réponses, sites cités).</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Nouvel onglet<small>Recommandé : vous gardez votre conversation.</small></div><input type="radio" name="hnp-lt" value="blank"' + (lt !== 'same' ? ' checked' : '') + '></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Même onglet</div><input type="radio" name="hnp-lt" value="same"' + (lt === 'same' ? ' checked' : '') + '></div>';
+    } else if(k === 'hapt'){
+      var hp = true; try{ hp = localStorage.getItem('helpnaud_haptic') !== '0'; }catch(e){}
+      h += '<h3>Retour haptique</h3><p class="hint">Courte vibration lorsque vous touchez un bouton' + (navigator.vibrate ? '.' : ' (non pris en charge par cet appareil ou ce navigateur).') + '</p>';
+      h += '<div class="hnp-row"><div class="hnp-l">Retour haptique</div>' + sw('hnp-hapt', hp) + '</div>';
+    } else if(k === 'look'){
+      var th = 'système'; try{ th = localStorage.getItem('helpnaud_theme') || 'système'; }catch(e){}
+      h += '<h3>Apparence</h3><p class="hint">Thème de l’application.</p><div class="hnp-themes">' + [['clair','☀','Clair'],['sombre','☾','Sombre'],['système','◐','Système'],['dégradé','◒','Dégradé']].map(function(o){ return '<button type="button" class="btn hnp-th' + (o[0] === th ? ' on' : '') + '" data-hnp-theme="' + o[0] + '">' + o[1] + ' ' + o[2] + '</button>'; }).join('') + '</div>';
     }
     return h;
   }
@@ -46578,6 +46683,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(!root) return;
     root.querySelector('.hnp-nav').innerHTML = SECS.map(function(s){ return '<button type="button" data-hnp-sec="' + s[0] + '" class="' + (s[0] === cur && root.getAttribute('data-m') !== 'list' ? 'on' : (s[0] === cur && window.innerWidth > 860 ? 'on' : '')) + '"><span>' + s[1] + '</span><span>' + s[2] + '</span><span class="hnp-chev">›</span></button>'; }).join('');
     root.querySelector('.hnp-pane').innerHTML = secHtml(cur);
+    try{ var ce = $('hnp-country'), re = $('hnp-region'); if(ce && re && window.__hnGeo){ window.__hnGeo.bind(ce, re); } }catch(e){}
     var t = root.querySelector('.hnp-head h2'); var s = SECS.filter(function(x){ return x[0] === cur; })[0];
     t.textContent = (root.getAttribute('data-m') === 'det' && s) ? s[2] : 'Paramètres';
   }
@@ -46598,12 +46704,13 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     render(); root.classList.add('on');
     var f = root.querySelector('.hnp-x'); if(f) f.focus();
   }
-  function closePanel(){ if(root) root.classList.remove('on'); }
+  function closePanel(){ invite = false; if(root) root.classList.remove('on'); }
   function reveal(sel){ var el = document.querySelector(sel); if(!el) return false; var v = el.closest('.view'); if(v && v.hidden){ var id = v.id.replace(/^view-/, ''); var b = document.querySelector('[data-view="' + id + '"]'); if(b) b.click(); } setTimeout(function(){ try{ el.scrollIntoView({ block:'center' }); }catch(e){} }, 150); return true; }
   function clickId(id){ var b = $(id); if(b) b.click(); return !!b; }
   function onClick(e){
-    var t = e.target.closest('[data-hnp],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go]'); if(!t) return;
+    var t = e.target.closest('[data-hnp],[data-hnp-theme],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go]'); if(!t) return;
     if(t.hasAttribute('data-hnp-sec')){ cur = t.getAttribute('data-hnp-sec'); if(window.innerWidth <= 860) root.setAttribute('data-m', 'det'); render(); return; }
+    if(t.hasAttribute('data-hnp-theme')){ var th = t.getAttribute('data-hnp-theme'); try{ localStorage.setItem('helpnaud_theme', th); }catch(x){} var r = document.documentElement; if(th === 'clair') r.setAttribute('data-theme','light'); else if(th === 'sombre') r.setAttribute('data-theme','dark'); else if(th === 'dégradé') r.setAttribute('data-theme','degrade'); else r.removeAttribute('data-theme'); var tb = $('theme-toggle'); if(tb) tb.textContent = ({ 'système':'◐', 'clair':'☀', 'sombre':'☾', 'dégradé':'◒' }[th]) + ' ' + th.charAt(0).toUpperCase() + th.slice(1); render(); return; }
     if(t.hasAttribute('data-hnp-go')){ cur = t.getAttribute('data-hnp-go'); render(); return; }
     if(t.hasAttribute('data-hnp-day')){ var c = focusCfg(), d = +t.getAttribute('data-hnp-day'), i = c.days.indexOf(d); if(i >= 0) c.days.splice(i, 1); else c.days.push(d); S(FK, c); render(); return; }
     if(t.hasAttribute('data-hnp-copy')){ var u = location.origin + '/partage.html?c=' + t.getAttribute('data-hnp-copy'); if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(function(){ toast('Lien copié.'); }, function(){ toast(u); }); else toast(u); return; }
@@ -46624,18 +46731,28 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
         var p = { nick:($('hnp-nick').value || '').trim().slice(0, 40), how:($('hnp-how').value || '').trim().slice(0, 600) };
         S(PK, p);
         var f1 = $('hnp-first'), l1 = $('hnp-last');
-        if(f1 && $('hp-first')){ $('hp-first').value = f1.value; $('hp-last').value = l1.value; clickId('hp-save'); }
+        if(f1 && $('hp-first')){
+          var ge = window.__hnGeo ? window.__hnGeo.check($('hnp-country').value, $('hnp-region').value) : '';
+          if(ge){ toast(ge); break; }
+          if(!f1.value.trim() || !l1.value.trim() || !$('hnp-phone').value.trim() || !$('hnp-city').value.trim()){ toast('Renseignez prénom, nom, téléphone et ville.'); break; }
+          $('hp-first').value = f1.value; $('hp-last').value = l1.value; $('hp-phone').value = $('hnp-phone').value; $('hp-country').value = $('hnp-country').value; $('hp-region').value = $('hnp-region').value; $('hp-city').value = $('hnp-city').value;
+          clickId('hp-save'); invite = false;
+        }
         renderBtn(); toast('Profil enregistré ✓'); break;
       case 'logout': closePanel(); clickId('cust-logout-btn'); break;
       case 'login': closePanel(); if(!reveal('#cust-card')) toast('Ouvrez Réglages › Mon compte.'); break;
       case 'plans': closePanel(); if(!clickId('cust-plans-btn')) clickId('btn-abonnements'); break;
       case 'more': closePanel(); if(!clickId('ai-credits-get-more-btn')) reveal('#ai-credits-get-more-btn'); break;
       case 'pin': closePanel(); reveal('#security-lock-status'); break;
+      case 'ifh': closePanel(); var nb = document.querySelector('[data-view="ifhelp"]'); if(nb) nb.click(); break;
     }
   }
   function onChange(e){
     var t = e.target, c;
     if(t.id === 'hnp-tips'){ try{ if(t.checked) localStorage.removeItem('helpnaud_tips_off'); else localStorage.setItem('helpnaud_tips_off', '1'); }catch(x){} var b = $('hn-tips-on'); if(b) b.checked = t.checked; toast(t.checked ? 'Rappels activés.' : 'Rappels désactivés.'); return; }
+    if(t.id === 'hnp-vlang'){ try{ localStorage.setItem('helpnaud_voice_lang', t.value); }catch(x){} toast('Langue vocale enregistrée.'); return; }
+    if(t.name === 'hnp-lt'){ try{ localStorage.setItem('helpnaud_link_target', t.value); }catch(x){} toast('Préférence enregistrée.'); return; }
+    if(t.id === 'hnp-hapt'){ try{ localStorage.setItem('helpnaud_haptic', t.checked ? '1' : '0'); }catch(x){} if(t.checked && navigator.vibrate) navigator.vibrate(15); return; }
     if(t.id === 'hnp-pause'){ c = focusCfg(); c.pause = t.checked; S(FK, c); active = 0; return; }
     if(t.id === 'hnp-quiet'){ c = focusCfg(); c.quiet = t.checked; S(FK, c); return; }
     if(t.id === 'hnp-every'){ c = focusCfg(); c.every = Math.max(15, Math.min(180, +t.value || 45)); S(FK, c); render(); return; }
@@ -46646,6 +46763,23 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     var a = e.target.closest && e.target.closest('#hnd-avatar'); if(!a) return;
     e.stopPropagation(); e.preventDefault(); openPanel();
   }, true);
+  /* Retour haptique + ouverture des liens externes selon les préférences */
+  document.addEventListener('click', function(e){
+    var el = e.target.closest && e.target.closest('button, a, [role=button], summary'); if(!el) return;
+    try{
+      if(navigator.vibrate && localStorage.getItem('helpnaud_haptic') !== '0' && matchMedia('(pointer:coarse)').matches) navigator.vibrate(8);
+      var a = e.target.closest('a[href]');
+      if(a && localStorage.getItem('helpnaud_link_target') === 'same' && /^https?:/i.test(a.getAttribute('href')) && a.target === '_blank' && a.origin !== location.origin && !e.defaultPrevented){ e.preventDefault(); location.assign(a.href); }
+    }catch(x){}
+  }, true);
+  /* Profil incomplet (compte créé avant la mise à jour) : invitation à le compléter à l'ouverture de l'application. */
+  function incomplete(p){ return !(p && p.first_name && p.last_name && p.phone && p.country && p.region && p.city); }
+  document.addEventListener('hn-profile-loaded', function(ev){
+    var p = ev.detail; if(!incomplete(p)) return;
+    try{ if(sessionStorage.getItem('hnp_invited') === '1') return; sessionStorage.setItem('hnp_invited', '1'); }catch(e){}
+    setTimeout(function(){ var gt = document.getElementById('hn-gate'); if(gt && !gt.hidden && getComputedStyle(gt).display !== 'none') return; invite = true; openPanel('profil'); }, 1800);
+  });
+  document.addEventListener('hn-profile-saved', function(){ var p = window.__hnProfData; if(!incomplete(p)){ invite = false; if(root && root.classList.contains('on')) setTimeout(function(){ render(); }, 50); } });
   window.__hnProfile = { open:openPanel, close:closePanel, refresh:renderBtn };
   function init(){ ensureBtn(); renderBtn(); var inn = $('cust-in'); if(inn) new MutationObserver(function(){ renderBtn(); if(root && root.classList.contains('on')) render(); }).observe(inn, { attributes:true, subtree:true, childList:true, characterData:true }); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
