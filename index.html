@@ -46548,6 +46548,8 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 #hnp .hnp-themes{ display:flex; gap:8px; flex-wrap:wrap; }
 #hnp .hnp-th.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
 #hnp .hnp-invite{ background:var(--accent-soft); color:var(--accent-ink,var(--ink)); border-radius:10px; padding:10px 12px; font-size:13.5px; margin-bottom:12px; line-height:1.4; }
+#hnp .hnp-cancel{ background:#fde8e8; color:#c0392b; border-color:#f5c2c2; }
+#hnp .hnp-cancel:disabled, #hnp .btn:disabled{ opacity:.5; cursor:not-allowed; }
 #hnp .hnp-danger{ color:#c0392b; border-color:#c0392b; }
 #hnp a.btn{ text-decoration:none; display:inline-block; }
 @media (max-width:860px){
@@ -46568,6 +46570,10 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   var PK = 'helpnaud_prof_prefs', FK = 'helpnaud_focus', PH = 'helpnaud_user_photo';
   var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['temps','⏱️','Temps et concentration'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence']];
   var cur = 'profil', root = null, invite = false;
+  var loadingB = false, billing = null, EPB = '/.netlify/functions/stripe-checkout';
+  function bapi(body){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk) return { ok:false, message:'Connectez-vous pour continuer.' }; return fetch(EPB, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {}; }); }).catch(function(){ return { ok:false, message:'Connexion impossible. Vérifiez votre réseau.' }; }); }); }
+  function loadBilling(){ billing = null; if(!signedIn()) return; Promise.all([bapi({ action:'billing' }), bapi({ action:'status' })]).then(function(a){ billing = { email:a[0] && a[0].email, name:a[0] && a[0].name, cards:(a[0] && a[0].cards) || [], hasCustomer:!!(a[0] && a[0].hasCustomer) || !!(a[1] && a[1].hasCustomer), status:(a[1] && a[1].ok) ? a[1] : null }; if(root && root.classList.contains('on') && cur === 'factu') render(); }); }
+  function openPortal(flow, t){ t.disabled = true; bapi({ action:'portal', flow:flow }).then(function(r){ if(r && r.ok && r.url){ window.location.href = r.url; return; } t.disabled = false; toast((r && r.message) || 'Impossible d’ouvrir la page de facturation. Réessayez.'); }); }
   function $(id){ return document.getElementById(id); }
   function J(k, d){ try{ var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; }catch(e){ return d; } }
   function S(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
@@ -46651,9 +46657,19 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
         h += '<div class="hnp-row"><div class="hnp-l">Supprimer le compte<small>La demande est traitée par notre équipe (suppression de vos données).</small></div><a class="btn hnp-danger" href="mailto:contacts@fineciagroupe.com?subject=' + encodeURIComponent('Demande de suppression de compte HelpNaud.ai') + '&body=' + encodeURIComponent('Bonjour,\n\nJe demande la suppression de mon compte HelpNaud.ai : ' + w.email + '\n') + '">Demander la suppression</a></div>'; }
       else h += '<div class="hnp-row"><div class="hnp-l">Vous n’êtes pas connecté<small>Connectez-vous pour enregistrer votre nom et retrouver votre forfait.</small></div><button type="button" class="btn primary" data-hnp="login">Se connecter</button></div>';
     } else if(k === 'factu'){
-      h += '<h3>Facturation</h3><p class="hint">Forfait, paiement et factures.</p>';
-      h += '<div class="hnp-row"><div class="hnp-l">Forfait actuel<small>' + esc(li ? (planTxt() || 'Chargement…') : 'Connectez-vous pour voir votre forfait.') + '</small></div><button type="button" class="btn primary" data-hnp="plans">Gérer l’abonnement</button></div>';
-      h += '<div class="hnp-row"><div class="hnp-l">Besoin d’aide sur un paiement ?<small>Écrivez-nous, nous répondons rapidement.</small></div><a class="btn" href="mailto:contacts@fineciagroupe.com">Contacter le support</a></div>';
+      var bl = billing, sub = bl && bl.status && bl.status.subscription, PL = { gratuit:'Gratuit', essentiel:'Essentiel', avancee:'Avancée', pro:'Professionnel', affaires:'Affaires', institution:'Institution', pilote:'Pilote', proprietaire:'Propriétaire' };
+      var team = /équipe/i.test(planTxt()), planName = bl && bl.status ? (PL[bl.status.plan] || bl.status.plan || '') : '';
+      var fdate = function(d){ try{ return new Date(d).toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' }); }catch(e){ return ''; } };
+      var subLine = !li ? 'Connectez-vous pour voir votre forfait.' : team ? esc(planTxt()) : !bl ? 'Chargement…' : sub ? (sub.cancels ? 'Résiliation prévue : accès complet jusqu’au ' + esc(fdate(sub.renews)) + '.' : 'Renouvellement automatique du plan : ' + esc(fdate(sub.renews)) + ' (' + (sub.interval === 'annuel' ? 'annuel' : 'mensuel') + ')' + (sub.status === 'past_due' ? ' — <b style="color:#c0392b">paiement à régulariser</b>' : '')) : 'Aucun abonnement payant en cours.';
+      h += '<h3>Facturation</h3><p class="hint">Consultez votre abonnement et vos informations de paiement.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l"><b>' + (planName ? 'HelpNaud ' + esc(planName) : 'Forfait actuel') + '</b><small>' + subLine + '</small></div><button type="button" class="btn primary" data-hnp="plans">Gérer</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l"><b>Informations de facturation</b></div><button type="button" class="btn" data-hnp="bill-edit"' + (bl && bl.hasCustomer ? '' : ' disabled') + '>Modifier</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">E-mail de facturation<small>' + esc((bl && bl.email) || w.email || '—') + (bl && bl.name ? ' · ' + esc(bl.name) : '') + '</small></div></div>';
+      h += '<div class="hnp-row"><div class="hnp-l"><b>Moyens de paiement</b></div><button type="button" class="btn" data-hnp="bill-pay"' + (bl && bl.hasCustomer ? '' : ' disabled') + '>Ajouter un moyen de paiement</button></div>';
+      if(bl && bl.cards && bl.cards.length) bl.cards.forEach(function(c){ h += '<div class="hnp-row"><div class="hnp-l">💳 ' + esc(String(c.brand || 'Carte').replace(/^./, function(x){ return x.toUpperCase(); })) + ' •••• ' + esc(c.last4 || '') + '<small>Expire ' + esc(String(c.exp_month || '').padStart(2, '0')) + '/' + esc(String(c.exp_year || '')) + '</small></div></div>'; });
+      else h += '<div class="hnp-row"><div class="hnp-l"><small>' + (bl ? 'Aucun moyen de paiement disponible' : 'Chargement…') + '</small></div></div>';
+      h += '<p class="hint">Vos informations de paiement sont gérées de façon sécurisée par Stripe : HelpNaud ne conserve pas vos numéros de carte.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l"><b>Résilier le forfait</b><small>Si vous annulez, vous conserverez un accès complet aux fonctionnalités de votre forfait jusqu’à la fin de votre période de facturation.</small></div><button type="button" class="btn hnp-cancel" data-hnp="bill-cancel"' + (sub && !sub.cancels ? '' : ' disabled') + '>Résilier le forfait</button></div>';
     } else if(k === 'usage'){
       var lb = $('ai-credits-label'), fl = $('ai-credits-fill');
       h += '<h3>Utilisation</h3><p class="hint">Crédits IA utilisés ce mois-ci.</p><div class="hnp-bar"><i style="width:' + esc(fl ? fl.style.width || '0%' : '0%') + '"></i></div><p class="hint">' + esc((li ? planTxt() : '') || (lb ? lb.textContent : '') || 'Aucune donnée pour le moment.') + '</p>';
@@ -46714,6 +46730,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   function render(){
     if(!root) return;
     root.querySelector('.hnp-nav').innerHTML = SECS.map(function(s){ return '<button type="button" data-hnp-sec="' + s[0] + '" class="' + (s[0] === cur && root.getAttribute('data-m') !== 'list' ? 'on' : (s[0] === cur && window.innerWidth > 860 ? 'on' : '')) + '"><span>' + s[1] + '</span><span>' + s[2] + '</span><span class="hnp-chev">›</span></button>'; }).join('');
+    if(cur === 'factu' && billing === null && !loadingB){ loadingB = true; loadBilling(); setTimeout(function(){ loadingB = false; }, 8000); }
     root.querySelector('.hnp-pane').innerHTML = secHtml(cur);
     try{ var ce = $('hnp-country'), re = $('hnp-region'); if(ce && re && window.__hnGeo){ window.__hnGeo.bind(ce, re); } }catch(e){}
     var t = root.querySelector('.hnp-head h2'); var s = SECS.filter(function(x){ return x[0] === cur; })[0];
@@ -46732,6 +46749,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(!root) build();
     try{ if(window.__hnDrawer && window.__hnDrawer.isOpen()) window.__hnDrawer.close(); }catch(e){}
     cur = sec || cur || 'profil';
+    billing = null; loadingB = false;
     root.setAttribute('data-m', window.innerWidth > 860 ? 'desk' : (sec ? 'det' : 'list'));
     render(); root.classList.add('on');
     var f = root.querySelector('.hnp-x'); if(f) f.focus();
@@ -46775,6 +46793,9 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
       case 'login': closePanel(); if(!reveal('#cust-card')) toast('Ouvrez Réglages › Mon compte.'); break;
       case 'plans': closePanel(); if(!clickId('cust-plans-btn')) clickId('btn-abonnements'); break;
       case 'more': closePanel(); if(!clickId('ai-credits-get-more-btn')) reveal('#ai-credits-get-more-btn'); break;
+      case 'bill-edit': openPortal('', t); break;
+      case 'bill-pay': openPortal('payment', t); break;
+      case 'bill-cancel': if(confirm('Résilier votre forfait ? Vous gardez l’accès complet jusqu’à la fin de la période de facturation déjà payée.')) openPortal('cancel', t); break;
       case 'pin': closePanel(); reveal('#security-lock-status'); break;
       case 'ifh': closePanel(); var nb = document.querySelector('[data-view="ifhelp"]'); if(nb) nb.click(); break;
     }
