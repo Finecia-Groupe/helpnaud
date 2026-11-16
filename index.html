@@ -42482,6 +42482,12 @@ body.hnd-open #hn-sa, body.hnd-dragging #hn-sa{ display:none; }
       ot.style.fontWeight='700'; ot.style.fontSize='18px'; ot.style.lineHeight='1';
       ot.addEventListener('click',function(){ var open = panel.hidden; panel.hidden = !open; ot.setAttribute('aria-expanded', open?'true':'false'); });
       head.appendChild(ot);
+      function hnOptClose(){ if(!panel.hidden){ panel.hidden = true; ot.setAttribute('aria-expanded','false'); try{ ot.focus(); }catch(e){} } }
+      var cx1 = mk('button','btn hn-opts-x hn-opts-x-top'); cx1.type='button'; cx1.textContent='Fermer'; cx1.setAttribute('aria-label','Fermer les options');
+      var cx2 = mk('button','btn icon-only hn-opts-x hn-opts-x-bot'); cx2.type='button'; cx2.textContent='✕'; cx2.setAttribute('aria-label','Fermer les options'); cx2.title='Fermer';
+      cx1.addEventListener('click',hnOptClose); cx2.addEventListener('click',hnOptClose);
+      panel.addEventListener('keydown',function(e){ if(e.key==='Escape'){ e.stopPropagation(); hnOptClose(); } });
+      panel.appendChild(cx1); panel.appendChild(cx2);
       var ph = scope.querySelector('.cowork-panel-head'); if(ph && !ph.closest('.hn-opts-panel')) panel.appendChild(ph);
       if(tb) panel.appendChild(tb);
       S.insertBefore(panel, S.firstChild); S.insertBefore(head, S.firstChild);
@@ -46038,6 +46044,16 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 .hn-taskrem-item{background:#16304a;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.3);font-size:14px;line-height:1.45;position:relative}
 .hn-taskrem-item b{display:block;margin-bottom:2px}
 .hn-taskrem-item button{position:absolute;right:8px;top:6px;background:none;border:0;color:#fff;font-size:18px;cursor:pointer}
+
+.hn-opts-panel{ position:relative; padding-top:44px; padding-bottom:44px; }
+.hn-opts-x{ position:absolute; z-index:2; margin:0; }
+.hn-opts-x-top{ top:8px; right:10px; padding:6px 14px; font-weight:600; }
+.hn-opts-x-bot{ bottom:8px; right:10px; width:34px; height:34px; padding:0; border-radius:50%; }
+/* Consult : la liste de suggestions reste dans la page (plus de débordement ni de texte coupé) */
+#hstat-domain-wrap{ position:relative; }
+#hstat-domain-wrap #hstat-suggest-row-details{ position:static; }
+#hstat-domain-wrap #hstat-suggest-row-details>.suggest-row{ left:0; right:0; width:auto; max-width:560px; box-sizing:border-box; }
+#hstat-domain-wrap #hstat-suggest-row-details>.suggest-row .suggest-chip{ max-width:100%; white-space:normal; text-align:left; line-height:1.35; overflow-wrap:anywhere; }
 </style><script>
 (function(){
   /* ---- Consult : déplacements d'éléments ---- */
