@@ -46695,8 +46695,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
       h += '<h3>Utilisation</h3><p class="hint">Suivez votre utilisation et vérifiez vos limites.</p>';
       h += '<div class="hnp-tabs"><button type="button" data-hnp-tab="apercu" class="' + (usageTab === 'apercu' ? 'on' : '') + '">Aperçu</button><button type="button" data-hnp-tab="stats" class="' + (usageTab === 'stats' ? 'on' : '') + '">Statistiques</button></div>';
       if(usageTab === 'stats'){
-        h += '<h4>Crédits IA ce mois-ci</h4><div class="hnp-bar"><i style="width:' + wd + '"></i></div><p class="hint">' + esc(lbt || 'Aucune donnée pour le moment.') + '</p>';
-        h += '<p class="hint">Les statistiques détaillées par outil (Assistant, Code, Co-work, Consult…) seront ajoutées prochainement.</p>';
+        h += statsHtml(li);
       } else {
         h += '<h4>Votre forfait</h4><div class="hnp-row"><div class="hnp-l"><b>' + esc(li ? (planTxt().split(' — ')[0] || 'Forfait actuel') : 'Non connecté') + '</b><small>' + esc(li ? 'Gérez ou changez votre forfait à tout moment.' : 'Connectez-vous pour voir votre forfait.') + '</small></div><button type="button" class="btn" data-hnp="plans">Voir les forfaits</button></div>';
         h += '<h4>Limites de l’abonnement</h4><p class="hint">Utilisation partagée entre Assistant (chat), Code, Co-work, Consult, H-Web et les autres outils IA de HelpNaud. Pour augmenter votre quota d’utilisation, <a href="#" data-hnp="plans">passez à un forfait supérieur</a>.</p>';
@@ -46836,6 +46835,48 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   function famDone(r, okMsg){ if(r && r.ok){ if(okMsg) toast(okMsg); } else toast((r && r.message) || 'Échec.'); fam = null; render(); }
   function famToken(){ var t = ''; try{ var m = /[?&]famille=([0-9a-f]{48})/.exec(location.search); if(m){ t = m[1]; sessionStorage.setItem('hn_fam_tok', t); history.replaceState(null, '', location.pathname + location.hash); } else t = sessionStorage.getItem('hn_fam_tok') || ''; }catch(e){} return t; }
   function tryFamToken(){ var t = famToken(); if(!t || !signedIn()) return; try{ sessionStorage.removeItem('hn_fam_tok'); }catch(e){} fapi({ action:'accept', token:t }).then(function(r){ toast(r && r.ok ? 'Invitation acceptée ✓' : ((r && r.message) || 'Invitation impossible.')); fam = null; openPanel('parental'); }); }
+  var stat = null, statLoading = false, stRange = 7, stOff = 0, stBy = 'feature', msgRange = 7, msgBy = 'model';
+  var PAL = ['#0a6fd0','#ee8a2e','#5fc771','#8a5fd0','#d05f8a','#2d9c93'];
+  var FEAT = { assistant:'Chat', cowork:'Co-work', consult:'Consult', ifhelp:'Code', hweb:'H-Web', fistat:'F-i-Stat', taiso:'TAISO', itaf:'iTAF', dashboard:'Tableau de bord', report:'Rapport' };
+  function loadStats(){ if(statLoading) return; statLoading = true; var A = window.__hnAuth; Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){
+      if(!tk || !A || !A.url) throw new Error('auth');
+      return fetch(A.url + '/rest/v1/rpc/my_usage_events', { method:'POST', headers:{ 'Content-Type':'application/json', apikey:A.key, Authorization:'Bearer ' + tk }, body:JSON.stringify({ p_days:60 }) }).then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); });
+    }).then(function(rows){ stat = { rows:rows || [] }; }).catch(function(){ stat = { error:'Statistiques indisponibles pour le moment (service non installé ou hors ligne).' }; }).then(function(){ statLoading = false; if(root && root.classList.contains('on') && cur === 'usage' && usageTab === 'stats') render(); }); }
+  function dkey(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function dayList(range, off){ var out = [], e = new Date(); e.setHours(12, 0, 0, 0); e.setDate(e.getDate() - off * range); for(var i = range - 1; i >= 0; i--){ var d = new Date(e); d.setDate(e.getDate() - i); out.push(d); } return out; }
+  function gname(r, by){ return by === 'feature' ? (FEAT[r.feature] || 'Autres') : by === 'model' ? r.model : r.surface; }
+  function fday(d){ return d.toLocaleDateString('fr-CA', { day:'numeric', month:'short' }); }
+  function chartHtml(days, rows, by, kind){
+    var keys = {}, byDay = {}; days.forEach(function(d){ byDay[dkey(d)] = {}; });
+    rows.forEach(function(r){ var k = dkey(new Date(r.created_at)); if(!byDay[k]) return; var g = gname(r, by), v = kind === 'bar' ? (+r.cost || 1) : 1; keys[g] = (keys[g] || 0) + v; byDay[k][g] = (byDay[k][g] || 0) + v; });
+    var names = Object.keys(keys).sort(function(a, b){ return keys[b] - keys[a]; }), tot = names.reduce(function(a, n){ return a + keys[n]; }, 0);
+    var W = 560, H = 190, L = 34, B = 24, T = 10, cw = (W - L - 8) / days.length, mx = 1;
+    days.forEach(function(d){ var t = 0; if(kind === 'bar'){ names.forEach(function(n){ t += byDay[dkey(d)][n] || 0; }); mx = Math.max(mx, t); } else names.forEach(function(n){ mx = Math.max(mx, byDay[dkey(d)][n] || 0); }); });
+    var y = function(v){ return T + (H - T - B) * (1 - v / mx); }, svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Graphique d’utilisation" style="max-width:100%">';
+    [0, .5, 1].forEach(function(f){ var v = Math.round(mx * f); svg += '<line x1="' + L + '" x2="' + (W - 6) + '" y1="' + y(mx * f) + '" y2="' + y(mx * f) + '" stroke="currentColor" opacity=".12"/><text x="' + (L - 6) + '" y="' + (y(mx * f) + 4) + '" font-size="10" text-anchor="end" fill="currentColor" opacity=".6">' + v + '</text>'; });
+    if(kind === 'bar'){ days.forEach(function(d, i){ var acc = 0; names.forEach(function(n, ni){ var v = byDay[dkey(d)][n] || 0; if(!v) return; var y0 = y(acc + v), hh = y(acc) - y0; acc += v; svg += '<rect x="' + (L + i * cw + cw * .2) + '" y="' + y0 + '" width="' + (cw * .6) + '" height="' + hh + '" rx="2" fill="' + PAL[ni % PAL.length] + '"/>'; }); }); }
+    else { names.forEach(function(n, ni){ var pts = days.map(function(d, i){ return (L + i * cw + cw / 2) + ',' + y(byDay[dkey(d)][n] || 0); }).join(' '); svg += '<polyline fill="none" stroke="' + PAL[ni % PAL.length] + '" stroke-width="2.5" points="' + pts + '"/>'; }); }
+    var step = Math.max(1, Math.round(days.length / 4)); days.forEach(function(d, i){ if(i % step === 0 || i === days.length - 1) svg += '<text x="' + (L + i * cw + cw / 2) + '" y="' + (H - 6) + '" font-size="10" text-anchor="middle" fill="currentColor" opacity=".6">' + esc(fday(d)) + '</text>'; });
+    svg += '</svg>';
+    var leg = kind === 'line' ? '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px">' + names.map(function(n, ni){ return '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + PAL[ni % PAL.length] + ';margin-right:6px"></i>' + esc(n) + '</span>'; }).join('') + '</div>' : '<div style="display:flex;flex-wrap:wrap;gap:14px 22px;margin-top:8px">' + names.map(function(n, ni){ return '<div style="border-left:4px solid ' + PAL[ni % PAL.length] + ';padding-left:8px"><small>' + esc(n) + '</small><div style="font-size:20px;font-weight:700">' + (tot ? Math.round(keys[n] / tot * 100) : 0) + ' %</div></div>'; }).join('') + '</div>';
+    return { svg:svg, leg:leg, total:tot, empty:!tot };
+  }
+  function statsHtml(li){
+    if(!li) return '<p class="hint">Connectez-vous pour voir vos statistiques.</p>';
+    if(stat === null) return '<p class="hint">Chargement…</p>';
+    if(stat.error) return '<p class="hint">' + esc(stat.error) + '</p>';
+    var rows = stat.rows, h = '<p class="hint">Vous ne voyez que les statistiques de votre propre compte. Elles se remplissent à partir de maintenant (pas d’historique avant l’activation).</p>';
+    var seg = function(attr, cur2, opts){ return '<div class="hnp-tabs">' + opts.map(function(o){ return '<button type="button" data-hnp-st="' + attr + ':' + o[0] + '" class="' + (String(cur2) === String(o[0]) ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>'; };
+    var d1 = dayList(stRange, stOff), c1 = chartHtml(d1, rows, stBy, 'bar');
+    h += '<h4>Historique d’utilisation</h4><p class="hint">Consultez l’utilisation de vos crédits dans les outils HelpNaud.</p>';
+    h += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">' + seg('range', stRange, [[7, '7 j'], [30, '30 j']]) + '<select id="hnp-stby" style="border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:var(--surface);color:var(--ink);font:inherit;"><option value="feature"' + (stBy === 'feature' ? ' selected' : '') + '>Par fonctionnalité</option><option value="model"' + (stBy === 'model' ? ' selected' : '') + '>Par modèle</option><option value="surface"' + (stBy === 'surface' ? ' selected' : '') + '>Par surface</option></select></div>';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0"><b style="font-weight:500">' + esc(fday(d1[0])) + ' – ' + esc(fday(d1[d1.length - 1])) + ' ' + d1[d1.length - 1].getFullYear() + '</b><span><button type="button" class="btn" data-hnp-st="off:1" aria-label="Période précédente">‹</button> <button type="button" class="btn" data-hnp-st="off:-1" aria-label="Période suivante"' + (stOff === 0 ? ' disabled' : '') + '>›</button></span></div>';
+    h += c1.empty ? '<p class="hint">Aucune utilisation enregistrée sur cette période.</p>' : c1.svg + c1.leg;
+    var d2 = dayList(msgRange, 0), c2 = chartHtml(d2, rows, msgBy, 'line');
+    h += '<h4>Messages</h4><p class="hint">Nombre de messages envoyés au fil du temps.</p><div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between">' + seg('mrange', msgRange, [[7, '7 j'], [30, '30 j']]) + seg('mby', msgBy, [['model', 'Par modèle'], ['surface', 'Par surface']]) + '</div>';
+    h += '<small>Messages</small><div style="font-size:28px;font-weight:700">' + c2.total + '</div>' + (c2.empty ? '<p class="hint">Aucun message sur cette période.</p>' : c2.svg + c2.leg);
+    return h;
+  }
   function polLinks(){ return '<a href="/fr-fr/politique-contrôle-parental" target="_blank" rel="noopener">Politique de contrôle parental</a> · <a href="/En-En/parent-control-policy" target="_blank" rel="noopener">Parent control policy</a>'; }
   function trracLoad(){
     try{ var A = window.__hnAuth; if(!A || !A.url || !A.key) return;
@@ -46864,6 +46905,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     root.querySelector('.hnp-nav').innerHTML = SECS.map(function(s){ return '<button type="button" data-hnp-sec="' + s[0] + '" class="' + (s[0] === cur && root.getAttribute('data-m') !== 'list' ? 'on' : (s[0] === cur && window.innerWidth > 860 ? 'on' : '')) + '"><span>' + s[1] + '</span><span>' + s[2] + '</span><span class="hnp-chev">›</span></button>'; }).join('');
     if(cur === 'factu' && billing === null && !loadingB){ loadingB = true; loadBilling(); setTimeout(function(){ loadingB = false; }, 8000); }
     if((cur === 'parental' || cur === 'confiance') && fam === null && signedIn()) loadFam();
+    if(cur === 'usage' && usageTab === 'stats' && stat === null && signedIn()) loadStats();
     root.querySelector('.hnp-pane').innerHTML = secHtml(cur);
     try{ var ce = $('hnp-country'), re = $('hnp-region'); if(ce && re && window.__hnGeo){ window.__hnGeo.bind(ce, re); } }catch(e){}
     var t = root.querySelector('.hnp-head h2'); var s = SECS.filter(function(x){ return x[0] === cur; })[0];
@@ -46882,7 +46924,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(!root) build();
     try{ if(window.__hnDrawer && window.__hnDrawer.isOpen()) window.__hnDrawer.close(); }catch(e){}
     cur = sec || cur || 'profil';
-    billing = null; loadingB = false; fam = null; trracLoad();
+    billing = null; loadingB = false; fam = null; stat = null; trracLoad();
     root.setAttribute('data-m', window.innerWidth > 860 ? 'desk' : (sec ? 'det' : 'list'));
     render(); root.classList.add('on');
     var f = root.querySelector('.hnp-x'); if(f) f.focus();
@@ -46891,7 +46933,8 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   function reveal(sel){ var el = document.querySelector(sel); if(!el) return false; var v = el.closest('.view'); if(v && v.hidden){ var id = v.id.replace(/^view-/, ''); var b = document.querySelector('[data-view="' + id + '"]'); if(b) b.click(); } setTimeout(function(){ try{ el.scrollIntoView({ block:'center' }); }catch(e){} }, 150); return true; }
   function clickId(id){ var b = $(id); if(b) b.click(); return !!b; }
   function onClick(e){
-    var t = e.target.closest('[data-hnp],[data-hnp-theme],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go],[data-hnp-tab],[data-hnp-fam],[data-hnp-fa]'); if(!t) return;
+    var t = e.target.closest('[data-hnp],[data-hnp-theme],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go],[data-hnp-tab],[data-hnp-fam],[data-hnp-fa],[data-hnp-st]'); if(!t) return;
+    if(t.hasAttribute('data-hnp-st')){ var sp = t.getAttribute('data-hnp-st').split(':'), sv = +sp[1]; if(sp[0] === 'range'){ stRange = sv; stOff = 0; } else if(sp[0] === 'off') stOff = Math.max(0, stOff + sv); else if(sp[0] === 'mrange') msgRange = sv; else if(sp[0] === 'mby') msgBy = sp[1]; render(); return; }
     if(t.hasAttribute('data-hnp-fa')){ famAct(t); return; }
     if(t.hasAttribute('data-hnp-tab')){ usageTab = t.getAttribute('data-hnp-tab'); render(); return; }
     if(t.hasAttribute('data-hnp-fam')){ famMode = t.getAttribute('data-hnp-fam'); render(); return; }
@@ -46952,6 +46995,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(t.id === 'hnp-hapt'){ try{ localStorage.setItem('helpnaud_haptic', t.checked ? '1' : '0'); }catch(x){} if(t.checked && navigator.vibrate) navigator.vibrate(15); return; }
     if(t.id === 'hnp-webauto'){ try{ localStorage.setItem('helpnaud_web_auto', t.checked ? '1' : '0'); }catch(x){} toast(t.checked ? 'Recherche web automatique activée.' : 'Recherche web automatique désactivée.'); return; }
     if(t.id && t.id.indexOf('hnp-fs-') === 0){ var fid = t.getAttribute('data-fid'), ff = ((fam && fam.family) || []).filter(function(x){ return x.id === fid; })[0]; if(ff){ var st2 = JSON.parse(JSON.stringify(ff.settings || {})); st2[t.id.slice(7)] = t.checked; try{ st2.tz = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(x){} ff.settings = st2; fapi({ action:'settings', id:fid, settings:st2 }).then(function(r){ if(r && r.ok) toast('Réglage enregistré ✓'); else { toast((r && r.message) || 'Échec.'); fam = null; render(); } }); } return; }
+    if(t.id === 'hnp-stby'){ stBy = t.value; render(); return; }
     if(t.id === 'hnp-age'){ var pa = J(PK, {}); pa.age = t.value; S(PK, pa); toast('Enregistré.'); return; }
     if(t.id === 'hnp-handle'){ var ph = J(PK, {}), hv = (t.value || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 30); if(hv && hv.length < 3){ toast('Au moins 3 caractères.'); return; } ph.handle = hv; S(PK, ph); t.value = hv; toast('Nom d’utilisateur enregistré.'); return; }
     if(t.id === 'hnp-pause'){ c = focusCfg(); c.pause = t.checked; S(FK, c); active = 0; return; }
