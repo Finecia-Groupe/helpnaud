@@ -426,6 +426,24 @@ exports.handler = async function(event){
   const image = images.length ? images : null;
   const wantJson = body.json === true;
   const research = parseResearch(body.research);
+  /* Contrôle parental : réglages d'un compte adolescent associé (lus côté serveur, non contournables depuis le navigateur). */
+  let teenTxt = '';
+  try {
+    const ts = await svcRpc('svc_teen_settings', { p_uid: uid });
+    if (ts && typeof ts === 'object') {
+      const q = Array.isArray(ts.quiet) ? ts.quiet : [];
+      if (q.length) {
+        const parts = new Intl.DateTimeFormat('en-GB', { timeZone: ts.tz || 'America/Toronto', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+        const nowM = (+parts.find(x => x.type === 'hour').value) * 60 + (+parts.find(x => x.type === 'minute').value);
+        const hm = (t) => { const a2 = String(t).split(':'); return (+a2[0]) * 60 + (+a2[1]); };
+        const inQ = q.some(w => { const f = hm(w.from), t = hm(w.to); return f === t ? false : (f < t ? (nowM >= f && nowM < t) : (nowM >= f || nowM < t)); });
+        if (inQ) return reply(403, { error: 'quiet_hours', message: 'Heures de pause : HelpNaud est indisponible pour ce compte à cette heure (réglage défini par votre parent ou tuteur).' });
+      }
+      if (ts.code === false && body.tool === 'ifhelp') return reply(403, { error: 'feature_off', message: 'L’outil Code est désactivé pour ce compte par votre parent ou tuteur.' });
+      if (ts.web === false) { research.web = false; research.pub = false; research.spec = false; research.auto = false; }
+      teenTxt = ' COMPTE ADOLESCENT (contrôle parental) : l’utilisateur est un adolescent ; adopte un ton adapté à son âge, ne fournis rien d’inadapté à un mineur.' + (ts.sensitive !== false ? ' Protections renforcées : refuse ou adoucis les contenus choquants, les défis viraux dangereux, les jeux de rôle sexuels, romantiques ou violents, et les idéaux de beauté extrêmes.' : '') + ' Si l’adolescent exprime une détresse ou un risque pour sa sécurité, réponds avec bienveillance et invite-le à en parler à un adulte de confiance ou aux services d’urgence.';
+    }
+  } catch (e) { /* SQL non installé ou erreur : aucun réglage appliqué */ }
   /* Recherche web « quand nécessaire » (activée par défaut, désactivable dans Paramètres › Capacités). */
   let autoSearched = false, needsWeb = false;
   const deepMode = research.mode === 'consultant' || research.mode === 'statisticien';   // Consult et F-i-Stat : recherche documentaire et universitaire, pas seulement l'actualité
@@ -524,7 +542,7 @@ exports.handler = async function(event){
   const rtRule = wantJson ? '' : (rplan
     ? (deepMode ? '\n\nRECHERCHE DOCUMENTAIRE ET UNIVERSITAIRE : utilise la recherche web pour trouver et vérifier des sources fiables (articles de revues, travaux universitaires, rapports d’institutions, organismes officiels, normes) même lorsque la question ne porte pas sur l’actualité. Règles : (1) cite UNIQUEMENT des sources réellement consultées pendant cette recherche, avec titre, auteur ou organisme, date et lien ; (2) distingue clairement ce que les sources établissent et ta propre analyse ; (3) n’invente jamais une référence, un auteur, un DOI, une citation ni un numéro de page ; (4) si un document est payant, privé ou inaccessible, ou si une recherche ne donne rien, dis-le explicitement sans prétendre avoir lu son contenu ; (5) compare plusieurs sources et signale leurs éventuelles contradictions ; vérifie les faits, chiffres, dates et références avant de les affirmer. Pour la rédaction de documents et l’expertise, appuie les points importants sur des références vérifiées. Cite uniquement des sources réellement consultées ; n’invente jamais une référence, un auteur, un DOI, une citation ni un numéro de page. Signale les documents inaccessibles (payants, privés) et les recherches infructueuses sans prétendre avoir lu leur contenu. Compare plusieurs sources et signale leurs contradictions. Ne promets jamais d’être exhaustif.' : '') + '\n\nINFORMATIONS EN TEMPS RÉEL (météo, cours, scores, actualité, horaires) : utilise la recherche web. Si le lieu manque, demande-le ; dès qu’il est donné, cherche sans redemander ce qui a déjà été fourni (une réponse comme « Ville d’Ottawa » vaut « Ottawa, Canada »). Pour la météo : température, ressenti, conditions, lieu, heure de mise à jour et source. N’invente jamais de donnée et ne remplace jamais une valeur actuelle par des moyennes saisonnières.'
     : '\n\nINFORMATIONS EN TEMPS RÉEL (météo, cours, scores, actualité, horaires) : tu n’as pas d’accès au web dans ce mode.' + (needsWeb ? ' L’utilisateur a désactivé la recherche web automatique : si le lieu manque, demande-le d’abord ; sinon explique en une phrase que la valeur actuelle exige une recherche web. Un bouton « Rechercher sur le Web · +2 crédits » s’affiche déjà sous ta réponse : ne le décris pas et n’écris pas toi-même ce bouton. Donne aussi la source officielle' : ' Si le lieu manque, demande-le d’abord. Puis explique en une phrase que tu ne peux pas donner la valeur actuelle, invite à activer « Web en temps réel » dans les options de la conversation (au prix indiqué), et donne la source officielle') + ' la plus pertinente (météo au Canada : https://meteo.gc.ca ; ailleurs : le service météorologique national). N’invente jamais de donnée et ne donne pas de moyennes saisonnières, sauf si l’utilisateur les demande.');
-  const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + rtRule + prefsTxt;
+  const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + rtRule + prefsTxt + teenTxt;
   const deadline = Date.now() + TIMEOUT_MS;
   if (jsonPre) {
     try {
