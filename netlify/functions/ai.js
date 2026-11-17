@@ -527,6 +527,10 @@ exports.handler = async function(event){
   // Consommation identifiée par membre, espace et projet (SQL 3w). Le serveur vérifie l'appartenance à l'espace.
   const log = async (ok, label, tin, tout, micro) => {
     const base = { p_uid: uid, p_tier: tierId, p_cost: cost, p_model: label, p_in: tin || 0, p_out: tout || 0, p_ok: ok };
+    if (ok) { try {   // statistiques d'utilisation du compte (supabase-statistiques.sql) : jamais de contenu de conversation
+      const ua = String((event.headers && event.headers['user-agent']) || ''), tl = typeof body.tool === 'string' ? body.tool.replace(/[^a-z0-9_-]/gi, '').slice(0, 30) : '';
+      await fetch(SB_URL + '/rest/v1/ai_usage_events', { method: 'POST', headers: svcHeaders(), body: JSON.stringify({ user_id: uid, feature: isFistat ? 'fistat' : (tl || 'assistant'), model: ({ low: 'Léger', mid: 'Standard', high: 'Avancé' })[tier.band] || 'Standard', surface: /Mobi|Android|iPhone|iPad/i.test(ua) ? 'Mobile' : 'Web', cost: cost, ok: true }) });
+    } catch (e) {} }
     try { await svcRpc('svc_ai_log', Object.assign({}, base, { p_space: spaceId, p_project: project || null, p_micro: micro || 0 })); }
     catch (e) { try { await svcRpc('svc_ai_log', base); } catch (e2) {} }   // 3w pas encore installé : journal simple
   };
