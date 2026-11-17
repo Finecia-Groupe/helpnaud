@@ -137,3 +137,8 @@
   to = "/parent-control-policy.html"
   status = 200
   force = true
+[[redirects]]
+  from = "/contact-confiance"
+  to = "/contact-confiance.html"
+  status = 200
+  force = true

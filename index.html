@@ -46588,7 +46588,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   'use strict';
   var PK = 'helpnaud_prof_prefs', FK = 'helpnaud_focus', PH = 'helpnaud_user_photo';
   var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['compte','🪪','Compte'],['parental','👨‍👩‍👧','Contrôle parental'],['confiance','🤝','Contact de confiance'],['temps','⏱️','Temps et concentration'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence']];
-  var cur = 'profil', root = null, invite = false, usageTab = 'apercu', famOpen = false, trustOpen = false, famMode = 'email';
+  var cur = 'profil', root = null, invite = false, usageTab = 'apercu', famOpen = '', trustOpen = false, famMode = 'email', fam = null, famLoading = false, famSel = '', EPF = '/.netlify/functions/family';
   var loadingB = false, billing = null, EPB = '/.netlify/functions/stripe-checkout';
   function bapi(body){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk) return { ok:false, message:'Connectez-vous pour continuer.' }; return fetch(EPB, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {}; }); }).catch(function(){ return { ok:false, message:'Connexion impossible. Vérifiez votre réseau.' }; }); }); }
   function loadBilling(){ billing = null; if(!signedIn()) return; Promise.all([bapi({ action:'billing' }), bapi({ action:'status' })]).then(function(a){ billing = { email:a[0] && a[0].email, name:a[0] && a[0].name, cards:(a[0] && a[0].cards) || [], hasCustomer:!!(a[0] && a[0].hasCustomer) || !!(a[1] && a[1].hasCustomer), status:(a[1] && a[1].ok) ? a[1] : null }; if(root && root.classList.contains('on') && cur === 'factu') render(); }); }
@@ -46724,19 +46724,46 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
       if(li) h += '<div class="hnp-row"><div class="hnp-l"><b>Supprimer le compte</b><small>Supprime définitivement votre compte et ses données.</small></div><a class="btn hnp-danger" href="mailto:contacts@fineciagroupe.com?subject=' + encodeURIComponent('Demande de suppression de compte HelpNaud.ai') + '&body=' + encodeURIComponent('Bonjour,\n\nJe demande la suppression de mon compte HelpNaud.ai (' + w.email + ') et de mes données.\n\nMerci.') + '">Supprimer</a></div>';
     } else if(k === 'parental'){
       h += '<h3>Contrôle parental</h3><p class="hint">Gérez les comptes familiaux associés par le contrôle parental.</p>';
-      h += '<p>Les parents et les adolescents peuvent associer leurs comptes, ce qui donne aux parents des outils pour ajuster certaines fonctions, fixer des limites et ajouter des protections adaptées à leur famille. ' + polLinks() + '</p>';
-      h += '<div><button type="button" class="btn" data-hnp="fam-open">＋ Ajouter un membre de la famille</button></div>';
-      if(famOpen){
-        h += '<div class="hnp-box2"><b>Inviter un membre de la famille</b><div class="hnp-tabs"><button type="button" data-hnp-fam="email" class="' + (famMode === 'email' ? 'on' : '') + '">Utiliser l’e-mail</button><button type="button" data-hnp-fam="tel" class="' + (famMode === 'tel' ? 'on' : '') + '">Utiliser le téléphone</button></div>';
-        h += '<input type="' + (famMode === 'tel' ? 'tel' : 'email') + '" id="hnp-fam" disabled placeholder="' + (famMode === 'tel' ? '+1 514 555 0100' : 'courriel@exemple.com') + '" style="width:100%;margin:8px 0">';
-        h += '<small>🚧 L’envoi des invitations sera activé au prochain déploiement du service : aucune invitation n’est envoyée pour le moment.</small> <button type="button" class="btn primary" disabled>Envoyer</button></div>';
+      h += '<p>Les parents et les adolescents peuvent associer leurs comptes, ce qui donne aux parents des outils pour ajuster certaines fonctions, fixer des limites et ajouter des protections adaptées à leur famille. L’association ne donne jamais accès aux conversations. ' + polLinks() + '</p>';
+      if(!li){ h += '<p class="hint">Connectez-vous pour utiliser le contrôle parental.</p>'; }
+      else if(!fam){ h += '<p class="hint">Chargement…</p>'; }
+      else if(fam.error){ h += '<p class="hint">' + esc(fam.error) + '</p>'; }
+      else {
+        (fam.incoming || []).forEach(function(i){ h += '<div class="hnp-box2"><b>Invitation reçue</b><small>' + esc(i.from || 'Une personne') + ' vous invite comme ' + (i.role === 'teen' ? 'adolescent (le parent ou tuteur pourra régler certaines fonctions, jamais lire vos conversations)' : 'parent ou tuteur') + '.</small><div style="display:flex;gap:8px"><button type="button" class="btn primary" data-hnp-fa="accept:' + esc(i.id) + '">Accepter</button><button type="button" class="btn" data-hnp-fa="decline:' + esc(i.id) + '">Refuser</button></div></div>'; });
+        var asTeen = (fam.family || []).filter(function(f){ return f.role === 'teen' && f.status === 'active'; }).length > 0;
+        h += '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-hnp="fam-open">＋ Ajouter un membre de la famille</button>' + (asTeen ? '' : '<button type="button" class="btn" data-hnp="fam-open-parent">Inviter un parent</button>') + '</div>';
+        if(famOpen){
+          h += '<div class="hnp-box2"><b>' + (famOpen === 'parent' ? 'Inviter un parent ou un tuteur' : 'Inviter un membre de la famille (adolescent)') + '</b><div class="hnp-tabs"><button type="button" class="on">Utiliser l’e-mail</button><button type="button" disabled title="Bientôt disponible">Utiliser le téléphone (bientôt)</button></div>';
+          h += '<input type="email" id="hnp-fam" placeholder="courriel@exemple.com" style="width:100%;margin:8px 0" autocomplete="off"><small>La personne reçoit un lien valable 7 jours. Elle doit se connecter avec cette adresse courriel pour accepter.' + (fam.mailReady ? '' : ' ⚠ L’envoi de courriel n’est pas configuré sur le serveur : un lien à transmettre vous sera donné.') + '</small><div><button type="button" class="btn primary" data-hnp="fam-send">Envoyer</button></div></div>';
+        }
+        h += '<h4>Membres de la famille</h4>';
+        if(!(fam.family || []).length) h += '<p class="hint">Aucun compte associé.</p>';
+        (fam.family || []).forEach(function(f){
+          var who2 = f.role === 'parent' ? 'Adolescent' : 'Parent ou tuteur';
+          if(f.status === 'pending'){ h += '<div class="hnp-row"><div class="hnp-l"><b>' + esc(f.other) + '</b><small>Invitation envoyée (expire le ' + esc(new Date(f.expires_at).toLocaleDateString('fr-CA')) + ')</small></div><button type="button" class="btn" data-hnp-fa="resend:' + esc(f.id) + '">Renvoyer</button><button type="button" class="btn" data-hnp-fa="cancel:' + esc(f.id) + '">Annuler</button></div>'; return; }
+          h += '<div class="hnp-row"><div class="hnp-l"><b>' + esc(f.other || '—') + '</b><small>' + who2 + ' · association active</small></div>' + (f.role === 'parent' ? '<button type="button" class="btn" data-hnp-fa="sel:' + esc(f.id) + '">' + (famSel === f.id ? 'Fermer' : 'Gérer') + '</button>' : '') + '<button type="button" class="btn hnp-danger" data-hnp-fa="unlink:' + esc(f.id) + '">Dissocier</button></div>';
+          var st = f.settings || {}, ro = f.role !== 'parent';
+          if(famSel === f.id || ro){
+            var tg = function(key, label){ return '<div class="hnp-row"><div class="hnp-l">' + label + '</div>' + (ro ? '<span>' + (st[key] === false ? 'Désactivé' : 'Activé') + '</span>' : sw('hnp-fs-' + key, st[key] !== false).replace('<input ', '<input data-fid="' + esc(f.id) + '" ')) + '</div>'; };
+            h += '<div class="hnp-box2">' + (ro ? '<b>Réglages appliqués par votre parent ou tuteur</b>' : '<b>Réglages de ce compte</b>') + tg('sensitive', 'Réduire les contenus sensibles') + tg('web', 'Recherche Web') + tg('code', 'Outil Code (Interface Help)');
+            h += '<div class="hnp-l"><b>Heures de pause</b><small style="display:block">HelpNaud est indisponible pour l’adolescent pendant ces plages (heure de votre appareil).</small></div>';
+            (st.quiet || []).forEach(function(w2, qi){ h += '<div class="hnp-row"><div class="hnp-l">' + esc(w2.from) + ' → ' + esc(w2.to) + '</div>' + (ro ? '' : '<button type="button" class="btn" data-hnp-fa="qdel:' + esc(f.id) + ':' + qi + '">Retirer</button>') + '</div>'; });
+            if(!ro) h += '<div class="hnp-row"><input type="time" id="hnp-qf" value="22:00" style="width:120px"><span>à</span><input type="time" id="hnp-qt" value="07:00" style="width:120px"><button type="button" class="btn" data-hnp-fa="qadd:' + esc(f.id) + '">Ajouter</button></div>';
+            h += '</div>';
+          }
+        });
       }
-      h += '<h4>Membres de la famille</h4><p class="hint">Aucun compte associé.</p>';
     } else if(k === 'confiance'){
       h += '<h3>Contact de confiance</h3><p>Avoir un contact de confiance peut vous aider à vous faire épauler par quelqu’un qui vous connaît bien.</p>';
-      h += '<p>À l’avenir, si vos échanges avec HelpNaud au sujet du suicide laissent craindre un risque grave pour votre sécurité, nous pourrions avertir automatiquement votre contact de confiance afin qu’il puisse prendre de vos nouvelles. Pour participer, cette personne doit avoir au moins 18 ans. ' + polLinks() + '</p>';
-      h += '<div><button type="button" class="btn" data-hnp="trust-open">＋ Ajouter un contact</button></div>';
-      if(trustOpen) h += '<div class="hnp-box2"><b>Ajouter un contact de confiance</b><input type="text" disabled placeholder="Nom" style="width:100%;margin:8px 0 0"><input type="text" disabled placeholder="Courriel ou téléphone" style="width:100%;margin:8px 0"><small>🚧 Cette fonction sera activée au prochain déploiement du service : aucun contact n’est enregistré ni averti pour le moment. En cas de danger immédiat, appelez les services d’urgence de votre région.</small></div>';
+      h += '<p>À l’avenir, si vos échanges avec HelpNaud au sujet du suicide laissent craindre un risque grave pour votre sécurité, nous pourrions avertir votre contact de confiance afin qu’il puisse prendre de vos nouvelles. Pour participer, cette personne doit avoir au moins 18 ans et accepter. Elle ne reçoit jamais le contenu de vos conversations. ' + polLinks() + '</p>';
+      if(!li) h += '<p class="hint">Connectez-vous pour ajouter un contact.</p>';
+      else if(!fam) h += '<p class="hint">Chargement…</p>';
+      else if(fam.error) h += '<p class="hint">' + esc(fam.error) + '</p>';
+      else if(fam.trusted){ h += '<div class="hnp-row"><div class="hnp-l"><b>' + esc(fam.trusted.name) + '</b><small>' + esc(fam.trusted.email) + ' · ' + (fam.trusted.status === 'confirmed' ? '✅ Confirmé' : '⏳ En attente de sa confirmation') + '</small></div><button type="button" class="btn hnp-danger" data-hnp="trust-remove">Retirer</button></div>'; }
+      else {
+        h += '<div><button type="button" class="btn" data-hnp="trust-open">＋ Ajouter un contact</button></div>';
+        if(trustOpen) h += '<div class="hnp-box2"><b>Ajouter un contact de confiance</b><input type="text" id="hnp-tc-name" maxlength="80" placeholder="Nom" style="width:100%;margin:8px 0 0"><input type="email" id="hnp-tc-mail" placeholder="Courriel" style="width:100%;margin:8px 0"><label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="hnp-tc-adult"> <span>Cette personne a au moins 18 ans.</span></label><small>Elle recevra un courriel et devra accepter. En cas de danger immédiat, appelez les services d’urgence de votre région.</small><div><button type="button" class="btn primary" data-hnp="trust-send">Envoyer la demande</button></div></div>';
+      }
     } else if(k === 'temps'){
       var c = focusCfg(), dl = ['D','L','M','M','J','V','S'];
       h += '<h3>Temps et concentration</h3><p class="hint">Réglages enregistrés sur cet appareil.</p>';
@@ -46789,6 +46816,26 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     }
     return h;
   }
+  function fapi(body){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk) return { ok:false, message:'Connectez-vous pour continuer.' }; return fetch(EPF, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return { ok:false, message:'Réponse invalide.' }; }); }).catch(function(){ return { ok:false, message:'Service injoignable.' }; }); }); }
+  function loadFam(){ if(famLoading) return; famLoading = true; fapi({ action:'overview' }).then(function(r){ famLoading = false; fam = r && r.ok ? r : { error:(r && r.message) || 'Service indisponible.' }; if(root && root.classList.contains('on') && (cur === 'parental' || cur === 'confiance')) render(); }); }
+  function famAct(t){
+    var a = t.getAttribute('data-hnp-fa').split(':'), id = a[1], f = ((fam && fam.family) || []).filter(function(x){ return x.id === id; })[0];
+    if(a[0] === 'sel'){ famSel = famSel === id ? '' : id; render(); return; }
+    if(a[0] === 'accept') { t.disabled = true; fapi({ action:'accept', id:id }).then(function(r){ famDone(r, 'Invitation acceptée ✓'); }); return; }
+    if(a[0] === 'decline') { fapi({ action:'decline', id:id }).then(function(r){ famDone(r, 'Invitation refusée.'); }); return; }
+    if(a[0] === 'cancel') { fapi({ action:'cancel', id:id }).then(function(r){ famDone(r, 'Invitation annulée.'); }); return; }
+    if(a[0] === 'resend') { t.disabled = true; fapi({ action:'resend', id:id }).then(function(r){ if(r && r.ok && r.link) copyTxt(r.link, 'Courriel non envoyé : lien copié, transmettez-le à la personne.'); famDone(r, r && r.emailed ? 'Invitation renvoyée ✓' : ''); }); return; }
+    if(a[0] === 'unlink') { if(confirm('Dissocier ces comptes ? Le contrôle parental et les notifications de sécurité prendront fin.')) fapi({ action:'unlink', id:id }).then(function(r){ famSel = ''; famDone(r, 'Comptes dissociés.'); }); return; }
+    if(!f) return; var st = JSON.parse(JSON.stringify(f.settings || {})); st.quiet = st.quiet || [];
+    if(a[0] === 'qadd'){ var qf = $('hnp-qf').value, qt = $('hnp-qt').value; if(!qf || !qt || qf === qt){ toast('Choisissez une heure de début et de fin différentes.'); return; } st.quiet.push({ from:qf, to:qt }); }
+    if(a[0] === 'qdel') st.quiet.splice(+a[2], 1);
+    try{ st.tz = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(e){}
+    fapi({ action:'settings', id:id, settings:st }).then(function(r){ famDone(r, 'Réglages enregistrés ✓'); });
+  }
+  function copyTxt(v, msg){ try{ navigator.clipboard.writeText(v).then(function(){ toast(msg); }, function(){ toast(v); }); }catch(e){ toast(v); } }
+  function famDone(r, okMsg){ if(r && r.ok){ if(okMsg) toast(okMsg); } else toast((r && r.message) || 'Échec.'); fam = null; render(); }
+  function famToken(){ var t = ''; try{ var m = /[?&]famille=([0-9a-f]{48})/.exec(location.search); if(m){ t = m[1]; sessionStorage.setItem('hn_fam_tok', t); history.replaceState(null, '', location.pathname + location.hash); } else t = sessionStorage.getItem('hn_fam_tok') || ''; }catch(e){} return t; }
+  function tryFamToken(){ var t = famToken(); if(!t || !signedIn()) return; try{ sessionStorage.removeItem('hn_fam_tok'); }catch(e){} fapi({ action:'accept', token:t }).then(function(r){ toast(r && r.ok ? 'Invitation acceptée ✓' : ((r && r.message) || 'Invitation impossible.')); fam = null; openPanel('parental'); }); }
   function polLinks(){ return '<a href="/fr-fr/politique-contrôle-parental" target="_blank" rel="noopener">Politique de contrôle parental</a> · <a href="/En-En/parent-control-policy" target="_blank" rel="noopener">Parent control policy</a>'; }
   function trracLoad(){
     try{ var A = window.__hnAuth; if(!A || !A.url || !A.key) return;
@@ -46816,6 +46863,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(!root) return;
     root.querySelector('.hnp-nav').innerHTML = SECS.map(function(s){ return '<button type="button" data-hnp-sec="' + s[0] + '" class="' + (s[0] === cur && root.getAttribute('data-m') !== 'list' ? 'on' : (s[0] === cur && window.innerWidth > 860 ? 'on' : '')) + '"><span>' + s[1] + '</span><span>' + s[2] + '</span><span class="hnp-chev">›</span></button>'; }).join('');
     if(cur === 'factu' && billing === null && !loadingB){ loadingB = true; loadBilling(); setTimeout(function(){ loadingB = false; }, 8000); }
+    if((cur === 'parental' || cur === 'confiance') && fam === null && signedIn()) loadFam();
     root.querySelector('.hnp-pane').innerHTML = secHtml(cur);
     try{ var ce = $('hnp-country'), re = $('hnp-region'); if(ce && re && window.__hnGeo){ window.__hnGeo.bind(ce, re); } }catch(e){}
     var t = root.querySelector('.hnp-head h2'); var s = SECS.filter(function(x){ return x[0] === cur; })[0];
@@ -46834,7 +46882,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(!root) build();
     try{ if(window.__hnDrawer && window.__hnDrawer.isOpen()) window.__hnDrawer.close(); }catch(e){}
     cur = sec || cur || 'profil';
-    billing = null; loadingB = false; trracLoad();
+    billing = null; loadingB = false; fam = null; trracLoad();
     root.setAttribute('data-m', window.innerWidth > 860 ? 'desk' : (sec ? 'det' : 'list'));
     render(); root.classList.add('on');
     var f = root.querySelector('.hnp-x'); if(f) f.focus();
@@ -46843,7 +46891,8 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   function reveal(sel){ var el = document.querySelector(sel); if(!el) return false; var v = el.closest('.view'); if(v && v.hidden){ var id = v.id.replace(/^view-/, ''); var b = document.querySelector('[data-view="' + id + '"]'); if(b) b.click(); } setTimeout(function(){ try{ el.scrollIntoView({ block:'center' }); }catch(e){} }, 150); return true; }
   function clickId(id){ var b = $(id); if(b) b.click(); return !!b; }
   function onClick(e){
-    var t = e.target.closest('[data-hnp],[data-hnp-theme],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go],[data-hnp-tab],[data-hnp-fam]'); if(!t) return;
+    var t = e.target.closest('[data-hnp],[data-hnp-theme],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go],[data-hnp-tab],[data-hnp-fam],[data-hnp-fa]'); if(!t) return;
+    if(t.hasAttribute('data-hnp-fa')){ famAct(t); return; }
     if(t.hasAttribute('data-hnp-tab')){ usageTab = t.getAttribute('data-hnp-tab'); render(); return; }
     if(t.hasAttribute('data-hnp-fam')){ famMode = t.getAttribute('data-hnp-fam'); render(); return; }
     if(t.hasAttribute('data-hnp-sec')){ cur = t.getAttribute('data-hnp-sec'); if(window.innerWidth <= 860) root.setAttribute('data-m', 'det'); render(); return; }
@@ -46883,7 +46932,11 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
       case 'bill-edit': openPortal('', t); break;
       case 'bill-pay': openPortal('payment', t); break;
       case 'bill-cancel': if(confirm('Résilier votre forfait ? Vous gardez l’accès complet jusqu’à la fin de la période de facturation déjà payée.')) openPortal('cancel', t); break;
-      case 'fam-open': famOpen = !famOpen; render(); break;
+      case 'fam-open': famOpen = famOpen === 'teen' ? '' : 'teen'; render(); break;
+      case 'fam-open-parent': famOpen = famOpen === 'parent' ? '' : 'parent'; render(); break;
+      case 'fam-send': var fe = ($('hnp-fam').value || '').trim(); if(!fe){ toast('Saisissez un courriel.'); break; } t.disabled = true; fapi({ action:'invite', kind:famOpen === 'parent' ? 'parent' : 'teen', email:fe }).then(function(r){ if(r && r.ok){ famOpen = ''; if(r.link) copyTxt(r.link, 'Courriel non envoyé (serveur) : lien copié, transmettez-le à la personne.'); else toast('Invitation envoyée ✓'); fam = null; render(); } else { t.disabled = false; toast((r && r.message) || 'Échec de l’envoi.'); } }); break;
+      case 'trust-send': var tn = ($('hnp-tc-name').value || '').trim(), tm = ($('hnp-tc-mail').value || '').trim(); t.disabled = true; fapi({ action:'trust_set', name:tn, email:tm, adult:!!$('hnp-tc-adult').checked }).then(function(r){ if(r && r.ok){ trustOpen = false; if(r.link) copyTxt(r.link, 'Courriel non envoyé (serveur) : lien copié, transmettez-le à votre contact.'); else toast('Demande envoyée ✓'); fam = null; render(); } else { t.disabled = false; toast((r && r.message) || 'Échec.'); } }); break;
+      case 'trust-remove': if(confirm('Retirer ce contact de confiance ?')) fapi({ action:'trust_remove' }).then(function(r){ famDone(r, 'Contact retiré.'); }); break;
       case 'trust-open': trustOpen = !trustOpen; render(); break;
       case 'cowork': closePanel(); var cb = document.querySelector('[data-view="cowork"]'); if(cb) cb.click(); break;
       case 'review': closePanel(); var ab = document.querySelector('[data-view="assistant"]'); if(ab) ab.click(); setTimeout(function(){ var ci = $('chat-input'); if(ci){ ci.value = 'Fais une revue de ce code : signale les erreurs, les risques de sécurité et les améliorations possibles, puis propose une version corrigée.\n\n```\n\n```'; ci.dispatchEvent(new Event('input', { bubbles:true })); ci.focus(); try{ ci.setSelectionRange(ci.value.length - 5, ci.value.length - 5); }catch(x){} } }, 250); break;
@@ -46898,6 +46951,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(t.name === 'hnp-lt'){ try{ localStorage.setItem('helpnaud_link_target', t.value); }catch(x){} toast('Préférence enregistrée.'); return; }
     if(t.id === 'hnp-hapt'){ try{ localStorage.setItem('helpnaud_haptic', t.checked ? '1' : '0'); }catch(x){} if(t.checked && navigator.vibrate) navigator.vibrate(15); return; }
     if(t.id === 'hnp-webauto'){ try{ localStorage.setItem('helpnaud_web_auto', t.checked ? '1' : '0'); }catch(x){} toast(t.checked ? 'Recherche web automatique activée.' : 'Recherche web automatique désactivée.'); return; }
+    if(t.id && t.id.indexOf('hnp-fs-') === 0){ var fid = t.getAttribute('data-fid'), ff = ((fam && fam.family) || []).filter(function(x){ return x.id === fid; })[0]; if(ff){ var st2 = JSON.parse(JSON.stringify(ff.settings || {})); st2[t.id.slice(7)] = t.checked; try{ st2.tz = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(x){} ff.settings = st2; fapi({ action:'settings', id:fid, settings:st2 }).then(function(r){ if(r && r.ok) toast('Réglage enregistré ✓'); else { toast((r && r.message) || 'Échec.'); fam = null; render(); } }); } return; }
     if(t.id === 'hnp-age'){ var pa = J(PK, {}); pa.age = t.value; S(PK, pa); toast('Enregistré.'); return; }
     if(t.id === 'hnp-handle'){ var ph = J(PK, {}), hv = (t.value || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 30); if(hv && hv.length < 3){ toast('Au moins 3 caractères.'); return; } ph.handle = hv; S(PK, ph); t.value = hv; toast('Nom d’utilisateur enregistré.'); return; }
     if(t.id === 'hnp-pause'){ c = focusCfg(); c.pause = t.checked; S(FK, c); active = 0; return; }
@@ -46921,6 +46975,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   }, true);
   /* Profil incomplet (compte créé avant la mise à jour) : invitation à le compléter à l'ouverture de l'application. */
   function incomplete(p){ return !(p && p.first_name && p.last_name && p.phone && p.country && p.region && p.city); }
+  document.addEventListener('hn-profile-loaded', function(){ setTimeout(tryFamToken, 2500); });
   document.addEventListener('hn-profile-loaded', function(ev){
     var p = ev.detail; if(!incomplete(p)) return;
     try{ if(sessionStorage.getItem('hnp_invited') === '1') return; sessionStorage.setItem('hnp_invited', '1'); }catch(e){}
@@ -46928,7 +46983,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   });
   document.addEventListener('hn-profile-saved', function(){ var p = window.__hnProfData; if(!incomplete(p)){ invite = false; if(root && root.classList.contains('on')) setTimeout(function(){ render(); }, 50); } });
   window.__hnProfile = { open:openPanel, close:closePanel, refresh:renderBtn };
-  function init(){ ensureBtn(); renderBtn(); trracBind(); trracLoad(); var inn = $('cust-in'); if(inn) new MutationObserver(function(){ renderBtn(); if(root && root.classList.contains('on')) render(); }).observe(inn, { attributes:true, subtree:true, childList:true, characterData:true }); }
+  function init(){ ensureBtn(); renderBtn(); trracBind(); trracLoad(); famToken(); setTimeout(tryFamToken, 3000); var inn = $('cust-in'); if(inn) new MutationObserver(function(){ renderBtn(); if(root && root.classList.contains('on')) render(); }).observe(inn, { attributes:true, subtree:true, childList:true, characterData:true }); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   setTimeout(init, 1500);
 })();
