@@ -90,3 +90,50 @@
   to = "/confidentialite.html"
   status = 200
   force = true
+[[redirects]]
+  from = "/conditions-utilisation"
+  to = "/conditions.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/politique-confidentialite"
+  to = "/confidentialite.html"
+  status = 200
+  force = true
+
+# Politique de contrôle parental (FR / EN)
+[[redirects]]
+  from = "/fr-fr/politique-contrôle-parental"
+  to = "/politique-controle-parental.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/fr-fr/politique-contr%C3%B4le-parental"
+  to = "/politique-controle-parental.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/fr-fr/politique-controle-parental"
+  to = "/politique-controle-parental.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/politique-controle-parental"
+  to = "/politique-controle-parental.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/En-En/parent-control-policy"
+  to = "/parent-control-policy.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/en-en/parent-control-policy"
+  to = "/parent-control-policy.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/parent-control-policy"
+  to = "/parent-control-policy.html"
+  status = 200
+  force = true
