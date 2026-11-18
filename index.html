@@ -11685,7 +11685,7 @@
 
     if(who === 'bot'){
       var speakBtn = document.createElement('button');
-      speakBtn.type = 'button'; speakBtn.className = 'msg-action-btn'; speakBtn.title = 'Lire à haute voix';
+      speakBtn.type = 'button'; speakBtn.className = 'msg-action-btn msg-speak-btn'; speakBtn.title = 'Lire à haute voix';
       speakBtn.innerHTML = msgActionIcon('speak');
       speakBtn.addEventListener('click', function(){ speakMsgText(getMsgText(msgEl), speakBtn); });
       bar.appendChild(speakBtn);
@@ -46581,7 +46581,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   #hnp[data-m="det"] .hnp-nav{ display:none; }
   #hnp[data-m="det"] .hnp-back{ display:inline-block; }
 }
-body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voice-off [id$="tts-play"]{ display:none !important; }
+body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voice-off .msg-speak-btn, body.hn-voice-off [id$="tts-play"]{ display:none !important; }
 #hn-sugg{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 6px; }
 #hn-sugg button{ border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; cursor:pointer; text-align:left; max-width:100%; }
 #hnp .hnp-tabs{ display:flex; gap:8px; margin:6px 0 10px; flex-wrap:wrap; }
@@ -46699,6 +46699,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       else h += '<div class="hnp-row"><div class="hnp-l"><small>' + (bl ? 'Aucun moyen de paiement disponible' : 'Chargement…') + '</small></div></div>';
       h += '<p class="hint">Vos informations de paiement sont gérées de façon sécurisée par Stripe : HelpNaud ne conserve pas vos numéros de carte.</p>';
       h += '<div class="hnp-row"><div class="hnp-l"><b>Résilier le forfait</b><small>Si vous annulez, vous conserverez un accès complet aux fonctionnalités de votre forfait jusqu’à la fin de votre période de facturation.</small></div><button type="button" class="btn hnp-cancel" data-hnp="bill-cancel"' + (sub && !sub.cancels ? '' : ' disabled') + '>Résilier le forfait</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l"><b>Besoin d’aide sur un paiement ?</b><small>Écrivez-nous, nous répondons rapidement.</small></div><a class="btn" href="mailto:support@helpnaud.ai?subject=' + encodeURIComponent('Aide sur un paiement HelpNaud.ai') + '&body=' + encodeURIComponent('Bonjour,\n\nJ’ai besoin d’aide au sujet d’un paiement.\nCourriel du compte : ' + (w.email || '') + '\n\nDétails :\n') + '">Contacter le support</a></div>';
     } else if(k === 'usage'){
       var lb = $('ai-credits-label'), fl = $('ai-credits-fill'), lbt = lb ? lb.textContent : '', wd = esc(fl ? fl.style.width || '0%' : '0%');
       var mm = /(\d+)\s*\/\s*(\d+)/.exec(lbt), left = mm ? Math.max(0, (+mm[2]) - (+mm[1])) : null;
