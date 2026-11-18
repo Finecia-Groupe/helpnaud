@@ -11847,6 +11847,7 @@
     var cap = document.createElement('div');
     cap.className = 'voice-transcript';
     cap.textContent = '« ' + text + ' »';
+    try{ if(window.__hnSaveRecording) window.__hnSaveRecording(text); }catch(e){}
     var actions = bubbleEl.querySelector('.msg-actions');
     if(actions) bubbleEl.insertBefore(cap, actions); else bubbleEl.appendChild(cap);
   }
@@ -13604,6 +13605,7 @@
   }
   function aiServerToken(){ return aiServerSession().then(function(x){ return x ? x.token : null; }); }
   window.__hnAiToken = aiServerToken;
+  window.__hnAiCall = function(i, o, j){ return aiServerCall(i, o, j); };
   function aiServerFile(file){
     return new Promise(function(resolve, reject){
       var fr = new FileReader();
@@ -13639,7 +13641,7 @@
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(opts.expert) body.fistat = 'expertplus';
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
-      try{ var pf = JSON.parse(localStorage.getItem('helpnaud_prof_prefs') || 'null') || {}, pe = JSON.parse(localStorage.getItem('helpnaud_perso') || 'null') || {}, pr = { nick:String(pf.nick || '').slice(0, 40), how:String(pf.how || '').slice(0, 600) }; ['style','warm','enth','emoji','visual','heads'].forEach(function(k2){ if(pe[k2]) pr[k2] = String(pe[k2]).slice(0, 20); }); if(pe.mystyle) pr.mystyle = true; if(pe.hcode) pr.hcode = String(pe.hcode).slice(0, 500); if(pe.mem !== false && Array.isArray(pe.notes) && pe.notes.length) pr.mem = pe.notes.slice(0, 30).map(function(n){ return String(n.t || '').slice(0, 300); }); if(Object.keys(pr).some(function(k3){ return pr[k3]; })) body.prefs = pr; }catch(e){}
+      try{ var pf = JSON.parse(localStorage.getItem('helpnaud_prof_prefs') || 'null') || {}, pe = JSON.parse(localStorage.getItem('helpnaud_perso') || 'null') || {}, pr = { nick:String(pf.nick || '').slice(0, 40), how:String(pf.how || '').slice(0, 600) }; ['style','warm','enth','emoji','visual','heads'].forEach(function(k2){ if(pe[k2]) pr[k2] = String(pe[k2]).slice(0, 20); }); if(pe.mystyle) pr.mystyle = true; if(pe.hcode) pr.hcode = String(pe.hcode).slice(0, 500); try{ var PO = window.__hnPerso; if(PO){ if(PO.on('quick')) pr.quick = true; if(PO.on('hist')) pr.hist = true; if(PO.on('conn')) pr.conn = true; if(PO.on('lib') && window.__hnLibSearch){ var ms = Array.isArray(body.messages) ? body.messages : [{ role:'user', content:body.prompt }], lu = ''; for(var q = ms.length - 1; q >= 0; q--){ if(ms[q] && ms[q].role !== 'assistant'){ lu = String(ms[q].content || ''); break; } } var lb = window.__hnLibSearch(lu); if(lb.length) pr.lib = lb; } } }catch(e5){} if(pe.mem !== false && Array.isArray(pe.notes) && pe.notes.length) pr.mem = pe.notes.slice(0, 30).map(function(n){ return String(n.t || '').slice(0, 300); }); if(Object.keys(pr).some(function(k3){ return pr[k3]; })) body.prefs = pr; }catch(e){}
       try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); var wOff = false; try{ wOff = localStorage.getItem('helpnaud_web_auto') === '0'; }catch(e){} if(window.__hnWebOnce && !wantJson){ rp.web = true; window.__hnWebOnce = false; } if(wOff) rp.auto = false; if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi || rp.mode || wOff) body.research = rp; } }catch(e){}
       if(a[1] && a[1].length){ body.image = a[1][0]; if(a[1].length > 1) body.images = a[1]; }
       return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) })
@@ -36715,6 +36717,11 @@
       return { id:d.id, type:'archive', titre:d.titre, texte:d.texte };
     }));
   }
+  window.__hnLibSearch = function(q){
+    q = String(q || '').toLowerCase(); var words = q.split(/[^a-zà-ÿ0-9]+/).filter(function(w){ return w.length > 3; }); if(!words.length) return [];
+    return allLibraryItems().map(function(it){ var t = (it.titre + ' ' + it.texte).toLowerCase(), ti = String(it.titre).toLowerCase(), sc = 0; words.forEach(function(w){ if(ti.indexOf(w) >= 0) sc += 3; else if(t.indexOf(w) >= 0) sc += 1; }); return { it:it, s:sc }; })
+      .filter(function(x){ return x.s >= 2; }).sort(function(a, b){ return b.s - a.s; }).slice(0, 3).map(function(x){ return { t:x.it.titre, x:String(x.it.texte).slice(0, 700) }; });
+  };
   function libraryItemById(id){ return allLibraryItems().filter(function(it){ return it.id === id; })[0] || null; }
 
   var libraryState = { view:'grid', search:'', filter:'all', favorites:[], folders:[] };
@@ -46574,6 +46581,9 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   #hnp[data-m="det"] .hnp-nav{ display:none; }
   #hnp[data-m="det"] .hnp-back{ display:inline-block; }
 }
+body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voice-off [id$="tts-play"]{ display:none !important; }
+#hn-sugg{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 6px; }
+#hn-sugg button{ border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; cursor:pointer; text-align:left; max-width:100%; }
 #hnp .hnp-tabs{ display:flex; gap:8px; margin:6px 0 10px; flex-wrap:wrap; }
 #hnp .hnp-tabs button{ border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:999px; padding:7px 16px; font:inherit; cursor:pointer; }
 #hnp .hnp-tabs button.on{ color:var(--ink); border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset; font-weight:600; }
@@ -46879,8 +46889,19 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     h += '<small>Messages</small><div style="font-size:28px;font-weight:700">' + c2.total + '</div>' + (c2.empty ? '<p class="hint">Aucun message sur cette période.</p>' : c2.svg + c2.leg);
     return h;
   }
+  var PE_DEF = { quick:false, sugg:true, hist:true, voice:true, lib:true, conn:false };
+  function peOn(k){ var o = peGet(); return o[k] === undefined ? PE_DEF[k] : !!o[k]; }
   function peGet(){ var o = J(PE, {}); if(!o || typeof o !== 'object') o = {}; if(!Array.isArray(o.notes)) o.notes = []; if(o.mem === undefined) o.mem = true; return o; }
-  function pePut(o){ S(PE, o); }
+  var peTimer = 0;
+  function pePut(o){ o._ts = Date.now(); S(PE, o); clearTimeout(peTimer); peTimer = setTimeout(pePush, 1200); applyVoice(); }
+  function jwtSub(tk){ try{ return JSON.parse(atob(tk.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub; }catch(e){ return null; } }
+  function sbRest(method, path, body, extra){ var A = window.__hnAuth; return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk || !A || !A.url) return null; var h = { apikey:A.key, Authorization:'Bearer ' + tk, 'Content-Type':'application/json' }; if(extra) h.Prefer = extra; return fetch(A.url + '/rest/v1/' + path, { method:method, headers:h, body: body == null ? undefined : JSON.stringify(body) }).then(function(r){ return r.ok ? (r.status === 204 ? [] : r.json().catch(function(){ return []; })) : null; }).then(function(d){ return { d:d, sub:jwtSub(tk) }; }); }).catch(function(){ return null; }); }
+  function mySub(){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ return tk ? jwtSub(tk) : null; }).catch(function(){ return null; }); }
+  function pePush(){ var o = peGet(); mySub().then(function(sub){ if(!sub) return; sbRest('POST', 'user_prefs?on_conflict=user_id', { user_id:sub, data:{ perso:o, _ts:o._ts || Date.now() }, updated_at:new Date().toISOString() }, 'resolution=merge-duplicates'); }); }
+  function pePull(){ if(!signedIn()) return; sbRest('GET', 'user_prefs?select=data&limit=1').then(function(r){ var sv = r && r.d && r.d[0] && r.d[0].data, o = peGet(); if(sv && sv.perso && (sv._ts || 0) > (o._ts || 0)){ S(PE, sv.perso); applyVoice(); if(root && root.classList.contains('on') && cur === 'perso') render(); } else if(!sv && (o._ts || o.notes.length)) pePush(); }); }
+  function applyVoice(){ try{ document.body.classList.toggle('hn-voice-off', !peOn('voice')); }catch(e){} }
+  window.__hnPerso = { on: function(k){ return peOn(k); } };
+  window.__hnSaveRecording = function(text){ text = String(text || '').trim().slice(0, 8000); if(!text || !peOn('hist') || !signedIn()) return; mySub().then(function(sub){ if(sub) sbRest('POST', 'user_recordings', { user_id:sub, title:text.slice(0, 60), transcript:text }); }); };
   var PE_OPTS = {
     style:[['','Par défaut','Style et ton prédéfinis'],['professionnel','Professionnel','Courtois et précis'],['chaleureux','Chaleureux','Naturel et engageant'],['spontane','Spontané','Franc et bienveillant'],['decale','Décalé','Enjoué et créatif'],['efficace','Efficace','Concis et clair'],['cynique','Cynique','Critique et ironique']],
     warm:[['plus','Plus','Plus amical et personnel'],['','Par défaut',''],['moins','Moins','Plus professionnel et factuel']],
@@ -46894,7 +46915,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   function persoHtml(){
     var o = peGet(), p = J(PK, {}), ph = J(PH, {}), h = '';
     h += '<h3>Personnalisation</h3><p class="hint">Choisissez ce dont l’assistant se souvient et la façon dont il répond.</p>';
-    h += '<h4>Mémoire de HelpNaud</h4><p class="hint">Configurez la façon dont HelpNaud gère la mémoire. HelpNaud ne retient que ce que vous ajoutez ici ; vos notes restent sur cet appareil et sont jointes à vos questions lorsque la mémoire est activée. <a href="' + helpUrl('memoire') + '" target="_blank" rel="noopener">En savoir plus</a></p>';
+    h += '<h4>Mémoire de HelpNaud</h4><p class="hint">Configurez la façon dont HelpNaud gère la mémoire. HelpNaud ne retient que ce que vous ajoutez ici ; vos notes sont enregistrées dans votre compte (synchronisées entre vos appareils) et jointes à vos questions lorsque la mémoire est activée. <a href="' + helpUrl('memoire') + '" target="_blank" rel="noopener">En savoir plus</a></p>';
     h += '<div class="hnp-row"><div class="hnp-l"><b>Activer la mémoire</b><small>Laissez HelpNaud personnaliser ses réponses selon les éléments mémorisés. <a href="' + helpUrl('activer-memoire') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + sw('hnp-pe-mem', o.mem !== false) + '</div>';
     h += '<div class="hnp-row"><div class="hnp-l"><b>Résumé de la mémoire</b><small>' + o.notes.length + ' élément' + (o.notes.length > 1 ? 's' : '') + ' mémorisé' + (o.notes.length > 1 ? 's' : '') + '. Indiquez les informations que vous souhaitez qu’il garde toujours à l’esprit. <a href="' + helpUrl('resume-memoire') + '" target="_blank" rel="noopener">En savoir plus</a></small></div><button type="button" class="btn" data-hnp-pe="mem">' + (peMem ? 'Fermer' : 'Gérer') + '</button></div>';
     if(peMem){
@@ -46916,16 +46937,17 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     h += '<h4>Paramètres HelpNaud supplémentaires</h4>';
     var wa = true; try{ wa = localStorage.getItem('helpnaud_web_auto') !== '0'; }catch(e){}
     h += '<div class="hnp-row"><div class="hnp-l"><b>Recherche sur le Web</b><small>Autorisez HelpNaud à rechercher automatiquement des réponses sur le Web lorsque c’est nécessaire (+2 crédits par recherche). <a href="' + helpUrl('recherche-web') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + sw('hnp-webauto', wa) + '</div>';
-    h += '<div class="hnp-row"><div class="hnp-l"><b>Réponses rapides</b><small>HelpNaud pourra répondre plus vite avec ses connaissances générales, sans utiliser votre mémoire. <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div><span class="hnp-pill">Bientôt</span><label class="hnp-sw" title="Bientôt disponible"><input type="checkbox" disabled><i></i></label></div>';
-    h += '<div class="hnp-row"><div class="hnp-l"><b>Suggestions de prompts</b><small>HelpNaud pourra proposer des suggestions de questions à partir de vos outils connectés. <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div><span class="hnp-pill">Bientôt</span><label class="hnp-sw" title="Bientôt disponible"><input type="checkbox" disabled><i></i></label></div>';
-    h += '<div class="hnp-row"><div class="hnp-l"><b>Consulter l’historique des enregistrements</b><small>Autorisez HelpNaud à consulter les transcriptions et notes de vos enregistrements précédents lorsqu’il répond. <a href="' + helpUrl('historique') + '" target="_blank" rel="noopener">En savoir plus</a></small></div><span class="hnp-pill">Bientôt</span><label class="hnp-sw" title="Bientôt disponible"><input type="checkbox" disabled><i></i></label></div>';
-    h += '<div class="hnp-row"><div class="hnp-l"><b>HelpNaud Voice</b><small>Activation de la voix dans HelpNaud. La langue de la dictée se règle déjà dans « Voix et dictée ». <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div><span class="hnp-pill">Bientôt</span><label class="hnp-sw" title="Bientôt disponible"><input type="checkbox" disabled><i></i></label></div>';
-    h += '<div class="hnp-row"><div class="hnp-l"><b>Recherche dans la bibliothèque</b><small>Autorisez HelpNaud à consulter automatiquement les fichiers de votre bibliothèque avant de répondre. <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div><span class="hnp-pill">Bientôt</span><label class="hnp-sw" title="Bientôt disponible"><input type="checkbox" disabled><i></i></label></div>';
-    h += '<div class="hnp-row"><div class="hnp-l"><b>Recherche de connecteurs</b><small>Autorisez HelpNaud à consulter automatiquement vos sources connectées avant de répondre. <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div><span class="hnp-pill">Bientôt</span><label class="hnp-sw" title="Bientôt disponible"><input type="checkbox" disabled><i></i></label></div>';
+    h += '<div class="hnp-row"><div class="hnp-l"><b>Réponses rapides</b><small>Pour les questions simples, HelpNaud répond plus vite avec un modèle léger (1 crédit). Ces réponses ne sont pas personnalisées et n’utilisent pas votre mémoire. <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + sw('hnp-pe-quick', peOn('quick')) + '</div>';
+    h += '<div class="hnp-row"><div class="hnp-l"><b>Suggestions de prompts</b><small>Affiche un bouton « Suggestions » dans l’Assistant : HelpNaud propose 3 questions adaptées à votre mémoire et à vos instructions (1 crédit par demande). <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + sw('hnp-pe-sugg', peOn('sugg')) + '</div>';
+    h += '<div class="hnp-row"><div class="hnp-l"><b>Consulter l’historique des enregistrements</b><small>Enregistre la transcription de vos notes vocales dans votre compte et autorise HelpNaud à consulter les 5 plus récentes lorsqu’il répond. <a href="' + helpUrl('historique') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + (peOn('hist') ? '<button type="button" class="btn" data-hnp-pe="clrrec">Effacer mes enregistrements</button>' : '') + sw('hnp-pe-hist', peOn('hist')) + '</div>';
+    h += '<div class="hnp-row"><div class="hnp-l"><b>HelpNaud Voice</b><small>Active la voix dans HelpNaud : note vocale, mode vocal et lecture. Désactivée, ces boutons sont masqués. <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + sw('hnp-pe-voice', peOn('voice')) + '</div>';
+    h += '<div class="hnp-row"><div class="hnp-l"><b>Recherche dans la bibliothèque</b><small>HelpNaud consulte automatiquement vos guides, modèles, lexique et documents archivés avant de répondre quand une question s’y rapporte. <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + sw('hnp-pe-lib', peOn('lib')) + '</div>';
+    h += '<div class="hnp-row"><div class="hnp-l"><b>Recherche de connecteurs</b><small>HelpNaud consulte automatiquement les sources de données officielles connectées (Banque du Canada, Banque mondiale) pour les taux et indicateurs économiques. <a href="' + helpUrl('bientot') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + sw('hnp-pe-conn', peOn('conn')) + '</div>';
     return h;
   }
   function peAct(t){
     var a = t.getAttribute('data-hnp-pe').split(':'), o = peGet();
+    if(a[0] === 'clrrec'){ if(confirm('Effacer toutes vos transcriptions d’enregistrements ?')){ mySub().then(function(sub){ if(sub) sbRest('DELETE', 'user_recordings?user_id=eq.' + sub).then(function(){ toast('Enregistrements effacés.'); }); }); } return; }
     if(a[0] === 'mem'){ peMem = !peMem; render(); return; }
     if(a[0] === 'addnote'){ var v = ($('hnp-pe-note').value || '').replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, 300); if(!v){ toast('Saisissez un élément.'); return; } if(o.notes.length >= 30){ toast('Maximum 30 éléments.'); return; } o.notes.push({ id:'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), t:v }); pePut(o); render(); return; }
     if(a[0] === 'delnote'){ o.notes = o.notes.filter(function(n){ return n.id !== a[1]; }); pePut(o); render(); return; }
@@ -46936,6 +46958,22 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(a[0] === 'ph'){ var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.onchange = function(){ var f = inp.files && inp.files[0]; if(!f) return; var rd = new FileReader(); rd.onload = function(){ var im = new Image(); im.onload = function(){ var m = 600, k = Math.min(1, m / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); var ph2 = J(PH, {}); ph2[a[1]] = c.toDataURL('image/jpeg', .8); try{ localStorage.setItem(PH, JSON.stringify(ph2)); toast('Photo enregistrée sur cet appareil ✓'); }catch(e){ toast('Espace de stockage insuffisant.'); } render(); }; im.onerror = function(){ toast('Image illisible.'); }; im.src = rd.result; }; rd.readAsDataURL(f); }; inp.click(); return; }
   }
   function helpUrl(a){ var en = false; try{ en = (typeof getStoredLang === 'function' ? getStoredLang() : (document.documentElement.lang || 'fr')) === 'en'; }catch(e){} return (en ? '/En-En/personalization-help#' : '/fr-fr/aide-personnalisation#') + a; }
+  var suggBusy = false;
+  function suggBar(){
+    var inp = $('chat-input'); if(!inp) return; var wrap = inp.closest('.chat-input-wrap'), bar = $('hn-sugg');
+    if(!peOn('sugg') || !signedIn()){ if(bar) bar.remove(); return; }
+    if(!bar){ bar = document.createElement('div'); bar.id = 'hn-sugg'; wrap.parentNode.insertBefore(bar, wrap); bar.addEventListener('click', function(e){ var b = e.target.closest('button'); if(!b) return; if(b.hasAttribute('data-sg')){ inp.value = b.getAttribute('data-sg'); inp.dispatchEvent(new Event('input', { bubbles:true })); inp.focus(); } else suggGen(); }); }
+    var list = []; try{ list = JSON.parse(sessionStorage.getItem('hn_sugg') || '[]'); }catch(e){}
+    bar.innerHTML = '<button type="button" data-sg-gen title="1 crédit">' + (suggBusy ? '… Génération' : '💡 Suggestions (1 crédit)') + '</button>' + list.map(function(x){ return '<button type="button" data-sg="' + esc(x) + '">' + esc(x) + '</button>'; }).join('');
+  }
+  function suggGen(){
+    if(suggBusy || !window.__hnAiCall) return; suggBusy = true; suggBar();
+    var o = peGet(), pf = J(PK, {}), ctx = (o.mem !== false && o.notes.length ? 'Éléments mémorisés : ' + o.notes.slice(0, 10).map(function(n){ return n.t; }).join(' ; ') + '. ' : '') + (pf.how ? 'Instructions : ' + String(pf.how).slice(0, 300) + '. ' : '');
+    window.__hnAiCall('Propose 3 questions courtes (moins de 90 caractères chacune) que cet utilisateur de HelpNaud (gestion financière et outils IA) pourrait poser à son assistant. ' + ctx + 'Réponds uniquement avec un tableau JSON de 3 chaînes.', { modelTier:'lumiere' }, true).then(function(r){
+      var d = r && r.data; if(!Array.isArray(d)) throw new Error('format'); d = d.filter(function(x){ return typeof x === 'string'; }).map(function(x){ return x.slice(0, 120); }).slice(0, 3);
+      try{ sessionStorage.setItem('hn_sugg', JSON.stringify(d)); }catch(e){}
+    }).catch(function(){ toast('Suggestions indisponibles pour le moment.'); }).then(function(){ suggBusy = false; suggBar(); });
+  }
   function polLinks(){ return '<a href="/fr-fr/politique-contrôle-parental" target="_blank" rel="noopener">Politique de contrôle parental</a> · <a href="/En-En/parent-control-policy" target="_blank" rel="noopener">Parent control policy</a>'; }
   function trracLoad(){
     try{ var A = window.__hnAuth; if(!A || !A.url || !A.key) return;
@@ -46983,7 +47021,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(!root) build();
     try{ if(window.__hnDrawer && window.__hnDrawer.isOpen()) window.__hnDrawer.close(); }catch(e){}
     cur = sec || cur || 'profil';
-    billing = null; loadingB = false; fam = null; stat = null; trracLoad();
+    billing = null; loadingB = false; fam = null; stat = null; trracLoad(); pePull();
     root.setAttribute('data-m', window.innerWidth > 860 ? 'desk' : (sec ? 'det' : 'list'));
     render(); root.classList.add('on');
     var f = root.querySelector('.hnp-x'); if(f) f.focus();
@@ -47055,6 +47093,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(t.id === 'hnp-hapt'){ try{ localStorage.setItem('helpnaud_haptic', t.checked ? '1' : '0'); }catch(x){} if(t.checked && navigator.vibrate) navigator.vibrate(15); return; }
     if(t.id === 'hnp-webauto'){ try{ localStorage.setItem('helpnaud_web_auto', t.checked ? '1' : '0'); }catch(x){} toast(t.checked ? 'Recherche web automatique activée.' : 'Recherche web automatique désactivée.'); return; }
     if(t.id && t.id.indexOf('hnp-fs-') === 0){ var fid = t.getAttribute('data-fid'), ff = ((fam && fam.family) || []).filter(function(x){ return x.id === fid; })[0]; if(ff){ var st2 = JSON.parse(JSON.stringify(ff.settings || {})); st2[t.id.slice(7)] = t.checked; try{ st2.tz = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(x){} ff.settings = st2; fapi({ action:'settings', id:fid, settings:st2 }).then(function(r){ if(r && r.ok) toast('Réglage enregistré ✓'); else { toast((r && r.message) || 'Échec.'); fam = null; render(); } }); } return; }
+    if(/^hnp-pe-(quick|sugg|hist|voice|lib|conn)$/.test(t.id || '')){ var ok2 = t.id.slice(7), o5 = peGet(); o5[ok2] = t.checked; pePut(o5); toast('Enregistré.'); suggBar(); return; }
     if(t.id === 'hnp-pe-mem' || t.id === 'hnp-pe-mystyle'){ var o1 = peGet(); o1[t.id === 'hnp-pe-mem' ? 'mem' : 'mystyle'] = t.checked; pePut(o1); toast('Enregistré.'); return; }
     if(t.id && t.id.indexOf('hnp-pe-') === 0 && PE_OPTS[t.id.slice(7)]){ var o2 = peGet(); o2[t.id.slice(7)] = t.value; pePut(o2); toast('Enregistré.'); return; }
     if(t.id === 'hnp-stby'){ stBy = t.value; render(); return; }
@@ -47089,7 +47128,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   });
   document.addEventListener('hn-profile-saved', function(){ var p = window.__hnProfData; if(!incomplete(p)){ invite = false; if(root && root.classList.contains('on')) setTimeout(function(){ render(); }, 50); } });
   window.__hnProfile = { open:openPanel, close:closePanel, refresh:renderBtn };
-  function init(){ ensureBtn(); renderBtn(); trracBind(); trracLoad(); famToken(); setTimeout(tryFamToken, 3000); var inn = $('cust-in'); if(inn) new MutationObserver(function(){ renderBtn(); if(root && root.classList.contains('on')) render(); }).observe(inn, { attributes:true, subtree:true, childList:true, characterData:true }); }
+  function init(){ ensureBtn(); renderBtn(); trracBind(); trracLoad(); applyVoice(); setTimeout(function(){ pePull(); suggBar(); }, 3500); document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('[data-view="assistant"]')) setTimeout(suggBar, 400); }); famToken(); setTimeout(tryFamToken, 3000); var inn = $('cust-in'); if(inn) new MutationObserver(function(){ renderBtn(); if(root && root.classList.contains('on')) render(); }).observe(inn, { attributes:true, subtree:true, childList:true, characterData:true }); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   setTimeout(init, 1500);
 })();
