@@ -142,3 +142,30 @@
   to = "/contact-confiance.html"
   status = 200
   force = true
+
+# Aide Personnalisation (FR / EN)
+[[redirects]]
+  from = "/fr-fr/aide-personnalisation"
+  to = "/aide-personnalisation.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/aide-personnalisation"
+  to = "/aide-personnalisation.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/En-En/personalization-help"
+  to = "/personalization-help.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/en-en/personalization-help"
+  to = "/personalization-help.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/personalization-help"
+  to = "/personalization-help.html"
+  status = 200
+  force = true
