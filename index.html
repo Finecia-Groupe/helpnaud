@@ -46597,7 +46597,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
 (function(){
   'use strict';
   var PK = 'helpnaud_prof_prefs', FK = 'helpnaud_focus', PH = 'helpnaud_user_photo';
-  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['compte','🪪','Compte'],['parental','👨‍👩‍👧','Contrôle parental'],['confiance','🤝','Contact de confiance'],['temps','⏱️','Temps et concentration'],['perso','✍️','Personnalisation'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['comp','🐾','Compagnons'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence']];
+  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['compte','🪪','Compte'],['parental','👨‍👩‍👧','Contrôle parental'],['confiance','🤝','Contact de confiance'],['temps','⏱️','Temps et concentration'],['perso','✍️','Personnalisation'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['comp','🐾','Compagnons'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence'],['clav','⌨️','Clavier HelpNaud']];
   var cur = 'profil', root = null, invite = false, usageTab = 'apercu', famOpen = '', trustOpen = false, famMode = 'email', fam = null, famLoading = false, famSel = '', EPF = '/.netlify/functions/family', peEdit = '', peMem = false, PE = 'helpnaud_perso', PH = 'helpnaud_refphotos';
   var loadingB = false, billing = null, EPB = '/.netlify/functions/stripe-checkout';
   function bapi(body){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk) return { ok:false, message:'Connectez-vous pour continuer.' }; return fetch(EPB, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {}; }); }).catch(function(){ return { ok:false, message:'Connexion impossible. Vérifiez votre réseau.' }; }); }); }
@@ -46824,6 +46824,8 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       var hp = true; try{ hp = localStorage.getItem('helpnaud_haptic') !== '0'; }catch(e){}
       h += '<h3>Retour haptique</h3><p class="hint">Courte vibration lorsque vous touchez un bouton' + (navigator.vibrate ? '.' : ' (non pris en charge par cet appareil ou ce navigateur).') + '</p>';
       h += '<div class="hnp-row"><div class="hnp-l">Retour haptique</div>' + sw('hnp-hapt', hp) + '</div>';
+    } else if(k === 'clav'){
+      h += (window.__hnKbd ? window.__hnKbd.html() : '<p class="hint">Indisponible.</p>');
     } else if(k === 'look'){
       var th = 'système'; try{ th = localStorage.getItem('helpnaud_theme') || 'système'; }catch(e){}
       h += '<h3>Apparence</h3><p class="hint">Thème de l’application.</p><div class="hnp-themes">' + [['clair','☀','Clair'],['sombre','☾','Sombre'],['système','◐','Système'],['dégradé','◒','Dégradé']].map(function(o){ return '<button type="button" class="btn hnp-th' + (o[0] === th ? ' on' : '') + '" data-hnp-theme="' + o[0] + '">' + o[1] + ' ' + o[2] + '</button>'; }).join('') + '</div>';
@@ -47282,6 +47284,199 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   });
   window.__hnComp = { html:html };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', widget); else widget();
+})();
+</script>
+
+<style id="hnk-css">
+#hnp .hnk-sub{ font-size:16px; margin:2px 0 6px; }
+#hnp .hnk-note{ background:var(--surface-2); border-radius:10px; padding:10px 14px; color:var(--muted); font-size:13px; margin:6px 0 14px; }
+#hnp .hnk-grp{ font-size:12.5px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); margin:18px 0 4px; }
+#hnp .hnk-card{ border:1px solid var(--line); border-radius:16px; background:var(--surface); padding:2px 14px; }
+#hnp .hnk-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line); }
+#hnp .hnk-row:first-child{ border-top:0; }
+#hnp .hnk-l{ flex:1; min-width:0; font-size:14px; }
+#hnp .hnk-l small{ display:block; color:var(--muted); font-size:12px; margin-top:1px; }
+#hnp .hnk-keys{ display:flex; gap:4px; align-items:center; flex-wrap:wrap; justify-content:flex-end; background:none; border:1px solid transparent; border-radius:10px; padding:4px 6px; cursor:pointer; font:inherit; color:inherit; }
+#hnp .hnk-keys:hover{ border-color:var(--line); background:var(--surface-2); }
+#hnp .hnk-keys.rec{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--accent); font-size:12.5px; }
+#hnp .hnk-keys.fixed{ cursor:default; }
+#hnp .hnk-keys.fixed:hover{ border-color:transparent; background:none; }
+#hnp kbd{ font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; padding:5px 8px; border-radius:7px; background:linear-gradient(#fff, #eef1f6); color:#26324a; border:1px solid #cfd6e4; border-bottom-width:2px; box-shadow:0 1px 0 rgba(0,0,0,.04); }
+#hnp .hnk-none{ color:var(--muted); font-size:13px; }
+#hnp .hnk-prev{ margin-top:12px; }
+.hnk-menu{ position:fixed; z-index:99000; width:min(440px, calc(100vw - 20px)); max-height:min(420px, 60vh); overflow:auto; background:var(--surface,#fff); color:var(--ink,#16304A); border:1px solid var(--line,#dde3ee); border-radius:18px; box-shadow:0 18px 50px rgba(16,24,40,.22); padding:6px; }
+.hnk-menu.static{ position:static; width:auto; max-height:none; box-shadow:0 4px 18px rgba(16,24,40,.08); }
+.hnk-it{ display:flex; align-items:center; gap:12px; padding:8px 10px; border-radius:12px; cursor:pointer; font-size:14px; }
+.hnk-it.on, .hnk-it:hover{ background:var(--surface-2,#f1f4f9); }
+.hnk-it svg{ width:34px; height:34px; flex:none; filter:drop-shadow(0 2px 3px rgba(0,0,0,.18)); transition:transform .15s; }
+.hnk-it.on svg, .hnk-it:hover svg{ transform:scale(1.08) rotate(-3deg); }
+.hnk-it b{ font-weight:600; white-space:nowrap; }
+.hnk-it span.d{ color:var(--muted,#6b7a90); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.hnk-foot{ padding:6px 10px 4px; font-size:11.5px; color:var(--muted,#6b7a90); border-top:1px solid var(--line,#dde3ee); margin-top:4px; }
+.hnk-empty{ padding:12px; color:var(--muted,#6b7a90); font-size:13px; }
+@media (max-width:640px){ .hnk-it span.d{ display:none; } #hnp .hnk-row{ flex-wrap:wrap; } }
+</style>
+<script id="hnk-js">
+(function(){
+  'use strict';
+  var KEY = 'helpnaud_kbd', uid = 0;
+  function g(){ try{ return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ return {}; } }
+  function put(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+  function $(id){ return document.getElementById(id); }
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+  function view(){ var f = $('chat-form'); return f ? f.closest('.view') : null; }
+  function goAssistant(){ var v = view(); if(v && !v.hidden && v.offsetParent) return; var b = document.querySelector('.nav-btn[data-view="assistant"]'); if(b) b.click(); }
+  function clickId(id){ var e = $(id); if(e) e.click(); }
+  function chip(key){ var v = view(); var b = v && v.querySelector('[data-hnr-toggle="' + key + '"]'); if(b) b.click(); else toast('Option de recherche indisponible ici.'); }
+  function toast(t){ var d = document.createElement('div'); d.textContent = t; d.style.cssText = 'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink,#16304A);color:var(--surface,#fff);padding:9px 14px;border-radius:10px;font-size:13px;z-index:99999;max-width:90vw'; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 2600); }
+  /* ===== Icônes @H-Liste : tuiles en dégradé + pictogramme blanc ===== */
+  function tile(c1, c2, glyph){
+    var i = ++uid;
+    return '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="k' + i + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#k' + i + ')"/><path d="M4 11 Q4 4 13 3.5 L22 3.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/><g fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">' + glyph + '</g></svg>';
+  }
+  var G = {
+    clip:'<path d="M21.5 14.5l-7 7a3.6 3.6 0 0 1-5.1-5.1l8.2-8.2a2.4 2.4 0 0 1 3.4 3.4l-8.2 8.2a1.2 1.2 0 0 1-1.7-1.7l7-7"/>',
+    lib:'<rect x="7" y="8" width="4.6" height="16" rx="1.2"/><rect x="13.2" y="8" width="4.6" height="16" rx="1.2"/><path d="M20.2 9.6l4.3-1.1 3 15.5-4.3 1.1z" transform="translate(-1.4 -.4)"/>',
+    cam:'<path d="M7 11h3.4l1.6-2.6h6L19.6 11H25a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V12a1 1 0 0 1 1-1z"/><circle cx="16" cy="17" r="3.6"/>',
+    globe:'<circle cx="16" cy="16" r="9.5"/><path d="M6.5 16h19M16 6.5c3.4 3.2 3.4 15.8 0 19M16 6.5c-3.4 3.2-3.4 15.8 0 19"/>',
+    deep:'<circle cx="14" cy="14" r="6.5"/><path d="M19 19l6 6"/><path d="M14 10.8v6.4M10.8 14h6.4" stroke-width="1.7"/>',
+    mic:'<rect x="12.4" y="6" width="7.2" height="12" rx="3.6"/><path d="M8.5 15.5a7.5 7.5 0 0 0 15 0M16 23v3.5M12.5 26.5h7"/>',
+    doc:'<path d="M9 5.5h9l5 5V26a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1z"/><path d="M18 5.5v5h5M11.5 15h9M11.5 19h9M11.5 23h6"/>',
+    chart:'<path d="M7 25.5h18"/><rect x="9" y="15" width="3.4" height="8" rx="1"/><rect x="14.3" y="10" width="3.4" height="13" rx="1"/><rect x="19.6" y="6.5" width="3.4" height="16.5" rx="1"/>',
+    grid:'<rect x="7" y="7" width="7.5" height="7.5" rx="2"/><rect x="17.5" y="7" width="7.5" height="7.5" rx="2"/><rect x="7" y="17.5" width="7.5" height="7.5" rx="2"/><rect x="17.5" y="17.5" width="7.5" height="7.5" rx="2"/>',
+    sym:'<path d="M9.5 24h4v-2.2a7 7 0 1 1 5 0V24h4"/>'
+  };
+  var ATS = [
+    { id:'file', t:'Ajouter des photos et fichiers', d:'Importez des fichiers depuis l’appareil', ic:['#7b8cff','#4553e0','clip'], run:function(){ goAssistant(); clickId('attach-file-input'); } },
+    { id:'lib',  t:'Ajouter depuis la bibliothèque', d:'Parcourez et retrouvez vos fichiers', ic:['#ffb04d','#ee6f17','lib'], run:function(){ var b = document.querySelector('.nav-btn[data-view="library"]'); if(b) b.click(); } },
+    { id:'cam',  t:'Prendre une photo', d:'Utilisez l’appareil photo', ic:['#3fd0a8','#13906d','cam'], run:function(){ goAssistant(); clickId('attach-opt-camera'); } },
+    { id:'web',  t:'Recherche sur le Web', d:'Trouvez des infos en temps réel', ic:['#46adff','#1c68e0','globe'], run:function(){ goAssistant(); chip('web'); } },
+    { id:'deep', t:'Recherche approfondie', d:'Obtenez un rapport détaillé', ic:['#9a7bff','#5733d6','deep'], run:function(){ goAssistant(); chip('deep'); } },
+    { id:'mic',  t:'Dictée vocale', d:'Parlez au lieu d’écrire', ic:['#ff7a98','#dc2f64','mic'], run:function(){ goAssistant(); clickId('btn-mic'); } },
+    { id:'docs', t:'Documents', d:'Ouvrez vos documents', ic:['#5b97ff','#2858d4','doc'], run:function(){ var b = document.querySelector('.nav-btn[data-view="documents"]'); if(b) b.click(); } },
+    { id:'rep',  t:'Rapport', d:'Consultez vos rapports', ic:['#38d088','#12924f','chart'], run:function(){ var b = document.querySelector('.nav-btn[data-view="report"]'); if(b) b.click(); } },
+    { id:'cat',  t:'Catalogue', d:'Parcourez le catalogue', ic:['#ffcb45','#e08a00','grid'], run:function(){ var b = document.querySelector('.nav-btn[data-view="catalogue"]'); if(b) b.click(); } },
+    { id:'sym',  t:'Caractères spéciaux', d:'Insérez un symbole', ic:['#94a0bb','#56627f','sym'], run:function(){ goAssistant(); clickId('symbols-btn'); } }
+  ];
+  function itemsHtml(list, sel){
+    return list.map(function(a, i){ return '<div class="hnk-it' + (i === sel ? ' on' : '') + '" role="option" data-hnk-it="' + a.id + '">' + tile(a.ic[0], a.ic[1], G[a.ic[2]]) + '<b>' + esc(a.t) + '</b><span class="d">' + esc(a.d) + '</span></div>'; }).join('');
+  }
+  /* ===== Raccourcis ===== */
+  var SC = [
+    { grp:'Discussion / Chat' },
+    { id:'newchat', t:'Nouveau chat', k:'Ctrl+Shift+O', run:function(){ goAssistant(); clickId('assistant-conv-new-btn'); } },
+    { id:'hist', t:'Changer de chat…', k:'Ctrl+K', run:function(){ goAssistant(); clickId('assistant-conv-history-btn'); } },
+    { id:'side', t:'Activer/désactiver la barre latérale', k:'Ctrl+Shift+S', built:true, run:function(){ document.dispatchEvent(new KeyboardEvent('keydown', { key:'S', ctrlKey:true, shiftKey:true, bubbles:true, cancelable:true })); } },
+    { id:'help', t:'Afficher les raccourcis clavier', k:'Ctrl+/', run:function(){ if(window.__hnProfile) window.__hnProfile.open('clav'); } },
+    { grp:'Zone de saisie HelpNaud' },
+    { id:'focus', t:'Placer le curseur dans le chat principal', k:'Shift+Esc', run:function(){ goAssistant(); setTimeout(function(){ var i = $('chat-input'); if(i) i.focus(); }, 30); } },
+    { id:'send', t:'Envoyer le message', k:'Enter', fixed:true, small:'Désactivé : Entrée fait un retour à la ligne, Ctrl+Entrée envoie.' },
+    { id:'send2', t:'Envoyer avec Ctrl+Entrée', k:'Ctrl+Enter', run:function(){ var f = $('chat-form'); if(f && f.requestSubmit) f.requestSubmit(); } },
+    { id:'dict', t:'Activer ou désactiver la dictée', k:'Alt+M', run:function(){ goAssistant(); clickId('btn-mic'); } },
+    { id:'attach', t:'Joindre des fichiers et des dossiers', k:'Ctrl+U', run:function(){ goAssistant(); clickId('attach-file-input'); } },
+    { id:'web', t:'Recherche sur le Web (activer/désactiver)', k:'Alt+W', run:function(){ goAssistant(); chip('web'); } },
+    { id:'deep', t:'Recherche approfondie (activer/désactiver)', k:'Alt+R', run:function(){ goAssistant(); chip('deep'); } }
+  ];
+  function cfg(id){ var s = g(), d = SC.filter(function(x){ return x.id === id; })[0] || {}; var c = (s.k || {})[id] || {}; return { on:c.on !== false, k:c.k != null ? c.k : d.k }; }
+  function atOn(){ return g().at !== false; }
+  function keyName(e){
+    var k = e.key; if(!k || k === 'Control' || k === 'Shift' || k === 'Alt' || k === 'Meta') return '';
+    if(k === 'Escape') k = 'Esc'; else if(k === ' ') k = 'Space'; else if(k.length === 1) k = k.toUpperCase();
+    var p = []; if(e.ctrlKey || e.metaKey) p.push('Ctrl'); if(e.altKey) p.push('Alt'); if(e.shiftKey) p.push('Shift'); p.push(k); return p.join('+');
+  }
+  function show(k){ if(!k) return '<span class="hnk-none">aucun</span>'; return k.split('+').map(function(x){ var m = { Enter:'⏎', Esc:'Échap', Delete:'Suppr', Backspace:'Retour', ArrowUp:'↑', ArrowDown:'↓', ArrowLeft:'←', ArrowRight:'→' }; return '<kbd>' + esc(m[x] || x) + '</kbd>'; }).join(''); }
+  function sw(id, on){ return '<label class="hnp-sw"><input type="checkbox" data-hnk-sw="' + id + '"' + (on ? ' checked' : '') + '><i></i></label>'; }
+  var rec = null;
+  function html(){
+    var h = '<h3>Clavier HelpNaud</h3><p class="hnk-sub">Consulter et modifier les raccourcis clavier</p><div class="hnk-note">Pour modifier un raccourci, sélectionnez la combinaison de touches, puis saisissez la nouvelle combinaison. Échap annule, Retour arrière supprime le raccourci.</div>';
+    var open = false;
+    SC.forEach(function(x){
+      if(x.grp){ if(open) h += '</div>'; h += '<div class="hnk-grp">' + esc(x.grp) + '</div><div class="hnk-card">'; open = true; return; }
+      var c = cfg(x.id);
+      h += '<div class="hnk-row"><div class="hnk-l">' + esc(x.t) + (x.small && !c.on ? '<small>' + esc(x.small) + '</small>' : '') + '</div>' + (x.fixed ? '<span class="hnk-keys fixed">' + show(x.k) + '</span>' : '<button type="button" class="hnk-keys' + (rec === x.id ? ' rec' : '') + '" data-hnk-edit="' + x.id + '" aria-label="Modifier le raccourci : ' + esc(x.t) + '">' + (rec === x.id ? 'Appuyez sur la nouvelle combinaison…' : show(c.k)) + '</button>') + sw(x.id, c.on) + '</div>';
+    });
+    if(open) h += '</div>';
+    h += '<div class="hnk-grp">@H-Liste</div><div class="hnk-card"><div class="hnk-row"><div class="hnk-l">Affiche les raccourcis de @H-Liste<small>Tapez @ dans la zone de saisie pour ouvrir le menu d’actions rapides.</small></div><span class="hnk-keys fixed">' + show('Ctrl+@') + '<span class="hnk-none">ou</span><kbd>@</kbd></span>' + sw('__at', atOn()) + '</div></div>';
+    h += '<div class="hnk-prev"><div class="hnk-grp" style="margin-top:6px">Aperçu de @H-Liste</div><div class="hnk-menu static">' + itemsHtml(ATS, 0) + '<div class="hnk-foot">↑ ↓ pour naviguer · Entrée pour choisir · Échap pour fermer</div></div></div>';
+    h += '<div style="margin-top:14px"><button type="button" class="btn" data-hnk-reset>Rétablir les valeurs par défaut</button></div>';
+    return h;
+  }
+  function refresh(){ var b = document.querySelector('#hnp [data-hnp-sec="clav"]'); if(b) b.click(); }
+  /* ===== Exécution des raccourcis ===== */
+  window.addEventListener('keydown', function(e){
+    if(!e.isTrusted) return;
+    var t = e.target;
+    if(rec){
+      e.preventDefault(); e.stopImmediatePropagation();
+      if(e.key === 'Escape'){ rec = null; refresh(); return; }
+      var s = g(); s.k = s.k || {};
+      if(e.key === 'Backspace' || e.key === 'Delete'){ s.k[rec] = Object.assign({}, s.k[rec], { k:'' }); put(s); rec = null; refresh(); return; }
+      var n = keyName(e); if(!n) return;
+      if(n.indexOf('+') < 0 && !/^F\d+$/.test(n)){ toast('Ajoutez une touche Ctrl, Alt ou Maj.'); return; }
+      var clash = SC.filter(function(x){ return x.id && x.id !== rec && cfg(x.id).on && cfg(x.id).k === n; })[0];
+      if(clash){ toast('Déjà utilisé par : ' + clash.t); return; }
+      s.k[rec] = Object.assign({}, s.k[rec], { k:n }); put(s); rec = null; refresh(); return;
+    }
+    if(t && t.closest && t.closest('#hnp') && /INPUT|SELECT/.test(t.tagName) ) return;
+    var n = keyName(e);
+    /* Entrée = envoyer (désactivable) */
+    if(t && t.id === 'chat-input' && e.key === 'Enter' && !cfg('send').on){
+      if(e.ctrlKey){ /* laisse passer vers send2 plus bas */ } else if(!e.shiftKey){ e.preventDefault(); e.stopImmediatePropagation(); var ta = t, a = ta.selectionStart, b2 = ta.selectionEnd; ta.value = ta.value.slice(0, a) + '\n' + ta.value.slice(b2); ta.selectionStart = ta.selectionEnd = a + 1; ta.dispatchEvent(new Event('input', { bubbles:true })); return; }
+    }
+    if(!n) return;
+    for(var i = 0; i < SC.length; i++){
+      var x = SC[i]; if(!x.id || !x.run) continue; var c = cfg(x.id);
+      if(x.built && n === 'Ctrl+Shift+S' && (!c.on || c.k !== 'Ctrl+Shift+S')){ e.preventDefault(); e.stopImmediatePropagation(); }
+      if(c.on && c.k && c.k === n){ e.preventDefault(); e.stopImmediatePropagation(); try{ x.run(); }catch(er){} return; }
+    }
+    if(atOn() && n === 'Ctrl+@' && t && t.id === 'chat-input'){ e.preventDefault(); var v = t.value, p = t.selectionStart; t.value = v.slice(0, p) + '@' + v.slice(p); t.selectionStart = t.selectionEnd = p + 1; t.dispatchEvent(new Event('input', { bubbles:true })); }
+  }, true);
+  /* ===== Menu @H-Liste ===== */
+  var menu = null, sel = 0, list = [], range = null;
+  function closeMenu(){ if(menu){ menu.remove(); menu = null; } }
+  function place(ta){ var r = ta.getBoundingClientRect(), h = menu.offsetHeight; menu.style.left = Math.max(10, Math.min(r.left, window.innerWidth - menu.offsetWidth - 10)) + 'px'; var top = r.top - h - 8; menu.style.top = (top < 10 ? Math.min(r.bottom + 8, window.innerHeight - h - 10) : top) + 'px'; }
+  function paint(ta){
+    if(!list.length){ closeMenu(); return; }
+    if(!menu){ menu = document.createElement('div'); menu.className = 'hnk-menu'; menu.setAttribute('role', 'listbox'); menu.setAttribute('aria-label', 'Actions rapides @H-Liste'); document.body.appendChild(menu);
+      menu.addEventListener('mousedown', function(e){ e.preventDefault(); });
+      menu.addEventListener('click', function(e){ var it = e.target.closest('[data-hnk-it]'); if(it) choose(it.getAttribute('data-hnk-it')); }); }
+    menu.innerHTML = itemsHtml(list, sel) + '<div class="hnk-foot">↑ ↓ pour naviguer · Entrée pour choisir · Échap pour fermer</div>'; place(ta);
+    var on = menu.querySelector('.hnk-it.on'); if(on && on.scrollIntoView) on.scrollIntoView({ block:'nearest' });
+  }
+  function choose(id){
+    var a = ATS.filter(function(x){ return x.id === id; })[0], ta = $('chat-input');
+    if(ta && range){ ta.value = ta.value.slice(0, range[0]) + ta.value.slice(range[1]); ta.selectionStart = ta.selectionEnd = range[0]; ta.dispatchEvent(new Event('input', { bubbles:true })); }
+    closeMenu(); if(a) try{ a.run(); }catch(e){}
+  }
+  function norm(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  document.addEventListener('input', function(e){
+    var ta = e.target; if(!ta || ta.id !== 'chat-input') return;
+    if(!atOn()){ closeMenu(); return; }
+    var p = ta.selectionStart, m = /(^|\s)@([^\s@]{0,20})$/.exec(ta.value.slice(0, p));
+    if(!m){ closeMenu(); return; }
+    var q = norm(m[2]); range = [p - m[2].length - 1, p];
+    list = ATS.filter(function(a){ return !q || norm(a.t).indexOf(q) >= 0 || norm(a.d).indexOf(q) >= 0; }); sel = 0; paint(ta);
+  });
+  window.addEventListener('keydown', function(e){
+    if(!menu || !e.isTrusted) return; var ta = $('chat-input'); if(e.target !== ta) return;
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); e.stopImmediatePropagation(); sel = (sel + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length; paint(ta); }
+    else if(e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); e.stopImmediatePropagation(); if(list[sel]) choose(list[sel].id); }
+    else if(e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); closeMenu(); }
+  }, true);
+  document.addEventListener('mousedown', function(e){ if(menu && !menu.contains(e.target) && e.target.id !== 'chat-input') closeMenu(); });
+  window.addEventListener('resize', closeMenu);
+  /* ===== Panneau ===== */
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-hnk-edit]');
+    if(b){ rec = b.getAttribute('data-hnk-edit'); refresh(); return; }
+    if(e.target.closest && e.target.closest('[data-hnk-reset]')){ try{ localStorage.removeItem(KEY); }catch(x){} rec = null; refresh(); toast('Raccourcis rétablis.'); }
+  });
+  document.addEventListener('change', function(e){
+    var t = e.target; if(!t || !t.hasAttribute || !t.hasAttribute('data-hnk-sw')) return; var id = t.getAttribute('data-hnk-sw'), s = g();
+    if(id === '__at') s.at = t.checked; else { s.k = s.k || {}; s.k[id] = Object.assign({}, s.k[id], { on:t.checked }); }
+    put(s); if(id === 'send') refresh(); if(id === '__at' && !t.checked) closeMenu();
+  });
+  window.__hnKbd = { html:html };
 })();
 </script>
 
