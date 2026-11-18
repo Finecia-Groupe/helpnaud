@@ -46597,7 +46597,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
 (function(){
   'use strict';
   var PK = 'helpnaud_prof_prefs', FK = 'helpnaud_focus', PH = 'helpnaud_user_photo';
-  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['compte','🪪','Compte'],['parental','👨‍👩‍👧','Contrôle parental'],['confiance','🤝','Contact de confiance'],['temps','⏱️','Temps et concentration'],['perso','✍️','Personnalisation'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence']];
+  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['compte','🪪','Compte'],['parental','👨‍👩‍👧','Contrôle parental'],['confiance','🤝','Contact de confiance'],['temps','⏱️','Temps et concentration'],['perso','✍️','Personnalisation'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['comp','🐾','Compagnons'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence']];
   var cur = 'profil', root = null, invite = false, usageTab = 'apercu', famOpen = '', trustOpen = false, famMode = 'email', fam = null, famLoading = false, famSel = '', EPF = '/.netlify/functions/family', peEdit = '', peMem = false, PE = 'helpnaud_perso', PH = 'helpnaud_refphotos';
   var loadingB = false, billing = null, EPB = '/.netlify/functions/stripe-checkout';
   function bapi(body){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk) return { ok:false, message:'Connectez-vous pour continuer.' }; return fetch(EPB, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {}; }); }).catch(function(){ return { ok:false, message:'Connexion impossible. Vérifiez votre réseau.' }; }); }); }
@@ -46795,6 +46795,8 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       h += '<h3>Liens partagés</h3><p class="hint">Conversations que vous avez rendues lisibles par lien public (texte seul).</p>';
       if(!ks.length) h += '<p class="hint">Aucun lien partagé sur cet appareil.</p>';
       ks.forEach(function(x){ var d = o[x]; h += '<div class="hnp-row"><div class="hnp-l">Conversation partagée<small>' + (d.at ? new Date(d.at).toLocaleDateString('fr-CA') : '') + (d.n ? ' · ' + d.n + ' messages' : '') + '</small></div><button type="button" class="btn" data-hnp-copy="' + esc(d.id) + '">Copier</button><button type="button" class="btn hnp-danger" data-hnp-off="' + esc(x) + '">Désactiver</button></div>'; });
+    } else if(k === 'comp'){
+      h += (window.__hnComp ? window.__hnComp.html() : '<p class="hint">Indisponible.</p>');
     } else if(k === 'capa'){
       h += '<h3>Capacités</h3><p class="hint">Ce que HelpNaud peut faire selon la page où vous êtes.</p>';
       var wa = true; try{ wa = localStorage.getItem('helpnaud_web_auto') !== '0'; }catch(e){}
@@ -47132,6 +47134,154 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   function init(){ ensureBtn(); renderBtn(); trracBind(); trracLoad(); applyVoice(); setTimeout(function(){ pePull(); suggBar(); }, 3500); document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('[data-view="assistant"]')) setTimeout(suggBar, 400); }); famToken(); setTimeout(tryFamToken, 3000); var inn = $('cust-in'); if(inn) new MutationObserver(function(){ renderBtn(); if(root && root.classList.contains('on')) render(); }).observe(inn, { attributes:true, subtree:true, childList:true, characterData:true }); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   setTimeout(init, 1500);
+})();
+</script>
+
+<style id="hnc-css">
+#hnp .hnc-top{ display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+#hnp .hnc-top > div{ flex:1; min-width:200px; }
+#hnp .hnc-list{ display:grid; gap:8px; }
+#hnp .hnc-item{ display:flex; align-items:center; gap:14px; padding:10px 12px; border:1px solid var(--line); border-radius:16px; background:var(--surface); cursor:pointer; transition:transform .15s, box-shadow .15s, border-color .15s; position:relative; }
+#hnp .hnc-item:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(20,30,60,.10); }
+#hnp .hnc-item.on{ border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+#hnp .hnc-item input{ position:absolute; opacity:0; pointer-events:none; }
+#hnp .hnc-ic{ width:62px; height:62px; flex:none; border-radius:18px; display:grid; place-items:center; background:linear-gradient(145deg, color-mix(in srgb, var(--c1) 22%, #fff), color-mix(in srgb, var(--c2) 18%, #fff)); box-shadow:inset 0 0 0 1px rgba(0,0,0,.05), inset 0 -6px 10px rgba(0,0,0,.04); }
+#hnp .hnc-ic svg, #hnp .hnc-ic img{ width:52px; height:52px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.18)); object-fit:contain; border-radius:8px; }
+#hnp .hnc-item:hover .hnc-ic svg{ animation:hncWob .6s ease; }
+#hnp .hnc-t{ flex:1; min-width:0; font-size:14px; }
+#hnp .hnc-t b{ display:block; }
+#hnp .hnc-t small{ display:block; color:var(--muted); font-size:12.5px; margin-top:2px; line-height:1.4; }
+#hnp .hnc-r{ width:22px; height:22px; border-radius:50%; border:2px solid var(--line); flex:none; display:grid; place-items:center; }
+#hnp .hnc-item.on .hnc-r{ border-color:var(--accent); background:var(--accent); }
+#hnp .hnc-item.on .hnc-r:after{ content:''; width:8px; height:8px; border-radius:50%; background:#fff; }
+#hnp .hnc-form{ display:none; border:1px dashed var(--line); border-radius:16px; padding:12px; margin:-2px 0 4px; gap:10px; }
+#hnp .hnc-form.open{ display:grid; }
+#hnp .hnc-form label{ display:grid; gap:4px; font-size:12.5px; color:var(--muted); }
+#hnp .hnc-form input[type=text], #hnp .hnc-form select{ padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; }
+#hnp .hnc-form input[type=color]{ width:46px; height:34px; padding:0; border:1px solid var(--line); border-radius:8px; background:none; }
+#hnp .hnc-cols{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+@keyframes hncWob{ 0%{transform:rotate(0)} 30%{transform:rotate(-8deg) scale(1.06)} 60%{transform:rotate(6deg) scale(1.06)} 100%{transform:rotate(0)} }
+@keyframes hncBob{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-6px) } }
+#hn-comp{ position:fixed; right:16px; bottom:96px; width:68px; height:68px; z-index:60; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; }
+#hn-comp .hnc-body{ width:100%; height:100%; animation:hncBob 3.2s ease-in-out infinite; filter:drop-shadow(0 6px 8px rgba(0,0,0,.25)); }
+#hn-comp svg, #hn-comp img{ width:100%; height:100%; object-fit:contain; }
+#hn-comp .hnc-tip{ position:absolute; right:0; bottom:76px; width:max-content; max-width:230px; background:var(--surface,#fff); color:var(--ink,#16304A); border:1px solid var(--line,#ddd); border-radius:14px 14px 4px 14px; padding:8px 12px; font-size:13px; line-height:1.4; box-shadow:0 8px 24px rgba(0,0,0,.18); opacity:0; transform:translateY(6px); pointer-events:none; transition:.2s; }
+#hn-comp .hnc-tip.show{ opacity:1; transform:none; }
+@media (prefers-reduced-motion:reduce){ #hn-comp .hnc-body, #hnp .hnc-item:hover .hnc-ic svg{ animation:none; } }
+@media (max-width:640px){ #hn-comp{ width:56px; height:56px; bottom:110px; right:10px; } }
+</style>
+<script id="hnc-js">
+(function(){
+  'use strict';
+  var KEY = 'helpnaud_companion', KC = 'helpnaud_companion_custom', KI = 'helpnaud_companion_import', uid = 0;
+  function g(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function s(k, v){ try{ if(v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} }
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+  function col(v, d){ return /^#[0-9a-f]{6}$/i.test(v || '') ? v : d; }
+  /* visage commun : grands yeux brillants */
+  function eyes(x1, x2, y, r){
+    r = r || 3.6; var o = '';
+    [x1, x2].forEach(function(x){ o += '<ellipse cx="' + x + '" cy="' + y + '" rx="' + r + '" ry="' + (r * 1.15) + '" fill="#1d2433"/><circle cx="' + (x + r * .35) + '" cy="' + (y - r * .45) + '" r="' + (r * .42) + '" fill="#fff"/><circle cx="' + (x - r * .4) + '" cy="' + (y + r * .45) + '" r="' + (r * .2) + '" fill="#fff" fill-opacity=".8"/>'; });
+    return o;
+  }
+  function blush(x1, x2, y){ return '<ellipse cx="' + x1 + '" cy="' + y + '" rx="4" ry="2.6" fill="#ff7a93" fill-opacity=".55"/><ellipse cx="' + x2 + '" cy="' + y + '" rx="4" ry="2.6" fill="#ff7a93" fill-opacity=".55"/>'; }
+  function smile(x, y, w){ return '<path d="M' + (x - w) + ' ' + y + ' Q' + x + ' ' + (y + w * 1.1) + ' ' + (x + w) + ' ' + y + '" fill="none" stroke="#1d2433" stroke-width="2" stroke-linecap="round"/>'; }
+  var KINDS = {
+    coin:{ n:'Piastre', d:'Une petite pièce dorée qui garde un œil sur vos crédits.', c1:'#ffd24a', c2:'#e39b0b', t:'Je veille sur vos crédits !',
+      svg:function(i){ return '<circle cx="32" cy="32" r="26" fill="url(#a' + i + ')"/><circle cx="32" cy="32" r="21" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2" stroke-dasharray="2 3"/><path d="M14 24 Q22 10 40 11" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/>' + eyes(25, 39, 29, 3.4) + blush(19, 45, 37) + smile(32, 37, 5) + '<path d="M50 12 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z" fill="#fff"/>'; } },
+    fox:{ n:'Renarde', d:'Rusée et curieuse, elle trouve toujours la bonne piste.', c1:'#ff8a3d', c2:'#d9501a', t:'J’ai flairé une bonne idée !',
+      svg:function(i){ return '<path d="M9 6 L27 21 L8 31Z" fill="var(--c2)"/><path d="M55 6 L37 21 L56 31Z" fill="var(--c2)"/><path d="M12 12 L22 21 L12 26Z" fill="#ffd9c2"/><path d="M52 12 L42 21 L52 26Z" fill="#ffd9c2"/><path d="M6 31 Q32 12 58 31 Q56 56 32 59 Q8 56 6 31Z" fill="url(#a' + i + ')"/><path d="M6 33 Q22 33 32 49 Q18 58 10 48Z" fill="#fff6ea"/><path d="M58 33 Q42 33 32 49 Q46 58 54 48Z" fill="#fff6ea"/><path d="M14 22 Q24 16 32 17" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>' + eyes(22, 42, 35, 3.6) + blush(16, 48, 43) + '<ellipse cx="32" cy="46" rx="3.6" ry="2.8" fill="#1d2433"/><circle cx="31" cy="45" r="1" fill="#fff"/>' + smile(32, 50, 4); } },
+    turtle:{ n:'Tortue', d:'Tranquille et sûre : elle avance à votre rythme.', c1:'#5fcf80', c2:'#2a8a55', t:'Doucement, on y arrive !',
+      svg:function(i){ return '<ellipse cx="13" cy="50" rx="7" ry="5" fill="#a8e6b8"/><ellipse cx="51" cy="50" rx="7" ry="5" fill="#a8e6b8"/><path d="M6 38 Q6 8 32 8 Q58 8 58 38 Q58 46 32 46 Q6 46 6 38Z" fill="url(#a' + i + ')"/><path d="M32 12 L42 18 L42 28 L32 33 L22 28 L22 18Z" fill="#fff" fill-opacity=".22" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/><path d="M12 30 L22 28 M52 30 L42 28 M32 33 L32 42" stroke="#fff" stroke-opacity=".45" stroke-width="1.5"/><circle cx="32" cy="49" r="11" fill="#b6efc5"/>' + eyes(27.5, 36.5, 47, 2.8) + blush(23, 41, 52) + smile(32, 52, 3.4) + '<path d="M13 16 Q18 10 25 9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>'; } },
+    octo:{ n:'Poulpe', d:'Huit bras pour vous donner un coup de main.', c1:'#b78cff', c2:'#6f46d6', t:'Huit bras, zéro souci !',
+      svg:function(i){ return '<path d="M8 36 Q4 52 12 56 Q16 58 17 50 Q18 58 25 58 Q30 58 30 50 Q32 59 39 58 Q46 58 46 50 Q48 58 53 56 Q60 52 56 36Z" fill="var(--c2)" fill-opacity=".9"/><path d="M10 34 Q8 6 32 6 Q56 6 54 34 Q54 46 32 46 Q10 46 10 34Z" fill="url(#a' + i + ')"/><path d="M15 20 Q20 11 30 10" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="3.4" stroke-linecap="round"/>' + eyes(23, 41, 29, 4) + blush(17, 47, 37) + smile(32, 36, 4) + '<circle cx="19" cy="52" r="1.6" fill="#fff" fill-opacity=".5"/><circle cx="45" cy="52" r="1.6" fill="#fff" fill-opacity=".5"/>'; } },
+    panda:{ n:'Bambou', d:'Doux et posé, il rend chaque échange plus calme.', c1:'#2c3342', c2:'#ffffff', t:'Respirez, je suis là.',
+      svg:function(i){ return '<circle cx="14" cy="14" r="8" fill="var(--c1)"/><circle cx="50" cy="14" r="8" fill="var(--c1)"/><circle cx="32" cy="35" r="25" fill="#fff" stroke="#d8dde8" stroke-width="1"/><circle cx="32" cy="35" r="25" fill="url(#a' + i + ')" fill-opacity="0"/><ellipse cx="32" cy="52" rx="16" ry="6" fill="#e3e8f2" fill-opacity=".8"/><ellipse cx="22" cy="33" rx="7" ry="8.5" fill="var(--c1)" transform="rotate(20 22 33)"/><ellipse cx="42" cy="33" rx="7" ry="8.5" fill="var(--c1)" transform="rotate(-20 42 33)"/><circle cx="22.5" cy="33" r="4.8" fill="#fff"/><circle cx="41.5" cy="33" r="4.8" fill="#fff"/>' + eyes(22.5, 41.5, 33, 3) + '<ellipse cx="32" cy="43" rx="4" ry="3" fill="var(--c1)"/><circle cx="31" cy="42" r="1" fill="#fff"/>' + smile(32, 47, 4) + blush(15, 49, 45) + '<path d="M14 24 Q20 15 30 13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-opacity=".9"/>'; } },
+    bee:{ n:'Butine', d:'Travailleuse et joyeuse : elle butine les bonnes réponses.', c1:'#ffd23f', c2:'#3a2f1f', t:'Bzzz… je butine votre question !',
+      svg:function(i){ return '<ellipse cx="18" cy="16" rx="10" ry="13" fill="#cfe9ff" fill-opacity=".85" stroke="#fff" stroke-width="1.5" transform="rotate(-25 18 16)"/><ellipse cx="46" cy="16" rx="10" ry="13" fill="#cfe9ff" fill-opacity=".85" stroke="#fff" stroke-width="1.5" transform="rotate(25 46 16)"/><path d="M24 14 Q22 6 17 5 M40 14 Q42 6 47 5" fill="none" stroke="var(--c2)" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="5" r="2.2" fill="var(--c2)"/><circle cx="47" cy="5" r="2.2" fill="var(--c2)"/><clipPath id="k' + i + '"><ellipse cx="32" cy="38" rx="24" ry="20"/></clipPath><ellipse cx="32" cy="38" rx="24" ry="20" fill="url(#a' + i + ')"/><g clip-path="url(#k' + i + ')"><rect x="8" y="44" width="48" height="6" fill="var(--c2)"/><rect x="8" y="53" width="48" height="8" fill="var(--c2)"/></g><path d="M14 30 Q20 21 30 20" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/>' + eyes(23, 41, 33, 3.6) + blush(17, 47, 40) + smile(32, 39, 4); } },
+    cat:{ n:'Moka', d:'Un chat calme et malin, toujours prêt à vous aider.', c1:'#a9b4c9', c2:'#5d6a85', t:'Miaou ! Une question ?',
+      svg:function(i){ return '<path d="M8 5 L26 18 L9 30Z" fill="var(--c2)"/><path d="M56 5 L38 18 L55 30Z" fill="var(--c2)"/><path d="M12 11 L21 18 L12 24Z" fill="#ffc4d2"/><path d="M52 11 L43 18 L52 24Z" fill="#ffc4d2"/><path d="M6 33 Q6 14 32 14 Q58 14 58 33 Q58 56 32 57 Q6 56 6 33Z" fill="url(#a' + i + ')"/><path d="M27 15 L28 22 M32 14 L32 21 M37 15 L36 22" stroke="var(--c2)" stroke-width="2" stroke-linecap="round" stroke-opacity=".7"/><path d="M12 24 Q20 17 28 17" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>' + eyes(21, 43, 34, 4) + blush(14, 50, 43) + '<path d="M29.5 41 h5 l-2.5 3.2z" fill="#ff7a93"/>' + smile(28, 47, 3.4) + smile(36, 47, 3.4) + '<path d="M2 38 L14 41 M2 46 L14 44 M62 38 L50 41 M62 46 L50 44" stroke="#fff" stroke-opacity=".85" stroke-width="1.4" stroke-linecap="round"/>'; } },
+    planet:{ n:'Orbite', d:'Une petite planète qui explore tout avec vous.', c1:'#5aa9ff', c2:'#2d63d6', t:'Cap sur de nouvelles idées !',
+      svg:function(i){ return '<path d="M8 40 Q-2 30 12 22 Q32 12 56 22" fill="none" stroke="#ffcf5a" stroke-width="5" stroke-linecap="round" opacity="0"/><ellipse cx="32" cy="34" rx="29" ry="9" fill="none" stroke="#ffb938" stroke-width="5" transform="rotate(-18 32 34)"/><circle cx="32" cy="32" r="19" fill="url(#a' + i + ')"/><path d="M18 22 Q24 14 34 13" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="3.4" stroke-linecap="round"/>' + eyes(26, 38, 31, 3.2) + blush(21, 43, 38) + smile(32, 37, 3.6) + '<path d="M52 8 l1.5 3.5 3.5 1.5 -3.5 1.5 -1.5 3.5 -1.5 -3.5 -3.5 -1.5 3.5 -1.5z M9 12 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" fill="#fff"/>'; } }
+  };
+  var ORDER = ['coin','fox','turtle','octo','panda','bee','cat','planet'];
+  function icon(kind, c1, c2){
+    var K = KINDS[kind]; if(!K) return '';
+    c1 = c1 || K.c1; c2 = c2 || K.c2; var i = ++uid;
+    return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="--c1:' + c1 + ';--c2:' + c2 + '" aria-hidden="true"><defs><radialGradient id="a' + i + '" cx=".35" cy=".28" r=".95"><stop offset="0" stop-color="var(--c1)" stop-opacity="1"/><stop offset=".55" stop-color="var(--c1)"/><stop offset="1" stop-color="var(--c2)"/></radialGradient></defs>' + K.svg(i) + '</svg>';
+  }
+  function none(){ return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="none" stroke="#9aa3b5" stroke-width="5" stroke-dasharray="4 5"/><path d="M17 47 L47 17" stroke="#9aa3b5" stroke-width="5" stroke-linecap="round"/></svg>'; }
+  function wand(){ return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="w1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset="1" stop-color="#ff7a93"/></linearGradient></defs><rect x="10" y="38" width="30" height="8" rx="4" fill="#5d6a85" transform="rotate(-40 25 42)"/><path d="M42 6 l3.5 9 9 3.5 -9 3.5 -3.5 9 -3.5 -9 -9 -3.5 9 -3.5z" fill="url(#w1)"/><path d="M14 14 l1.8 4.2 4.2 1.8 -4.2 1.8 -1.8 4.2 -1.8 -4.2 -4.2 -1.8 4.2 -1.8z" fill="#b78cff"/><circle cx="52" cy="46" r="3.5" fill="#5aa9ff"/></svg>'; }
+  function load(){ var o = null; try{ o = JSON.parse(g(KEY) || 'null'); }catch(e){} return o && o.id ? o : { id:'none' }; }
+  function custom(){ var o = null; try{ o = JSON.parse(g(KC) || 'null'); }catch(e){} return o && KINDS[o.kind] ? o : null; }
+  function imp(){ var v = g(KI); return v && /^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(v) ? v : null; }
+  function visual(sel, big){
+    if(!sel || sel.id === 'none') return '';
+    if(KINDS[sel.id]) return icon(sel.id);
+    if(sel.id === 'custom'){ var c = custom(); return c ? icon(c.kind, c.c1, c.c2) : ''; }
+    if(sel.id === 'import'){ var u = imp(); return u ? '<img alt="" src="' + u + '">' : ''; }
+    return '';
+  }
+  function nameOf(sel){ if(KINDS[sel.id]) return KINDS[sel.id].n; if(sel.id === 'custom'){ var c = custom(); return c ? c.name : ''; } return sel.id === 'import' ? 'Mon compagnon' : ''; }
+  function item(id, ic, name, desc, cur, c1, c2){
+    return '<label class="hnc-item' + (cur === id ? ' on' : '') + '" style="--c1:' + (c1 || '#9aa3b5') + ';--c2:' + (c2 || '#c7cddb') + '"><input type="radio" name="hnc-pick" value="' + id + '"' + (cur === id ? ' checked' : '') + '><span class="hnc-ic">' + ic + '</span><span class="hnc-t"><b>' + esc(name) + '</b><small>' + esc(desc) + '</small></span><span class="hnc-r"></span></label>';
+  }
+  var formOpen = false;
+  function html(){
+    var cur = load().id, h = '';
+    h += '<div class="hnc-top"><div><h3>Choisissez votre compagnon</h3><p class="hint">Choisissez un compagnon ou ajoutez le vôtre. Il vous tient compagnie à l’écran et vous glisse un petit mot quand vous le touchez.</p></div><button type="button" class="btn" data-hnc="import">⬆️ Importer un compagnon</button><input type="file" id="hnc-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></div>';
+    h += '<div class="hnc-list">';
+    h += '<div class="hnc-item" data-hnc="toggle" style="--c1:#ffd24a;--c2:#ff7a93"><span class="hnc-ic">' + wand() + '</span><span class="hnc-t"><b>Créer votre bon compagnon avec HelpNaud</b><small>Choisissez un modèle, un nom et deux couleurs.</small></span><span style="color:var(--muted);font-size:18px">' + (formOpen ? '⌃' : '›') + '</span></div>';
+    var opts = ORDER.map(function(k){ return '<option value="' + k + '">' + KINDS[k].n + '</option>'; }).join(''), c = custom() || { name:'', kind:'fox', c1:KINDS.fox.c1, c2:KINDS.fox.c2 };
+    h += '<div class="hnc-form' + (formOpen ? ' open' : '') + '" id="hnc-form"><label>Nom du compagnon<input type="text" id="hnc-name" maxlength="20" placeholder="Ex. : Capucine" value="' + esc(c.name) + '"></label><div class="hnc-cols"><label>Modèle<select id="hnc-kind">' + opts.replace('value="' + c.kind + '"', 'value="' + c.kind + '" selected') + '</select></label><label>Couleur 1<input type="color" id="hnc-c1" value="' + col(c.c1, '#ff8a3d') + '"></label><label>Couleur 2<input type="color" id="hnc-c2" value="' + col(c.c2, '#d9501a') + '"></label><span class="hnc-ic" id="hnc-prev" style="--c1:' + col(c.c1, '#ff8a3d') + ';--c2:' + col(c.c2, '#d9501a') + '">' + icon(c.kind, c.c1, c.c2) + '</span></div><div><button type="button" class="btn primary" data-hnc="save">Créer et choisir</button></div></div>';
+    ORDER.forEach(function(k){ var K = KINDS[k]; h += item(k, icon(k), K.n, K.d, cur, K.c1, K.c2); });
+    var cu = custom(); if(cu) h += item('custom', icon(cu.kind, cu.c1, cu.c2), cu.name || 'Mon compagnon', 'Créé par vous avec HelpNaud.', cur, cu.c1, cu.c2);
+    var im = imp(); if(im) h += item('import', '<img alt="" src="' + im + '">', 'Mon compagnon', 'Image importée depuis votre appareil.', cur);
+    h += item('none', none(), 'N’afficher pas de compagnon', 'Aucun compagnon à l’écran.', cur);
+    h += '</div><p class="hint" style="margin-top:12px">Le compagnon est un petit plus décoratif : il ne lit pas vos conversations. Votre choix est enregistré sur cet appareil.</p>';
+    return h;
+  }
+  /* widget flottant */
+  var tipT = 0, TIPS = ['Je suis là si besoin !', 'Une question ? Écrivez-la en bas.', 'Pensez à enregistrer vos idées.', 'Bonne journée !', 'On s’y met ensemble ?'];
+  function widget(){
+    var w = document.getElementById('hn-comp'), sel = load(), v = visual(sel);
+    if(!v){ if(w) w.remove(); return; }
+    if(!w){
+      w = document.createElement('div'); w.id = 'hn-comp'; w.setAttribute('role', 'button'); w.setAttribute('tabindex', '0'); document.body.appendChild(w);
+      var say = function(){ var t = w.querySelector('.hnc-tip'); var K = KINDS[load().id]; var arr = K ? [K.t].concat(TIPS) : TIPS; t.textContent = arr[Math.floor(Math.random() * arr.length)]; t.classList.add('show'); clearTimeout(tipT); tipT = setTimeout(function(){ t.classList.remove('show'); }, 3200); };
+      w.addEventListener('click', say); w.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); say(); } });
+    }
+    w.setAttribute('aria-label', 'Compagnon ' + nameOf(sel));
+    w.innerHTML = '<div class="hnc-tip"></div><div class="hnc-body">' + v + '</div>';
+  }
+  function refresh(){ var b = document.querySelector('#hnp [data-hnp-sec="comp"]'); if(b) b.click(); }
+  document.addEventListener('change', function(e){
+    var t = e.target; if(!t || !t.closest) return;
+    if(t.name === 'hnc-pick'){ var id = t.value; s(KEY, JSON.stringify({ id:id })); document.querySelectorAll('#hnp .hnc-item').forEach(function(n){ var r = n.querySelector('input'); n.classList.toggle('on', !!(r && r.checked)); }); widget(); return; }
+    if(t.id === 'hnc-file' && t.files && t.files[0]){
+      var f = t.files[0];
+      if(!/^image\/(png|jpeg|webp|svg\+xml)$/.test(f.type)){ alert('Format non pris en charge. Utilisez PNG, JPEG, WebP ou SVG.'); return; }
+      if(f.size > 150 * 1024){ alert('Image trop lourde (maximum 150 Ko).'); return; }
+      var r = new FileReader(); r.onload = function(){ s(KI, String(r.result)); s(KEY, JSON.stringify({ id:'import' })); widget(); refresh(); }; r.readAsDataURL(f); return;
+    }
+    if(t.id === 'hnc-kind' || t.id === 'hnc-c1' || t.id === 'hnc-c2'){
+      var k = document.getElementById('hnc-kind'), a = document.getElementById('hnc-c1'), b = document.getElementById('hnc-c2'), p = document.getElementById('hnc-prev');
+      if(t.id === 'hnc-kind'){ a.value = KINDS[k.value].c1.length === 7 ? KINDS[k.value].c1 : '#888888'; b.value = KINDS[k.value].c2.length === 7 ? KINDS[k.value].c2 : '#444444'; }
+      if(p){ p.style.setProperty('--c1', a.value); p.style.setProperty('--c2', b.value); p.innerHTML = icon(k.value, a.value, b.value); }
+    }
+  });
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-hnc]'); if(!b) return; var a = b.getAttribute('data-hnc');
+    if(a === 'import'){ var f = document.getElementById('hnc-file'); if(f) f.click(); }
+    else if(a === 'toggle'){ formOpen = !formOpen; refresh(); }
+    else if(a === 'save'){
+      var nm = (document.getElementById('hnc-name').value || '').trim().slice(0, 20) || 'Mon compagnon';
+      s(KC, JSON.stringify({ name:nm, kind:document.getElementById('hnc-kind').value, c1:col(document.getElementById('hnc-c1').value, '#ff8a3d'), c2:col(document.getElementById('hnc-c2').value, '#d9501a') }));
+      s(KEY, JSON.stringify({ id:'custom' })); formOpen = false; widget(); refresh();
+    }
+  });
+  window.__hnComp = { html:html };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', widget); else widget();
 })();
 </script>
 
