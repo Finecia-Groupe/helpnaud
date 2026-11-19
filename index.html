@@ -13641,7 +13641,7 @@
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(opts.expert) body.fistat = 'expertplus';
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
-      try{ var pf = JSON.parse(localStorage.getItem('helpnaud_prof_prefs') || 'null') || {}, pe = JSON.parse(localStorage.getItem('helpnaud_perso') || 'null') || {}, pr = { nick:String(pf.nick || '').slice(0, 40), how:String(pf.how || '').slice(0, 600) }; ['style','warm','enth','emoji','visual','heads'].forEach(function(k2){ if(pe[k2]) pr[k2] = String(pe[k2]).slice(0, 20); }); if(pe.mystyle) pr.mystyle = true; if(pe.hcode) pr.hcode = String(pe.hcode).slice(0, 500); try{ var PO = window.__hnPerso; if(PO){ if(PO.on('quick')) pr.quick = true; if(PO.on('hist')) pr.hist = true; if(PO.on('conn')) pr.conn = true; if(PO.on('lib') && window.__hnLibSearch){ var ms = Array.isArray(body.messages) ? body.messages : [{ role:'user', content:body.prompt }], lu = ''; for(var q = ms.length - 1; q >= 0; q--){ if(ms[q] && ms[q].role !== 'assistant'){ lu = String(ms[q].content || ''); break; } } var lb = window.__hnLibSearch(lu); if(lb.length) pr.lib = lb; } } }catch(e5){} if(pe.mem !== false && Array.isArray(pe.notes) && pe.notes.length) pr.mem = pe.notes.slice(0, 30).map(function(n){ return String(n.t || '').slice(0, 300); }); if(Object.keys(pr).some(function(k3){ return pr[k3]; })) body.prefs = pr; }catch(e){}
+      try{ var pf = JSON.parse(localStorage.getItem('helpnaud_prof_prefs') || 'null') || {}, pe = JSON.parse(localStorage.getItem('helpnaud_perso') || 'null') || {}, pr = { nick:String(pf.nick || '').slice(0, 40), how:String(pf.how || '').slice(0, 600) }; ['style','warm','enth','emoji','visual','heads'].forEach(function(k2){ if(pe[k2]) pr[k2] = String(pe[k2]).slice(0, 20); }); if(pe.mystyle) pr.mystyle = true; if(pf.role) pr.role = String(pf.role).slice(0, 60); if(pf.org) pr.org = String(pf.org).slice(0, 60); try{ var PL = window.__hnPerso; if(PL && PL.on('loc')){ var rg = document.getElementById('hp-region'), ct = document.getElementById('hp-country'), cy = document.getElementById('hp-city'), lc = [cy && cy.value, rg && rg.value, ct && ct.value].filter(Boolean).join(', '); if(lc) pr.loc = lc.slice(0, 80); } }catch(e6){} if(pe.hcode) pr.hcode = String(pe.hcode).slice(0, 500); try{ var PO = window.__hnPerso; if(PO){ if(PO.on('quick')) pr.quick = true; if(PO.on('hist')) pr.hist = true; if(PO.on('conn')) pr.conn = true; if(PO.on('lib') && window.__hnLibSearch){ var ms = Array.isArray(body.messages) ? body.messages : [{ role:'user', content:body.prompt }], lu = ''; for(var q = ms.length - 1; q >= 0; q--){ if(ms[q] && ms[q].role !== 'assistant'){ lu = String(ms[q].content || ''); break; } } var lb = window.__hnLibSearch(lu); if(lb.length) pr.lib = lb; } } }catch(e5){} if(pe.mem !== false && Array.isArray(pe.notes) && pe.notes.length) pr.mem = pe.notes.slice(0, 30).map(function(n){ return String(n.t || '').slice(0, 300); }); if(Object.keys(pr).some(function(k3){ return pr[k3]; })) body.prefs = pr; }catch(e){}
       try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); var wOff = false; try{ wOff = localStorage.getItem('helpnaud_web_auto') === '0'; }catch(e){} if(window.__hnWebOnce && !wantJson){ rp.web = true; window.__hnWebOnce = false; } if(wOff) rp.auto = false; if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi || rp.mode || wOff) body.research = rp; } }catch(e){}
       if(a[1] && a[1].length){ body.image = a[1][0]; if(a[1].length > 1) body.images = a[1]; }
       return fetch(AI_SERVER_FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + a[0] }, body: JSON.stringify(body) })
@@ -46582,13 +46582,38 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   #hnp[data-m="det"] .hnp-back{ display:inline-block; }
 }
 body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voice-off .msg-speak-btn, body.hn-voice-off [id$="tts-play"]{ display:none !important; }
-#hn-sugg{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 6px; }
+#hn-sugg{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:10px 0 0; }
+#hn-sugg + .chat-form{ margin-top:8px; }
 #hn-sugg button{ border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; cursor:pointer; text-align:left; max-width:100%; }
 #hnp .hnp-tabs{ display:flex; gap:8px; margin:6px 0 10px; flex-wrap:wrap; }
 #hnp .hnp-tabs button{ border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:999px; padding:7px 16px; font:inherit; cursor:pointer; }
 #hnp .hnp-tabs button.on{ color:var(--ink); border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset; font-weight:600; }
 #hnp h4{ margin:20px 0 6px; font-size:15px; }
 #hnp .hnp-pill{ background:rgba(124,58,237,.12); color:#6d28d9; border-radius:999px; padding:3px 10px; font-size:12px; white-space:nowrap; }
+#hnp .hnp-selw{ position:relative; display:inline-block; }
+#hnp .hnp-selb{ display:inline-flex; align-items:center; gap:10px; border:0; background:var(--surface-2); color:var(--muted); border-radius:12px; padding:9px 14px; font:inherit; font-size:15px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.06); }
+#hnp .hnp-selb.has{ color:var(--ink); }
+#hnp .hnp-selb i{ font-style:normal; font-size:13px; transition:transform .15s; }
+#hnp .hnp-selw.open .hnp-selb i{ transform:rotate(180deg); }
+#hnp .hnp-sell{ position:absolute; left:0; top:calc(100% + 6px); min-width:250px; max-height:300px; overflow:auto; background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:0 16px 40px rgba(16,24,40,.2); padding:8px; z-index:20; }
+#hnp .hnp-sell[hidden]{ display:none; }
+#hnp .hnp-selo{ padding:9px 12px; border-radius:10px; cursor:pointer; font-size:15px; }
+#hnp .hnp-selo:hover, #hnp .hnp-selo.on{ background:var(--surface-2); }
+#hnp .hnp-acc{ border:1px solid var(--line); border-radius:12px; margin:10px 0; background:var(--surface); }
+#hnp .hnp-acc > summary{ list-style:none; cursor:pointer; padding:11px 14px; font-size:14px; display:flex; justify-content:space-between; align-items:center; border-radius:12px; }
+#hnp .hnp-acc > summary::-webkit-details-marker{ display:none; }
+#hnp .hnp-acc > summary:after{ content:''; width:8px; height:8px; border-right:2px solid var(--muted); border-bottom:2px solid var(--muted); transform:rotate(45deg) translateY(-2px); transition:transform .15s; }
+#hnp .hnp-acc[open] > summary{ border:1px solid var(--accent); }
+#hnp .hnp-acc[open] > summary:after{ transform:rotate(-135deg) translateY(-2px); }
+#hnp .hnp-acc .hnp-accb{ padding:4px 16px 14px; font-size:14px; line-height:1.55; }
+#hnp .hnp-acc .hnp-accb li{ margin:6px 0; }
+#hnp .hnp-tbl{ display:grid; border-top:1px solid var(--line); font-size:13px; }
+#hnp .hnp-tr{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:8px; padding:9px 4px; border-bottom:1px solid var(--line); }
+#hnp .hnp-tr.hd{ color:var(--muted); font-size:12px; }
+#hnp .hnp-tr.empty{ display:block; color:var(--muted); }
+#hnp .hnp-tr em{ color:var(--muted); font-style:normal; font-size:11.5px; }
+#hnp .hnp-soon{ font-size:11px; background:var(--surface-2); color:var(--muted); border-radius:99px; padding:2px 8px; margin-left:6px; }
+@media (max-width:640px){ #hnp .hnp-tr{ grid-template-columns:1fr 1fr; } }
 #hnp .hnp-box2{ border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:10px 0; display:flex; flex-direction:column; gap:6px; }
 #hnp .hnp-box2 small{ color:var(--muted); }
 #hnp .hnp-sw input:disabled + i{ opacity:.45; cursor:not-allowed; }
@@ -46663,6 +46688,31 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   window.__hnQuiet = function(){ return inQuiet(focusCfg()); };
 
   /* ---------- Sections ---------- */
+  var ROLES = ['Gestion de produits','Ingénierie','Ressources humaines','Conseiller financier','Responsable marketing','Ventes','Opérations','Science des données','Conception','Conseiller(ère) juridique','Scientifique','Étudiant','Fondateur','Santé','Rédacteur','Enseignant','Consultant','Chercheur','Ingénieur logiciel','Autre'];
+  var ORGS = ['Travailleur autonome','Startup','PME','Grande entreprise','Cabinet comptable ou conseil','Organisme à but non lucratif','Établissement d’enseignement','Administration publique','Santé','Autre'];
+  var EX = ['Ex. : réponses courtes, ton formel, exemples en euros…','Ex. : Pour l’étude ou l’apprentissage des concepts, les argumentaires, les analogies me sont particulièrement utiles.','Ex. : Je suis programmeur et développeur avec de la compétence.','Ex. : Poser des questions de compréhension ou de clarification avant de donner des réponses bien détaillées.','Ex. : Je ne suis pas débutant en programmation : je programme principalement en Bash, Java et en Python.'];
+  var acctId = '', sessInfo = null, rotTk = 0;
+  function isEn(){ try{ return (typeof getStoredLang === 'function' ? getStoredLang() : (document.documentElement.lang || 'fr')) === 'en'; }catch(e){ return false; } }
+  function dirUrl(){ return isEn() ? '/En-En/helpnaud-guidelines' : '/fr-fr/directives-helpnaud'; }
+  function privUrl(a){ return (isEn() ? '/En-En/privacy-help#' : '/fr-fr/aide-confidentialite#') + a; }
+  function selHtml(key, opts, val){ return '<div class="hnp-selw" data-selw="' + key + '"><button type="button" class="hnp-selb' + (val ? ' has' : '') + '" data-hnp-selb="' + key + '" aria-haspopup="listbox" aria-expanded="false"><span>' + (val ? esc(val) : 'Sélectionner') + '</span><i>⌄</i></button><div class="hnp-sell" role="listbox" hidden>' + opts.map(function(o){ return '<div role="option" class="hnp-selo' + (o === val ? ' on' : '') + '" data-hnp-selo="' + key + '" data-v="' + esc(o) + '">' + esc(o) + '</div>'; }).join('') + '</div></div>'; }
+  function closeSel(except){ if(!root) return; root.querySelectorAll('.hnp-selw.open').forEach(function(w){ if(w !== except){ w.classList.remove('open'); var l = w.querySelector('.hnp-sell'); if(l) l.hidden = true; var b = w.querySelector('.hnp-selb'); if(b) b.setAttribute('aria-expanded', 'false'); } }); }
+  function selAct(t){
+    if(t.hasAttribute('data-hnp-selb')){ var w = t.closest('.hnp-selw'), open = !w.classList.contains('open'); closeSel(w); w.classList.toggle('open', open); w.querySelector('.hnp-sell').hidden = !open; t.setAttribute('aria-expanded', open ? 'true' : 'false'); if(open){ var on = w.querySelector('.hnp-selo.on'); if(on && on.scrollIntoView) on.scrollIntoView({ block:'nearest' }); } return; }
+    var k = t.getAttribute('data-hnp-selo'), v = t.getAttribute('data-v'), pp = J(PK, {}); pp[k] = v; S(PK, pp);
+    var w2 = t.closest('.hnp-selw'); w2.querySelectorAll('.hnp-selo').forEach(function(o){ o.classList.toggle('on', o === t); }); var b2 = w2.querySelector('.hnp-selb'); b2.classList.add('has'); b2.querySelector('span').textContent = v; closeSel(); toast('Enregistré.');
+  }
+  function startRot(){
+    var tk = ++rotTk, i = 0;
+    (function wait(){ setTimeout(function(){ if(tk !== rotTk || !root || !root.classList.contains('on')) return; var els = root.querySelectorAll('[data-rot]'); if(!els.length) return; i = (i + 1) % EX.length; els.forEach(function(e){ e.setAttribute('placeholder', EX[i]); }); wait(); }, 1000 + Math.round(Math.random() * 2000)); })();
+  }
+  function devName(){ var u = navigator.userAgent || '', b = /Edg\//.test(u) ? 'Edge' : /OPR\//.test(u) ? 'Opera' : /Firefox\//.test(u) ? 'Firefox' : /Chrome\//.test(u) ? 'Chrome' : /Safari\//.test(u) ? 'Safari' : 'Navigateur', o = /Windows/.test(u) ? 'Windows' : /Android/.test(u) ? 'Android' : /iPhone|iPad/.test(u) ? 'iOS' : /Mac OS/.test(u) ? 'macOS' : /Linux/.test(u) ? 'Linux' : ''; return b + (o ? ' (' + o + ')' : ''); }
+  function loadSess(){ try{ var A = window.__hnAuth, c = A && A.client && A.client(); if(!c || !c.auth || !c.auth.getUser) return; Promise.resolve(c.auth.getUser()).then(function(r){ var u = r && r.data && r.data.user; sessInfo = u ? { created:u.last_sign_in_at || u.created_at } : null; if(u && u.id) acctId = u.id; if(root && root.classList.contains('on') && cur === 'compte') render(); }).catch(function(){}); }catch(e){} }
+  function exportData(){
+    var out = { exporte_le:new Date().toISOString(), portee:'Données et préférences enregistrées sur cet appareil', donnees:{} };
+    try{ for(var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if(!/^(helpnaud|hn_|hn-)/i.test(k)) continue; if(/token|secret|pin|auth|password|key|sb-/i.test(k)) continue; var v = localStorage.getItem(k); try{ out.donnees[k] = JSON.parse(v); }catch(e){ out.donnees[k] = v; } } }catch(e){}
+    var b = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'helpnaud-donnees-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('Export téléchargé.');
+  }
   function sw(id, on){ return '<label class="hnp-sw"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '><i></i></label>'; }
   function secHtml(k){
     var p = J(PK, {}), w = who(), li = signedIn(), h = '';
@@ -46680,7 +46730,9 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
         h += '<label>Ville de résidence<input type="text" id="hnp-city" maxlength="80" value="' + esc(gv('hp-city')) + '" autocomplete="address-level2"></label>'; }
       if(fresh && li) h = '<div class="hnp-invite">👋 Bienvenue ! Pour finaliser votre compte HelpNaud.ai, complétez votre profil (téléphone, pays, région ou province, ville).</div>' + h;
       h += '<label>Comment HelpNaud doit vous appeler (surnom)<input type="text" id="hnp-nick" maxlength="40" value="' + esc(p.nick || '') + '"></label>';
-      h += '<label>Instructions : comment HelpNaud doit répondre<textarea id="hnp-how" maxlength="600" placeholder="Ex. : réponses courtes, ton formel, exemples en euros…">' + esc(p.how || '') + '</textarea></label>';
+      h += '<div><h4 style="margin:10px 0 4px">Rôle</h4><p style="margin:0 0 8px;font-size:14px;font-weight:600">Qu’est-ce qui décrit le mieux votre travail ou Profil ?</p>' + selHtml('role', ROLES, p.role) + '</div>';
+      h += '<div><h4 style="margin:14px 0 4px">Instructions pour HelpNaud</h4><p class="hint" style="margin:0">HelpNaud met tout en œuvre pour tenir compte de ces instructions dans vos conversations, sur tous vos appareils, dans le cadre des <a href="' + dirUrl() + '" target="_blank" rel="noopener">Directives HelpNaud by FINECIA GROUPE</a>. <a href="' + helpUrl('instructions') + '" target="_blank" rel="noopener">En savoir plus</a></p></div>';
+      h += '<label>Instructions : comment HelpNaud doit répondre<textarea id="hnp-how" data-rot="1" maxlength="600" placeholder="' + esc(EX[0]) + '">' + esc(p.how || '') + '</textarea></label>';
       h += '<div><button type="button" class="btn primary" data-hnp="saveprof">Enregistrer</button></div></div>';
       if(li){ h += '<div class="hnp-row"><div class="hnp-l">Courriel du compte<small>' + esc(w.email) + '</small></div><button type="button" class="btn" data-hnp="logout">Se déconnecter / changer de compte</button></div>';
         h += '<div class="hnp-row"><div class="hnp-l">Supprimer le compte<small>La demande est traitée par notre équipe (suppression de vos données).</small></div><a class="btn hnp-danger" href="mailto:contacts@fineciagroupe.com?subject=' + encodeURIComponent('Demande de suppression de compte HelpNaud.ai') + '&body=' + encodeURIComponent('Bonjour,\n\nJe demande la suppression de mon compte HelpNaud.ai : ' + w.email + '\n') + '">Demander la suppression</a></div>'; }
@@ -46731,6 +46783,14 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       h += '<div class="hnp-row"><div class="hnp-l"><b>Âge</b><small>Tranche d’âge utilisée pour appliquer les protections du compte</small></div><select id="hnp-age" style="border:1px solid var(--line);border-radius:9px;padding:8px;background:var(--surface);color:var(--ink);font:inherit;"><option value="">Non précisé</option><option value="18"' + (p.age === '18' ? ' selected' : '') + '>18 ans ou plus</option><option value="teen"' + (p.age === 'teen' ? ' selected' : '') + '>Moins de 18 ans</option></select></div>';
       h += '<div class="hnp-row"><div class="hnp-l"><b>Nom d’utilisateur</b><small>Votre identifiant d’affichage (lettres, chiffres, . _ -)</small></div><input type="text" id="hnp-handle" maxlength="30" value="' + esc(p.handle || '') + '" placeholder="votre.nom" style="width:170px"></div>';
       h += '<div class="hnp-row"><div class="hnp-l"><b>Adresse e-mail</b><small>L’adresse liée à votre compte</small></div><span style="word-break:break-all">' + esc(w.email || '—') + '</span></div>';
+      var cloc = [$('hp-city') && $('hp-city').value, $('hp-region') && $('hp-region').value].filter(Boolean).join(', ');
+      h += '<h4>Sessions actives</h4><div class="hnp-tbl"><div class="hnp-tr hd"><span>Appareil</span><span>Emplacement</span><span>Créé</span><span>Mis à jour</span></div>' + (li ? '<div class="hnp-tr"><span>' + esc(devName()) + ' <em>(cet appareil)</em></span><span>' + esc(cloc || '—') + '</span><span>' + esc(sessInfo && sessInfo.created ? new Date(sessInfo.created).toLocaleString('fr-CA', { dateStyle:'medium', timeStyle:'short' }) : '—') + '</span><span>À l’instant</span></div>' : '<div class="hnp-tr empty">Connectez-vous pour voir vos sessions.</div>') + '</div><p class="hint">Seule la session de cet appareil est affichée.</p>';
+      h += '<h4>Entreprise / Organisation / Institution</h4>';
+      h += '<div class="hnp-row"><div class="hnp-l"><b>ID de l’organisation</b><small>Pour un compte personnel, c’est l’identifiant de votre compte.</small></div><code style="font-size:12px;word-break:break-all;max-width:240px">' + esc(acctId || '—') + '</code><button type="button" class="btn" data-hnp-cp="1"' + (acctId ? '' : ' disabled') + '>Copier</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Qu’est-ce qui décrit le mieux votre Entreprise / Organisation / Institution</div>' + selHtml('org', ORGS, p.org) + '</div>';
+      h += '<h4>Appareils locaux</h4><p class="hint">Ordinateurs capables d’exécuter des tâches avec accès aux fichiers locaux, à l’utilisation de l’ordinateur, à l’utilisation du navigateur et aux MCP locaux.</p><p style="font-size:14px">Aucun ordinateur pour l’instant. Ouvrez l’application de bureau HelpNaud sur un ordinateur pour l’ajouter ici.</p>';
+      h += '<div class="hnp-row"><div class="hnp-l"><b>Clé d’accès<span class="hnp-soon">Bientôt</span></b><small>Pour les appareils de confiance : ajoutez une clé d’accès pour confirmer votre identité au lieu de vous reconnecter.</small></div><button type="button" class="btn" data-hnp-act="passkey">Ajouter une clé d’accès</button></div>';
+      h += '<h4>Appareils de confiance</h4><p class="hint">Appareils pouvant contrôler votre ordinateur via des sessions à distance.</p><p class="hint">Aucun appareil de confiance.</p>';
       if(li) h += '<div class="hnp-row"><div class="hnp-l"><b>Supprimer le compte</b><small>Supprime définitivement votre compte et ses données.</small></div><a class="btn hnp-danger" href="mailto:contacts@fineciagroupe.com?subject=' + encodeURIComponent('Demande de suppression de compte HelpNaud.ai') + '&body=' + encodeURIComponent('Bonjour,\n\nJe demande la suppression de mon compte HelpNaud.ai (' + w.email + ') et de mes données.\n\nMerci.') + '">Supprimer</a></div>';
     } else if(k === 'parental'){
       h += '<h3>Contrôle parental</h3><p class="hint">Gérez les comptes familiaux associés par le contrôle parental.</p>';
@@ -46790,6 +46850,21 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       h += '<div class="hnp-row"><div class="hnp-l">Politique de confidentialité</div><a class="btn" href="/confidentialite" target="_blank" rel="noopener">Lire</a></div>';
       h += '<div class="hnp-row"><div class="hnp-l">Politique de contrôle parental<small>Parent control policy (English)</small></div><a class="btn" href="/fr-fr/politique-contrôle-parental" target="_blank" rel="noopener">Lire</a><a class="btn" href="/En-En/parent-control-policy" target="_blank" rel="noopener">EN</a></div>';
       h += '<div class="hnp-row"><div class="hnp-l">Verrouillage par code (cet appareil)<small>Écran de protection local, il ne remplace pas votre mot de passe.</small></div><button type="button" class="btn" data-hnp="pin">Configurer</button></div>';
+      h += '<h4>Préférences</h4><h4 style="font-size:14px;margin:10px 0 0">Métadonnées de localisation</h4>';
+      h += '<div class="hnp-row" style="border-top:0"><div class="hnp-l">Autoriser HelpNaud à utiliser les métadonnées de localisation approximative (ville/région) pour améliorer les expériences produit. <a href="' + privUrl('localisation') + '" target="_blank" rel="noopener">En savoir plus</a></div>' + sw('hnp-pe-loc', peOn('loc')) + '</div>';
+      h += '<h4 style="font-size:14px;margin:14px 0 0">Contribuer à améliorer nos modèles d’IA à venir</h4>';
+      h += '<div class="hnp-row" style="border-top:0"><div class="hnp-l">Autoriser l’utilisation de vos conversations et sessions de codage et de programmation pour entraîner et améliorer les modèles d’IA à venir de HelpNaud.ai. <a href="' + privUrl('amelioration') + '" target="_blank" rel="noopener">En savoir plus</a></div>' + sw('hnp-pe-train', peOn('train')) + '</div>';
+      h += '<h4 style="font-size:14px;margin:14px 0 4px">Transparence</h4><p class="hint">FINECIA GROUPE œuvre et s’engage pour la transparence des pratiques en matière de données, conformément à sa politique d’utilisation. Découvrez comment vos informations sont protégées lorsque vous utilisez les produits HelpNaud, et consultez notre <a href="/confidentialite" target="_blank" rel="noopener">Politique de confidentialité</a> ou le <a href="' + privUrl('centre') + '" target="_blank" rel="noopener">Centre de confidentialité</a> pour plus de détails.</p>';
+      h += '<details class="hnp-acc"><summary>Comment nous utilisons vos données</summary><div class="hnp-accb"><p><b>Comprendre comment nous gérons vos données</b></p><ul><li>Avec votre autorisation, nous utiliserons vos conversations et sessions de codage pour entraîner et améliorer nos modèles d’IA. Cela nous permet de :<br>1) améliorer nos modèles d’IA pour rendre HelpNaud plus utile et plus précis pour tous ;<br>2) développer des mesures de protection plus robustes contre les réponses nuisibles.</li><li>HelpNaud by FINECIA GROUPE peut utiliser votre adresse e-mail pour la vérification du compte, la facturation, ainsi que pour les communications et le marketing émanant de FINECIA GROUPE et de la marque HelpNaud (par exemple, des e-mails présentant de nouvelles offres de produits, services, améliorations et fonctionnalités).</li><li>FINECIA GROUPE peut effectuer des analyses agrégées et anonymisées des données pour comprendre comment les gens utilisent HelpNaud afin de bien satisfaire les utilisateurs.</li><li>FINECIA GROUPE peut, à un certain moment, proposer des fonctionnalités supplémentaires qui nous permettront de collecter et d’utiliser davantage de vos données. Vous garderez toujours le contrôle et pourrez désactiver ces fonctionnalités dans les paramètres de votre compte.</li></ul></div></details>';
+      h += '<details class="hnp-acc"><summary>Comment nous protégeons vos données</summary><div class="hnp-accb"><p><b>Comprendre comment nous protégeons vos données</b></p><ul><li>Vous avez le contrôle sur vos données de conversation et pouvez modifier vos préférences à tout moment dans vos paramètres de confidentialité (cette page).</li><li>HelpNaud by FINECIA GROUPE supprime rapidement vos données sur demande, sauf en cas de violation de nos politiques de sécurité ou de conversations que vous avez partagées via vos commentaires.</li><li>FINECIA GROUPE ne vend jamais vos données à des tiers.</li></ul></div></details>';
+      h += '<h4 style="margin-top:18px">Vos données</h4>';
+      h += '<div class="hnp-row" style="border-top:0"><div class="hnp-l">Exporter les données<small>Télécharge un fichier avec les préférences et données enregistrées sur cet appareil.</small></div><button type="button" class="btn" data-hnp-act="export">Exporter les données</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Conversations partagées</div><button type="button" class="btn" data-hnp-go="liens">Gérer</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Mails connectés</div><button type="button" class="btn" data-hnp-go="conn">Gérer</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Interfaces partagées</div><button type="button" class="btn" data-hnp-go="liens">Gérer</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Fichiers importés</div><button type="button" class="btn" data-hnp-act="lib">Gérer</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Vos commentaires</div><button type="button" class="btn" data-hnp-act="fb">Gérer</button></div>';
+      h += '<div class="hnp-row"><div class="hnp-l">Préférences de mémoire</div><button type="button" class="btn" data-hnp-go="perso">Gérer ↗</button></div>';
     } else if(k === 'liens'){
       var o = J('hn_shared_links', {}), ks = Object.keys(o).filter(function(x){ return o[x] && o[x].id; });
       h += '<h3>Liens partagés</h3><p class="hint">Conversations que vous avez rendues lisibles par lien public (texte seul).</p>';
@@ -46894,7 +46969,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     h += '<small>Messages</small><div style="font-size:28px;font-weight:700">' + c2.total + '</div>' + (c2.empty ? '<p class="hint">Aucun message sur cette période.</p>' : c2.svg + c2.leg);
     return h;
   }
-  var PE_DEF = { quick:false, sugg:true, hist:true, voice:true, lib:true, conn:false };
+  var PE_DEF = { quick:false, sugg:true, hist:true, voice:true, lib:true, conn:false, loc:true, train:false };
   function peOn(k){ var o = peGet(); return o[k] === undefined ? PE_DEF[k] : !!o[k]; }
   function peGet(){ var o = J(PE, {}); if(!o || typeof o !== 'object') o = {}; if(!Array.isArray(o.notes)) o.notes = []; if(o.mem === undefined) o.mem = true; return o; }
   var peTimer = 0;
@@ -46935,9 +47010,9 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     h += '<h4>Style et ton</h4><p class="hint"><a href="' + helpUrl('style') + '" target="_blank" rel="noopener">En savoir plus</a></p>';
     PE_TXT.forEach(function(x){ h += '<div class="hnp-row"><div class="hnp-l"><b>' + x[1] + '</b><small>' + x[2] + '</small></div><select id="hnp-pe-' + x[0] + '" style="border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:var(--surface);color:var(--ink);font:inherit;">' + PE_OPTS[x[0]].map(function(op){ return '<option value="' + op[0] + '"' + ((o[x[0]] || '') === op[0] ? ' selected' : '') + '>' + op[1] + (op[2] ? ' — ' + op[2] : '') + '</option>'; }).join('') + '</select></div>'; });
     h += '<h4>Instructions personnalisées</h4>';
-    [['how','HelpNaud','Donnez à HelpNaud des instructions et du contexte supplémentaires pour toutes les conversations. <a href="' + helpUrl('instructions') + '" target="_blank" rel="noopener">En savoir plus</a>', p.how || ''],['hcode','H-Code','S’applique aux conversations de l’outil Code (Interface Help).', o.hcode || '']].forEach(function(x){
+    [['how','HelpNaud','Donnez à HelpNaud des instructions et du contexte supplémentaires pour toutes les conversations, dans le cadre des <a href="' + dirUrl() + '" target="_blank" rel="noopener">Directives HelpNaud by FINECIA GROUPE</a>. <a href="' + helpUrl('instructions') + '" target="_blank" rel="noopener">En savoir plus</a>', p.how || ''],['hcode','H-Code','S’applique aux conversations de l’outil Code (Interface Help).', o.hcode || '']].forEach(function(x){
       h += '<div class="hnp-row"><div class="hnp-l"><b>' + (x[0] === 'how' ? 'HelpNaud' : 'H-Code') + '</b><small>' + x[2] + '</small></div><button type="button" class="btn" data-hnp-pe="edit:' + x[0] + '">' + (peEdit === x[0] ? 'Fermer' : 'Modifier') + '</button></div>';
-      if(peEdit === x[0]) h += '<div class="hnp-box2"><textarea id="hnp-pe-ta" maxlength="' + (x[0] === 'how' ? 600 : 500) + '" rows="4" style="width:100%">' + esc(x[3]) + '</textarea><div><button type="button" class="btn primary" data-hnp-pe="save:' + x[0] + '">Enregistrer</button></div></div>';
+      if(peEdit === x[0]) h += '<div class="hnp-box2"><textarea id="hnp-pe-ta"' + (x[0] === 'how' ? ' data-rot="1" placeholder="' + esc(EX[0]) + '"' : '') + ' maxlength="' + (x[0] === 'how' ? 600 : 500) + '" rows="4" style="width:100%">' + esc(x[3]) + '</textarea><div><button type="button" class="btn primary" data-hnp-pe="save:' + x[0] + '">Enregistrer</button></div></div>';
     });
     h += '<h4>Paramètres HelpNaud supplémentaires</h4>';
     var wa = true; try{ wa = localStorage.getItem('helpnaud_web_auto') !== '0'; }catch(e){}
@@ -46967,7 +47042,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   function suggBar(){
     var inp = $('chat-input'); if(!inp) return; var wrap = inp.closest('.chat-input-wrap'), bar = $('hn-sugg');
     if(!peOn('sugg') || !signedIn()){ if(bar) bar.remove(); return; }
-    if(!bar){ bar = document.createElement('div'); bar.id = 'hn-sugg'; wrap.parentNode.insertBefore(bar, wrap); bar.addEventListener('click', function(e){ var b = e.target.closest('button'); if(!b) return; if(b.hasAttribute('data-sg')){ inp.value = b.getAttribute('data-sg'); inp.dispatchEvent(new Event('input', { bubbles:true })); inp.focus(); } else suggGen(); }); }
+    if(!bar){ bar = document.createElement('div'); bar.id = 'hn-sugg'; var fm = wrap.closest('form') || wrap; fm.parentNode.insertBefore(bar, fm); bar.addEventListener('click', function(e){ var b = e.target.closest('button'); if(!b) return; if(b.hasAttribute('data-sg')){ inp.value = b.getAttribute('data-sg'); inp.dispatchEvent(new Event('input', { bubbles:true })); inp.focus(); } else suggGen(); }); }
     var list = []; try{ list = JSON.parse(sessionStorage.getItem('hn_sugg') || '[]'); }catch(e){}
     bar.innerHTML = '<button type="button" data-sg-gen title="1 crédit">' + (suggBusy ? '… Génération' : '💡 Suggestions (1 crédit)') + '</button>' + list.map(function(x){ return '<button type="button" data-sg="' + esc(x) + '">' + esc(x) + '</button>'; }).join('');
   }
@@ -47009,6 +47084,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if((cur === 'parental' || cur === 'confiance') && fam === null && signedIn()) loadFam();
     if(cur === 'usage' && usageTab === 'stats' && stat === null && signedIn()) loadStats();
     root.querySelector('.hnp-pane').innerHTML = secHtml(cur);
+    if(root.querySelector('[data-rot]')) startRot();
     try{ var ce = $('hnp-country'), re = $('hnp-region'); if(ce && re && window.__hnGeo){ window.__hnGeo.bind(ce, re); } }catch(e){}
     var t = root.querySelector('.hnp-head h2'); var s = SECS.filter(function(x){ return x[0] === cur; })[0];
     t.textContent = (root.getAttribute('data-m') === 'det' && s) ? s[2] : 'Paramètres';
@@ -47026,7 +47102,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(!root) build();
     try{ if(window.__hnDrawer && window.__hnDrawer.isOpen()) window.__hnDrawer.close(); }catch(e){}
     cur = sec || cur || 'profil';
-    billing = null; loadingB = false; fam = null; stat = null; trracLoad(); pePull();
+    billing = null; loadingB = false; fam = null; stat = null; trracLoad(); pePull(); if(signedIn()){ loadSess(); mySub().then(function(id){ if(id){ acctId = id; if(root && root.classList.contains('on') && cur === 'compte') render(); } }); }
     root.setAttribute('data-m', window.innerWidth > 860 ? 'desk' : (sec ? 'det' : 'list'));
     render(); root.classList.add('on');
     var f = root.querySelector('.hnp-x'); if(f) f.focus();
@@ -47035,7 +47111,10 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   function reveal(sel){ var el = document.querySelector(sel); if(!el) return false; var v = el.closest('.view'); if(v && v.hidden){ var id = v.id.replace(/^view-/, ''); var b = document.querySelector('[data-view="' + id + '"]'); if(b) b.click(); } setTimeout(function(){ try{ el.scrollIntoView({ block:'center' }); }catch(e){} }, 150); return true; }
   function clickId(id){ var b = $(id); if(b) b.click(); return !!b; }
   function onClick(e){
-    var t = e.target.closest('[data-hnp],[data-hnp-theme],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go],[data-hnp-tab],[data-hnp-fam],[data-hnp-fa],[data-hnp-st],[data-hnp-pe]'); if(!t) return;
+    var t = e.target.closest('[data-hnp],[data-hnp-theme],[data-hnp-sec],[data-hnp-day],[data-hnp-copy],[data-hnp-off],[data-hnp-go],[data-hnp-tab],[data-hnp-fam],[data-hnp-fa],[data-hnp-st],[data-hnp-pe],[data-hnp-selb],[data-hnp-selo],[data-hnp-act],[data-hnp-cp]'); if(!t){ closeSel(); return; }
+    if(t.hasAttribute('data-hnp-selb') || t.hasAttribute('data-hnp-selo')){ selAct(t); return; }
+    if(t.hasAttribute('data-hnp-cp')){ if(acctId && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(acctId).then(function(){ toast('Identifiant copié.'); }); return; }
+    if(t.hasAttribute('data-hnp-act')){ var ac = t.getAttribute('data-hnp-act'); if(ac === 'export') exportData(); else if(ac === 'passkey') toast('Les clés d’accès arrivent bientôt.'); else if(ac === 'lib'){ closePanel(); var lb = document.querySelector('.nav-btn[data-view="library"]'); if(lb) lb.click(); } else if(ac === 'fb'){ closePanel(); var fb = document.getElementById('btn-feedback'); if(fb) fb.click(); } return; }
     if(t.hasAttribute('data-hnp-pe')){ peAct(t); return; }
     if(t.hasAttribute('data-hnp-st')){ var sp = t.getAttribute('data-hnp-st').split(':'), sv = +sp[1]; if(sp[0] === 'range'){ stRange = sv; stOff = 0; } else if(sp[0] === 'off') stOff = Math.max(0, stOff + sv); else if(sp[0] === 'mrange') msgRange = sv; else if(sp[0] === 'mby') msgBy = sp[1]; render(); return; }
     if(t.hasAttribute('data-hnp-fa')){ famAct(t); return; }
@@ -47098,7 +47177,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(t.id === 'hnp-hapt'){ try{ localStorage.setItem('helpnaud_haptic', t.checked ? '1' : '0'); }catch(x){} if(t.checked && navigator.vibrate) navigator.vibrate(15); return; }
     if(t.id === 'hnp-webauto'){ try{ localStorage.setItem('helpnaud_web_auto', t.checked ? '1' : '0'); }catch(x){} toast(t.checked ? 'Recherche web automatique activée.' : 'Recherche web automatique désactivée.'); return; }
     if(t.id && t.id.indexOf('hnp-fs-') === 0){ var fid = t.getAttribute('data-fid'), ff = ((fam && fam.family) || []).filter(function(x){ return x.id === fid; })[0]; if(ff){ var st2 = JSON.parse(JSON.stringify(ff.settings || {})); st2[t.id.slice(7)] = t.checked; try{ st2.tz = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(x){} ff.settings = st2; fapi({ action:'settings', id:fid, settings:st2 }).then(function(r){ if(r && r.ok) toast('Réglage enregistré ✓'); else { toast((r && r.message) || 'Échec.'); fam = null; render(); } }); } return; }
-    if(/^hnp-pe-(quick|sugg|hist|voice|lib|conn)$/.test(t.id || '')){ var ok2 = t.id.slice(7), o5 = peGet(); o5[ok2] = t.checked; pePut(o5); toast('Enregistré.'); suggBar(); return; }
+    if(/^hnp-pe-(quick|sugg|hist|voice|lib|conn|loc|train)$/.test(t.id || '')){ var ok2 = t.id.slice(7), o5 = peGet(); o5[ok2] = t.checked; pePut(o5); toast('Enregistré.'); suggBar(); return; }
     if(t.id === 'hnp-pe-mem' || t.id === 'hnp-pe-mystyle'){ var o1 = peGet(); o1[t.id === 'hnp-pe-mem' ? 'mem' : 'mystyle'] = t.checked; pePut(o1); toast('Enregistré.'); return; }
     if(t.id && t.id.indexOf('hnp-pe-') === 0 && PE_OPTS[t.id.slice(7)]){ var o2 = peGet(); o2[t.id.slice(7)] = t.value; pePut(o2); toast('Enregistré.'); return; }
     if(t.id === 'hnp-stby'){ stBy = t.value; render(); return; }

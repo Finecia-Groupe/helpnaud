@@ -169,3 +169,63 @@
   to = "/personalization-help.html"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/fr-fr/directives-helpnaud"
+  to = "/directives-helpnaud.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/directives-helpnaud"
+  to = "/directives-helpnaud.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/En-En/helpnaud-guidelines"
+  to = "/helpnaud-guidelines.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/en-en/helpnaud-guidelines"
+  to = "/helpnaud-guidelines.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/helpnaud-guidelines"
+  to = "/helpnaud-guidelines.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/fr-fr/aide-confidentialite"
+  to = "/aide-confidentialite.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/aide-confidentialite"
+  to = "/aide-confidentialite.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/En-En/privacy-help"
+  to = "/privacy-help.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/en-en/privacy-help"
+  to = "/privacy-help.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/privacy-help"
+  to = "/privacy-help.html"
+  status = 200
+  force = true
