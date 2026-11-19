@@ -7589,10 +7589,26 @@
       'lbl.customColor': 'Custom color'
     }
   };
+  var HN_SUP = 'am ar bn bho bg ca zh-Hans zh-Hant hr cs da nl en et fil fi fr de el gu ha he hi hu id it ja kn ko lv lt ml mr ms nb fa pl pt-BR pt-PT pa ro ru sr sk sl es-419 es-ES sw sv ta te th tr uk ur vi'.split(' ');
+  window.__hnResolveLang = function(v){
+    if(v && v !== 'auto'){ v = String(v); return /^fr/i.test(v) ? 'fr' : /^en/i.test(v) ? 'en' : v; }
+    var list = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || 'en'];
+    for(var i = 0; i < list.length; i++){
+      var t = String(list[i] || '').toLowerCase(); if(!t) continue;
+      if(/^fr/.test(t)) return 'fr'; if(/^en/.test(t)) return 'en';
+      if(/^zh/.test(t)) return /hant|-tw|-hk|-mo/.test(t) ? 'zh-Hant' : 'zh-Hans';
+      if(/^pt-pt/.test(t)) return 'pt-PT'; if(/^pt/.test(t)) return 'pt-BR';
+      if(/^es-es/.test(t)) return 'es-ES'; if(/^es/.test(t)) return 'es-419';
+      if(/^(nb|nn|no)(-|$)/.test(t)) return 'nb'; if(/^(fil|tl)(-|$)/.test(t)) return 'fil'; if(/^(in|id)(-|$)/.test(t)) return 'id'; if(/^(iw|he)(-|$)/.test(t)) return 'he';
+      var b = t.split('-')[0]; if(HN_SUP.indexOf(b) >= 0) return b;
+    }
+    return 'en';
+  };
   function getStoredLang(){
-    try{ return localStorage.getItem('helpnaud_lang') || 'fr'; }catch(e){ return 'fr'; }
+    try{ return window.__hnResolveLang(localStorage.getItem('helpnaud_lang') || 'auto'); }catch(e){ return 'fr'; }
   }
   function applyLanguage(lang){
+    var eff = lang;
     if(!I18N[lang]) lang = 'fr';
     var dict = I18N[lang];
     document.documentElement.setAttribute('lang', lang);
@@ -7614,9 +7630,11 @@
     });
     var btnFr = document.getElementById('lang-btn-fr');
     var btnEn = document.getElementById('lang-btn-en');
-    if(btnFr) btnFr.classList.toggle('active', lang === 'fr');
-    if(btnEn) btnEn.classList.toggle('active', lang === 'en');
+    if(btnFr) btnFr.classList.toggle('active', eff === 'fr');
+    if(btnEn) btnEn.classList.toggle('active', eff === 'en');
+    try{ if(window.__hnLang) window.__hnLang.apply(eff); else document.documentElement.setAttribute('lang', /^fr/.test(eff) ? 'fr' : eff); }catch(e){}
   }
+  window.__hnApplyLang = function(l){ applyLanguage(l); };
   function setLanguage(lang){
     try{ localStorage.setItem('helpnaud_lang', lang); }catch(e){}
     applyLanguage(lang);
@@ -46622,7 +46640,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
 (function(){
   'use strict';
   var PK = 'helpnaud_prof_prefs', FK = 'helpnaud_focus', PH = 'helpnaud_user_photo';
-  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['compte','🪪','Compte'],['parental','👨‍👩‍👧','Contrôle parental'],['confiance','🤝','Contact de confiance'],['temps','⏱️','Temps et concentration'],['perso','✍️','Personnalisation'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['comp','🐾','Compagnons'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence'],['clav','⌨️','Clavier HelpNaud']];
+  var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['compte','🪪','Compte'],['parental','👨‍👩‍👧','Contrôle parental'],['confiance','🤝','Contact de confiance'],['temps','⏱️','Temps et concentration'],['perso','✍️','Personnalisation'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['comp','🐾','Compagnons'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence'],['clav','⌨️','Clavier HelpNaud'],['lang','🌐','Langue']];
   var cur = 'profil', root = null, invite = false, usageTab = 'apercu', famOpen = '', trustOpen = false, famMode = 'email', fam = null, famLoading = false, famSel = '', EPF = '/.netlify/functions/family', peEdit = '', peMem = false, PE = 'helpnaud_perso', PH = 'helpnaud_refphotos';
   var loadingB = false, billing = null, EPB = '/.netlify/functions/stripe-checkout';
   function bapi(body){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk) return { ok:false, message:'Connectez-vous pour continuer.' }; return fetch(EPB, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {}; }); }).catch(function(){ return { ok:false, message:'Connexion impossible. Vérifiez votre réseau.' }; }); }); }
@@ -46899,6 +46917,8 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       var hp = true; try{ hp = localStorage.getItem('helpnaud_haptic') !== '0'; }catch(e){}
       h += '<h3>Retour haptique</h3><p class="hint">Courte vibration lorsque vous touchez un bouton' + (navigator.vibrate ? '.' : ' (non pris en charge par cet appareil ou ce navigateur).') + '</p>';
       h += '<div class="hnp-row"><div class="hnp-l">Retour haptique</div>' + sw('hnp-hapt', hp) + '</div>';
+    } else if(k === 'lang'){
+      h += (window.__hnLang ? window.__hnLang.html() : '<p class="hint">Indisponible.</p>');
     } else if(k === 'clav'){
       h += (window.__hnKbd ? window.__hnKbd.html() : '<p class="hint">Indisponible.</p>');
     } else if(k === 'look'){
@@ -46978,7 +46998,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   function sbRest(method, path, body, extra){ var A = window.__hnAuth; return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk || !A || !A.url) return null; var h = { apikey:A.key, Authorization:'Bearer ' + tk, 'Content-Type':'application/json' }; if(extra) h.Prefer = extra; return fetch(A.url + '/rest/v1/' + path, { method:method, headers:h, body: body == null ? undefined : JSON.stringify(body) }).then(function(r){ return r.ok ? (r.status === 204 ? [] : r.json().catch(function(){ return []; })) : null; }).then(function(d){ return { d:d, sub:jwtSub(tk) }; }); }).catch(function(){ return null; }); }
   function mySub(){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ return tk ? jwtSub(tk) : null; }).catch(function(){ return null; }); }
   function pePush(){ var o = peGet(); mySub().then(function(sub){ if(!sub) return; sbRest('POST', 'user_prefs?on_conflict=user_id', { user_id:sub, data:{ perso:o, _ts:o._ts || Date.now() }, updated_at:new Date().toISOString() }, 'resolution=merge-duplicates'); }); }
-  function pePull(){ if(!signedIn()) return; sbRest('GET', 'user_prefs?select=data&limit=1').then(function(r){ var sv = r && r.d && r.d[0] && r.d[0].data, o = peGet(); if(sv && sv.perso && (sv._ts || 0) > (o._ts || 0)){ S(PE, sv.perso); applyVoice(); if(root && root.classList.contains('on') && cur === 'perso') render(); } else if(!sv && (o._ts || o.notes.length)) pePush(); }); }
+  function pePull(){ if(!signedIn()) return; sbRest('GET', 'user_prefs?select=data&limit=1').then(function(r){ var sv = r && r.d && r.d[0] && r.d[0].data, o = peGet(); if(sv && sv.perso && (sv._ts || 0) > (o._ts || 0)){ S(PE, sv.perso); applyVoice(); try{ if(sv.perso.lang && sv.perso.lang !== (localStorage.getItem('helpnaud_lang') || 'auto') && window.__hnLang) window.__hnLang.set(sv.perso.lang, true); }catch(e){} if(root && root.classList.contains('on') && cur === 'perso') render(); } else if(!sv && (o._ts || o.notes.length)) pePush(); }); }
   function applyVoice(){ try{ document.body.classList.toggle('hn-voice-off', !peOn('voice')); }catch(e){} }
   window.__hnPerso = { on: function(k){ return peOn(k); } };
   window.__hnSaveRecording = function(text){ text = String(text || '').trim().slice(0, 8000); if(!text || !peOn('hist') || !signedIn()) return; mySub().then(function(sub){ if(sub) sbRest('POST', 'user_recordings', { user_id:sub, title:text.slice(0, 60), transcript:text }); }); };
@@ -47211,7 +47231,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     setTimeout(function(){ var gt = document.getElementById('hn-gate'); if(gt && !gt.hidden && getComputedStyle(gt).display !== 'none') return; invite = true; openPanel('profil'); }, 1800);
   });
   document.addEventListener('hn-profile-saved', function(){ var p = window.__hnProfData; if(!incomplete(p)){ invite = false; if(root && root.classList.contains('on')) setTimeout(function(){ render(); }, 50); } });
-  window.__hnProfile = { open:openPanel, close:closePanel, refresh:renderBtn };
+  window.__hnProfile = { open:openPanel, close:closePanel, refresh:renderBtn, setLangPref:function(v){ var o = peGet(); o.lang = v; pePut(o); } };
   function init(){ ensureBtn(); renderBtn(); trracBind(); trracLoad(); applyVoice(); setTimeout(function(){ pePull(); suggBar(); }, 3500); document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('[data-view="assistant"]')) setTimeout(suggBar, 400); }); famToken(); setTimeout(tryFamToken, 3000); var inn = $('cust-in'); if(inn) new MutationObserver(function(){ renderBtn(); if(root && root.classList.contains('on')) render(); }).observe(inn, { attributes:true, subtree:true, childList:true, characterData:true }); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   setTimeout(init, 1500);
@@ -47369,6 +47389,8 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
 <style id="hnk-css">
 #hnp .hnk-sub{ font-size:16px; margin:2px 0 6px; }
 #hnp .hnk-note{ background:var(--surface-2); border-radius:10px; padding:10px 14px; color:var(--muted); font-size:13px; margin:6px 0 14px; }
+#hnp .hnk-big{ font-size:18px; font-weight:800; margin:20px 0 8px; letter-spacing:.01em; }
+#hnp .hnk-sub2{ font-size:13.5px; font-weight:700; padding:14px 0 4px; border-top:1px solid var(--line); }
 #hnp .hnk-grp{ font-size:12.5px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); margin:18px 0 4px; }
 #hnp .hnk-card{ border:1px solid var(--line); border-radius:16px; background:var(--surface); padding:2px 14px; }
 #hnp .hnk-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line); }
@@ -47442,40 +47464,45 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   }
   /* ===== Raccourcis ===== */
   var SC = [
-    { grp:'Discussion / Chat' },
+    { grp:'CLAVARDAGE / DISCUSSION / CHAT', big:true },
+    { id:'del', t:'Supprimer le chat', k:'Ctrl+Shift+Delete', k2:'Shift+Win+Backspace', run:function(){ goAssistant(); setTimeout(function(){ var v = view(), mb = v && v.querySelector('.hn-mn-btn'); if(!mb){ toast('Aucun chat à supprimer ici.'); return; } mb.click(); setTimeout(function(){ var d = document.querySelector('.hn-mn button.danger'); if(d && !d.disabled) d.click(); else { document.body.click(); toast('Aucun chat à supprimer.'); } }, 80); }, 60); } },
+    { sub:'Application' },
     { id:'newchat', t:'Nouveau chat', k:'Ctrl+Shift+O', run:function(){ goAssistant(); clickId('assistant-conv-new-btn'); } },
+    { id:'help', t:'Afficher les raccourcis clavier', k:'Ctrl+/', run:function(){ if(window.__hnProfile) window.__hnProfile.open('clav'); } },
+    { id:'annot', t:'Envoyer les annotations', k:'Ctrl+Enter', small:'Envoie le message saisi avec ses pièces jointes.', run:function(){ var f = $('chat-form'); if(f && f.requestSubmit) f.requestSubmit(); } },
     { id:'hist', t:'Changer de chat…', k:'Ctrl+K', run:function(){ goAssistant(); clickId('assistant-conv-history-btn'); } },
     { id:'side', t:'Activer/désactiver la barre latérale', k:'Ctrl+Shift+S', built:true, run:function(){ document.dispatchEvent(new KeyboardEvent('keydown', { key:'S', ctrlKey:true, shiftKey:true, bubbles:true, cancelable:true })); } },
-    { id:'help', t:'Afficher les raccourcis clavier', k:'Ctrl+/', run:function(){ if(window.__hnProfile) window.__hnProfile.open('clav'); } },
+    { atrow:true },
     { grp:'Zone de saisie HelpNaud' },
     { id:'focus', t:'Placer le curseur dans le chat principal', k:'Shift+Esc', run:function(){ goAssistant(); setTimeout(function(){ var i = $('chat-input'); if(i) i.focus(); }, 30); } },
     { id:'send', t:'Envoyer le message', k:'Enter', fixed:true, small:'Désactivé : Entrée fait un retour à la ligne, Ctrl+Entrée envoie.' },
-    { id:'send2', t:'Envoyer avec Ctrl+Entrée', k:'Ctrl+Enter', run:function(){ var f = $('chat-form'); if(f && f.requestSubmit) f.requestSubmit(); } },
     { id:'dict', t:'Activer ou désactiver la dictée', k:'Alt+M', run:function(){ goAssistant(); clickId('btn-mic'); } },
     { id:'attach', t:'Joindre des fichiers et des dossiers', k:'Ctrl+U', run:function(){ goAssistant(); clickId('attach-file-input'); } },
     { id:'web', t:'Recherche sur le Web (activer/désactiver)', k:'Alt+W', run:function(){ goAssistant(); chip('web'); } },
     { id:'deep', t:'Recherche approfondie (activer/désactiver)', k:'Alt+R', run:function(){ goAssistant(); chip('deep'); } }
   ];
-  function cfg(id){ var s = g(), d = SC.filter(function(x){ return x.id === id; })[0] || {}; var c = (s.k || {})[id] || {}; return { on:c.on !== false, k:c.k != null ? c.k : d.k }; }
+  function cfg(id){ var s = g(), d = SC.filter(function(x){ return x.id === id; })[0] || {}; var c = (s.k || {})[id] || {}; return { on:c.on !== false, k:c.k != null ? c.k : d.k, k2:c.k2 != null ? c.k2 : (d.k2 || '') }; }
   function atOn(){ return g().at !== false; }
   function keyName(e){
     var k = e.key; if(!k || k === 'Control' || k === 'Shift' || k === 'Alt' || k === 'Meta') return '';
     if(k === 'Escape') k = 'Esc'; else if(k === ' ') k = 'Space'; else if(k.length === 1) k = k.toUpperCase();
-    var p = []; if(e.ctrlKey || e.metaKey) p.push('Ctrl'); if(e.altKey) p.push('Alt'); if(e.shiftKey) p.push('Shift'); p.push(k); return p.join('+');
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || ''), p = []; if(e.ctrlKey || (e.metaKey && mac)) p.push('Ctrl'); if(e.altKey) p.push('Alt'); if(e.shiftKey) p.push('Shift'); if(e.metaKey && !mac) p.push('Win'); p.push(k); return p.join('+');
   }
-  function show(k){ if(!k) return '<span class="hnk-none">aucun</span>'; return k.split('+').map(function(x){ var m = { Enter:'⏎', Esc:'Échap', Delete:'Suppr', Backspace:'Retour', ArrowUp:'↑', ArrowDown:'↓', ArrowLeft:'←', ArrowRight:'→' }; return '<kbd>' + esc(m[x] || x) + '</kbd>'; }).join(''); }
+  function show(k){ if(!k) return '<span class="hnk-none">aucun</span>'; return k.split('+').map(function(x){ var m = { Enter:'⏎', Esc:'Échap', Delete:'Suppr', Backspace:'Backspace', ArrowUp:'↑', ArrowDown:'↓', ArrowLeft:'←', ArrowRight:'→' }; return '<kbd>' + esc(m[x] || x) + '</kbd>'; }).join(''); }
   function sw(id, on){ return '<label class="hnp-sw"><input type="checkbox" data-hnk-sw="' + id + '"' + (on ? ' checked' : '') + '><i></i></label>'; }
   var rec = null;
   function html(){
     var h = '<h3>Clavier HelpNaud</h3><p class="hnk-sub">Consulter et modifier les raccourcis clavier</p><div class="hnk-note">Pour modifier un raccourci, sélectionnez la combinaison de touches, puis saisissez la nouvelle combinaison. Échap annule, Retour arrière supprime le raccourci.</div>';
     var open = false;
     SC.forEach(function(x){
-      if(x.grp){ if(open) h += '</div>'; h += '<div class="hnk-grp">' + esc(x.grp) + '</div><div class="hnk-card">'; open = true; return; }
+      if(x.grp){ if(open) h += '</div>'; h += (x.big ? '<h3 class="hnk-big">' + esc(x.grp) + '</h3>' : '<div class="hnk-grp">' + esc(x.grp) + '</div>') + '<div class="hnk-card">'; open = true; return; }
+      if(x.sub){ h += '<div class="hnk-sub2">' + esc(x.sub) + '</div>'; return; }
+      if(x.atrow){ h += '<div class="hnk-row"><div class="hnk-l">Affiche les raccourcis de @H-Liste<small>Tapez @ dans la zone de saisie pour ouvrir le menu d’actions rapides.</small></div><span class="hnk-keys fixed">' + show('Ctrl+@') + '<span class="hnk-none">ou</span><kbd>@</kbd></span>' + sw('__at', atOn()) + '</div>'; return; }
       var c = cfg(x.id);
-      h += '<div class="hnk-row"><div class="hnk-l">' + esc(x.t) + (x.small && !c.on ? '<small>' + esc(x.small) + '</small>' : '') + '</div>' + (x.fixed ? '<span class="hnk-keys fixed">' + show(x.k) + '</span>' : '<button type="button" class="hnk-keys' + (rec === x.id ? ' rec' : '') + '" data-hnk-edit="' + x.id + '" aria-label="Modifier le raccourci : ' + esc(x.t) + '">' + (rec === x.id ? 'Appuyez sur la nouvelle combinaison…' : show(c.k)) + '</button>') + sw(x.id, c.on) + '</div>';
+      function kb(field, val){ var rid = x.id + (field === 'k2' ? '#2' : ''); return '<button type="button" class="hnk-keys' + (rec === rid ? ' rec' : '') + '" data-hnk-edit="' + rid + '" aria-label="Modifier le raccourci : ' + esc(x.t) + '">' + (rec === rid ? 'Appuyez sur la nouvelle combinaison…' : show(val)) + '</button>'; }
+      h += '<div class="hnk-row"><div class="hnk-l">' + esc(x.t) + (x.small && (x.fixed ? !c.on : true) ? '<small>' + esc(x.small) + '</small>' : '') + '</div>' + (x.fixed ? '<span class="hnk-keys fixed">' + show(x.k) + '</span>' : kb('k', c.k) + (x.k2 ? kb('k2', c.k2) : '')) + sw(x.id, c.on) + '</div>';
     });
     if(open) h += '</div>';
-    h += '<div class="hnk-grp">@H-Liste</div><div class="hnk-card"><div class="hnk-row"><div class="hnk-l">Affiche les raccourcis de @H-Liste<small>Tapez @ dans la zone de saisie pour ouvrir le menu d’actions rapides.</small></div><span class="hnk-keys fixed">' + show('Ctrl+@') + '<span class="hnk-none">ou</span><kbd>@</kbd></span>' + sw('__at', atOn()) + '</div></div>';
     h += '<div class="hnk-prev"><div class="hnk-grp" style="margin-top:6px">Aperçu de @H-Liste</div><div class="hnk-menu static">' + itemsHtml(ATS, 0) + '<div class="hnk-foot">↑ ↓ pour naviguer · Entrée pour choisir · Échap pour fermer</div></div></div>';
     h += '<div style="margin-top:14px"><button type="button" class="btn" data-hnk-reset>Rétablir les valeurs par défaut</button></div>';
     return h;
@@ -47489,12 +47516,13 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       e.preventDefault(); e.stopImmediatePropagation();
       if(e.key === 'Escape'){ rec = null; refresh(); return; }
       var s = g(); s.k = s.k || {};
-      if(e.key === 'Backspace' || e.key === 'Delete'){ s.k[rec] = Object.assign({}, s.k[rec], { k:'' }); put(s); rec = null; refresh(); return; }
+      var rid = rec.split('#')[0], fld = rec.indexOf('#2') > 0 ? 'k2' : 'k';
+      if(e.key === 'Backspace' || e.key === 'Delete'){ var oo = {}; oo[fld] = ''; s.k[rid] = Object.assign({}, s.k[rid], oo); put(s); rec = null; refresh(); return; }
       var n = keyName(e); if(!n) return;
       if(n.indexOf('+') < 0 && !/^F\d+$/.test(n)){ toast('Ajoutez une touche Ctrl, Alt ou Maj.'); return; }
-      var clash = SC.filter(function(x){ return x.id && x.id !== rec && cfg(x.id).on && cfg(x.id).k === n; })[0];
+      var clash = SC.filter(function(x){ if(!x.id) return false; var cc = cfg(x.id); return cc.on && ((x.id !== rid || fld !== 'k') && cc.k === n || (x.id !== rid || fld !== 'k2') && cc.k2 === n); })[0];
       if(clash){ toast('Déjà utilisé par : ' + clash.t); return; }
-      s.k[rec] = Object.assign({}, s.k[rec], { k:n }); put(s); rec = null; refresh(); return;
+      var o2 = {}; o2[fld] = n; s.k[rid] = Object.assign({}, s.k[rid], o2); put(s); rec = null; refresh(); return;
     }
     if(t && t.closest && t.closest('#hnp') && /INPUT|SELECT/.test(t.tagName) ) return;
     var n = keyName(e);
@@ -47506,7 +47534,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     for(var i = 0; i < SC.length; i++){
       var x = SC[i]; if(!x.id || !x.run) continue; var c = cfg(x.id);
       if(x.built && n === 'Ctrl+Shift+S' && (!c.on || c.k !== 'Ctrl+Shift+S')){ e.preventDefault(); e.stopImmediatePropagation(); }
-      if(c.on && c.k && c.k === n){ e.preventDefault(); e.stopImmediatePropagation(); try{ x.run(); }catch(er){} return; }
+      if(c.on && ((c.k && c.k === n) || (c.k2 && c.k2 === n))){ e.preventDefault(); e.stopImmediatePropagation(); try{ x.run(); }catch(er){} return; }
     }
     if(atOn() && n === 'Ctrl+@' && t && t.id === 'chat-input'){ e.preventDefault(); var v = t.value, p = t.selectionStart; t.value = v.slice(0, p) + '@' + v.slice(p); t.selectionStart = t.selectionEnd = p + 1; t.dispatchEvent(new Event('input', { bubbles:true })); }
   }, true);
@@ -47556,6 +47584,211 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     put(s); if(id === 'send') refresh(); if(id === '__at' && !t.checked) closeMenu();
   });
   window.__hnKbd = { html:html };
+})();
+</script>
+
+<style id="hnl-css">
+#hn-lang-dlg{ position:fixed; inset:0; z-index:99996; background:rgba(16,24,40,.5); display:flex; align-items:center; justify-content:center; padding:16px; }
+#hn-lang-dlg .hnl-box{ width:min(920px,100%); max-height:min(640px,92vh); background:var(--surface,#fff); color:var(--ink,#16304A); border-radius:22px; box-shadow:0 24px 70px rgba(16,24,40,.35); display:flex; flex-direction:column; padding:20px 22px 12px; }
+#hn-lang-dlg .hnl-h{ display:flex; align-items:center; justify-content:space-between; font-size:18px; font-weight:700; margin-bottom:14px; }
+#hn-lang-dlg .hnl-x{ border:0; background:none; font-size:22px; cursor:pointer; color:inherit; padding:4px 8px; border-radius:8px; }
+#hn-lang-dlg .hnl-x:hover{ background:var(--surface-2,#eef1f6); }
+#hn-lang-dlg .hnl-s{ display:flex; align-items:center; gap:10px; background:var(--surface-2,#eef1f6); border:2px solid transparent; border-radius:14px; padding:10px 14px; margin-bottom:10px; }
+#hn-lang-dlg .hnl-s:focus-within{ border-color:var(--accent,#1e4b8f); }
+#hn-lang-dlg .hnl-s input{ flex:1; border:0; background:none; font:inherit; font-size:15px; color:inherit; outline:0; min-width:0; }
+#hn-lang-dlg .hnl-grid{ overflow:auto; display:grid; grid-template-columns:repeat(3,1fr); gap:4px 8px; padding:4px 2px 10px; }
+#hn-lang-dlg .hnl-it{ display:flex; align-items:center; justify-content:space-between; gap:8px; text-align:start; border:0; background:none; font:inherit; color:inherit; padding:10px 14px; border-radius:12px; cursor:pointer; }
+#hn-lang-dlg .hnl-it:hover{ background:var(--surface-2,#eef1f6); }
+#hn-lang-dlg .hnl-it.on{ background:color-mix(in srgb, var(--accent,#1e4b8f) 12%, transparent); }
+#hn-lang-dlg .hnl-it b{ display:block; font-weight:500; font-size:15px; }
+#hn-lang-dlg .hnl-it small{ display:block; color:var(--muted,#6b7a90); font-size:13px; margin-top:1px; }
+#hn-lang-dlg .hnl-it i{ font-style:normal; color:var(--accent,#1e4b8f); font-weight:700; }
+#hn-lang-dlg .hnl-auto{ grid-column:1 / -1; border:1px solid var(--line,#dde3ee); }
+#hn-lang-dlg .hnl-it.dis{ opacity:.5; cursor:not-allowed; }
+#hn-lang-dlg .hnl-bd{ display:block; font-style:normal; font-size:11.5px; margin-top:3px; color:var(--muted,#6b7a90); }
+#hn-lang-dlg .hnl-bd.verifiee,#hn-lang-dlg .hnl-bd.fr{ color:#17803d; font-weight:600; }
+#hn-lang-dlg .hnl-bd.automatique{ color:#9a6700; }
+/* lecture de droite à gauche : nombres, adresses, URL, code et champs techniques restent de gauche à droite */
+[dir="rtl"] input[type="email"],[dir="rtl"] input[type="url"],[dir="rtl"] input[type="tel"],[dir="rtl"] input[type="number"],[dir="rtl"] input[type="password"],[dir="rtl"] code,[dir="rtl"] pre,[dir="rtl"] kbd,[dir="rtl"] .hn-ltr{ direction:ltr; unicode-bidi:isolate; }
+[dir="rtl"] input[type="email"],[dir="rtl"] input[type="url"],[dir="rtl"] input[type="tel"]{ text-align:right; }
+[dir="rtl"] bdi,[dir="rtl"] a[href^="mailto:"],[dir="rtl"] a[href^="tel:"]{ unicode-bidi:isolate; }
+[dir="rtl"] td,[dir="rtl"] th{ text-align:start; }
+#hn-lang-dlg .hnl-none{ grid-column:1 / -1; padding:16px; color:var(--muted,#6b7a90); }
+@media (max-width:760px){ #hn-lang-dlg .hnl-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:480px){ #hn-lang-dlg .hnl-grid{ grid-template-columns:1fr; } }
+</style>
+<script id="hnl-js">
+(function(){
+  'use strict';
+  var LK = 'helpnaud_lang';
+  var LANGS = [['am','አማርኛ','Amharic'],['ar','العربية','Arabic'],['bn','বাংলা','Bangla'],['bho','भोजपुरी','Bhojpuri'],['bg','български','Bulgarian'],['ca','català','Catalan'],['zh-Hans','中文（简体）','Chinese (Simplified)'],['zh-Hant','中文（繁體）','Chinese (Traditional)'],['hr','hrvatski','Croatian'],['cs','čeština','Czech'],['da','Dansk','Danish'],['nl','Nederlands','Dutch'],['en','English (United States)','English (United States)'],['et','eesti','Estonian'],['fil','Filipino','Filipino'],['fi','Suomi','Finnish'],['fr-FR','Français (France)','French (France)'],['fr-CA','Français (Canada)','French (Canada)'],['de','Deutsch (Deutschland)','German (Germany)'],['el','Ελληνικά','Greek'],['gu','ગુજરાતી','Gujarati'],['ha','Hausa','Hausa'],['he','עברית','Hebrew'],['hi','हिन्दी (भारत)','Hindi (India)'],['hu','magyar','Hungarian'],['id','Indonesia (Indonesia)','Indonesian (Indonesia)'],['it','Italiano (Italia)','Italian (Italy)'],['ja','日本語 (日本)','Japanese (Japan)'],['kn','ಕನ್ನಡ','Kannada'],['ko','한국어(대한민국)','Korean (South Korea)'],['lv','latviešu','Latvian'],['lt','lietuvių','Lithuanian'],['ml','മലയാളം','Malayalam'],['mr','मराठी','Marathi'],['ms','Melayu','Malay'],['nb','Norsk bokmål','Norwegian Bokmål'],['fa','فارسی','Persian'],['pl','polski','Polish'],['pt-BR','Português (Brasil)','Portuguese (Brazil)'],['pt-PT','Português (Portugal)','Portuguese (Portugal)'],['pa','ਪੰਜਾਬੀ','Punjabi'],['ro','română','Romanian'],['ru','Русский','Russian'],['sr','српски','Serbian'],['sk','slovenčina','Slovak'],['sl','slovenščina','Slovenian'],['es-419','Español (Latinoamérica)','Spanish (Latin America)'],['es-ES','Español (España)','Spanish (Spain)'],['sw','Kiswahili','Swahili'],['sv','Svenska','Swedish'],['ta','தமிழ்','Tamil'],['te','తెలుగు','Telugu'],['th','ไทย','Thai'],['tr','Türkçe','Turkish'],['uk','Українська','Ukrainian'],['ur','اردو','Urdu'],['vi','Tiếng Việt','Vietnamese']];
+  var RTL = { ar:1, he:1, fa:1, ur:1 };
+  function g(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function sv(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+  function norm(t){ return String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  var resolve = window.__hnResolveLang || function(v){ return v && v !== 'auto' ? String(v).split('-')[0] : 'fr'; };
+  function pref(){ return g(LK) || 'auto'; }
+  function label(v){
+    if(!v || v === 'auto') return 'Automatique (langue du navigateur)';
+    if(v === 'fr') v = 'fr-FR';
+    var l = LANGS.filter(function(x){ return x[0] === v; })[0] || LANGS.filter(function(x){ return x[0].split('-')[0] === String(v).split('-')[0]; })[0];
+    return l ? l[1] : v;
+  }
+  /* ===== moteur de traduction de l'interface ===== */
+  var cur = 'fr', cache = {}, tracked = new Set(), trackedEl = new Set(), obs = null, busy = false, dirty = new Set(), dtimer = 0, ftimer = 0;
+  var SKIP = 'script,style,noscript,textarea,code,pre,kbd,svg,canvas,td,[data-no-i18n],[contenteditable="true"],.chat-log,[id$="-log"]';
+  var ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
+  var SKIPA = 'script,style,noscript,[data-no-i18n],.chat-log,[id$="-log"]';
+  function okText(t){ return !!t && t.length <= 400 && /[A-Za-zÀ-ÿĀ-ɏͰ-ϿЀ-ӿ]/.test(t); }
+  var BASE = '/i18n/', missing = Object.create(null), man = null, manP = null, loadSeq = 0, shown = '';
+  /* Traductions PRÉPARÉES : fichiers statiques /i18n/<langue>.json. Aucun texte n'est envoyé à un service pendant l'utilisation. */
+  function getManifest(force){
+    if(man && !force) return Promise.resolve(man);
+    if(manP && !force) return manP;
+    manP = fetch(BASE + 'manifest.json', { cache:'no-cache' }).then(function(r){ if(!r.ok) throw new Error('manifest ' + r.status); return r.json(); }).then(function(m){ man = m; manP = null; return m; }).catch(function(e){ manP = null; throw e; });
+    return manP;
+  }
+  function status(m, l){ var x = m && m.langs && m.langs[l]; return x ? x.status : null; }
+  function loadBundle(l){
+    return getManifest().then(function(m){
+      var st = status(m, l); if(st !== 'verifiee' && st !== 'automatique') throw new Error('indisponible');
+      return fetch(BASE + l + '.json?v=' + encodeURIComponent(m.v), { cache:'default' }).then(function(r){ if(!r.ok) throw new Error('bundle ' + r.status); return r.json(); });
+    }).then(function(d){ if(!d || !d.tr || typeof d.tr !== 'object') throw new Error('format'); return d.tr; });
+  }
+  function write(fn){ busy = true; try{ fn(); }finally{ if(obs) obs.takeRecords(); busy = false; } }
+  function split(v){ var m = /^(\s*)([\s\S]*?)(\s*)$/.exec(v); return [m[1], m[2], m[3]]; }
+  function handleText(n){
+    var el = n.parentElement; if(!el || el.closest(SKIP)) return;
+    if(cur === 'en' && el.hasAttribute('data-i18n')) return;
+    var v = n.nodeValue; if(n.__hnTr !== undefined && v === n.__hnTr) return;
+    var p = split(v), core = p[1]; if(!okText(core)) return;
+    var t = cache[core.replace(/\s+/g, ' ')];
+    if(t){ n.__hnSrc = v; n.__hnTr = p[0] + t + p[2]; n.nodeValue = n.__hnTr; tracked.add(n); }
+    else missing[core.replace(/\s+/g, ' ')] = 1;
+  }
+  function handleAttrs(el){
+    if(!el || el.nodeType !== 1 || el.closest(SKIPA)) return;
+    ATTRS.forEach(function(a){
+      if(!el.hasAttribute(a)) return; if(cur === 'en' && (el.hasAttribute('data-i18n-title') || el.hasAttribute('data-i18n-ph'))) return;
+      var v = el.getAttribute(a), rec = el.__hnA && el.__hnA[a]; if(rec && v === rec.tr) return;
+      var core = String(v).trim(); if(!okText(core)) return; var t = cache[core.replace(/\s+/g, ' ')];
+      if(t){ el.__hnA = el.__hnA || {}; el.__hnA[a] = { src:v, tr:t }; el.setAttribute(a, t); trackedEl.add(el); }
+      else missing[core.replace(/\s+/g, ' ')] = 1;
+    });
+  }
+  function walk(root){
+    if(!root) return;
+    if(root.nodeType === 3){ handleText(root); return; }
+    if(root.nodeType !== 1) return;
+    handleAttrs(root);
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n; while((n = w.nextNode())) handleText(n);
+    var q = root.querySelectorAll('[placeholder],[title],[aria-label],[alt]'); for(var i = 0; i < q.length; i++) handleAttrs(q[i]);
+  }
+  /* RTL : un montant ou un nombre seul (« 0 $ », « 12 400 », « 2026-0042 ») garde son ordre de lecture */
+  var NUMONLY = /^[\s\d.,$€£¥%+\-–—:/()#°]+$/, HASDIG = /\d/;
+  function bidiNums(root){
+    if(!root || !RTL[cur.split('-')[0]]) return;
+    var w = document.createTreeWalker(root.nodeType === 3 ? root.parentNode : root, NodeFilter.SHOW_TEXT, null), n, el;
+    while((n = w.nextNode())){ var v = n.nodeValue; if(!v || !HASDIG.test(v) || !NUMONLY.test(v)) continue; el = n.parentElement; if(!el || el.childNodes.length !== 1 || el.closest('script,style,textarea,code,pre,kbd')) continue; el.style.unicodeBidi = 'plaintext'; }
+  }
+  function run(roots){ if(cur === 'fr') return; write(function(){ roots.forEach(walk); roots.forEach(bidiNums); }); }
+  function restoreAll(){
+    write(function(){
+      tracked.forEach(function(n){ if(n.isConnected && n.nodeValue === n.__hnTr) n.nodeValue = n.__hnSrc; delete n.__hnTr; delete n.__hnSrc; }); tracked.clear();
+      trackedEl.forEach(function(el){ if(el.__hnA) Object.keys(el.__hnA).forEach(function(a){ var r = el.__hnA[a]; if(el.getAttribute(a) === r.tr) el.setAttribute(a, r.src); }); delete el.__hnA; }); trackedEl.clear();
+    });
+  }
+  function startObs(){
+    if(obs) return;
+    obs = new MutationObserver(function(recs){
+      if(busy || cur === 'fr') return;
+      recs.forEach(function(r){ if(r.type === 'childList'){ r.addedNodes.forEach(function(n){ dirty.add(n); }); } else if(r.type === 'characterData'){ dirty.add(r.target); } else if(r.type === 'attributes'){ dirty.add(r.target); } });
+      clearTimeout(dtimer); dtimer = setTimeout(function(){ var a = []; dirty.forEach(function(n){ if(n.isConnected) a.push(n); }); dirty.clear(); run(a); }, 40);
+    });
+    obs.observe(document.body, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:ATTRS });
+  }
+  function setDir(l){ var de = document.documentElement; de.setAttribute('lang', l); de.setAttribute('dir', RTL[l.split('-')[0]] ? 'rtl' : 'ltr'); }
+  function notice(msg){ try{ if(window.__hnProfile && window.toastHN) window.toastHN(msg); else { var t = document.getElementById('hnl-toast'); if(!t){ t = document.createElement('div'); t.id = 'hnl-toast'; t.setAttribute('role', 'status'); t.setAttribute('data-no-i18n', '1'); t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2a41;color:#fff;padding:10px 16px;border-radius:12px;z-index:100000;font:14px system-ui;max-width:90vw'; document.body.appendChild(t); } t.textContent = msg; t.style.display = 'block'; clearTimeout(t.__t); t.__t = setTimeout(function(){ t.style.display = 'none'; }, 5000); } }catch(e){} }
+  function useFrench(){ cur = 'fr'; restoreAll(); cache = {}; setDir('fr'); shown = 'fr'; }
+  function apply(base){
+    base = base || 'fr'; var seq = ++loadSeq, auto = pref() === 'auto';
+    if(base === 'fr'){ useFrench(); return Promise.resolve('fr'); }
+    var order = auto && base !== 'en' ? [base, 'en'] : [base];
+    var chain = Promise.reject(new Error('x'));
+    order.forEach(function(l){ chain = chain.catch(function(){ return loadBundle(l).then(function(tr){ return { l:l, tr:tr }; }); }); });
+    return chain.then(function(o){
+      if(seq !== loadSeq) return shown;
+      restoreAll(); cur = o.l; cache = o.tr; missing = Object.create(null); setDir(o.l); shown = o.l; startObs(); run([document.body]);
+      return o.l;
+    }).catch(function(){
+      if(seq !== loadSeq) return shown;
+      useFrench();
+      notice('Traduction indisponible pour le moment : l’interface reste en français. Réessayez plus tard.');
+      return 'fr';
+    });
+  }
+  function set(v, quiet){
+    if(v !== 'auto' && !LANGS.some(function(x){ return x[0] === v; })) v = 'auto';
+    sv(LK, v);
+    if(window.__hnApplyLang) window.__hnApplyLang(resolve(v)); else apply(resolve(v));
+    if(!quiet) try{ if(window.__hnProfile && window.__hnProfile.setLangPref) window.__hnProfile.setLangPref(v); }catch(e){}
+    var b = document.querySelector('#hnp [data-hnl-cur]'); if(b) b.textContent = label(v);
+    if(!quiet) closeDlg();
+  }
+  /* ===== sélecteur ===== */
+  function closeDlg(){ var d = document.getElementById('hn-lang-dlg'); if(d) d.remove(); document.removeEventListener('keydown', onKey, true); }
+  function onKey(e){ if(e.key === 'Escape'){ e.stopPropagation(); closeDlg(); } }
+  function gridHtml(q){
+    var p = pref(); if(p === 'fr') p = 'fr-FR';
+    var n = norm(q || ''), h = '';
+    if(!n || norm('Automatique langue du navigateur automatic').indexOf(n) >= 0) h += '<button type="button" class="hnl-it hnl-auto' + (p === 'auto' ? ' on' : '') + '" data-hnl-set="auto"><span><b>Automatique (langue du navigateur)</b><small>Suit la langue de votre navigateur ou de votre appareil ; anglais si elle n’est pas prise en charge.</small></span>' + (p === 'auto' ? '<i>✓</i>' : '') + '</button>';
+    var list = LANGS.filter(function(l){ return !n || norm(l[1]).indexOf(n) >= 0 || norm(l[2]).indexOf(n) >= 0; });
+    h += list.map(function(l){
+      var b = l[0].split('-')[0] === 'fr' ? 'fr' : resolve(l[0]), st = b === 'fr' ? 'fr' : status(man, b), ok = st === 'fr' || st === 'verifiee' || st === 'automatique', on = p === l[0];
+      var badge = st === 'fr' ? 'Langue d’origine' : st === 'verifiee' ? '✓ Traduction vérifiée' : st === 'automatique' ? 'Traduction automatique' : (man ? 'Bientôt disponible' : 'Vérification…');
+      return '<button type="button" class="hnl-it' + (on ? ' on' : '') + (ok ? '' : ' dis') + '"' + (ok ? '' : ' disabled aria-disabled="true"') + ' data-hnl-set="' + l[0] + '"><span><b data-no-i18n="1">' + esc(l[1]) + '</b><small data-no-i18n="1">' + esc(l[2]) + '</small><em class="hnl-bd ' + (st || '') + '">' + badge + '</em></span>' + (on ? '<i>✓</i>' : '') + '</button>';
+    }).join('');
+    if(!list.length && n && h === '') h = '<div class="hnl-none">Aucune langue trouvée.</div>';
+    return h;
+  }
+  function openDlg(){
+    closeDlg(); var d = document.createElement('div'); d.id = 'hn-lang-dlg'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Choisissez votre langue');
+    d.innerHTML = '<div class="hnl-box"><div class="hnl-h"><span>Choisissez votre langue</span><button type="button" class="hnl-x" aria-label="Fermer" data-hnl-x>✕</button></div><label class="hnl-s"><span aria-hidden="true">🔍</span><input type="search" id="hnl-q" placeholder="Rechercher une langue" aria-label="Rechercher une langue" autocomplete="off"></label><div class="hnl-grid" id="hnl-grid" role="listbox">' + gridHtml('') + '</div></div>';
+    document.body.appendChild(d); document.addEventListener('keydown', onKey, true);
+    d.addEventListener('mousedown', function(e){ if(e.target === d) closeDlg(); });
+    d.addEventListener('click', function(e){ var b = e.target.closest('[data-hnl-set]'); if(b){ set(b.getAttribute('data-hnl-set')); return; } if(e.target.closest('[data-hnl-x]')) closeDlg(); });
+    d.querySelector('#hnl-q').addEventListener('input', function(e){ d.querySelector('#hnl-grid').innerHTML = gridHtml(e.target.value); });
+    getManifest(true).then(function(){ var g = d.querySelector('#hnl-grid'); if(g) g.innerHTML = gridHtml(d.querySelector('#hnl-q').value); }).catch(function(){ var g = d.querySelector('#hnl-grid'); man = null; if(g) g.innerHTML = '<div class="hnl-none">La liste des traductions disponibles est inaccessible pour le moment. Seul le français est utilisable ; réessayez plus tard.</div>' + gridHtml(''); });
+    setTimeout(function(){ var i = d.querySelector('#hnl-q'); if(i) i.focus(); }, 30);
+  }
+  function html(){
+    var p = pref(), nav = (navigator.languages && navigator.languages[0]) || navigator.language || '', eff = resolve(p);
+    var h = '<h3>Langue</h3><p class="hint">Choisissez la langue de l’interface de HelpNaud : menus, boutons, réglages, formulaires, messages et modules (Consult, Image IA, Design, Dessiner). Le changement est immédiat et conservé après fermeture et reconnexion.</p>';
+    h += '<div class="hnp-row"><div class="hnp-l"><b>Langue</b><small>' + (p === 'auto' ? 'Automatique : suit la langue de votre navigateur ou de votre appareil (' + esc(nav || '—') + ') ; anglais si elle n’est pas prise en charge.' : 'Langue de l’interface.') + '</small></div><button type="button" class="btn" data-hnl-open="1"><span data-hnl-cur data-no-i18n="1">' + esc(label(p)) + '</span> ⌄</button></div>';
+    h += '<div class="hnp-box2"><small><b>Langue de l’interface ≠ langue des réponses.</b> HelpNaud répond dans la langue de votre message (une question en français reçoit une réponse en français, même avec une interface en anglais), sauf si vous demandez explicitement une autre langue. Changer de langue ne traduit pas vos anciennes conversations.</small></div>';
+    var st = status(man, eff); if(eff !== 'fr' && st === 'automatique') h += '<p class="hint">Traduction automatique de l’interface, non revue par une personne : certaines formulations peuvent être imparfaites.</p>';
+    if(RTL[eff.split('-')[0]]) h += '<p class="hint">Lecture de droite à gauche activée.</p>';
+    return h;
+  }
+  document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('[data-hnl-open]')) openDlg(); });
+  /* alert / confirm / prompt : le navigateur ne traduit pas le texte fourni par l'application -> on le traduit ici, depuis les traductions préparées */
+  var fragKeys = null, fragFor = null;
+  function trMsg(m){
+    if(cur === 'fr' || m == null) return m;
+    var s = String(m); if(!s.trim()) return m;
+    return s.split('\n').map(function(line){
+      var core = line.replace(/^\s+|\s+$/g, ''); if(!core) return line;
+      var k = core.replace(/\s+/g, ' '); if(cache[k]) return line.replace(core, cache[k]);
+      if(fragFor !== cache){ fragFor = cache; fragKeys = Object.keys(cache).filter(function(x){ return x.length >= 6; }).sort(function(x, y){ return y.length - x.length; }); }
+      var out = line, hit = false;
+      for(var i = 0; i < fragKeys.length; i++){ var f = fragKeys[i]; if(out.indexOf(f) >= 0){ out = out.split(f).join(cache[f]); hit = true; } }
+      return hit ? out : line;
+    }).join('\n');
+  }
+  ['alert', 'confirm', 'prompt'].forEach(function(n){ var o = window[n]; if(typeof o !== 'function' || o.__hnl) return; var w = function(m, d){ return n === 'prompt' ? o.call(window, trMsg(m), d) : o.call(window, trMsg(m)); }; w.__hnl = 1; window[n] = w; });
+  window.__hnLang = { tr:trMsg, missing:function(){ return Object.keys(missing); }, manifest:function(){ return man; }, html:html, apply:apply, set:set, open:openDlg, label:label, pref:pref };
+  if(window.__hnApplyLang) window.__hnApplyLang(resolve(pref())); else apply(resolve(pref()));
 })();
 </script>
 
