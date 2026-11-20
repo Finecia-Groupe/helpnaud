@@ -23,6 +23,7 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const DIR = path.join(__dirname, '..', 'i18n');
 const NAMES = { en:'English (United States)', 'es-419':'Latin American Spanish', 'es-ES':'Spanish (Spain)', de:'German', it:'Italian', 'pt-BR':'Brazilian Portuguese', 'pt-PT':'European Portuguese', nl:'Dutch', ar:'Arabic', he:'Hebrew', fa:'Persian', ur:'Urdu', 'zh-Hans':'Simplified Chinese', 'zh-Hant':'Traditional Chinese', ja:'Japanese', ko:'Korean', hi:'Hindi', ru:'Russian', uk:'Ukrainian', pl:'Polish', tr:'Turkish', vi:'Vietnamese', id:'Indonesian', th:'Thai', sv:'Swedish', da:'Danish', nb:'Norwegian Bokmål', fi:'Finnish', el:'Greek', cs:'Czech', sk:'Slovak', ro:'Romanian', hu:'Hungarian', bg:'Bulgarian', hr:'Croatian', sl:'Slovenian', sr:'Serbian (Cyrillic)', ca:'Catalan', lt:'Lithuanian', lv:'Latvian', et:'Estonian', ms:'Malay', fil:'Filipino', bn:'Bangla (Bengali)', ta:'Tamil', te:'Telugu', mr:'Marathi', gu:'Gujarati', kn:'Kannada', ml:'Malayalam', pa:'Punjabi', sw:'Swahili', ha:'Hausa', am:'Amharic', bho:'Bhojpuri' };
+const PINNED = ['Chat', 'Co-work', 'Consult'];
 const BRANDS = ['HelpNaud', 'HelpNaud.ai', 'FINECIA', 'Stripe', 'Consult', 'Image IA', 'Design', 'Dessiner', 'Supabase', 'Claude'];
 const args = process.argv.slice(2), flag = (n) => args.includes('--' + n), opt = (n, d) => { const a = args.find((x) => x.startsWith('--' + n + '=')); return a ? a.split('=')[1] : d; };
 const langs = args.filter((a) => !a.startsWith('--'));
@@ -90,6 +91,7 @@ async function build(lang){
   const live = new Set(source);
   Object.keys(cur.tr || {}).forEach((k) => { if (live.has(k) && !flag('force')) tr[k] = cur.tr[k]; });
   Object.keys(gloss).forEach((k) => { if (live.has(k)) tr[k] = gloss[k]; });
+  PINNED.forEach((k) => { if (live.has(k)) tr[k] = k; });
   const obsolete = Object.keys(cur.tr || {}).filter((k) => !live.has(k)).length;
   const todo = source.filter((s) => !tr[s]);
   const stats = { in: 0, out: 0, calls: 0 }, errors = {};
