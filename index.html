@@ -47637,10 +47637,11 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   }
   /* ===== moteur de traduction de l'interface ===== */
   var cur = 'fr', cache = {}, tracked = new Set(), trackedEl = new Set(), obs = null, busy = false, dirty = new Set(), dtimer = 0, ftimer = 0;
+  var SKIP_NOTD = 'script,style,noscript,textarea,code,pre,kbd,svg,canvas,[data-no-i18n],[contenteditable="true"],.chat-log,[id$="-log"]';
   var SKIP = 'script,style,noscript,textarea,code,pre,kbd,svg,canvas,td,[data-no-i18n],[contenteditable="true"],.chat-log,[id$="-log"]';
   var ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
   var SKIPA = 'script,style,noscript,[data-no-i18n],.chat-log,[id$="-log"]';
-  function okText(t){ return !!t && t.length <= 400 && /[A-Za-zÀ-ÿĀ-ɏͰ-ϿЀ-ӿ]/.test(t); }
+  function okText(t){ return !!t && t.length <= 1500 && /[A-Za-zÀ-ÿĀ-ɏͰ-ϿЀ-ӿ]/.test(t); }
   var BASE = '/i18n/', missing = Object.create(null), man = null, manP = null, loadSeq = 0, shown = '';
   /* Traductions PRÉPARÉES : fichiers statiques /i18n/<langue>.json. Aucun texte n'est envoyé à un service pendant l'utilisation. */
   function getManifest(force){
@@ -47659,7 +47660,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   function write(fn){ busy = true; try{ fn(); }finally{ if(obs) obs.takeRecords(); busy = false; } }
   function split(v){ var m = /^(\s*)([\s\S]*?)(\s*)$/.exec(v); return [m[1], m[2], m[3]]; }
   function handleText(n){
-    var el = n.parentElement; if(!el || el.closest(SKIP)) return;
+    var el = n.parentElement; if(!el || el.closest(SKIP_NOTD)) return; var tdc = el.closest('td'); if(tdc && !(tdc.colSpan > 1)) return;
     if(cur === 'en' && el.hasAttribute('data-i18n')) return;
     var v = n.nodeValue; if(n.__hnTr !== undefined && v === n.__hnTr) return;
     var p = split(v), core = p[1]; if(!okText(core)) return;
