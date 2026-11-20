@@ -1,16 +1,16 @@
 {
-  "v": "b3340fbbea",
-  "total": 12618,
-  "sensitive": 1268,
+  "v": "42728a9b3a",
+  "total": 12731,
+  "sensitive": 1300,
   "langs": {
     "en": {
       "status": "automatique",
-      "phrases": 12618,
+      "phrases": 12731,
       "manquantes": 0,
       "sensibles_manquantes": 0,
-      "v": "b3340fbbea",
+      "v": "42728a9b3a",
       "revue": null
     }
   },
-  "built": "2026-11-19T05:42:07.626Z"
+  "built": "2026-11-20T03:37:57.576Z"
 }
