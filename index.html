@@ -48244,6 +48244,9 @@ body.hn-fit-on #hn-contact-foot, body.hn-fit-on #promo-website-card{ display:non
 }
 /* Clavier mobile ouvert : la conversation prend tout l'écran visible, rien n'est masqué */
 html.hn-kbd .sidebar, html.hn-kbd .mobile-nav, html.hn-kbd #hn-comp{ display:none !important; }
+html.hn-kbd body #view-assistant .chat-shell.hn-fit, html.hn-kbd body #cowork-panel-discuss .chat-shell.hn-fit, html.hn-kbd body #hstat-tab-consult .chat-shell.hn-fit, html.hn-kbd body #fghlab-panel-hstatis .chat-shell.hn-fit{
+  position:fixed !important; left:6px !important; right:6px !important; width:auto !important; margin:0 !important; max-height:none !important;
+  top:calc(var(--hn-vv-top, 0px) + 4px) !important; height:calc(var(--hn-vv-h, 100dvh) - 8px) !important; z-index:9100; box-sizing:border-box; }
 html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
 </style>
 <script id="hn-fit-js">
@@ -48270,7 +48273,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     return b;
   }
   function fitOne(sh){
-    if(!sh || sh.offsetParent === null){ if(sh){ sh.classList.remove('hn-fit'); sh.style.removeProperty('--hn-fit-h'); } return false; }
+    if(!sh || !sh.getClientRects().length){ if(sh){ sh.classList.remove('hn-fit'); sh.style.removeProperty('--hn-fit-h'); } return false; }
     sh.classList.add('hn-fit'); sh.style.removeProperty('height');
     var vh = vvh(), r = sh.getBoundingClientRect(), top = r.top + (window.pageYOffset || 0);
     var below = belowOf(sh);
@@ -48282,22 +48285,31 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     return true;
   }
   function fit(){
-    raf = 0; var els = SEL.map(function(s){ return document.querySelector(s); }), any = els.some(function(el){ return el && el.offsetParent !== null; });
+    raf = 0; var els = SEL.map(function(s){ return document.querySelector(s); }), any = els.some(function(el){ return el && el.getClientRects().length > 0; });
     document.body.classList.toggle('hn-fit-on', any);       // d'abord (le pied de page se masque), ensuite on mesure
     els.forEach(function(el){ if(el) fitOne(el); });
   }
   function sched(){ if(!raf) raf = requestAnimationFrame(fit); }
+  var savedY = 0;
+  function coarse(){ try{ return matchMedia('(pointer:coarse)').matches && (('ontouchstart' in window) || navigator.maxTouchPoints > 0); }catch(e){ return false; } }
+  function vvSync(){ var v = window.visualViewport; root.style.setProperty('--hn-vv-h', Math.round(v ? v.height : window.innerHeight) + 'px'); root.style.setProperty('--hn-vv-top', Math.round(v ? v.offsetTop : 0) + 'px'); }
+  /* Clavier mobile : la conversation devient un panneau fixé à la zone réellement visible (visualViewport).
+     Plus aucune dépendance au défilement de la page : le champ reste juste au-dessus du clavier, les messages occupent le reste. */
   function kbd(){
-    var a = document.activeElement, inChat = !!(a && a.tagName === 'TEXTAREA' && a.closest && a.closest('.chat-shell'));
-    var open = inChat && window.visualViewport && (window.innerHeight - window.visualViewport.height) > 140;
-    if(root.classList.contains('hn-kbd') !== !!open){
-      root.classList.toggle('hn-kbd', !!open); sched();
-      if(open){ setTimeout(function(){ var sh = a.closest('.chat-shell'), lg = sh && sh.querySelector('.chat-log'); fit(); if(sh && sh.scrollIntoView) sh.scrollIntoView({ block:'start' }); if(lg) lg.scrollTop = lg.scrollHeight; }, 60); }
-    }
+    var a = document.activeElement, sh = a && a.closest && a.closest('.chat-shell');
+    var wasOpen = root.classList.contains('hn-kbd');
+    var open = !!sh && coarse() && (a.tagName === 'TEXTAREA' || wasOpen);
+    if(open && !wasOpen){
+      savedY = window.pageYOffset || 0; vvSync(); root.classList.add('hn-kbd');
+      [0, 120, 300, 700].forEach(function(ms){ setTimeout(function(){ if(root.classList.contains('hn-kbd')){ vvSync(); var lg = sh.querySelector('.chat-log'); if(lg) lg.scrollTop = lg.scrollHeight; } }, ms); });
+    } else if(!open && wasOpen){
+      root.classList.remove('hn-kbd'); sched();
+      [0, 120, 350, 800].forEach(function(ms){ setTimeout(function(){ if(!root.classList.contains('hn-kbd')){ fit(); try{ window.scrollTo(0, savedY); }catch(e){} } }, ms); });
+    } else if(open){ vvSync(); }
   }
   window.addEventListener('resize', function(){ sched(); kbd(); }, { passive:true });
   window.addEventListener('orientationchange', function(){ setTimeout(sched, 250); });
-  if(window.visualViewport){ window.visualViewport.addEventListener('resize', function(){ sched(); kbd(); }); }
+  if(window.visualViewport){ window.visualViewport.addEventListener('resize', function(){ sched(); kbd(); }); window.visualViewport.addEventListener('scroll', function(){ if(root.classList.contains('hn-kbd')) vvSync(); }); }
   document.addEventListener('focusin', function(){ setTimeout(kbd, 80); });
   document.addEventListener('focusout', function(){ setTimeout(kbd, 120); });
   document.addEventListener('click', function(){ setTimeout(sched, 60); setTimeout(sched, 400); }, true);
@@ -48352,7 +48364,6 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     [60, 250, 600, 1100].forEach(function(ms){ setTimeout(function(){
       try{ if(window.__hnFit) window.__hnFit.fit(); }catch(e){}
       try{ document.documentElement.classList.remove('hn-kbd'); }catch(e){}
-      if(sh && sh.scrollIntoView && ms >= 250){ try{ sh.scrollIntoView({ block:'start' }); }catch(e){} }
       if(lg) lg.scrollTop = lg.scrollHeight;
     }, ms); });
   }
