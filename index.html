@@ -44275,7 +44275,7 @@ OPS.E.file = function(input, prod){
   @media (max-width:640px){ #incog-bar .incog-bar-quit kbd{ display:none; } }
 </style>
 <div id="incog-bar" hidden role="status" aria-live="polite">
-  <span class="incog-bar-title">🕶️ Navigation privée</span>
+  <span class="incog-bar-title">🕶️ Navigation privée active</span>
   <span class="incog-bar-spacer"></span>
   <button type="button" class="incog-bar-quit" id="incog-quit">Quitter le mode <kbd>Ctrl+Maj+I</kbd></button>
   <button type="button" class="incog-bar-x" id="incog-quit-x" aria-label="Quitter le mode navigation privée" title="Quitter le mode">✕</button>
@@ -45404,7 +45404,7 @@ html, body{ max-width:100%; overflow-x:hidden; }
     var on = shells.length > 0, was = R.classList.contains('hn-conv');
     if(on !== was) R.classList.toggle('hn-conv', on);
     shells.forEach(function(sh){
-      if(!on) return;
+      if(!on || sh.classList.contains('hn-fit')) return;   /* la hauteur est gérée par le bloc hn-fit */
       var top = Math.round(sh.getBoundingClientRect().top + window.scrollY);
       var off = top + 36 + (window.innerWidth<=640 ? 64 : 0);
       if(sh.__hnOff !== undefined && Math.abs(sh.__hnOff - off) < 3) return;
@@ -47058,20 +47058,23 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(a[0] === 'ph'){ var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.onchange = function(){ var f = inp.files && inp.files[0]; if(!f) return; var rd = new FileReader(); rd.onload = function(){ var im = new Image(); im.onload = function(){ var m = 600, k = Math.min(1, m / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); var ph2 = J(PH, {}); ph2[a[1]] = c.toDataURL('image/jpeg', .8); try{ localStorage.setItem(PH, JSON.stringify(ph2)); toast('Photo enregistrée sur cet appareil ✓'); }catch(e){ toast('Espace de stockage insuffisant.'); } render(); }; im.onerror = function(){ toast('Image illisible.'); }; im.src = rd.result; }; rd.readAsDataURL(f); }; inp.click(); return; }
   }
   function helpUrl(a){ var en = false; try{ en = (typeof getStoredLang === 'function' ? getStoredLang() : (document.documentElement.lang || 'fr')) === 'en'; }catch(e){} return (en ? '/En-En/personalization-help#' : '/fr-fr/aide-personnalisation#') + a; }
-  var suggBusy = false;
+  var suggBusy = false, suggOpen = false;
   function suggBar(){
     var inp = $('chat-input'); if(!inp) return; var wrap = inp.closest('.chat-input-wrap'), bar = $('hn-sugg');
     if(!peOn('sugg') || !signedIn()){ if(bar) bar.remove(); return; }
-    if(!bar){ bar = document.createElement('div'); bar.id = 'hn-sugg'; var fm = wrap.closest('form') || wrap; fm.parentNode.insertBefore(bar, fm); bar.addEventListener('click', function(e){ var b = e.target.closest('button'); if(!b) return; if(b.hasAttribute('data-sg')){ inp.value = b.getAttribute('data-sg'); inp.dispatchEvent(new Event('input', { bubbles:true })); inp.focus(); } else suggGen(); }); }
+    if(!bar){ bar = document.createElement('div'); bar.id = 'hn-sugg'; var fm = wrap.closest('form') || wrap; fm.parentNode.insertBefore(bar, fm); bar.addEventListener('click', function(e){ var b = e.target.closest('button'); if(!b) return; if(b.hasAttribute('data-sg')){ inp.value = b.getAttribute('data-sg'); inp.dispatchEvent(new Event('input', { bubbles:true })); suggOpen = false; suggBar(); inp.focus(); } else if(b.hasAttribute('data-sg-new')){ suggGen(); } else { var has = false; try{ has = JSON.parse(sessionStorage.getItem('hn_sugg') || '[]').length > 0; }catch(e2){} if(has && !suggBusy){ suggOpen = !suggOpen; suggBar(); } else suggGen(); } }); var sgf = wrap.closest('form'); if(sgf) sgf.addEventListener('submit', function(){ if(suggOpen){ suggOpen = false; suggBar(); } }); }
     var list = []; try{ list = JSON.parse(sessionStorage.getItem('hn_sugg') || '[]'); }catch(e){}
-    bar.innerHTML = '<button type="button" data-sg-gen title="1 crédit">' + (suggBusy ? '… Génération' : '💡 Suggestions (1 crédit)') + '</button>' + list.map(function(x){ return '<button type="button" data-sg="' + esc(x) + '">' + esc(x) + '</button>'; }).join('');
+    var hasL = list.length > 0, openL = hasL && suggOpen;
+    bar.classList.toggle('open', openL);
+    bar.innerHTML = '<button type="button" data-sg-gen class="hn-sg-main" aria-expanded="' + (openL ? 'true' : 'false') + '" title="' + (hasL ? 'Afficher ou masquer les suggestions déjà générées (gratuit)' : 'Génère 3 suggestions : 1 crédit') + '">' + (suggBusy ? '… Génération' : openL ? '💡 Masquer les suggestions' : hasL ? '💡 Suggestions ▾' : '💡 Suggestions · 1 crédit') + '</button>' +
+      (openL ? list.map(function(x){ return '<button type="button" data-sg="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '<button type="button" data-sg-new class="hn-sg-new" title="Génère 3 nouvelles suggestions : 1 crédit">↻ Nouvelles · 1 crédit</button>' : '');
   }
   function suggGen(){
     if(suggBusy || !window.__hnAiCall) return; suggBusy = true; suggBar();
     var o = peGet(), pf = J(PK, {}), ctx = (o.mem !== false && o.notes.length ? 'Éléments mémorisés : ' + o.notes.slice(0, 10).map(function(n){ return n.t; }).join(' ; ') + '. ' : '') + (pf.how ? 'Instructions : ' + String(pf.how).slice(0, 300) + '. ' : '');
     window.__hnAiCall('Propose 3 questions courtes (moins de 90 caractères chacune) que cet utilisateur de HelpNaud (gestion financière et outils IA) pourrait poser à son assistant. ' + ctx + 'Réponds uniquement avec un tableau JSON de 3 chaînes.', { modelTier:'lumiere' }, true).then(function(r){
       var d = r && r.data; if(!Array.isArray(d)) throw new Error('format'); d = d.filter(function(x){ return typeof x === 'string'; }).map(function(x){ return x.slice(0, 120); }).slice(0, 3);
-      try{ sessionStorage.setItem('hn_sugg', JSON.stringify(d)); }catch(e){}
+      try{ sessionStorage.setItem('hn_sugg', JSON.stringify(d)); suggOpen = true; }catch(e){}
     }).catch(function(){ toast('Suggestions indisponibles pour le moment.'); }).then(function(){ suggBusy = false; suggBar(); });
   }
   function polLinks(){ return '<a href="/fr-fr/politique-contrôle-parental" target="_blank" rel="noopener">Politique de contrôle parental</a> · <a href="/En-En/parent-control-policy" target="_blank" rel="noopener">Parent control policy</a>'; }
@@ -47617,6 +47620,132 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
 @media (max-width:760px){ #hn-lang-dlg .hnl-grid{ grid-template-columns:repeat(2,1fr); } }
 @media (max-width:480px){ #hn-lang-dlg .hnl-grid{ grid-template-columns:1fr; } }
 </style>
+<style id="hn-fit-css">
+/* ===== Conversation : les messages d'abord (Chat, Co-work, Consult) ===== */
+/* « Navigation privée » : l'action est dans le menu ⋯ ; en mode actif, une seule barre compacte l'indique. */
+.incog-toggle{ display:none !important; }
+html.hn-private-tab #hn-priv-head{ padding:6px 0 4px; margin-bottom:4px; gap:8px; }
+html.hn-private-tab #hn-priv-head .hn-priv-note, html.hn-private-tab #hn-priv-head .hn-priv-sub{ display:none; }
+html.hn-private-tab #hn-priv-head .brand-mark{ width:28px; height:28px; }
+html.hn-private-tab #hn-priv-head b{ font-size:15px; }
+html.hn-private-tab body{ padding-top:30px !important; }
+
+/* Moins d'espace perdu autour de la conversation */
+#view-assistant, #view-cowork, #view-hstat{ gap:6px; }
+#view-assistant > .hn-nd-slot, #view-cowork > .hn-nd-slot, #view-hstat > .hn-nd-slot{ margin:0; }
+#view-assistant > header.topbar, #view-cowork > header.topbar, #view-hstat > header.topbar{ margin-bottom:0; min-height:0; padding-top:0; padding-bottom:0; }
+.card:has(> .chat-shell){ padding:8px 10px; }
+html body #view-assistant .chat-shell.hn-fit, html body #cowork-panel-discuss .chat-shell.hn-fit, html body #hstat-tab-consult .chat-shell.hn-fit, html body #fghlab-panel-hstatis .chat-shell.hn-fit, html body #hstatis-panel-chat .chat-shell.hn-fit{ height:var(--hn-fit-h) !important; min-height:0 !important; max-height:none !important; }
+.chat-shell.hn-fit .chat-log{ min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+body.hn-fit-on #hn-contact-foot, body.hn-fit-on #promo-website-card{ display:none; }
+@media (min-width:861px){ body.hn-fit-on .main{ padding-bottom:10px; } }
+.attach-menu .hn-opt-sym{ display:none; }
+
+/* Suggestions : une seule petite ligne repliée ; les 3 propositions n'apparaissent qu'au toucher */
+#hn-sugg{ margin:4px 0 0; }
+#hn-sugg .hn-sg-main{ font-weight:600; }
+#hn-sugg .hn-sg-new{ color:var(--muted); }
+#hn-sugg.open{ max-height:34dvh; overflow-y:auto; }
+
+@media (max-width:860px){
+  .brand-text small, .sidebar .brand small{ display:none; }
+  .sidebar{ padding:calc(max(14px, env(safe-area-inset-top,0px)) + 2px) 12px 6px; }
+  .main{ padding:60px 8px calc(66px + env(safe-area-inset-bottom,0px)); }
+  .view, .cowork-panel, .hn-panel, [id^="fghlab-panel-"]{ scroll-margin-top:68px; }
+  .card:has(> .chat-shell){ padding:4px 6px; }
+  /* Saisie compacte : une seule rangée [＋] [message … micro vocal envoi] */
+  #chat-form, #cowork-discuss-form, #hstat-form, #hstatis-form{ flex-wrap:nowrap; align-items:flex-end; margin-top:4px; padding-top:6px; gap:6px; }
+  #chat-form .chat-input-wrap, #cowork-discuss-form .chat-input-wrap, #hstat-form .chat-input-wrap, #hstatis-form .chat-input-wrap{ order:0; flex:1 1 0; min-width:0; }
+  .chat-form .chat-info-wrap{ display:none !important; }
+  .chat-form .symbols-menu-wrap{ position:relative; width:0; height:0; flex:none; margin:0; overflow:visible; }
+  .chat-form .symbols-menu-wrap > .btn{ position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+  .attach-menu .hn-opt-sym{ display:flex; }
+  .hn-ai-note{ flex:none; font-size:10.5px; line-height:1.3; margin:2px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hn-meta-row, #hn-sugg, .chat-form{ flex:none; }
+  .hn-ai-note a{ white-space:nowrap; }
+  .hn-meta-row{ margin:2px 0 0; }
+}
+/* Clavier mobile ouvert : la conversation prend tout l'écran visible, rien n'est masqué */
+html.hn-kbd .sidebar, html.hn-kbd .mobile-nav, html.hn-kbd #hn-comp{ display:none !important; }
+html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
+</style>
+<script id="hn-fit-js">
+(function(){
+  'use strict';
+  var SEL = ['#view-assistant .chat-shell', '#cowork-panel-discuss .chat-shell', '#hstat-tab-consult .chat-shell', '#fghlab-panel-hstatis .chat-shell'];
+  var root = document.documentElement, raf = 0;
+  function vvh(){ return (window.visualViewport && window.visualViewport.height) || window.innerHeight; }
+  function fixedTop(){ var sb = document.querySelector('.sidebar'); if(!sb) return 0; var cs = getComputedStyle(sb); if(cs.position !== 'fixed' || cs.display === 'none') return 0; return Math.round(sb.getBoundingClientRect().bottom); }
+  /* espace structurel sous la conversation (marges, remplissages, éléments suivants) — indépendant de la hauteur de la conversation elle-même */
+  function px(v){ return parseFloat(v) || 0; }
+  function belowOf(sh){
+    var b = 0, e = sh;
+    while(e && e !== document.documentElement){
+      var P = e.parentElement; if(!P) break; var pc = getComputedStyle(P), ec = getComputedStyle(e);
+      b += px(ec.marginBottom) + px(pc.paddingBottom) + px(pc.borderBottomWidth);
+      for(var n = e.nextElementSibling; n; n = n.nextElementSibling){
+        var nc = getComputedStyle(n); if(nc.display === 'none' || nc.position === 'fixed' || nc.position === 'absolute') continue;
+        var rr = n.getBoundingClientRect(); if(rr.height > 0) b += rr.height + px(nc.marginTop) + px(nc.marginBottom) + (pc.display.indexOf('flex') >= 0 ? px(pc.rowGap) : 0);
+      }
+      if(P === document.body) break;
+      e = P;
+    }
+    return b;
+  }
+  function fitOne(sh){
+    if(!sh || sh.offsetParent === null){ if(sh){ sh.classList.remove('hn-fit'); sh.style.removeProperty('--hn-fit-h'); } return false; }
+    sh.classList.add('hn-fit'); sh.style.removeProperty('height');
+    var vh = vvh(), r = sh.getBoundingClientRect(), top = r.top + (window.pageYOffset || 0);
+    var below = belowOf(sh);
+    var pin = Math.max(fixedTop(), 0) + 4, h;
+    if(top <= vh * 0.38) h = vh - top - Math.max(below, 0);          // la vue est en haut : tout tient sans défiler
+    else h = vh - pin - Math.max(below, 0);                          // beaucoup de contenu au-dessus (grille Co-work) : on remonte la conversation en haut de l'écran
+    h = Math.max(300, Math.round(h));
+    sh.style.setProperty('--hn-fit-h', h + 'px');
+    return true;
+  }
+  function fit(){
+    raf = 0; var els = SEL.map(function(s){ return document.querySelector(s); }), any = els.some(function(el){ return el && el.offsetParent !== null; });
+    document.body.classList.toggle('hn-fit-on', any);       // d'abord (le pied de page se masque), ensuite on mesure
+    els.forEach(function(el){ if(el) fitOne(el); });
+  }
+  function sched(){ if(!raf) raf = requestAnimationFrame(fit); }
+  function kbd(){
+    var a = document.activeElement, inChat = !!(a && a.tagName === 'TEXTAREA' && a.closest && a.closest('.chat-shell'));
+    var open = inChat && window.visualViewport && (window.innerHeight - window.visualViewport.height) > 140;
+    if(root.classList.contains('hn-kbd') !== !!open){
+      root.classList.toggle('hn-kbd', !!open); sched();
+      if(open){ setTimeout(function(){ var sh = a.closest('.chat-shell'), lg = sh && sh.querySelector('.chat-log'); fit(); if(sh && sh.scrollIntoView) sh.scrollIntoView({ block:'start' }); if(lg) lg.scrollTop = lg.scrollHeight; }, 60); }
+    }
+  }
+  window.addEventListener('resize', function(){ sched(); kbd(); }, { passive:true });
+  window.addEventListener('orientationchange', function(){ setTimeout(sched, 250); });
+  if(window.visualViewport){ window.visualViewport.addEventListener('resize', function(){ sched(); kbd(); }); }
+  document.addEventListener('focusin', function(){ setTimeout(kbd, 80); });
+  document.addEventListener('focusout', function(){ setTimeout(kbd, 120); });
+  document.addEventListener('click', function(){ setTimeout(sched, 60); setTimeout(sched, 400); }, true);
+  try{
+    var mo = new MutationObserver(sched);
+    mo.observe(document.body, { attributes:true, attributeFilter:['hidden', 'class'], subtree:true, childList:true });
+  }catch(e){}
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(sched);
+  window.addEventListener('load', function(){ sched(); setTimeout(sched, 600); });
+  sched();
+  /* Options secondaires regroupées dans « ＋ » : caractères spéciaux (sur mobile, leur bouton est masqué) */
+  function addSym(){
+    document.querySelectorAll('.chat-form').forEach(function(f){
+      var m = f.querySelector('.attach-menu'); if(!m || m.querySelector('.hn-opt-sym')) return;
+      var sb = f.querySelector('.symbols-menu-wrap > .btn'); if(!sb) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'attach-menu-opt hn-opt-sym';
+      b.innerHTML = '<span aria-hidden="true" style="width:18px;text-align:center">Ω</span><span>Caractères spéciaux</span>';
+      b.addEventListener('click', function(){ m.hidden = true; var ab = f.querySelector('.attach-menu-wrap > .btn'); if(ab) ab.setAttribute('aria-expanded', 'false'); setTimeout(function(){ sb.click(); }, 30); });
+      m.appendChild(b);
+    });
+  }
+  addSym(); setTimeout(addSym, 1500);
+  window.__hnFit = { fit:fit };
+})();
+</script>
 <script id="hnl-js">
 (function(){
   'use strict';
