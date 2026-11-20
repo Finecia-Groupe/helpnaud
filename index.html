@@ -13655,6 +13655,7 @@
     return Promise.all([aiServerToken(), imgP]).then(function(a){
       if(!a[0]) throw Object.assign(new Error('auth'), { code:'auth' });
       var body = { tier:tier, json:!!wantJson };
+      try{ if(window.__hnExportOnce && !wantJson){ body.export = window.__hnExportOnce; } window.__hnExportOnce = ''; }catch(e){}
       try{ var cv = document.querySelector('.view:not([hidden])'); if(cv && cv.id) body.tool = cv.id.replace(/^view-/, ''); }catch(e){}
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(opts.expert) body.fistat = 'expertplus';
@@ -47624,6 +47625,472 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
 @media (max-width:760px){ #hn-lang-dlg .hnl-grid{ grid-template-columns:repeat(2,1fr); } }
 @media (max-width:480px){ #hn-lang-dlg .hnl-grid{ grid-template-columns:1fr; } }
 </style>
+<style id="hnx-css">
+.hnx-card{display:flex;align-items:center;gap:10px;margin:10px 0 2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2,var(--surface));max-width:420px}
+.hnx-ico{font-size:22px;line-height:1}
+.hnx-meta{flex:1;min-width:0}
+.hnx-name{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hnx-sub{font-size:11.5px;color:var(--muted)}
+.hnx-dl,.hnx-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 11px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap}
+.hnx-dl{background:var(--accent,#1f3d7a);color:var(--accent-contrast,#fff);border-color:transparent}
+.hnx-dl:hover,.hnx-btn:hover{filter:brightness(1.08)}
+.hnx-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px}
+.hnx-note{font-size:12px;color:var(--muted);margin:4px 0 0}
+.hnx-open{position:absolute;top:6px;right:6px;z-index:2;opacity:.9;padding:3px 8px;font-size:11.5px}
+.msg-text.md pre[data-hnx]{position:relative;padding-top:34px}
+#hnx-panel{position:fixed;z-index:9500;background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.18);display:none;flex-direction:column;top:0;right:0;bottom:0;width:min(46vw,680px)}
+#hnx-panel.on{display:flex}
+#hnx-panel header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#hnx-panel header .t{font-weight:700;font-size:14px;flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hnx-panel .body{flex:1;overflow:auto;padding:12px 14px}
+#hnx-panel pre{margin:0;white-space:pre;font:12.5px/1.55 'IBM Plex Mono',ui-monospace,monospace;tab-size:2}
+#hnx-panel .doc{font-size:14px;line-height:1.6}
+#hnx-panel select{border:1px solid var(--line);border-radius:8px;padding:5px;background:var(--surface);color:var(--ink);font:inherit;font-size:12px;max-width:150px}
+@media (max-width:899px){#hnx-panel{top:auto;left:0;right:0;width:auto;height:88dvh;border-radius:16px 16px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25)}}
+</style>
+<script id="hnx-js">
+(function(){
+  if(window.__hnx) return;
+  var LOGS = { 'chat-form':'chat-log', 'cowork-discuss-form':'cowork-discuss-log', 'hstat-form':'hstat-log', 'hstatis-form':'hstatis-log' };
+  var FMT = {
+    pdf:{ ext:'pdf', ico:'📕', name:'PDF', mime:'application/pdf' },
+    docx:{ ext:'docx', ico:'📘', name:'Word (.docx)', mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+    xlsx:{ ext:'xlsx', ico:'📗', name:'Excel (.xlsx)', mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+    pptx:{ ext:'pptx', ico:'📙', name:'PowerPoint (.pptx)', mime:'application/vnd.openxmlformats-officedocument.presentationml.presentation' },
+    txt:{ ext:'txt', ico:'📄', name:'Texte (.txt)', mime:'text/plain' },
+    md:{ ext:'md', ico:'📄', name:'Markdown (.md)', mime:'text/markdown' }
+  };
+  var pending = null, inflight = 0, lastSubmit = 0;
+
+  /* ---------- outils ---------- */
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  function today(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function slug(s){ return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48).toLowerCase(); }
+  function size(n){ return n < 1024 ? n + ' o' : (n < 1048576 ? Math.round(n / 1024) + ' Ko' : (n / 1048576).toFixed(1) + ' Mo'); }
+  function lib(name){ return name === 'pdf' ? !!(window.jspdf && window.jspdf.jsPDF) : name === 'docx' ? !!window.docx : name === 'xlsx' ? !!window.XLSX : name === 'pptx' ? !!window.PptxGenJS : true; }
+
+  /* ---------- DOM -> blocs ---------- */
+  function inlineText(n){
+    var out = '';
+    (function walk(x){
+      if(x.nodeType === 3){ out += x.nodeValue; return; }
+      if(x.nodeType !== 1) return;
+      var tg = x.tagName;
+      if(tg === 'BR'){ out += '\n'; return; }
+      if(tg === 'BUTTON' || x.classList.contains('hnx-open') || x.classList.contains('hnx-card') || x.classList.contains('hnx-note') || x.classList.contains('hnx-row')) return;
+      if(tg === 'A'){ var t = x.textContent.trim(), h = x.getAttribute('href') || ''; out += t; if(/^https?:/i.test(h) && h.replace(/\/$/, '') !== t.replace(/\/$/, '')) out += ' (' + h + ')'; return; }
+      for(var c = x.firstChild; c; c = c.nextSibling) walk(c);
+    })(n);
+    return out.replace(/[ \t ]+/g, ' ').replace(/ *\n */g, '\n').trim();
+  }
+  function blocksOf(root){
+    var B = [];
+    function items(list){ var r = []; [].forEach.call(list.children, function(li){ if(li.tagName === 'LI'){ var c = li.cloneNode(true); [].forEach.call(c.querySelectorAll('ul,ol'), function(u){ u.remove(); }); r.push(inlineText(c)); [].forEach.call(li.querySelectorAll(':scope > ul > li, :scope > ol > li'), function(s){ r.push('– ' + inlineText(s)); }); } }); return r; }
+    (function walk(el){
+      [].forEach.call(el.childNodes, function(n){
+        if(n.nodeType === 3){ var t = n.nodeValue.trim(); if(t) B.push({ t:'p', text:t }); return; }
+        if(n.nodeType !== 1) return;
+        var tg = n.tagName;
+        if(/^H[1-6]$/.test(tg)) B.push({ t:'h', l:+tg[1], text:inlineText(n) });
+        else if(tg === 'P' || tg === 'BLOCKQUOTE') { var p = inlineText(n); if(p) B.push({ t:'p', text:p }); }
+        else if(tg === 'UL' || tg === 'OL') B.push({ t:'list', ordered:tg === 'OL', items:items(n) });
+        else if(tg === 'PRE') B.push({ t:'code', text:n.textContent.replace(/^\s*(Ouvrir à côté|Copier)\s*\n?/, '') });
+        else if(tg === 'TABLE'){ var rows = []; [].forEach.call(n.querySelectorAll('tr'), function(tr){ rows.push([].map.call(tr.children, function(c){ return inlineText(c); })); }); if(rows.length) B.push({ t:'table', rows:rows }); }
+        else if(tg === 'HR') { /* ignoré */ }
+        else if(tg === 'BUTTON' || n.classList.contains('hnx-card') || n.classList.contains('hnx-row')) { /* ignoré */ }
+        else if(tg === 'DIV' || tg === 'SECTION' || tg === 'ARTICLE') { if(n.children.length && !/^(SPAN|A|B|STRONG|EM|I|CODE)$/.test(n.firstElementChild.tagName)) walk(n); else { var d = inlineText(n); if(d) B.push({ t:'p', text:d }); } }
+        else { var s = inlineText(n); if(s) B.push({ t:'p', text:s }); }
+      });
+    })(root);
+    return B;
+  }
+  function mdInline(s){ return String(s).replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, function(m, t, u){ return t.replace(/\/$/, '') === u.replace(/\/$/, '') ? u : t + ' (' + u + ')'; }).replace(/\*\*([^*]+)\*\*/g, '$1').replace(/__([^_]+)__/g, '$1').replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, '$1$2').replace(/`([^`]+)`/g, '$1').replace(/~~([^~]+)~~/g, '$1'); }
+  function mdBlocks(raw){
+    var L = String(raw).replace(/\r/g, '').split('\n'), B = [], i = 0, para = [];
+    function fp(){ if(para.length){ B.push({ t:'p', text:mdInline(para.join(' ')) }); para = []; } }
+    while(i < L.length){
+      var ln = L[i], m;
+      if(/^\s*```/.test(ln)){ fp(); var c = []; i++; while(i < L.length && !/^\s*```/.test(L[i])) c.push(L[i++]); i++; B.push({ t:'code', text:c.join('\n') }); continue; }
+      if((m = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/.exec(ln))){ fp(); B.push({ t:'h', l:m[1].length, text:mdInline(m[2]) }); i++; continue; }
+      if(/^\s*\|.*\|\s*$/.test(ln)){ fp(); var rows = []; while(i < L.length && /^\s*\|.*\|\s*$/.test(L[i])){ if(!/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(L[i])) rows.push(L[i].trim().replace(/^\||\|$/g, '').split('|').map(function(x){ return mdInline(x.trim()); })); i++; } if(rows.length) B.push({ t:'table', rows:rows }); continue; }
+      if(/^\s*([-*•]|\d+[.)])\s+/.test(ln)){ fp(); var ord = /^\s*\d+[.)]/.test(ln), its = []; while(i < L.length && /^\s*([-*•]|\d+[.)])\s+/.test(L[i])){ var sub = /^\s{2,}/.test(L[i]); var tx = mdInline(L[i].replace(/^\s*([-*•]|\d+[.)])\s+/, '')); its.push(sub ? '– ' + tx : tx); i++; } B.push({ t:'list', ordered:ord, items:its }); continue; }
+      if(/^\s*(---+|\*\*\*+|___+)\s*$/.test(ln)){ fp(); i++; continue; }
+      if(/^\s*$/.test(ln)){ fp(); i++; continue; }
+      para.push(ln.replace(/^\s*>\s?/, '').trim()); i++;
+    }
+    fp(); return B;
+  }
+  function msgBlocks(msgEl){
+    var tx = msgEl.querySelector('.msg-text');
+    if(tx && tx.dataset && tx.dataset.raw && msgEl.classList.contains('bot')) return mdBlocks(tx.dataset.raw);
+    if(tx) return blocksOf(tx);
+    var t = (msgEl.innerText || '').trim(); return t ? [{ t:'p', text:t }] : [];
+  }
+  function convoDoc(log){
+    var doc = { title:'Conversation HelpNaud', turns:[] };
+    [].forEach.call(log.querySelectorAll('.msg.user, .msg.bot'), function(m){
+      var bl = msgBlocks(m); if(!bl.length) return;
+      if(m.dataset.hnxLocal) return;
+      doc.turns.push({ who: m.classList.contains('user') ? 'Vous' : 'HelpNaud', blocks: bl });
+    });
+    while(doc.turns.length && doc.turns[0].who !== 'Vous') doc.turns.shift();   // message d’accueil exclu
+    var f = doc.turns.filter(function(t){ return t.who === 'Vous'; })[0];
+    if(f){ var tx = f.blocks[0].text || ''; if(tx) doc.title = 'Conversation — ' + tx.replace(/\s+/g, ' ').slice(0, 70); }
+    return doc;
+  }
+  function flat(doc){   // doc.turns -> blocs, avec étiquettes d'intervenant
+    var B = [{ t:'h', l:1, text:doc.title }, { t:'p', text:'Exporté depuis HelpNaud.ai le ' + new Date().toLocaleString('fr-CA') }];
+    doc.turns.forEach(function(t){ B.push({ t:'who', text:t.who }); t.blocks.forEach(function(b){ B.push(b); }); });
+    return B;
+  }
+  function plain(B){
+    var o = [];
+    B.forEach(function(b){
+      if(b.t === 'h') o.push('\n' + '#'.repeat(b.l) + ' ' + b.text + '\n');
+      else if(b.t === 'who') o.push('\n— ' + b.text + ' —');
+      else if(b.t === 'p') o.push(b.text);
+      else if(b.t === 'list') b.items.forEach(function(i, k){ o.push((b.ordered ? (k + 1) + '. ' : '• ') + i); });
+      else if(b.t === 'code') o.push('```\n' + b.text + '\n```');
+      else if(b.t === 'table') b.rows.forEach(function(r){ o.push('| ' + r.join(' | ') + ' |'); });
+    });
+    return o.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+  }
+
+  /* ---------- PDF ---------- */
+  var LATIN = /[^\u0009\u000a -~ -ÿ‘’“”–—•…€]/g;
+  function nonLatinRatio(s){ var l = (s.match(/[\p{L}]/gu) || []).length; if(!l) return 0; return (s.match(/[^\u0000-ɏ\s\p{P}\p{N}\p{S}]/gu) || []).length / l; }
+  function lat(s){ return String(s).replace(/[  ]/g, ' ').replace(/[→⇒]/g, '->').replace(/[✓✔]/g, 'v').replace(LATIN, ''); }
+  function buildPdf(B){
+    var all = B.map(function(b){ return b.text || (b.items || []).join(' ') || (b.rows || []).join(' ') || ''; }).join(' ');
+    if(nonLatinRatio(all) > 0.1) return Promise.reject(Object.assign(new Error('nonlatin'), { code:'nonlatin' }));
+    var J = window.jspdf.jsPDF, d = new J({ unit:'mm', format:'a4' }), W = 210, H = 297, M = 18, CW = W - 2 * M, y = M;
+    function need(h){ if(y + h > H - M){ d.addPage(); y = M; } }
+    function para(text, size, style, font, indent, color){
+      d.setFont(font || 'helvetica', style || 'normal'); d.setFontSize(size); d.setTextColor.apply(d, color || [30, 30, 30]);
+      var lh = size * 0.42, lines = d.splitTextToSize(lat(text), CW - (indent || 0));
+      lines.forEach(function(l){ need(lh); d.text(l, M + (indent || 0), y + lh * .8); y += lh; });
+    }
+    B.forEach(function(b){
+      if(b.t === 'h'){ y += b.l === 1 ? 3 : 2; need(10); para(b.text, b.l === 1 ? 17 : (b.l === 2 ? 14 : 12), 'bold', 0, 0, [20, 40, 90]); y += 1.5; }
+      else if(b.t === 'who'){ y += 4; need(10); d.setDrawColor(200, 205, 215); d.line(M, y, W - M, y); y += 1; para(b.text, 11, 'bold', 0, 0, b.text === 'Vous' ? [31, 61, 122] : [20, 120, 80]); y += 0.5; }
+      else if(b.t === 'p'){ para(b.text, 10.5); y += 2; }
+      else if(b.t === 'list'){ b.items.forEach(function(i, k){ para((b.ordered ? (k + 1) + '. ' : '• ') + i, 10.5, 'normal', 0, 4); y += .6; }); y += 1.5; }
+      else if(b.t === 'code'){ para(b.text, 8.5, 'normal', 'courier', 3, [50, 50, 50]); y += 2; }
+      else if(b.t === 'table'){
+        var n = Math.max.apply(null, b.rows.map(function(r){ return r.length; })), cw = CW / n;
+        b.rows.forEach(function(r, ri){
+          d.setFont('helvetica', ri === 0 ? 'bold' : 'normal'); d.setFontSize(9);
+          var cells = []; for(var c = 0; c < n; c++) cells.push(d.splitTextToSize(lat(r[c] || ''), cw - 3));
+          var rh = Math.max.apply(null, cells.map(function(x){ return x.length; })) * 3.9 + 2.4;
+          need(rh);
+          if(ri === 0){ d.setFillColor(232, 237, 247); d.rect(M, y, CW, rh, 'F'); }
+          d.setDrawColor(190, 196, 208); d.setTextColor(30, 30, 30);
+          cells.forEach(function(ls, c){ d.rect(M + c * cw, y, cw, rh); ls.forEach(function(l, k){ d.text(l, M + c * cw + 1.5, y + 4 + k * 3.9); }); });
+          y += rh;
+        });
+        y += 3;
+      }
+    });
+    var N = d.getNumberOfPages();
+    for(var i = 1; i <= N; i++){ d.setPage(i); d.setFont('helvetica', 'normal'); d.setFontSize(8); d.setTextColor(130, 130, 130); d.text('HelpNaud.ai — Page ' + i + '/' + N, W / 2, H - 8, { align:'center' }); }
+    return Promise.resolve(d.output('blob'));
+  }
+
+  /* ---------- Word ---------- */
+  function buildDocx(B){
+    var D = window.docx, ch = [];
+    var HL = [null, D.HeadingLevel.HEADING_1, D.HeadingLevel.HEADING_2, D.HeadingLevel.HEADING_3, D.HeadingLevel.HEADING_4, D.HeadingLevel.HEADING_5, D.HeadingLevel.HEADING_6];
+    function runs(t, o){ return String(t).split('\n').map(function(l, i){ return new D.TextRun(Object.assign({ text:l, break:i ? 1 : 0 }, o || {})); }); }
+    B.forEach(function(b){
+      if(b.t === 'h') ch.push(new D.Paragraph({ heading:HL[b.l] || HL[3], children:runs(b.text), spacing:{ before:200, after:100 } }));
+      else if(b.t === 'who') ch.push(new D.Paragraph({ spacing:{ before:240, after:60 }, border:{ top:{ style:D.BorderStyle.SINGLE, size:4, color:'C8CDD7', space:4 } }, children:runs(b.text, { bold:true, color:b.text === 'Vous' ? '1F3D7A' : '147850' }) }));
+      else if(b.t === 'p') ch.push(new D.Paragraph({ children:runs(b.text), spacing:{ after:100 } }));
+      else if(b.t === 'list') b.items.forEach(function(i, k){ ch.push(b.ordered ? new D.Paragraph({ children:runs((k + 1) + '. ' + i), indent:{ left:360 } }) : new D.Paragraph({ children:runs(i), bullet:{ level:0 } })); });
+      else if(b.t === 'code') ch.push(new D.Paragraph({ shading:{ type:D.ShadingType.CLEAR, fill:'F1F3F6' }, spacing:{ after:120 }, children:runs(b.text, { font:'Courier New', size:18 }) }));
+      else if(b.t === 'table'){
+        var n = Math.max.apply(null, b.rows.map(function(r){ return r.length; }));
+        ch.push(new D.Table({ width:{ size:100, type:D.WidthType.PERCENTAGE }, rows:b.rows.map(function(r, ri){ var cells = []; for(var c = 0; c < n; c++) cells.push(new D.TableCell({ shading: ri === 0 ? { type:D.ShadingType.CLEAR, fill:'E8EDF7' } : undefined, children:[new D.Paragraph({ children:runs(r[c] || '', ri === 0 ? { bold:true } : {}) })] })); return new D.TableRow({ children:cells, tableHeader: ri === 0 }); }) }));
+        ch.push(new D.Paragraph({ text:'' }));
+      }
+    });
+    var doc = new D.Document({ creator:'HelpNaud.ai', title:(B[0] && B[0].text) || 'HelpNaud', sections:[{ children:ch }] });
+    return D.Packer.toBlob(doc);
+  }
+
+  /* ---------- Excel ---------- */
+  function cellVal(v){
+    v = String(v == null ? '' : v).trim();
+    if(/^=[^=]/.test(v)) return { f:v.slice(1), t:'n' };
+    if(/^-?\d+([.,]\d+)?$/.test(v)) return Number(v.replace(',', '.'));
+    var m = /^(-?\d{1,3}(?:[  ]\d{3})+(?:[.,]\d+)?)\s?(\$|€|%)?$/.exec(v); if(m) return Number(m[1].replace(/[  ]/g, '').replace(',', '.'));
+    return v;
+  }
+  function sheetName(s, used){ var n = String(s).replace(/[:\\\/?*\[\]]/g, ' ').trim().slice(0, 28) || 'Feuille', b = n, i = 2; while(used[n.toLowerCase()]) n = b.slice(0, 26) + ' ' + (i++); used[n.toLowerCase()] = 1; return n; }
+  function addSheet(wb, name, rows, used){
+    var ws = window.XLSX.utils.aoa_to_sheet(rows.map(function(r){ return r.map(function(c){ var v = cellVal(c); return (v && typeof v === 'object') ? '' : v; }); }));
+    rows.forEach(function(r, ri){ r.forEach(function(c, ci){ var v = cellVal(c); if(v && typeof v === 'object'){ var a = window.XLSX.utils.encode_cell({ r:ri, c:ci }); ws[a] = { t:'n', f:v.f }; } }); });
+    var w = []; rows.forEach(function(r){ r.forEach(function(c, i){ w[i] = Math.max(w[i] || 8, Math.min(70, String(c).split('\n')[0].length + 2)); }); });
+    ws['!cols'] = w.map(function(x){ return { wch:x }; });
+    window.XLSX.utils.book_append_sheet(wb, ws, sheetName(name, used));
+  }
+  function buildXlsx(B, doc){
+    var X = window.XLSX, wb = X.utils.book_new(), used = {}, tables = B.filter(function(b){ return b.t === 'table'; });
+    if(doc){
+      var rows = [['N°', 'Intervenant', 'Message']];
+      doc.turns.forEach(function(t, i){ rows.push([i + 1, t.who, plain(t.blocks).trim()]); });
+      addSheet(wb, 'Conversation', rows.map(function(r, ri){ return ri ? [String(r[0]), r[1], r[2].replace(/^=/, "'=")] : r; }), used);
+      tables.forEach(function(t, i){ addSheet(wb, 'Tableau ' + (i + 1), t.rows, used); });
+    } else if(tables.length){
+      var heads = []; B.forEach(function(b){ if(b.t === 'h') heads.push(b.text); else if(b.t === 'table'){ addSheet(wb, heads.length ? heads[heads.length - 1] : 'Tableau ' + (wb.SheetNames.length + 1), b.rows, used); } });
+    } else {
+      var r = []; B.forEach(function(b){ if(b.t === 'h' || b.t === 'p') r.push([b.text]); else if(b.t === 'list') b.items.forEach(function(i){ r.push([i]); }); else if(b.t === 'code') r.push([b.text]); });
+      addSheet(wb, 'Contenu', r.length ? r : [['(vide)']], used);
+    }
+    wb.Workbook = { CalcPr:{ fullCalcOnLoad:true } };
+    var out = X.write(wb, { bookType:'xlsx', type:'array' });
+    return Promise.resolve(new Blob([out], { type:FMT.xlsx.mime }));
+  }
+
+  /* ---------- PowerPoint ---------- */
+  function buildPptx(B){
+    var P = new window.PptxGenJS(); P.layout = 'LAYOUT_16x9'; P.title = (B[0] && B[0].text) || 'HelpNaud';
+    var slides = [], cur = null, title = '';
+    B.forEach(function(b){
+      if(b.t === 'h' && b.l === 1 && !title){ title = b.text; return; }
+      if(b.t === 'h' && b.l <= 3){ cur = { title:b.text, bullets:[], table:null }; slides.push(cur); return; }
+      if(!cur){ cur = { title: title || 'Présentation', bullets:[], table:null }; slides.push(cur); }
+      if(b.t === 'p') cur.bullets.push(b.text); else if(b.t === 'list') b.items.forEach(function(i){ cur.bullets.push(i); }); else if(b.t === 'table') cur.table = b.rows; else if(b.t === 'code') cur.bullets.push(b.text.split('\n').slice(0, 6).join(' ⏎ '));
+    });
+    var ts = P.addSlide(); ts.background = { color:'1F3D7A' };
+    ts.addText(title || (slides[0] && slides[0].title) || 'Présentation', { x:0.6, y:2, w:8.8, h:1.6, fontSize:34, bold:true, color:'FFFFFF', align:'left', fit:'shrink' });
+    ts.addText('HelpNaud.ai — ' + new Date().toLocaleDateString('fr-CA'), { x:0.6, y:4.2, w:8.8, h:0.5, fontSize:14, color:'C8D4F0' });
+    slides.forEach(function(s){
+      var sl = P.addSlide();
+      sl.addText(s.title, { x:0.5, y:0.3, w:9, h:0.8, fontSize:26, bold:true, color:'1F3D7A', fit:'shrink' });
+      var top = 1.3;
+      if(s.bullets.length){ sl.addText(s.bullets.slice(0, 8).map(function(t){ return { text:t.slice(0, 220), options:{ bullet:true, breakLine:true } }; }), { x:0.6, y:top, w:8.8, h:s.table ? 2.2 : 4.0, fontSize:16, valign:'top', color:'222222', fit:'shrink' }); top += s.table ? 2.3 : 4; }
+      if(s.table) sl.addTable(s.table.slice(0, 12).map(function(r, ri){ return r.map(function(c){ return { text:String(c), options:{ bold:ri === 0, fill:{ color: ri === 0 ? 'E8EDF7' : 'FFFFFF' }, fontSize:12 } }; }); }), { x:0.6, y:top, w:8.8, border:{ type:'solid', color:'BEC4D0', pt:0.75 } });
+    });
+    if(!slides.length){ var e = P.addSlide(); e.addText('(contenu vide)', { x:1, y:2, w:8, h:1 }); }
+    return P.write({ outputType:'blob' });
+  }
+  function buildText(B, fmt){ return Promise.resolve(new Blob([plain(B)], { type:FMT[fmt].mime + ';charset=utf-8' })); }
+
+  function build(fmt, B, doc){
+    if(!lib(fmt)) return Promise.reject(Object.assign(new Error('lib'), { code:'lib' }));
+    if(fmt === 'pdf') return buildPdf(B);
+    if(fmt === 'docx') return buildDocx(B);
+    if(fmt === 'xlsx') return buildXlsx(B, doc);
+    if(fmt === 'pptx') return buildPptx(B);
+    return buildText(B, fmt);
+  }
+
+  /* ---------- UI ---------- */
+  function mkBubble(log, who, html){
+    var d = document.createElement('div'); d.className = 'msg ' + who;
+    var t = document.createElement('div'); t.className = 'msg-text'; if(who === 'bot') t.classList.add('md'); t.innerHTML = html; d.appendChild(t);
+    log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
+  }
+  function download(blob, name){
+    var u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; a.className = 'hnx-dl'; a.textContent = '⬇ Télécharger';
+    setTimeout(function(){ try{ URL.revokeObjectURL(u); }catch(e){} }, 15 * 60 * 1000);
+    return a;
+  }
+  function card(host, fmt, blob, name){
+    var f = FMT[fmt], c = document.createElement('div'); c.className = 'hnx-card';
+    c.innerHTML = '<span class="hnx-ico">' + f.ico + '</span><div class="hnx-meta"><div class="hnx-name">' + esc(name) + '</div><div class="hnx-sub">' + f.name + ' · ' + size(blob.size) + ' · prêt</div></div>';
+    c.appendChild(download(blob, name)); host.appendChild(c); return c;
+  }
+  function makeFile(fmt, B, doc, base, host, log){
+    return build(fmt, B, doc).then(function(blob){
+      if(!blob || !blob.size) throw new Error('vide');
+      var name = base + '.' + FMT[fmt].ext; card(host, fmt, blob, name);
+      var note = host.querySelector('.hnx-wait'); if(note) note.remove();
+      if(log) log.scrollTop = log.scrollHeight; return true;
+    }).catch(function(e){
+      var note = host.querySelector('.hnx-wait'); if(note) note.remove();
+      var p = document.createElement('p'); p.className = 'hnx-note';
+      if(e && e.code === 'nonlatin') p.textContent = 'Le PDF ne gère pas encore ces caractères (écriture non latine) : choisissez Word (.docx), qui les conserve.';
+      else if(e && e.code === 'lib') p.textContent = 'Le module de création de ' + FMT[fmt].name + ' ne s’est pas chargé (connexion ?). Aucun fichier n’a été créé : réessayez dans un instant.';
+      else p.textContent = 'La création du fichier a échoué : aucun fichier n’a été créé. Réessayez.';
+      host.appendChild(p); try{ console.warn('hnx', e); }catch(_){}
+      return false;
+    });
+  }
+  function offerRow(log, host, doc, scope){   // boutons de format
+    var row = document.createElement('div'); row.className = 'hnx-row';
+    [['pdf', '📕 PDF'], ['docx', '📘 Word'], ['xlsx', '📗 Excel'], ['txt', '📄 Texte']].forEach(function(p){
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'hnx-btn'; b.textContent = p[1];
+      b.addEventListener('click', function(){ b.disabled = true; run(log, host, p[0], scope); setTimeout(function(){ b.disabled = false; }, 800); });
+      row.appendChild(b);
+    });
+    host.appendChild(row);
+  }
+  function run(log, host, fmt, scope){   // scope : 'all' | 'last'
+    var wait = document.createElement('p'); wait.className = 'hnx-note hnx-wait'; wait.textContent = 'Création du fichier…'; host.appendChild(wait);
+    var doc = convoDoc(log), B, base;
+    if(scope === 'last'){
+      var bots = [].filter.call(log.querySelectorAll('.msg.bot'), function(m){ return !m.querySelector('.hnx-row,.hnx-wait') || m.querySelector('.msg-text').textContent.length > 120; });
+      var last = null; for(var i = bots.length - 1; i >= 0; i--){ if(bots[i] !== host.closest('.msg') && !bots[i].dataset.hnxLocal){ last = bots[i]; break; } }
+      if(!last){ wait.remove(); var p = document.createElement('p'); p.className = 'hnx-note'; p.textContent = 'Aucune réponse précédente à exporter.'; host.appendChild(p); return; }
+      B = msgBlocks(last); doc = null; var h = B.filter(function(b){ return b.t === 'h'; })[0]; base = 'helpnaud-' + (h ? slug(h.text) : 'reponse') + '-' + today();
+    } else { B = flat(doc); base = 'helpnaud-conversation-' + today(); }
+    if(!B.length){ wait.remove(); return; }
+    return makeFile(fmt, B, scope === 'last' ? null : doc, base, host, log);
+  }
+
+  /* ---------- intentions ---------- */
+  function fmtOf(t){
+    if(/google\s*docs?/i.test(t)) return 'gdocs';
+    if(/\bpdf\b/i.test(t)) return 'pdf';
+    if(/\b(word|world|docx?)\b/i.test(t)) return 'docx';
+    if(/\b(excel|xlsx?|tableur|classeur)\b/i.test(t)) return 'xlsx';
+    if(/\b(power\s?point|pptx?|pr[ée]sentation|diapositives?|slides?)\b/i.test(t)) return 'pptx';
+    if(/\b(fichier texte|txt|markdown)\b/i.test(t)) return 'txt';
+    return '';
+  }
+  function intent(raw){
+    var t = String(raw || '').trim(), L = t.toLowerCase();
+    if(!t || t.length > 700) return null;
+    var act = /(export|fournis|fournir|donne|donner|envoie|envoyer|g[ée]n[èe]re|cr[ée]e|cr[ée]er|pr[ée]pare|transforme|convertis|t[ée]l[ée]charg|enregistr|sauvegard|version|sous forme|en format|j['’]ai besoin|je veux|je voudrais|peux-tu|pouvez-vous|can you|give me|export)/i.test(t);
+    var fmt = fmtOf(t), conv = /(conversation|discussion|[ée]change|clavardage|\bchat\b|historique)/i.test(t), sum = /r[ée]sum/i.test(t);
+    if(!act) return null;
+    if(!fmt && !conv) return null;
+    if(!fmt && conv && !/(export|t[ée]l[ée]charg|fournis|donne|envoie|enregistr|sauvegard|copie)/i.test(t)) return null;
+    var short = t.length <= 90;
+    return { fmt:fmt, conv:conv, sum:sum, short:short };
+  }
+
+  /* ---------- soumission ---------- */
+  document.addEventListener('submit', function(ev){
+    var f = ev.target, lid = f && LOGS[f.id]; if(!lid) return;
+    var inp = f.querySelector('textarea, input[type=text], input:not([type])'), q = inp ? inp.value : '';
+    var it = intent(q), log = document.getElementById(lid); if(!it || !log) { return; }
+    lastSubmit = Date.now();
+    var fmt = it.fmt === 'gdocs' ? 'docx' : it.fmt;
+    var localConvo = (it.conv && !it.sum && fmt !== 'pptx') || (it.fmt === 'gdocs' && it.short) || (!it.conv && it.short && fmt && !/(tableau|sur |de |des |d’|d')/i.test(q.replace(/(version|format)\s+(de|en)/i, '')) && /(version|donne|fournis|envoie|export|t[ée]l[ée]charg)/i.test(q) && fmt !== 'pptx' && fmt !== 'xlsx');
+    if(localConvo){
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      inp.value = ''; try{ inp.dispatchEvent(new Event('input', { bubbles:true })); }catch(e){}
+      mkBubble(log, 'user', esc(q)).dataset.hnxLocal = '1';
+      var scope = it.conv ? 'all' : 'last';
+      var b = mkBubble(log, 'bot', ''); b.dataset.hnxLocal = '1'; var host = b.querySelector('.msg-text');
+      var gd = it.fmt === 'gdocs';
+      if(!fmt){
+        host.innerHTML = '<p>Quel format souhaitez-vous pour ' + (scope === 'all' ? 'toute la conversation' : 'la dernière réponse') + ' ?</p>';
+        offerRow(log, host, null, scope);
+      } else {
+        host.innerHTML = '<p>' + (gd ? 'Aucun compte Google n’est connecté à HelpNaud : je crée un document Word (.docx), que Google Docs peut ouvrir et modifier.' : (scope === 'all' ? 'J’exporte la conversation complète (vos messages et mes réponses).' : 'J’exporte ma dernière réponse.')) + '</p>';
+        run(log, host, fmt, scope);
+      }
+      return;
+    }
+    if(fmt){ window.__hnExportOnce = fmt === 'gdocs' ? 'docx' : fmt; pending = { log:log, fmt:fmt === 'gdocs' ? 'docx' : fmt, before:log.querySelectorAll('.msg.bot').length, t:Date.now(), gd:fmt === 'gdocs' }; }
+  }, true);
+
+  /* suivi des appels IA pour attacher le fichier une fois la réponse terminée */
+  if(window.fetch){
+    var of = window.fetch;
+    window.fetch = function(u){
+      var isAi = /\/functions\/ai(\?|$)/.test(String(u && u.url || u)); if(isAi) inflight++;
+      var p = of.apply(this, arguments);
+      if(isAi) p.then(function(){ inflight--; sched(); }, function(){ inflight--; if(pending){ pending = null; } });
+      return p;
+    };
+  }
+  var timer = null;
+  function sched(){ clearTimeout(timer); timer = setTimeout(scan, 700); }
+  function scan(){
+    if(pending && Date.now() - pending.t > 180000) pending = null;
+    if(pending && inflight === 0){
+      var bots = pending.log.querySelectorAll('.msg.bot');
+      if(bots.length > pending.before){
+        var last = bots[bots.length - 1], tx = last.querySelector('.msg-text');
+        if(tx && tx.textContent.trim().length > 20 && !last.dataset.hnxDone){
+          last.dataset.hnxDone = '1';
+          var P = pending; pending = null;
+          var B = msgBlocks(last), h = B.filter(function(b){ return b.t === 'h'; })[0], base = 'helpnaud-' + (h ? slug(h.text) : 'document') + '-' + today();
+          var host = document.createElement('div'); last.insertBefore(host, last.querySelector('.msg-actions') || null);
+          var w = document.createElement('p'); w.className = 'hnx-note hnx-wait'; w.textContent = 'Création du fichier…'; host.appendChild(w);
+          if(P.gd){ var g = document.createElement('p'); g.className = 'hnx-note'; g.textContent = 'Aucun compte Google n’est connecté : document Word (.docx) à ouvrir dans Google Docs.'; host.appendChild(g); }
+          makeFile(P.fmt, B, null, base, host, P.log);
+        }
+      }
+    }
+    decorateCode();
+  }
+
+  /* ---------- panneau latéral (code et contenus) ---------- */
+  var items = [], panel = null;
+  var EXT = { javascript:'js', js:'js', jsx:'jsx', typescript:'ts', ts:'ts', tsx:'tsx', json:'json', html:'html', css:'css', sql:'sql', python:'py', py:'py', bash:'sh', sh:'sh', shell:'sh', yaml:'yml', yml:'yml', toml:'toml', md:'md', markdown:'md', xml:'xml', java:'java', php:'php', go:'go', rust:'rs', csv:'csv', txt:'txt', '':'txt' };
+  function ensurePanel(){
+    if(panel) return panel;
+    panel = document.createElement('aside'); panel.id = 'hnx-panel'; panel.setAttribute('role', 'complementary'); panel.setAttribute('aria-label', 'Fenêtre latérale');
+    panel.innerHTML = '<header><span class="t"></span><select aria-label="Contenus ouverts" hidden></select><button type="button" class="hnx-btn" data-a="copy">Copier</button><button type="button" class="hnx-btn" data-a="dl">⬇ Télécharger</button><button type="button" class="hnx-btn" data-a="x" aria-label="Fermer">✕</button></header><div class="body"></div>';
+    document.body.appendChild(panel);
+    panel.addEventListener('click', function(e){
+      var a = e.target.closest('[data-a]'); if(!a) return; var it = items[panel._cur]; if(!it) return;
+      if(a.dataset.a === 'x') closePanel();
+      else if(a.dataset.a === 'copy'){ var tx = it.kind === 'code' ? it.text : (it.plain || ''); (navigator.clipboard ? navigator.clipboard.writeText(tx) : Promise.reject()).then(function(){ a.textContent = 'Copié ✓'; }, function(){ try{ var r = document.createRange(); r.selectNodeContents(panel.querySelector('.body')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); a.textContent = 'Copié ✓'; }catch(x){ a.textContent = 'Copie impossible'; } }); setTimeout(function(){ a.textContent = 'Copier'; }, 1600); }
+      else if(a.dataset.a === 'dl'){
+        if(it.kind === 'code'){ var bl = new Blob([it.text], { type:'text/plain;charset=utf-8' }), l = download(bl, it.name); document.body.appendChild(l); l.style.display = 'none'; l.click(); l.remove(); }
+        else { var host = panel.querySelector('.body'); var B = it.blocks; build('docx', B).then(function(bl2){ var l2 = download(bl2, it.name.replace(/\.\w+$/, '') + '.docx'); l2.style.display = 'none'; document.body.appendChild(l2); l2.click(); l2.remove(); }); }
+      }
+    });
+    panel.querySelector('select').addEventListener('change', function(){ show(+this.value); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && panel.classList.contains('on')) closePanel(); });
+    return panel;
+  }
+  function closePanel(){ if(panel) panel.classList.remove('on'); document.body.classList.remove('hnx-open'); }
+  function show(i){
+    ensurePanel(); var it = items[i]; if(!it) return; panel._cur = i;
+    panel.querySelector('.t').textContent = it.name;
+    var body = panel.querySelector('.body');
+    if(it.kind === 'code'){ body.innerHTML = '<pre></pre>'; body.firstChild.textContent = it.text; panel.querySelector('[data-a=dl]').textContent = '⬇ Télécharger'; }
+    else { body.innerHTML = '<div class="doc md msg-text"></div>'; body.firstChild.innerHTML = it.html; panel.querySelector('[data-a=dl]').textContent = '⬇ Word (.docx)'; }
+    var sel = panel.querySelector('select'); sel.hidden = items.length < 2; sel.innerHTML = items.map(function(x, k){ return '<option value="' + k + '">' + esc(x.name) + '</option>'; }).join(''); sel.value = String(i);
+    panel.classList.add('on'); document.body.classList.add('hnx-open');
+  }
+  function openItem(it){
+    var k = -1; items.forEach(function(x, j){ if(x.key === it.key) k = j; });
+    if(k < 0){ items.push(it); k = items.length - 1; } else items[k] = it;
+    show(k);
+  }
+  function fences(raw){
+    var out = [], re = /(^|\n)([^\n]*)\n?```([\w.+#-]*)[^\n]*\n([\s\S]*?)```/g, m;
+    while((m = re.exec(raw || ''))) out.push({ before:m[2], lang:(m[3] || '').toLowerCase(), text:m[4] });
+    return out;
+  }
+  function fileNameFor(f, idx){
+    var m = /([\w][\w\-./]*\.[A-Za-z0-9]{1,5})/.exec(f.before || '') || /^\s*(?:\/\/|#|--|\/\*)\s*(?:fichier|file|nom)?\s*:?\s*([\w][\w\-./]*\.[A-Za-z0-9]{1,5})/i.exec(f.text.split('\n')[0] || '');
+    if(m) return m[1].replace(/^.*\//, '');
+    return 'code' + (idx ? '-' + (idx + 1) : '') + '.' + (EXT[f.lang] || f.lang || 'txt');
+  }
+  function decorateCode(){
+    var logs = Object.keys(LOGS).map(function(k){ return document.getElementById(LOGS[k]); }).filter(Boolean);
+    logs.forEach(function(log){
+      [].forEach.call(log.querySelectorAll('.msg.bot'), function(m){
+        var tx = m.querySelector('.msg-text'); if(!tx) return;
+        var pres = tx.querySelectorAll('pre:not([data-hnx])'); if(!pres.length) return;
+        var fs = fences(tx.dataset.raw || ''), all = tx.querySelectorAll('pre');
+        [].forEach.call(pres, function(pre){
+          pre.dataset.hnx = '1';
+          var idx = [].indexOf.call(all, pre), f = fs[idx] || { lang:'', before:'', text:pre.textContent }, text = f.text.replace(/\n$/, ''), name = fileNameFor(f, idx);
+          var b = document.createElement('button'); b.type = 'button'; b.className = 'hnx-btn hnx-open'; b.textContent = '↗ Ouvrir à côté'; b.setAttribute('aria-label', 'Ouvrir ' + name + ' dans une fenêtre à côté');
+          b.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openItem({ key:name + ':' + text.length, kind:'code', name:name, text:text }); });
+          pre.insertBefore(b, pre.firstChild);
+          pre._hnx = { name:name, text:text };
+          if(Date.now() - lastSubmit < 120000 && window.innerWidth >= 1100 && text.split('\n').length >= 15 && !m.dataset.hnxAuto){ m.dataset.hnxAuto = '1'; openItem({ key:name + ':' + text.length, kind:'code', name:name, text:text }); }
+        });
+      });
+    });
+  }
+  window.__hnx = { intent:intent, blocksOf:blocksOf, build:build, openItem:openItem, scan:scan };
+  var mo = new MutationObserver(sched);
+  function watch(){ Object.keys(LOGS).forEach(function(k){ var l = document.getElementById(LOGS[k]); if(l && !l._hnxw){ l._hnxw = 1; mo.observe(l, { childList:true, subtree:true, characterData:true }); } }); }
+  watch(); setInterval(watch, 4000);
+})();
+</script>
 <style id="hn-pw-css">
 .hn-pw-wrap{position:relative;display:inline-block;max-width:100%}
 .hn-pw-wrap>input{padding-right:36px !important;box-sizing:border-box;max-width:100%}
