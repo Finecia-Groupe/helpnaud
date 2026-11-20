@@ -13747,7 +13747,11 @@
     if(t.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
     if(t.indexOf('email not confirmed') >= 0) return 'Confirmez d’abord votre courriel (lien reçu par courriel).';
     if(t.indexOf('already registered') >= 0 || t.indexOf('already been registered') >= 0) return 'Un compte existe déjà avec ce courriel : utilisez « Connexion » ou « Mot de passe oublié ».';
-    if(t.indexOf('password') >= 0 && (t.indexOf('least') >= 0 || t.indexOf('weak') >= 0 || t.indexOf('short') >= 0)) return 'Mot de passe trop faible (8 caractères minimum).';
+    if(t.indexOf('known to be weak') >= 0 || t.indexOf('easy to guess') >= 0 || t.indexOf('pwned') >= 0 || t.indexOf('leaked') >= 0) return 'Ce mot de passe est connu dans des fuites de données ou trop facile à deviner. Choisissez-en un autre.';
+    if(t.indexOf('different from the old') >= 0 || t.indexOf('same as the old') >= 0) return 'Le nouveau mot de passe doit être différent de l’ancien.';
+    if(t.indexOf('at least one character of each') >= 0 || t.indexOf('abcdefghij') >= 0) return 'Mot de passe refusé : il doit contenir au moins une minuscule, une majuscule, un chiffre et un caractère spécial.';
+    if(t.indexOf('password') >= 0 && (t.indexOf('least') >= 0 || t.indexOf('weak') >= 0 || t.indexOf('short') >= 0)) return 'Mot de passe trop faible : 8 caractères minimum, dont 1 chiffre, 1 majuscule et 1 caractère spécial.';
+    if(t.indexOf('auth session missing') >= 0 || t.indexOf('session expired') >= 0 || t.indexOf('token has expired') >= 0) return 'Le lien a expiré. Redemandez un lien avec « Mot de passe oublié ».';
     if(t.indexOf('rate') >= 0 || t.indexOf('too many') >= 0) return 'Trop de tentatives : patientez quelques minutes.';
     if(t.indexOf('fetch') >= 0 || t.indexOf('network') >= 0) return 'Connexion impossible : vérifiez votre réseau.';
     if(t.indexOf('sending confirmation') >= 0 || t.indexOf('sending') >= 0 && t.indexOf('email') >= 0 || t.indexOf('smtp') >= 0) return 'Compte non créé : le service n’a pas pu envoyer le courriel de confirmation. Réessayez dans quelques minutes ; si cela persiste, écrivez à support@helpnaud.ai.';
@@ -47620,6 +47624,107 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
 @media (max-width:760px){ #hn-lang-dlg .hnl-grid{ grid-template-columns:repeat(2,1fr); } }
 @media (max-width:480px){ #hn-lang-dlg .hnl-grid{ grid-template-columns:1fr; } }
 </style>
+<style id="hn-pw-css">
+.hn-pw-wrap{position:relative;display:inline-block;max-width:100%}
+.hn-pw-wrap>input{padding-right:36px !important;box-sizing:border-box;max-width:100%}
+.hn-pw-eye{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;background:transparent;color:var(--muted,#667);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:8px;padding:0}
+.hn-pw-eye:hover,.hn-pw-eye:focus-visible{color:var(--ink,#111);background:var(--line,rgba(0,0,0,.08))}
+.hn-pw-eye svg{width:18px;height:18px}
+[dir=rtl] .hn-pw-wrap>input{padding-right:10px !important;padding-left:36px !important}
+[dir=rtl] .hn-pw-eye{right:auto;left:3px}
+.hn-pw-meter{width:100%;display:flex;flex-direction:column;gap:4px;font-size:12px}
+.hn-pw-bar{display:flex;gap:4px}
+.hn-pw-bar i{flex:1;height:5px;border-radius:3px;background:var(--line,#ddd);transition:background .15s}
+.hn-pw-lvl{font-weight:600}
+.hn-pw-rules{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:2px 12px;color:var(--muted,#667)}
+.hn-pw-rules li:before{content:"○ ";}
+.hn-pw-rules li.ok{color:#1a8f4c}
+.hn-pw-rules li.ok:before{content:"✓ ";}
+.hn-pw-match{width:100%;font-size:12px;min-height:0}
+.hn-pw-match.bad{color:#c0392b}.hn-pw-match.ok{color:#1a8f4c}
+.hn-pw-l1{color:#c0392b}.hn-pw-l2{color:#d98a00}.hn-pw-l3{color:#1a8f4c}
+</style>
+<script id="hn-pw-js">
+(function(){
+  var EYE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYEOFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.6 10.6 0 0 1 12 5c7 0 11 7 11 7a19.9 19.9 0 0 1-3.17 4.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
+  function evalPw(p){
+    p = String(p||'');
+    var r = { len: p.length>=8, spec: /[^A-Za-z0-9\s]/.test(p), dig: /\d/.test(p), up: /[A-Z]/.test(p) };
+    var ok = r.len && r.spec && r.dig && r.up;
+    var lvl = !p ? 0 : (!ok ? 1 : (p.length>=12 ? 3 : 2));
+    return { r:r, ok:ok, lvl:lvl };
+  }
+  window.hnPwEval = evalPw;
+  function wrap(inp){
+    if(!inp || inp.parentNode.classList.contains('hn-pw-wrap')) return;
+    var w = document.createElement('span'); w.className='hn-pw-wrap';
+    inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
+    var b = document.createElement('button'); b.type='button'; b.className='hn-pw-eye'; b.innerHTML=EYE;
+    b.setAttribute('aria-label','Afficher le mot de passe'); b.title='Afficher le mot de passe';
+    b.addEventListener('click', function(){
+      var show = inp.type==='password'; inp.type = show?'text':'password';
+      b.innerHTML = show?EYEOFF:EYE;
+      var t = show?'Masquer le mot de passe':'Afficher le mot de passe';
+      b.setAttribute('aria-label',t); b.title=t; b.setAttribute('aria-pressed', show?'true':'false');
+    });
+    w.appendChild(b);
+    return w;
+  }
+  function addConfirm(pw, id, ph){
+    var w = pw.parentNode, c = pw.cloneNode(false);
+    c.id=id; c.value=''; c.placeholder=ph; c.removeAttribute('minlength'); c.type='password';
+    c.setAttribute('autocomplete','new-password');
+    w.parentNode.insertBefore(c, w.nextSibling);
+    var cw = wrap(c); return c;
+  }
+  function addMeter(after, pw, conf){
+    var m = document.createElement('div'); m.className='hn-pw-meter'; m.setAttribute('aria-live','polite');
+    m.innerHTML = '<div class="hn-pw-bar"><i></i><i></i><i></i></div><div class="hn-pw-lvl"></div>'+
+      '<ul class="hn-pw-rules"><li data-r="len">8 caractères minimum</li><li data-r="dig">1 chiffre minimum</li><li data-r="up">1 majuscule minimum</li><li data-r="spec">1 caractère spécial minimum</li></ul>'+
+      '<div class="hn-pw-match"></div>';
+    after.parentNode.insertBefore(m, after.nextSibling);
+    var bars = m.querySelectorAll('.hn-pw-bar i'), lv = m.querySelector('.hn-pw-lvl'), mt = m.querySelector('.hn-pw-match');
+    var names = ['', 'Faible', 'Moyen', 'Fort'], cols = ['', '#c0392b', '#d98a00', '#1a8f4c'];
+    function upd(){
+      var e = evalPw(pw.value);
+      for(var i=0;i<3;i++) bars[i].style.background = i<e.lvl ? cols[e.lvl] : '';
+      lv.className = 'hn-pw-lvl' + (e.lvl?' hn-pw-l'+e.lvl:'');
+      lv.textContent = e.lvl ? ('Force : ' + names[e.lvl]) : '';
+      ['len','dig','up','spec'].forEach(function(k){ m.querySelector('[data-r='+k+']').classList.toggle('ok', e.r[k]); });
+      if(conf){
+        if(!conf.value){ mt.textContent=''; mt.className='hn-pw-match'; }
+        else if(conf.value===pw.value){ mt.textContent='Les mots de passe correspondent.'; mt.className='hn-pw-match ok'; }
+        else { mt.textContent='Les mots de passe ne correspondent pas.'; mt.className='hn-pw-match bad'; }
+      }
+    }
+    pw.addEventListener('input',upd); if(conf) conf.addEventListener('input',upd); upd();
+  }
+  function init(){
+    var lp=document.getElementById('cust-login-pw'), sp=document.getElementById('cust-su-pw'), rp=document.getElementById('cust-reset-pw');
+    if(!lp && !sp && !rp) return false;
+    if(lp) wrap(lp);
+    if(sp){ wrap(sp); sp.placeholder='Mot de passe'; sp.removeAttribute('minlength');
+      var sc = addConfirm(sp,'cust-su-pw2','Confirmer le mot de passe'); addMeter(sc.parentNode, sp, sc); }
+    if(rp){ wrap(rp); rp.placeholder='Nouveau mot de passe'; rp.removeAttribute('minlength');
+      var rc = addConfirm(rp,'cust-reset-pw2','Confirmer le nouveau mot de passe'); addMeter(rc.parentNode, rp, rc); }
+    return true;
+  }
+  document.addEventListener('submit', function(ev){
+    var f = ev.target, pw, cf;
+    if(f && f.id==='cust-form-signup'){ pw=document.getElementById('cust-su-pw'); cf=document.getElementById('cust-su-pw2'); }
+    else if(f && f.id==='cust-form-reset'){ pw=document.getElementById('cust-reset-pw'); cf=document.getElementById('cust-reset-pw2'); }
+    else return;
+    var e = evalPw(pw.value), err = '';
+    if(!e.ok) err = 'Mot de passe trop faible : 8 caractères minimum, dont 1 chiffre, 1 majuscule et 1 caractère spécial.';
+    else if(cf && cf.value !== pw.value) err = 'Les deux mots de passe ne sont pas identiques.';
+    if(err){ ev.preventDefault(); ev.stopImmediatePropagation();
+      var m = document.getElementById('cust-msg'); if(m){ m.hidden=false; m.textContent=err; m.style.color='var(--bad)'; } else alert(err);
+      try{ (e.ok?cf:pw).focus(); }catch(x){} }
+  }, true);
+  if(!init()){ document.addEventListener('DOMContentLoaded', init); }
+})();
+</script>
 <style id="hn-fit-css">
 /* ===== Conversation : les messages d'abord (Chat, Co-work, Consult) ===== */
 /* « Navigation privée » : l'action est dans le menu ⋯ ; en mode actif, une seule barre compacte l'indique. */
