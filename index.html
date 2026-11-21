@@ -13906,10 +13906,20 @@
     var box = cEl('cust-admin-rows'); if(!box) return;
     var q = String((cEl('cust-admin-q') || {}).value || '').trim().toLowerCase();
     var rows = custAdminState.rows.filter(function(r){ return !q || (String(r.email || '') + ' ' + String(r.full_name || '') + ' ' + String(r.first_name || '') + ' ' + String(r.last_name || '') + ' ' + String(r.phone || '') + ' ' + String(r.country || '') + ' ' + String(r.city || '')).toLowerCase().indexOf(q) >= 0; });
-    var cnt = cEl('cust-admin-count'); if(cnt) cnt.textContent = rows.length + ' client' + (rows.length > 1 ? 's' : '') + (q ? ' trouvé' + (rows.length > 1 ? 's' : '') : '') + (custAdminState.rows.length !== rows.length ? ' sur ' + custAdminState.rows.length : '') + (custAdminState.at ? ' · mis à jour à ' + custAdminState.at.toLocaleTimeString('fr-CA') + ' (automatique)' : '');
+    var nConf = rows.filter(function(r){ return !r.pending; }).length, nPend = rows.length - nConf;
+    var cnt = cEl('cust-admin-count'); if(cnt) cnt.textContent = nConf + ' client' + (nConf > 1 ? 's' : '') + (nPend ? ' · ' + nPend + ' en attente de confirmation' : '') + (q ? ' (recherche)' : '') + (custAdminState.rows.length !== rows.length ? ' sur ' + custAdminState.rows.length : '') + (custAdminState.at ? ' · mis à jour à ' + custAdminState.at.toLocaleTimeString('fr-CA') + ' (automatique)' : '');
     if(!rows.length){ box.innerHTML = '<p class="hint" style="margin:0;">' + (custAdminState.loaded ? 'Aucun client pour le moment.' : 'Chargement…') + '</p>'; return; }
     box.innerHTML = rows.map(function(r){
       var susp = r.status === 'suspended';
+      if(r.pending){
+        var mail = 'mailto:' + encodeURIComponent(r.email || '') + '?subject=' + encodeURIComponent('Confirmez votre compte HelpNaud') + '&body=' + encodeURIComponent('Bonjour,\n\nVotre compte HelpNaud n’est pas encore confirmé. Ouvrez le courriel de confirmation (pensez à vérifier les courriels indésirables) ou, sur helpnaud.ai, onglet Connexion, cliquez sur « Renvoyer le courriel de confirmation ».\n\nL’équipe HelpNaud');
+        return '<div style="border:1px dashed var(--line); border-radius:12px; padding:10px 12px; background:var(--surface); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">' +
+          '<div style="flex:1; min-width:200px;"><b>' + escapeHtml(r.full_name || '(sans nom)') + '</b> <span style="color:var(--warn,#b36b00); font-size:12px; font-weight:700;">⏳ EN ATTENTE DE CONFIRMATION</span>' +
+          '<div class="hint" style="margin:2px 0 0; word-break:break-all;">' + escapeHtml(r.email || '') + '</div>' +
+          '<div class="hint" style="margin:2px 0 0;">' + custAdminProfileLine(r) + '</div>' +
+          '<div class="hint" style="margin:2px 0 0;">Inscrit le ' + escapeHtml(custAdminDate(r.created_at)) + ' · courriel de confirmation non encore cliqué</div></div>' +
+          '<a class="btn" href="' + mail + '" style="padding:6px 12px; font-size:12.5px; text-decoration:none;">Relancer par courriel</a></div>';
+      }
       return '<div style="border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--surface); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">' +
         '<div style="flex:1; min-width:200px;"><b>' + escapeHtml(r.full_name || '(sans nom)') + '</b>' + (susp ? ' <span style="color:var(--bad); font-size:12px; font-weight:700;">SUSPENDU</span>' : '') +
         '<div class="hint" style="margin:2px 0 0; word-break:break-all;">' + escapeHtml(r.email || '') + '</div>' +
@@ -13923,10 +13933,10 @@
     custAdminState.busy = true; if(!keepMsg) custAdminMsg('', '');
     sb.rpc('customer_admin_list').then(function(r){
       if(r.error) throw r.error;
-      var prevEmails = {}; (custAdminState.rows || []).forEach(function(x){ prevEmails[String(x.email || '').toLowerCase()] = 1; });
+      var prevEmails = {}; (custAdminState.rows || []).forEach(function(x){ prevEmails[String(x.email || '').toLowerCase()] = x.pending ? 'p' : 'c'; });
       var hadRows = custAdminState.loaded;
       custAdminState.rows = Array.isArray(r.data) ? r.data : []; custAdminState.loaded = true; custAdminState.at = new Date();
-      if(hadRows){ var fresh = custAdminState.rows.filter(function(x){ return !prevEmails[String(x.email || '').toLowerCase()]; }); if(fresh.length) custAdminMsg('ok', (fresh.length > 1 ? fresh.length + ' nouveaux clients : ' : 'Nouveau client : ') + fresh.map(function(x){ return x.full_name || x.email; }).join(', ') + '.'); }
+      if(hadRows){ var fresh = custAdminState.rows.filter(function(x){ var p = prevEmails[String(x.email || '').toLowerCase()]; return !x.pending && p !== 'c'; }); if(fresh.length) custAdminMsg('ok', (fresh.length > 1 ? fresh.length + ' nouveaux clients : ' : 'Nouveau client : ') + fresh.map(function(x){ return x.full_name || x.email; }).join(', ') + '.'); }
       custAdminRender();
       return sb.rpc('customer_profiles_admin_list').then(function(p){   /* profils (prénom, nom, téléphone, pays, ville) : facultatif, ignoré si le SQL n'est pas installé */
         if(!p || p.error || !Array.isArray(p.data)) return;
