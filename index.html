@@ -13912,13 +13912,12 @@
     box.innerHTML = rows.map(function(r){
       var susp = r.status === 'suspended';
       if(r.pending){
-        var mail = 'mailto:' + encodeURIComponent(r.email || '') + '?subject=' + encodeURIComponent('Confirmez votre compte HelpNaud') + '&body=' + encodeURIComponent('Bonjour,\n\nVotre compte HelpNaud n’est pas encore confirmé. Ouvrez le courriel de confirmation (pensez à vérifier les courriels indésirables) ou, sur helpnaud.ai, onglet Connexion, cliquez sur « Renvoyer le courriel de confirmation ».\n\nL’équipe HelpNaud');
         return '<div style="border:1px dashed var(--line); border-radius:12px; padding:10px 12px; background:var(--surface); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">' +
           '<div style="flex:1; min-width:200px;"><b>' + escapeHtml(r.full_name || '(sans nom)') + '</b> <span style="color:var(--warn,#b36b00); font-size:12px; font-weight:700;">⏳ EN ATTENTE DE CONFIRMATION</span>' +
           '<div class="hint" style="margin:2px 0 0; word-break:break-all;">' + escapeHtml(r.email || '') + '</div>' +
           '<div class="hint" style="margin:2px 0 0;">' + custAdminProfileLine(r) + '</div>' +
           '<div class="hint" style="margin:2px 0 0;">Inscrit le ' + escapeHtml(custAdminDate(r.created_at)) + ' · courriel de confirmation non encore cliqué</div></div>' +
-          '<a class="btn" href="' + mail + '" style="padding:6px 12px; font-size:12.5px; text-decoration:none;">Relancer par courriel</a></div>';
+          '<button type="button" class="btn" data-cadm-resend="' + escapeHtml(r.email || '') + '" style="padding:6px 12px; font-size:12.5px;">Relancer par courriel</button></div>';
       }
       return '<div style="border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--surface); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">' +
         '<div style="flex:1; min-width:200px;"><b>' + escapeHtml(r.full_name || '(sans nom)') + '</b>' + (susp ? ' <span style="color:var(--bad); font-size:12px; font-weight:700;">SUSPENDU</span>' : '') +
@@ -13927,6 +13926,24 @@
         '<div class="hint" style="margin:2px 0 0;">Forfait ' + escapeHtml(custAdminPlanName(r.plan)) + ' · ' + Number(r.used || 0) + ' crédits ce mois-ci' + (r.cost_usd != null ? ' · coût API ≈ ' + Number(r.cost_usd).toFixed(2) + ' $ US' : '') + ' · inscrit le ' + escapeHtml(custAdminDate(r.created_at)) + '</div></div>' +
         '<button type="button" class="btn" data-cadm-edit="' + escapeHtml(r.email || '') + '" style="padding:6px 12px; font-size:12.5px;">Gérer</button></div>';
     }).join('');
+  }
+  /* Relance : redemande à Supabase d'envoyer le courriel « Confirmez votre adresse courriel » (expéditeur et modèle configurés dans Supabase). */
+  var custAdminResent = {};
+  function custAdminResend(email, btn){
+    email = String(email || '').trim(); if(!email) return;
+    var last = custAdminResent[email.toLowerCase()] || 0;
+    if(Date.now() - last < 60000){ custAdminMsg('error', 'Une demande d’envoi vient d’être acceptée pour ' + email + '. Attendez une minute avant de relancer.'); return; }
+    var cs = custSbInit(); if(!cs){ custAdminMsg('error', 'Service de connexion indisponible.'); return; }
+    if(btn){ btn.disabled = true; btn.textContent = 'Envoi…'; }
+    hnCaptchaToken().then(function(ct){ return cs.auth.resend({ type:'signup', email: email, options: { emailRedirectTo: location.origin + '/?account=confirmed', captchaToken: ct } }); }).then(function(res){
+      if(res.error) throw res.error;
+      custAdminResent[email.toLowerCase()] = Date.now();
+      custAdminMsg('ok', 'Demande d’envoi du courriel de confirmation acceptée pour ' + email + '.');
+      if(btn){ btn.textContent = 'Demande d’envoi acceptée ✓'; setTimeout(function(){ btn.disabled = false; btn.textContent = 'Relancer par courriel'; }, 60000); }
+    }).catch(function(e){
+      custAdminMsg('error', 'Envoi impossible pour ' + email + ' : ' + custErrText(e));
+      if(btn){ btn.disabled = false; btn.textContent = 'Relancer par courriel'; }
+    });
   }
   function custAdminLoad(keepMsg){
     var sb = fghlabSb; if(!sb || !fghlabOwnerCloud || custAdminState.busy) return;
@@ -14012,6 +14029,8 @@
     if((f = cEl('cust-admin-e-cancel'))) f.addEventListener('click', function(){ custAdminShow('list'); });
     if((f = cEl('cust-admin-e-save'))) f.addEventListener('click', custAdminSave);
     if((f = cEl('cust-admin-rows'))) f.addEventListener('click', function(ev){
+      var rs = ev.target.closest ? ev.target.closest('[data-cadm-resend]') : null;
+      if(rs){ custAdminResend(rs.getAttribute('data-cadm-resend'), rs); return; }
       var b = ev.target.closest ? ev.target.closest('[data-cadm-edit]') : null;
       if(b) custAdminOpen(b.getAttribute('data-cadm-edit'));
     });
@@ -14833,7 +14852,30 @@
     });
     custRender();
     var q = ''; try{ q = new URLSearchParams(location.search).get('account') || ''; }catch(e){}
-    if(q === 'confirmed' || q === 'reset'){ setTimeout(function(){ try{ showView('settings'); }catch(e){} if(q === 'confirmed') custMsg('ok', 'Courriel confirmé : vous pouvez vous connecter.'); }, 600); }
+    if(q === 'confirmed' || q === 'reset'){
+      setTimeout(function(){
+        try{ showView('settings'); }catch(e){}
+        if(q !== 'confirmed') return;
+        var confirmationClient = custSbInit();
+        var unverified = 'Confirmation non vérifiée. Connectez-vous ou demandez un nouveau lien de confirmation.';
+        if(!confirmationClient){ custMsg('error', unverified); return; }
+        /* Attendre le traitement du retour OAuth/PKCE, puis vérifier le compte côté serveur.
+           Le paramètre account=confirmed ne constitue jamais une preuve de confirmation. */
+        confirmationClient.auth.getSession().then(function(result){
+          if(result.error) throw result.error;
+          if(!result.data || !result.data.session) return null;
+          return confirmationClient.auth.getUser();
+        }).then(function(result){
+          if(result && result.error) throw result.error;
+          var user = result && result.data && result.data.user;
+          if(user && user.email_confirmed_at){
+            custMsg('ok', 'Adresse courriel du compte connecté confirmée.');
+          }else{
+            custMsg('error', unverified);
+          }
+        }).catch(function(){ custMsg('error', unverified); });
+      }, 600);
+    }
   })();
   /* ----- Page d'entrée : l'application ne s'ouvre qu'après connexion -----
      Sans session (compte client, équipe ou propriétaire), la carte « Mon compte HelpNaud » est déplacée dans une page
