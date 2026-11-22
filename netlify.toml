@@ -274,3 +274,13 @@
   to = "/privacy-help.html"
   status = 200
   force = true
+
+# Lien d'équipe FGH-Colab : ouvre l'application (l'écran de connexion est géré côté page)
+[[redirects]]
+  from = "/FGH-COLAB"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/fgh-colab"
+  to = "/index.html"
+  status = 200

@@ -5221,6 +5221,11 @@
           <form id="cust-form-login" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
             <input type="email" id="cust-login-email" autocomplete="username" placeholder="Courriel" required style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
             <input type="password" id="cust-login-pw" autocomplete="current-password" placeholder="Mot de passe" required style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:200px;">
+            <span id="cust-oc-wrap" hidden style="display:none; gap:8px; flex-wrap:wrap; align-items:center;">
+              <input type="password" id="cust-login-code" autocomplete="one-time-code" placeholder="Code accès propriétaire" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:200px;">
+              <button type="button" class="btn" id="cust-codeforgot-btn" style="padding:6px 12px; font-size:12.5px;">Code accès oublié ?</button>
+            </span>
+            <button type="button" class="btn" id="cust-oc-toggle" style="padding:6px 12px; font-size:12.5px;" title="Réservé au propriétaire de HelpNaud">Accès propriétaire</button>
             <button type="submit" class="btn primary" style="padding:6px 12px; font-size:12.5px;">Se connecter</button>
             <button type="button" class="btn" id="cust-forgot-btn" style="padding:6px 12px; font-size:12.5px;">Mot de passe oublié</button>
             <button type="button" class="btn" id="cust-resend-btn" style="padding:6px 12px; font-size:12.5px;">Renvoyer le courriel de confirmation</button>
@@ -5248,6 +5253,7 @@
           <p class="hint" id="cust-plan" style="margin:0 0 10px;"></p>
           <button type="button" class="btn" id="cust-plans-btn" style="padding:6px 12px; font-size:12.5px;">Voir les forfaits</button>
           <button type="button" class="btn" id="cust-logout-btn" style="padding:6px 12px; font-size:12.5px;">Se déconnecter</button>
+          <button type="button" class="btn" id="cust-oc-change" hidden style="display:none; padding:6px 12px; font-size:12.5px;">Changer mon code accès propriétaire</button>
         </div>
       </div>
 
@@ -5534,8 +5540,10 @@
         <form id="fghlab-ownercloud-login-form" style="display:none; gap:8px; flex-wrap:wrap; align-items:center;">
           <input type="email" id="fghlab-ownercloud-email" autocomplete="username" placeholder="Courriel du propriétaire" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:230px;">
           <input type="password" id="fghlab-ownercloud-password" autocomplete="current-password" placeholder="Mot de passe" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:200px;">
+          <input type="password" id="fghlab-ownercloud-code" autocomplete="one-time-code" placeholder="Code accès propriétaire" style="border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface); color:var(--ink); font-size:13px; width:200px;">
           <button type="submit" class="btn primary" id="fghlab-ownercloud-login-btn" style="padding:6px 12px; font-size:12.5px;">Se connecter</button>
           <button type="button" class="btn" id="fghlab-ownercloud-forgot-btn" style="padding:6px 12px; font-size:12.5px;">Mot de passe oublié</button>
+          <button type="button" class="btn" id="fghlab-ownercloud-codeforgot-btn" style="padding:6px 12px; font-size:12.5px;">Code accès oublié ?</button>
         </form>
 
         <div id="fghlab-ownercloud-signedin" style="display:none;">
@@ -5543,6 +5551,7 @@
             <span id="fghlab-ownercloud-who"></span>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn" id="fghlab-ownercloud-changepw-btn" style="padding:4px 10px; font-size:12px;">Changer mon mot de passe</button>
+              <button type="button" class="btn" id="fghlab-ownercloud-changecode-btn" style="padding:4px 10px; font-size:12px;">Changer mon code accès propriétaire</button>
               <button type="button" class="btn" id="fghlab-ownercloud-logout-btn" style="padding:4px 10px; font-size:12px;">Se déconnecter</button>
               <button type="button" class="btn" id="hn-team-hide-btn" style="padding:4px 10px; font-size:12px;" title="Retire cet espace de Réglages sur cet appareil. Pour le revoir : ouvrez helpnaud.ai/?equipe=1">Masquer cet espace ici</button>
             </div>
@@ -5704,8 +5713,16 @@
 
           <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13.5px; margin-bottom:12px;">
             <input type="checkbox" id="fghlab-owner-toggle">
-            FGH-Colab activé pour mon compte (propriétaire)
+            <span>Bouton FGH-Colab <span class="hint" style="display:block; margin:2px 0 0;">Désactivé : FGH-Colab disparaît des menus de tous les utilisateurs (le propriétaire garde l'accès). Activé : seuls le propriétaire et les membres de l'équipe FINECIA GROUPE enregistrés ci-dessous le voient, après connexion par leur formulaire FGH-Colab.</span></span>
           </label>
+          <div style="border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:var(--surface); margin-bottom:14px;">
+            <span style="font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:6px;">Lien pour notre équipe</span>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <input type="text" id="fghcolab-link" readonly value="https://helpnaud.ai/FGH-COLAB" style="flex:1; min-width:220px; border:1px solid var(--line); border-radius:9px; padding:7px 10px; background:var(--surface-2); color:var(--ink); font-size:13px;">
+              <button type="button" class="btn" id="fghcolab-link-copy" style="padding:6px 12px; font-size:12.5px;">Copier le lien</button>
+            </div>
+            <p class="hint" style="margin:6px 0 0;">À envoyer aux membres autorisés : il ouvre l'écran de connexion FGH-Colab (courriel, mot de passe et codes). Il n'affiche rien aux autres personnes.</p>
+          </div>
 
           <div style="border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:var(--surface); margin-bottom:14px;">
             <span style="font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:7px;">Profil administrateur</span>
@@ -5989,7 +6006,23 @@
   function fghlabCloudFlag(){
     try{ return localStorage.getItem('helpnaud_team_cloud') === '1'; }catch(e){ return false; }
   }
-  function isFghlabAuthorized(){ return !!fghlabState.enabled; }
+  /* Propriétaire confirmé par la base : session FGH-Colab (fghlabOwnerCloud) ou connexion HelpNaud ordinaire du propriétaire (hnCustOwner). */
+  var hnCustOwner = false;
+  function hnIsOwner(){ return (typeof fghlabOwnerCloud !== 'undefined' && !!fghlabOwnerCloud) || hnCustOwner; }
+  /* Menus : FGH-Colab n'apparaît QUE pour le propriétaire confirmé, ou pour un membre enregistré connecté par le
+     formulaire FGH-Colab, et seulement si le « Bouton FGH-Colab » est activé (le propriétaire le voit toujours). */
+  function isFghlabAuthorized(){
+    if(hnIsOwner()) return true;
+    if(!fghlabState.enabled) return false;
+    var m = (typeof getActiveFghlabMember === 'function') ? getActiveFghlabMember() : null;
+    return !!m;
+  }
+  /* Accès à l'écran de connexion FGH-Colab (lien d'équipe /FGH-COLAB) sans l'afficher dans les menus. */
+  function fghlabViewAllowed(){
+    if(isFghlabAuthorized()) return true;
+    if(!fghlabState.enabled) return false;
+    try{ return sessionStorage.getItem('hn_fghcolab_entry') === '1'; }catch(e){ return false; }
+  }
   loadFghlabState();
   function applyFghlabVisibility(){
     // Gating purement visuel/local (pas de sécurité réelle) : on masque ou affiche les entrées
@@ -6324,6 +6357,18 @@
       try{ history.replaceState(null, '', location.pathname + (hnQsOut ? '?' + hnQsOut : '') + (location.hash || '')); }catch(e){}
     }
   }catch(e){}
+  /* Lien d'équipe https://helpnaud.ai/FGH-COLAB : mémorise l'appareil (comme /?equipe=1) et ouvre l'écran de connexion FGH-Colab. */
+  try{
+    if(/^\/fgh-colab\/?$/i.test(location.pathname || '')){
+      try{ localStorage.setItem(HN_TEAM_KEY, '1'); sessionStorage.setItem('hn_fghcolab_entry', '1'); }catch(e){}
+      try{ history.replaceState(null, '', '/'); }catch(e){}
+      setTimeout(function(){ try{ showView('fghlab'); }catch(e){} }, 600);
+    }
+  }catch(e){}
+  (function(){ var b = document.getElementById('fghcolab-link-copy'); if(!b) return;
+    b.addEventListener('click', function(){ var i = document.getElementById('fghcolab-link'); var v = i ? i.value : 'https://helpnaud.ai/FGH-COLAB';
+      var ok = function(){ b.textContent = 'Copié ✓'; setTimeout(function(){ b.textContent = 'Copier le lien'; }, 1600); };
+      try{ navigator.clipboard.writeText(v).then(ok, function(){ i.select(); document.execCommand('copy'); ok(); }); }catch(e){ try{ i.select(); document.execCommand('copy'); ok(); }catch(x){} } }); })();
   function hnApplyTeamUi(){
     var ownerNow = !!fghlabOwnerCloud || !!fghlabOwnerRecovery;
     if(ownerNow && !hnTeamForceHide){ try{ localStorage.setItem(HN_TEAM_KEY, '1'); }catch(e){} }
@@ -6393,6 +6438,8 @@
     if(typeof fghlabCloudRenderTeamPanel === 'function') fghlabCloudRenderTeamPanel();
     try{ if(typeof custAdminSync === 'function') custAdminSync(); }catch(e){}
     hnApplyTeamUi();
+    try{ applyFghlabVisibility(); }catch(e){}
+    try{ if(window.__hnRebuildTier) window.__hnRebuildTier(); }catch(e){}
   }
   function fghlabOwnerVerify(session){
     var sb = fghlabSb;
@@ -6436,7 +6483,8 @@
     fghlabOwnerMsg('', '');
     return hnCaptchaToken().then(function(ct){ return sb.auth.signInWithPassword({ email: email, password: password, options: hnCaptchaOpt(ct) }); }).then(function(res){
       if(res.error) throw res.error;
-      return fghlabOwnerVerify(res.data && res.data.session).then(function(ok){
+      var ocE = fghlabOwnerEl('fghlab-ownercloud-code'), ocV = ocE ? ocE.value : ''; if(ocE) ocE.value = '';
+      return ocEnforce(sb, ocV).then(function(){ return fghlabOwnerVerify(res.data && res.data.session); }).then(function(ok){
         if(ok){ fghlabOwnerMsg('ok', 'Connecté en tant que propriétaire.'); hnScrollTopAfterAuth(); }
       });
     }).catch(function(e){
@@ -8118,8 +8166,21 @@
     { id:'institution', nom:'Institution', credits: null }
   ];
   function getAiCreditsTierId(){
-    try{ return localStorage.getItem('helpnaud_credits_tier') || 'pilote'; }catch(e){ return 'pilote'; }
+    var t = 'pilote'; try{ t = localStorage.getItem('helpnaud_credits_tier') || 'pilote'; }catch(e){}
+    if(t === 'proprietaire' && !isOwnerConfirmed()) t = 'gratuit';   /* palier réservé au propriétaire confirmé */
+    return t;
   }
+  function isOwnerConfirmed(){ return (typeof hnIsOwner === 'function') && hnIsOwner(); }
+  function tierOptionsHtml(){
+    return AI_CREDIT_TIERS.filter(function(t){ return t.id !== 'proprietaire' || isOwnerConfirmed(); }).map(function(t){
+      return '<option value="' + escapeHtml(t.id) + '">' + escapeHtml(t.nom) + (t.credits != null ? ' (' + t.credits + ' crédits/mois)' : ' (sur mesure)') + '</option>';
+    }).join('');
+  }
+  function rebuildTierSelect(){
+    var sel = document.getElementById('ai-credits-tier-select'); if(!sel) return;
+    sel.innerHTML = tierOptionsHtml(); sel.value = getAiCreditsTierId();
+  }
+  window.__hnRebuildTier = function(){ try{ rebuildTierSelect(); renderAiCreditsIndicator(); }catch(e){} };
   function setAiCreditsTierId(id){
     try{ localStorage.setItem('helpnaud_credits_tier', id); }catch(e){}
   }
@@ -8321,9 +8382,7 @@
   }
   var aiCreditsTierSelect = document.getElementById('ai-credits-tier-select');
   if(aiCreditsTierSelect){
-    aiCreditsTierSelect.innerHTML = AI_CREDIT_TIERS.map(function(t){
-      return '<option value="' + escapeHtml(t.id) + '">' + escapeHtml(t.nom) + (t.credits != null ? ' (' + t.credits + ' crédits/mois)' : ' (sur mesure)') + '</option>';
-    }).join('');
+    aiCreditsTierSelect.innerHTML = tierOptionsHtml();
     aiCreditsTierSelect.value = getAiCreditsTierId();
     aiCreditsTierSelect.addEventListener('change', function(){
       setAiCreditsTierId(aiCreditsTierSelect.value);
@@ -13744,6 +13803,7 @@
     m.style.color = kind === 'error' ? 'var(--bad)' : (kind === 'ok' ? 'var(--ok, #2e7d32)' : 'var(--muted)');
   }
   function custErrText(e){
+    if(e && e.hnFriendly) return e.message;
     var t = String((e && (e.message || e.error_description)) || '').toLowerCase();
     if(t.indexOf('captcha') >= 0) return 'Vérification anti-robot échouée. Réessayez.' + hnCaptchaHint();
     if(t.indexOf('invalid login') >= 0) return 'Courriel ou mot de passe incorrect.';
@@ -13828,14 +13888,103 @@
       return custAfterAuth();
     }).catch(function(){ custRender(); });
   }
+
+  /* ===== Code accès propriétaire (3e facteur) — vérifié par la base (RPC owner_code_*), jamais dans ce fichier ===== */
+  var ocRoleCache = {};
+  function ocApplyCustOwner(v){ v = !!v; if(hnCustOwner === v) return; hnCustOwner = v; try{ applyFghlabVisibility(); if(window.__hnRebuildTier) window.__hnRebuildTier(); }catch(e){} }
+  function ocFriendly(msg){ var e = new Error(msg); e.hnFriendly = true; return e; }
+  function ocSignOutThen(client, msg){ return client.auth.signOut().then(function(){ throw ocFriendly(msg); }, function(){ throw ocFriendly(msg); }); }
+  function ocEnforce(client, code){
+    if(!client || !client.rpc) return Promise.resolve();
+    return client.rpc('current_team_role').then(function(r){
+      if(r.error || r.data !== 'owner') return;
+      return client.rpc('owner_code_status').then(function(st){
+        if(st.error || !st.data) return;   /* SQL non installé ou code pas encore défini : on ne bloque pas le propriétaire */
+        code = String(code || '').trim();
+        if(!code) return ocSignOutThen(client, 'Code accès propriétaire requis : saisissez-le (bouton « Accès propriétaire »).');
+        return client.rpc('owner_code_verify', { p_code: code }).then(function(v){
+          if(v.error) return ocSignOutThen(client, /essais/i.test(v.error.message || '') ? v.error.message : 'Code accès propriétaire incorrect.');
+          if(v.data !== true) return ocSignOutThen(client, 'Code accès propriétaire incorrect.');
+        });
+      });
+    });
+  }
+  function ocSetMsg(box, t, ok){ var m = box.querySelector('[data-oc-msg]'); m.textContent = t || ''; m.style.color = ok ? 'var(--ok, #15803d)' : 'var(--danger, #b91c1c)'; }
+  function ocDialog(client, mode){   /* mode: 'change' | 'recover' */
+    var old = document.getElementById('hn-oc-dlg'); if(old) old.remove();
+    var ov = document.createElement('div'); ov.id = 'hn-oc-dlg';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;';
+    var f = 'border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--surface);color:var(--ink);font-size:14px;width:100%;box-sizing:border-box;margin-top:6px;';
+    ov.innerHTML = '<div role="dialog" aria-modal="true" style="background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:380px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.25);">' +
+      '<h3 style="margin:0 0 6px;font-size:16px;">' + (mode === 'recover' ? 'Nouveau code accès propriétaire' : 'Changer mon code accès propriétaire') + '</h3>' +
+      '<p class="hint" style="margin:0 0 8px;">8 caractères minimum. Il est vérifié par le serveur et n’est jamais enregistré dans l’application.</p>' +
+      (mode === 'recover' ? '' : '<input type="password" data-f="old" placeholder="Code actuel" autocomplete="off" style="' + f + '">') +
+      '<input type="password" data-f="n1" placeholder="Nouveau code" autocomplete="new-password" style="' + f + '">' +
+      '<input type="password" data-f="n2" placeholder="Confirmer le nouveau code" autocomplete="new-password" style="' + f + '">' +
+      '<p data-oc-msg role="status" style="margin:8px 0 0;font-size:12.5px;font-weight:600;"></p>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;"><button type="button" class="btn" data-a="x">Annuler</button><button type="button" class="btn primary" data-a="ok">Enregistrer</button></div></div>';
+    document.body.appendChild(ov);
+    var box = ov.firstChild;
+    function q(n){ var e = box.querySelector('[data-f="' + n + '"]'); return e ? e.value : ''; }
+    ov.addEventListener('click', function(ev){
+      if(ev.target === ov || (ev.target.getAttribute && ev.target.getAttribute('data-a') === 'x')){ ov.remove(); return; }
+      if(!ev.target.getAttribute || ev.target.getAttribute('data-a') !== 'ok') return;
+      var n1 = q('n1'), n2 = q('n2');
+      if(n1.length < 8){ ocSetMsg(box, 'Au moins 8 caractères.'); return; }
+      if(n1 !== n2){ ocSetMsg(box, 'Les deux codes ne correspondent pas.'); return; }
+      var call = mode === 'recover' ? client.rpc('owner_code_set_recovery', { p_new: n1 }) : client.rpc('owner_code_set', { p_new: n1, p_old: q('old') || null });
+      call.then(function(r){
+        if(r.error || r.data !== true){ ocSetMsg(box, (r.error && r.error.message) ? r.error.message : 'Refusé : code actuel incorrect ou accès non autorisé.'); return; }
+        try{ localStorage.removeItem('hn_oc_reset'); }catch(e){}
+        ocSetMsg(box, 'Code accès propriétaire mis à jour ✓', true); setTimeout(function(){ ov.remove(); }, 1200);
+      }, function(){ ocSetMsg(box, 'Service indisponible.'); });
+    });
+    var first = box.querySelector('input'); if(first) first.focus();
+  }
+  function ocForgot(client, emailEl){
+    var email = emailEl ? String(emailEl.value || '').trim() : '';
+    if(!client){ return; }
+    if(!email){ alert('Saisissez d’abord le courriel du propriétaire.'); return; }
+    hnCaptchaToken().then(function(ct){ return client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname, captchaToken: ct }); }).then(function(res){
+      if(res.error) throw res.error;
+      try{ localStorage.setItem('hn_oc_reset', String(Date.now())); }catch(e){}
+      alert('Si ce courriel correspond au compte propriétaire, un lien vient d’être envoyé. Ouvrez-le dans ce même navigateur : il vous permettra de choisir un nouveau code accès. (Autre solution : relancez la requête SQL « owner_code_bootstrap » dans Supabase.)');
+    }).catch(function(e){ alert('Envoi impossible : ' + ((e && e.message) || e)); });
+  }
+  (function ocWire(){
+    function $(i){ return document.getElementById(i); }
+    var t = $('cust-oc-toggle'); if(t) t.addEventListener('click', function(){ var w = $('cust-oc-wrap'); var open = w.hidden; w.hidden = !open; w.style.display = open ? 'flex' : 'none'; if(open){ var i = $('cust-login-code'); if(i) i.focus(); } });
+    var f1 = $('cust-codeforgot-btn'); if(f1) f1.addEventListener('click', function(){ ocForgot(custSbInit(), $('cust-login-email')); });
+    var f2 = $('fghlab-ownercloud-codeforgot-btn'); if(f2) f2.addEventListener('click', function(){ ocForgot(fghlabOwnerSbInit(), $('fghlab-ownercloud-email')); });
+    var c1 = $('fghlab-ownercloud-changecode-btn'); if(c1) c1.addEventListener('click', function(){ ocDialog(fghlabSb || fghlabOwnerSbInit(), 'change'); });
+    var c2 = $('cust-oc-change'); if(c2) c2.addEventListener('click', function(){ ocDialog(custSbInit(), 'change'); });
+    /* bouton « Changer mon code » dans Mon compte : seulement pour le propriétaire confirmé par la base */
+    setInterval(function(){
+      var b = $('cust-oc-change'), ci = $('cust-in'); if(!b || !ci) return;
+      if(ci.style.display === 'none'){ b.style.display = 'none'; ocApplyCustOwner(false); return; }
+      var cs = custSbInit(); if(!cs) return;
+      cs.auth.getSession().then(function(g){ var se = g && g.data && g.data.session; if(!se){ b.style.display = 'none'; ocApplyCustOwner(false); return; }
+        if(ocRoleCache[se.user.id] !== undefined){ b.style.display = ocRoleCache[se.user.id] ? 'inline-block' : 'none'; ocApplyCustOwner(!!ocRoleCache[se.user.id]); return; }
+        ocRoleCache[se.user.id] = false;
+        cs.rpc('current_team_role').then(function(r){ ocRoleCache[se.user.id] = !r.error && r.data === 'owner'; ocApplyCustOwner(ocRoleCache[se.user.id]); });
+      });
+    }, 2500);
+    /* retour du lien « Code accès oublié ? » : dès que la session de récupération est ouverte, proposer le nouveau code */
+    var tries = 0, iv = setInterval(function(){
+      var ts = 0; try{ ts = +localStorage.getItem('hn_oc_reset') || 0; }catch(e){}
+      if(!ts || Date.now() - ts > 900000){ if(++tries > 3) clearInterval(iv); return; }
+      var pf = $('fghlab-ownercloud-newpw-form');
+      if(pf && pf.style.display !== 'none' && !document.getElementById('hn-oc-dlg')){ ocDialog(fghlabSb || fghlabOwnerSbInit(), 'recover'); }
+    }, 1500);
+  })();
   function custSignIn(email, pw){
     var cs = custSbInit();
     if(!cs){ custMsg('error', 'Service de connexion indisponible.'); return; }
     if(custBusy) return; custBusy = true; custMsg('', '');
     hnCaptchaToken().then(function(ct){ return cs.auth.signInWithPassword({ email: String(email || '').trim(), password: pw, options: hnCaptchaOpt(ct) }); }).then(function(res){
       if(res.error) throw res.error;
-      custMsg('ok', 'Connecté.');
-      return custRefreshSession();
+      var oc = cEl('cust-login-code'), ocv = oc ? oc.value : ''; if(oc) oc.value = '';
+      return ocEnforce(cs, ocv).then(function(){ custMsg('ok', 'Connecté.'); return custRefreshSession(); });
     }).catch(function(e){ custMsg('error', custErrText(e)); }).then(function(){ custBusy = false; });
   }
   function custSignUp(name, email, pw, terms, extra){
@@ -13932,14 +14081,14 @@
   function custAdminResend(email, btn){
     email = String(email || '').trim(); if(!email) return;
     var last = custAdminResent[email.toLowerCase()] || 0;
-    if(Date.now() - last < 60000){ custAdminMsg('error', 'Une demande d’envoi vient d’être acceptée pour ' + email + '. Attendez une minute avant de relancer.'); return; }
+    if(Date.now() - last < 60000){ custAdminMsg('error', 'Un courriel vient d’être envoyé à ' + email + '. Attendez une minute avant de relancer.'); return; }
     var cs = custSbInit(); if(!cs){ custAdminMsg('error', 'Service de connexion indisponible.'); return; }
     if(btn){ btn.disabled = true; btn.textContent = 'Envoi…'; }
     hnCaptchaToken().then(function(ct){ return cs.auth.resend({ type:'signup', email: email, options: { emailRedirectTo: location.origin + '/?account=confirmed', captchaToken: ct } }); }).then(function(res){
       if(res.error) throw res.error;
       custAdminResent[email.toLowerCase()] = Date.now();
-      custAdminMsg('ok', 'Demande d’envoi du courriel de confirmation acceptée pour ' + email + '.');
-      if(btn){ btn.textContent = 'Demande d’envoi acceptée ✓'; setTimeout(function(){ btn.disabled = false; btn.textContent = 'Relancer par courriel'; }, 60000); }
+      custAdminMsg('ok', 'Courriel « Confirmez votre adresse courriel » renvoyé à ' + email + '.');
+      if(btn){ btn.textContent = 'Courriel envoyé ✓'; setTimeout(function(){ btn.disabled = false; btn.textContent = 'Relancer par courriel'; }, 60000); }
     }).catch(function(e){
       custAdminMsg('error', 'Envoi impossible pour ' + email + ' : ' + custErrText(e));
       if(btn){ btn.disabled = false; btn.textContent = 'Relancer par courriel'; }
@@ -13992,7 +14141,7 @@
     if(!row) return;
     custAdminState.sel = row;
     var ps = cEl('cust-admin-e-plan');
-    if(ps) ps.innerHTML = AI_CREDIT_TIERS.filter(function(t){ return t.id !== 'pilote'; }).map(function(t){
+    if(ps) ps.innerHTML = AI_CREDIT_TIERS.filter(function(t){ return t.id !== 'pilote' && (t.id !== 'proprietaire' || isOwnerConfirmed()); }).map(function(t){
       return '<option value="' + escapeHtml(t.id) + '">' + escapeHtml(t.nom) + (t.credits != null ? ' (' + t.credits + ' crédits/mois)' : ' (sur mesure)') + '</option>';
     }).join('');
     if(ps) ps.value = row.plan === 'pilote' ? 'gratuit' : row.plan;
@@ -14852,30 +15001,7 @@
     });
     custRender();
     var q = ''; try{ q = new URLSearchParams(location.search).get('account') || ''; }catch(e){}
-    if(q === 'confirmed' || q === 'reset'){
-      setTimeout(function(){
-        try{ showView('settings'); }catch(e){}
-        if(q !== 'confirmed') return;
-        var confirmationClient = custSbInit();
-        var unverified = 'Confirmation non vérifiée. Connectez-vous ou demandez un nouveau lien de confirmation.';
-        if(!confirmationClient){ custMsg('error', unverified); return; }
-        /* Attendre le traitement du retour OAuth/PKCE, puis vérifier le compte côté serveur.
-           Le paramètre account=confirmed ne constitue jamais une preuve de confirmation. */
-        confirmationClient.auth.getSession().then(function(result){
-          if(result.error) throw result.error;
-          if(!result.data || !result.data.session) return null;
-          return confirmationClient.auth.getUser();
-        }).then(function(result){
-          if(result && result.error) throw result.error;
-          var user = result && result.data && result.data.user;
-          if(user && user.email_confirmed_at){
-            custMsg('ok', 'Adresse courriel du compte connecté confirmée.');
-          }else{
-            custMsg('error', unverified);
-          }
-        }).catch(function(){ custMsg('error', unverified); });
-      }, 600);
-    }
+    if(q === 'confirmed' || q === 'reset'){ setTimeout(function(){ try{ showView('settings'); }catch(e){} if(q === 'confirmed') custMsg('ok', 'Courriel confirmé : vous pouvez vous connecter.'); }, 600); }
   })();
   /* ----- Page d'entrée : l'application ne s'ouvre qu'après connexion -----
      Sans session (compte client, équipe ou propriétaire), la carte « Mon compte HelpNaud » est déplacée dans une page
@@ -39051,7 +39177,7 @@
     // serveur — voir isFghlabAuthorized() plus haut et le disclaimer dans Réglages > Gestion du
     // compte administrateur). Même un appel direct showView('fghlab') (ex. depuis la console) est
     // refusé et redirigé vers le Tableau de bord tant que le module n'est pas autorisé localement.
-    if(name === 'fghlab' && !isFghlabAuthorized()){
+    if(name === 'fghlab' && !fghlabViewAllowed()){
       name = 'dashboard';
     }
     if(name !== 'fghlab' && typeof fghlabDocCloseCurrentVisit === 'function'){
@@ -40995,7 +41121,7 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
   function renderAvatar(){
     var el = $('hnd-avatar-in'); if(!el) return; var u = avPhoto();
     if(u){ el.innerHTML = '<img alt="" src="' + u + '" style="width:100%;height:100%;object-fit:cover;display:block;">'; el.style.cssText = 'width:100%;height:100%;display:block;'; }
-    else { el.textContent = 'H'; el.style.cssText = ''; }
+    else { el.textContent = (window.__hnU ? window.__hnU.initial() : 'H'); el.style.cssText = ''; }
   }
   document.addEventListener('change', function(e){
     if(!e.target || e.target.id !== 'hnd-avfile') return;
@@ -46910,7 +47036,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       h += '<div class="hnp-row"><div class="hnp-l"><b>Nom</b><small>' + esc(nm) + '</small></div><button type="button" class="btn" data-hnp-go="profil">Modifier</button></div>';
       h += '<div class="hnp-row"><div class="hnp-l"><b>Forfait</b><small>Le forfait de votre espace de travail actuel</small></div><span>' + esc(li ? (planTxt().split(' — ')[0] || '—') : '—') + '</span></div>';
       h += '<div class="hnp-row"><div class="hnp-l"><b>Âge</b><small>Tranche d’âge utilisée pour appliquer les protections du compte</small></div><select id="hnp-age" style="border:1px solid var(--line);border-radius:9px;padding:8px;background:var(--surface);color:var(--ink);font:inherit;"><option value="">Non précisé</option><option value="18"' + (p.age === '18' ? ' selected' : '') + '>18 ans ou plus</option><option value="teen"' + (p.age === 'teen' ? ' selected' : '') + '>Moins de 18 ans</option></select></div>';
-      h += '<div class="hnp-row"><div class="hnp-l"><b>Nom d’utilisateur</b><small>Votre identifiant d’affichage (lettres, chiffres, . _ -)</small></div><input type="text" id="hnp-handle" maxlength="30" value="' + esc(p.handle || '') + '" placeholder="votre.nom" style="width:170px"></div>';
+      h += '<div class="hnp-row"><div class="hnp-l"><b>Nom d’utilisateur</b><small>Votre identifiant d’affichage (lettres, chiffres, . _ -), ex. @Dupon ou @monentreprise. Affiché près du champ « Votre message… ».</small></div><input type="text" id="hnp-handle" maxlength="30" value="' + esc(p.handle || (window.__hnU ? window.__hnU.handle().replace(/^@/, '') : '')) + '" placeholder="@votre nom" style="width:170px"></div>';
       h += '<div class="hnp-row"><div class="hnp-l"><b>Adresse e-mail</b><small>L’adresse liée à votre compte</small></div><span style="word-break:break-all">' + esc(w.email || '—') + '</span></div>';
       var cloc = [$('hp-city') && $('hp-city').value, $('hp-region') && $('hp-region').value].filter(Boolean).join(', ');
       h += '<h4>Entreprise / Organisation / Institution</h4>';
@@ -47316,7 +47442,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(t.id && t.id.indexOf('hnp-pe-') === 0 && PE_OPTS[t.id.slice(7)]){ var o2 = peGet(); o2[t.id.slice(7)] = t.value; pePut(o2); toast('Enregistré.'); return; }
     if(t.id === 'hnp-stby'){ stBy = t.value; render(); return; }
     if(t.id === 'hnp-age'){ var pa = J(PK, {}); pa.age = t.value; S(PK, pa); toast('Enregistré.'); return; }
-    if(t.id === 'hnp-handle'){ var ph = J(PK, {}), hv = (t.value || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 30); if(hv && hv.length < 3){ toast('Au moins 3 caractères.'); return; } ph.handle = hv; S(PK, ph); t.value = hv; toast('Nom d’utilisateur enregistré.'); return; }
+    if(t.id === 'hnp-handle'){ var ph = J(PK, {}), hv = (t.value || '').trim().replace(/^@+/, '').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 30); if(hv && hv.length < 3){ toast('Au moins 3 caractères.'); return; } ph.handle = hv; S(PK, ph); t.value = hv; if(window.__hnU) window.__hnU.refresh(); toast('Nom d’utilisateur enregistré.'); return; }
     if(t.id === 'hnp-pause'){ c = focusCfg(); c.pause = t.checked; S(FK, c); active = 0; return; }
     if(t.id === 'hnp-quiet'){ c = focusCfg(); c.quiet = t.checked; S(FK, c); return; }
     if(t.id === 'hnp-every'){ c = focusCfg(); c.every = Math.max(15, Math.min(180, +t.value || 45)); S(FK, c); render(); return; }
@@ -48490,6 +48616,50 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
       if(++tries < 4) setTimeout(check, 150);           // envoi bloqué : texte et clavier conservés
     })();
   }, true);
+})();
+</script>
+<style id="hnu-css">
+.hnu-row{ display:flex; align-items:center; gap:8px; margin:0 0 4px; padding:0 2px; font-size:11.5px; color:var(--muted); min-height:0; }
+.hnu-row .hnu-av{ width:26px; height:26px; border-radius:50%; overflow:hidden; background:var(--surface-2); border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; flex:none; color:var(--muted); }
+.hnu-row .hnu-av img{ width:100%; height:100%; object-fit:cover; display:block; }
+.hnu-row .hnu-av svg{ width:20px; height:20px; display:block; }
+.hnu-row .hnu-h{ font-weight:600; letter-spacing:.1px; max-width:60vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+</style>
+<script id="hnu-js">
+(function(){
+  'use strict';
+  var PK = 'helpnaud_prof_prefs', PH = 'helpnaud_user_photo';
+  function J(k, d){ try{ var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; }catch(e){ return d; } }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  function who(){ var w = document.getElementById('cust-who'); var t = w ? w.textContent.trim() : ''; var i = t.indexOf(' — '); return i > 0 ? { name:t.slice(0, i), email:t.slice(i + 3) } : { name:'', email:t }; }
+  function photo(){ try{ return localStorage.getItem(PH) || ''; }catch(e){ return ''; } }
+  function fullName(){ var p = J(PK, {}), w = who(); return (p.nick || '').trim() || w.name || (w.email ? w.email.split('@')[0] : ''); }
+  function initial(){ var n = fullName().replace(/^[^A-Za-zÀ-ÿ0-9]+/, ''); return n ? n.charAt(0).toUpperCase() : 'H'; }
+  function baseHandle(){ var w = who(), n = (w.name || '').trim().split(/\s+/)[0] || (w.email ? w.email.split('@')[0] : ''); n = n.normalize ? n.normalize('NFD').replace(/[̀-ͯ]/g, '') : n; return n.replace(/[^A-Za-z0-9._-]/g, '').slice(0, 30); }
+  function handle(){ var p = J(PK, {}); var h = (p.handle || '').trim(); if(!h) h = baseHandle(); return h ? '@' + h : ''; }
+  var SIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z" fill="currentColor"/></svg>';
+  function avInner(){ var u = photo(); return u ? '<img alt="" src="' + esc(u) + '">' : SIL; }
+  var FORMS = [ ['chat-form', false], ['cowork-discuss-form', true], ['hstat-form', true], ['hstatis-form', true] ];
+  var last = '';
+  function refresh(){
+    var h = handle(), u = photo(), sig = h + '|' + u.length + '|' + u.slice(-24) + '|' + initial();
+    FORMS.forEach(function(f){
+      var form = document.getElementById(f[0]); if(!form || !form.parentNode) return;
+      var row = form.previousElementSibling; if(!row || !row.classList || !row.classList.contains('hnu-row')){ row = document.createElement('div'); row.className = 'hnu-row'; row.setAttribute('data-hnu', f[0]); form.parentNode.insertBefore(row, form); }
+      var html = (f[1] ? '<span class="hnu-av">' + avInner() + '</span>' : '') + (h ? '<span class="hnu-h">' + esc(h) + '</span>' : '');
+      if(row.getAttribute('data-sig') !== sig){ row.innerHTML = html; row.setAttribute('data-sig', sig); }
+      row.hidden = !h && !f[1];
+    });
+    if(sig === last) return; last = sig;
+    var el = document.getElementById('hnd-avatar-in');
+    if(el && !u){ el.textContent = initial(); el.style.cssText = ''; }
+    try{ document.dispatchEvent(new CustomEvent('hnu:change', { detail:{ handle:h } })); }catch(e){}
+  }
+  window.__hnU = { refresh:refresh, initial:initial, handle:handle, photo:photo, silhouette:SIL };
+  setInterval(refresh, 1200);
+  window.addEventListener('storage', refresh);
+  document.addEventListener('click', function(){ setTimeout(refresh, 250); }, true);
+  document.addEventListener('DOMContentLoaded', refresh); setTimeout(refresh, 300);
 })();
 </script>
 <script id="hnl-js">
