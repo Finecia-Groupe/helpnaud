@@ -46879,7 +46879,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   'use strict';
   var PK = 'helpnaud_prof_prefs', FK = 'helpnaud_focus', PH = 'helpnaud_user_photo';
   var SECS = [['profil','👤','Profil'],['factu','💳','Facturation'],['usage','📊','Utilisation'],['notif','🔔','Notifications'],['compte','🪪','Compte'],['parental','👨‍👩‍👧','Contrôle parental'],['confiance','🤝','Contact de confiance'],['temps','⏱️','Temps et concentration'],['perso','✍️','Personnalisation'],['conf','🔒','Confidentialité'],['liens','🔗','Liens partagés'],['comp','🐾','Compagnons'],['capa','✨','Capacités'],['code','🧑‍💻','Code'],['conn','🧩','Connecteurs'],['voix','🎙️','Voix et dictée'],['nav','🌐','Navigateur pour les liens'],['hapt','📳','Retour haptique'],['look','🎨','Apparence'],['clav','⌨️','Clavier HelpNaud'],['lang','🌐','Langue']];
-  var cur = 'profil', root = null, invite = false, usageTab = 'apercu', famOpen = '', trustOpen = false, famMode = 'email', fam = null, famLoading = false, famSel = '', EPF = '/.netlify/functions/family', peEdit = '', peMem = false, PE = 'helpnaud_perso', PH = 'helpnaud_refphotos';
+  var cur = 'profil', root = null, invite = false, usageTab = 'apercu', famOpen = '', trustOpen = false, famMode = 'email', fam = null, famLoading = false, famSel = '', EPF = '/.netlify/functions/family', peEdit = '', peMem = false, PE = 'helpnaud_perso', PHR = 'helpnaud_refphotos';
   var loadingB = false, billing = null, EPB = '/.netlify/functions/stripe-checkout';
   function bapi(body){ return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){ if(!tk) return { ok:false, message:'Connectez-vous pour continuer.' }; return fetch(EPB, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {}; }); }).catch(function(){ return { ok:false, message:'Connexion impossible. Vérifiez votre réseau.' }; }); }); }
   function loadBilling(){ billing = null; if(!signedIn()) return; Promise.all([bapi({ action:'billing' }), bapi({ action:'status' })]).then(function(a){ billing = { email:a[0] && a[0].email, name:a[0] && a[0].name, cards:(a[0] && a[0].cards) || [], hasCustomer:!!(a[0] && a[0].hasCustomer) || !!(a[1] && a[1].hasCustomer), status:(a[1] && a[1].ok) ? a[1] : null }; if(root && root.classList.contains('on') && cur === 'factu') render(); }); }
@@ -47291,7 +47291,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   var PE_TXT = [['style','Style et ton de base','Choisissez le ton général des réponses'],['warm','Chaleur','Choisissez le degré de convivialité des réponses'],['enth','Enthousiasme','Choisissez le degré d’énergie des réponses'],['emoji','Émojis','Choisissez la fréquence des émojis dans les réponses'],['visual','Réponses visuelles','Choisissez entre des réponses standard et des réponses plus visuelles'],['heads','Titres et listes','Choisissez la fréquence des titres et des listes']];
   var PE_PH = [['ref','Photo de référence','C’est la photo que HelpNaud utilisera comme référence lorsque vous créerez une image de vous-même.'],['forme','Photo en forme de référence','Permet de voir comment les vêtements et accessoires vous vont avec votre forme.'],['pied','Photo en pied de référence','Permet de voir comment les vêtements et accessoires vous vont.'],['taille','Photo en taille de référence','Permet de voir comment les vêtements et accessoires vous vont en taille.']];
   function persoHtml(){
-    var o = peGet(), p = J(PK, {}), ph = J(PH, {}), h = '';
+    var o = peGet(), p = J(PK, {}), ph = J(PHR, {}), h = '';
     h += '<h3>Personnalisation</h3><p class="hint">Choisissez ce dont l’assistant se souvient et la façon dont il répond.</p>';
     h += '<h4>Mémoire de HelpNaud</h4><p class="hint">Configurez la façon dont HelpNaud gère la mémoire. HelpNaud ne retient que ce que vous ajoutez ici ; vos notes sont enregistrées dans votre compte (synchronisées entre vos appareils) et jointes à vos questions lorsque la mémoire est activée. <a href="' + helpUrl('memoire') + '" target="_blank" rel="noopener">En savoir plus</a></p>';
     h += '<div class="hnp-row"><div class="hnp-l"><b>Activer la mémoire</b><small>Laissez HelpNaud personnaliser ses réponses selon les éléments mémorisés. <a href="' + helpUrl('activer-memoire') + '" target="_blank" rel="noopener">En savoir plus</a></small></div>' + sw('hnp-pe-mem', o.mem !== false) + '</div>';
@@ -47332,8 +47332,8 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(a[0] === 'clrnotes'){ if(confirm('Effacer tous les éléments mémorisés ?')){ o.notes = []; pePut(o); render(); } return; }
     if(a[0] === 'edit'){ peEdit = peEdit === a[1] ? '' : a[1]; render(); return; }
     if(a[0] === 'save'){ var tv = ($('hnp-pe-ta').value || '').trim(); if(a[1] === 'how'){ var pp = J(PK, {}); pp.how = tv.slice(0, 600); S(PK, pp); } else { o.hcode = tv.slice(0, 500); pePut(o); } peEdit = ''; toast('Instructions enregistrées ✓'); render(); return; }
-    if(a[0] === 'phdel'){ var ph = J(PH, {}); delete ph[a[1]]; S(PH, ph); render(); return; }
-    if(a[0] === 'ph'){ var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.onchange = function(){ var f = inp.files && inp.files[0]; if(!f) return; var rd = new FileReader(); rd.onload = function(){ var im = new Image(); im.onload = function(){ var m = 600, k = Math.min(1, m / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); var ph2 = J(PH, {}); ph2[a[1]] = c.toDataURL('image/jpeg', .8); try{ localStorage.setItem(PH, JSON.stringify(ph2)); toast('Photo enregistrée sur cet appareil ✓'); }catch(e){ toast('Espace de stockage insuffisant.'); } render(); }; im.onerror = function(){ toast('Image illisible.'); }; im.src = rd.result; }; rd.readAsDataURL(f); }; inp.click(); return; }
+    if(a[0] === 'phdel'){ var ph = J(PHR, {}); delete ph[a[1]]; S(PHR, ph); render(); return; }
+    if(a[0] === 'ph'){ var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.onchange = function(){ var f = inp.files && inp.files[0]; if(!f) return; var rd = new FileReader(); rd.onload = function(){ var im = new Image(); im.onload = function(){ var m = 600, k = Math.min(1, m / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); var ph2 = J(PHR, {}); ph2[a[1]] = c.toDataURL('image/jpeg', .8); try{ localStorage.setItem(PHR, JSON.stringify(ph2)); toast('Photo enregistrée sur cet appareil ✓'); }catch(e){ toast('Espace de stockage insuffisant.'); } render(); }; im.onerror = function(){ toast('Image illisible.'); }; im.src = rd.result; }; rd.readAsDataURL(f); }; inp.click(); return; }
   }
   function helpUrl(a){ var en = false; try{ en = (typeof getStoredLang === 'function' ? getStoredLang() : (document.documentElement.lang || 'fr')) === 'en'; }catch(e){} return (en ? '/En-En/personalization-help#' : '/fr-fr/aide-personnalisation#') + a; }
   var suggBusy = false, suggOpen = false;
@@ -48695,9 +48695,67 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     });
     if(sig === last) return; last = sig;
     var el = document.getElementById('hnd-avatar-in');
-    if(el && !u){ el.textContent = initial(); el.style.cssText = ''; }
+    if(el){ if(u){ if(!el.firstElementChild || el.firstElementChild.getAttribute('src') !== u){ el.innerHTML = '<img alt="" src="' + esc(u) + '" style="width:100%;height:100%;object-fit:cover;display:block;">'; } el.style.cssText = 'width:100%;height:100%;display:block;'; } else { el.textContent = initial(); el.style.cssText = ''; } }
+    document.querySelectorAll('.hnp-av').forEach(function(a){ var im = a.querySelector('img'); if(u){ if(!im || im.getAttribute('src') !== u) a.innerHTML = '<img alt="" src="' + esc(u) + '">'; } else if(im){ a.textContent = initial(); } });
     try{ document.dispatchEvent(new CustomEvent('hnu:change', { detail:{ handle:h } })); }catch(e){}
   }
+
+  /* Ancienne version : la photo de profil était enregistrée par erreur sous la clé des photos de référence. On la récupère. */
+  try{ var oldv = localStorage.getItem('helpnaud_refphotos'); if(oldv && /^data:image\//.test(oldv)){ if(!photo()) localStorage.setItem(PH, oldv); localStorage.removeItem('helpnaud_refphotos'); } }catch(e){}
+
+  /* Éditeur de recadrage : glisser pour cadrer, curseur pour zoomer. Sert au Profil, au tiroir et au champ de message (même photo). */
+  var OUT = 256;
+  function openCropper(file){
+    if(!file || !/^image\//.test(file.type)){ alert('Choisissez un fichier image.'); return; }
+    var fr = new FileReader();
+    fr.onload = function(ev){
+      var img = new Image();
+      img.onerror = function(){ alert('Image illisible.'); };
+      img.onload = function(){
+        var old = document.getElementById('hnu-crop'); if(old) old.remove();
+        var V = Math.min(300, Math.max(220, window.innerWidth - 80));
+        var ov = document.createElement('div'); ov.id = 'hnu-crop'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+        ov.innerHTML = '<div style="background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:16px;max-width:360px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center">' +
+          '<h3 style="margin:0 0 4px;font-size:16px">Recadrer la photo</h3><p style="margin:0 0 10px;font-size:12.5px;color:var(--muted)">Glissez pour cadrer, zoomez avec le curseur. Ce cadrage sert au profil, au tiroir et près du champ de message.</p>' +
+          '<div id="hnu-stage" style="position:relative;width:' + V + 'px;height:' + V + 'px;margin:0 auto;overflow:hidden;border-radius:12px;background:#111;touch-action:none;cursor:grab"><canvas width="' + V + '" height="' + V + '" style="display:block"></canvas>' +
+          '<div style="position:absolute;inset:0;pointer-events:none;border-radius:12px;background:radial-gradient(circle at center, transparent ' + (V / 2 - 1) + 'px, rgba(0,0,0,.55) ' + (V / 2) + 'px);"></div></div>' +
+          '<label style="display:flex;align-items:center;gap:10px;margin:12px auto 0;max-width:' + V + 'px;font-size:12.5px;color:var(--muted)">–<input id="hnu-zoom" type="range" min="100" max="400" value="100" style="flex:1" aria-label="Zoom">+</label>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="btn" data-a="x">Annuler</button><button type="button" class="btn primary" data-a="ok">Enregistrer la photo</button></div></div>';
+        document.body.appendChild(ov);
+        var cv = ov.querySelector('canvas'), cx = cv.getContext('2d'), st = ov.querySelector('#hnu-stage'), zm = ov.querySelector('#hnu-zoom');
+        var w = img.naturalWidth, h = img.naturalHeight, base = Math.max(V / w, V / h), zoom = 1, ox = 0, oy = 0;
+        function clamp(){ var sw = w * base * zoom, sh = h * base * zoom; ox = Math.min(0, Math.max(V - sw, ox)); oy = Math.min(0, Math.max(V - sh, oy)); }
+        function draw(){ clamp(); cx.fillStyle = '#111'; cx.fillRect(0, 0, V, V); cx.imageSmoothingQuality = 'high'; cx.drawImage(img, ox, oy, w * base * zoom, h * base * zoom); }
+        ox = (V - w * base) / 2; oy = (V - h * base) / 2; draw();
+        zm.addEventListener('input', function(){ var cxm = (V / 2 - ox) / (w * base * zoom), cym = (V / 2 - oy) / (h * base * zoom); zoom = zm.value / 100; ox = V / 2 - cxm * w * base * zoom; oy = V / 2 - cym * h * base * zoom; draw(); });
+        var drag = null;
+        st.addEventListener('pointerdown', function(e){ drag = { x:e.clientX, y:e.clientY, ox:ox, oy:oy }; try{ st.setPointerCapture(e.pointerId); }catch(x){} st.style.cursor = 'grabbing'; });
+        st.addEventListener('pointermove', function(e){ if(!drag) return; ox = drag.ox + (e.clientX - drag.x); oy = drag.oy + (e.clientY - drag.y); draw(); });
+        var end = function(){ drag = null; st.style.cursor = 'grab'; }; st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end);
+        st.addEventListener('wheel', function(e){ e.preventDefault(); zm.value = Math.min(400, Math.max(100, +zm.value + (e.deltaY < 0 ? 12 : -12))); zm.dispatchEvent(new Event('input')); }, { passive:false });
+        ov.addEventListener('click', function(e){
+          var a = e.target.getAttribute && e.target.getAttribute('data-a');
+          if(e.target === ov || a === 'x'){ ov.remove(); return; }
+          if(a !== 'ok') return;
+          var oc = document.createElement('canvas'); oc.width = oc.height = OUT; var ox2 = oc.getContext('2d'); ox2.imageSmoothingQuality = 'high';
+          var k = OUT / V; ox2.drawImage(img, ox * k, oy * k, w * base * zoom * k, h * base * zoom * k);
+          try{ localStorage.setItem(PH, oc.toDataURL('image/jpeg', 0.9)); }catch(err){ alert('Stockage impossible sur cet appareil.'); return; }
+          ov.remove(); refresh();
+          try{ if(document.querySelector('.hnp-photo') && window.__hnProfile) window.__hnProfile.open('profil'); }catch(e2){}
+          try{ if(window.toastHN) window.toastHN('Photo mise à jour ✓'); }catch(e3){}
+        });
+      };
+      img.src = ev.target.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  /* Intercepte le choix de fichier du Profil (#hnp-file) et du tiroir (#hnd-avfile) avant leur ancien code. */
+  document.addEventListener('change', function(e){
+    var t = e.target; if(!t || (t.id !== 'hnp-file' && t.id !== 'hnd-avfile')) return;
+    e.stopImmediatePropagation(); e.stopPropagation();
+    var f = t.files && t.files[0]; t.value = ''; if(f) openCropper(f);
+  }, true);
   window.__hnU = { isOwner:function(){ return !!(window.__hnIsOwnerFn && window.__hnIsOwnerFn()); }, refresh:refresh, initial:initial, handle:handle, photo:photo, silhouette:SIL };
   setInterval(refresh, 1200);
   window.addEventListener('storage', refresh);
