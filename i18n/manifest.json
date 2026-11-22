@@ -1,16 +1,16 @@
 {
-  "v": "cbd447e265",
-  "total": 13159,
+  "v": "48b5c48f55",
+  "total": 13183,
   "sensitive": 1305,
   "langs": {
     "en": {
       "status": "automatique",
-      "phrases": 13159,
+      "phrases": 13183,
       "manquantes": 0,
       "sensibles_manquantes": 0,
-      "v": "cbd447e265",
+      "v": "48b5c48f55",
       "revue": null
     }
   },
-  "built": "2026-11-21T04:18:12.812Z"
+  "built": "2026-11-22T05:59:00.264Z"
 }
