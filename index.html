@@ -29381,7 +29381,7 @@
     var hstatisBtnAttach = document.getElementById('hstatis-btn-attach');
     var HSTATIS_ATTACH_SUGGESTIONS = ['Résumé général', 'Résumé exécutif', "Qu'en penses-tu ?"];
     window.__hnAttReg = window.__hnAttReg || {};
-    window.__hnHstatisBridge = { history:function(){ return hstatisHistory.slice(); }, clear:function(){ hstatisHistory.length = 0; hstatisLog.innerHTML = ''; hstatisLog.dataset.ready = '1'; addHstatisMsg("Nouvelle conversation F-i-Stat. Posez votre question ou choisissez un domaine.", 'bot'); fillHstatisSuggestRow(HSTATIS_DEFAULT_SUGGESTIONS); } };
+    window.__hnHstatisBridge = { history:function(){ return hstatisHistory.slice(); }, restore:function(items){ hstatisHistory.length = 0; hstatisLog.innerHTML = ''; hstatisLog.dataset.ready = '1'; (items || []).forEach(function(x){ hstatisHistory.push({ role:x.role, content:x.content }); addHstatisMsg(x.content, x.role === 'user' ? 'user' : 'bot'); }); hstatisLog.scrollTop = hstatisLog.scrollHeight; }, clear:function(){ hstatisHistory.length = 0; hstatisLog.innerHTML = ''; hstatisLog.dataset.ready = '1'; addHstatisMsg("Nouvelle conversation F-i-Stat. Posez votre question ou choisissez un domaine.", 'bot'); fillHstatisSuggestRow(HSTATIS_DEFAULT_SUGGESTIONS); } };
     window.__hnAttReg['hstatis-form'] = { list:function(){ return hstatisPending; }, hist:function(){ return hstatisHistory.slice(-11); }, input:'hstatis-input', row:function(){ return document.getElementById('hstatis-attach-chip-row'); }, render:function(){ renderHstatisChips(); } };
     function renderHstatisChips(){ window.hnAttChips(hstatisChipRow, hstatisPending, renderHstatisChips); }
     function openHstatisPicker(mode){
@@ -47788,6 +47788,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     doc:'<path d="M9 5.5h9l5 5V26a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1z"/><path d="M18 5.5v5h5M11.5 15h9M11.5 19h9M11.5 23h6"/>',
     chart:'<path d="M7 25.5h18"/><rect x="9" y="15" width="3.4" height="8" rx="1"/><rect x="14.3" y="10" width="3.4" height="13" rx="1"/><rect x="19.6" y="6.5" width="3.4" height="16.5" rx="1"/>',
     grid:'<rect x="7" y="7" width="7.5" height="7.5" rx="2"/><rect x="17.5" y="7" width="7.5" height="7.5" rx="2"/><rect x="7" y="17.5" width="7.5" height="7.5" rx="2"/><rect x="17.5" y="17.5" width="7.5" height="7.5" rx="2"/>',
+    ppl:'<circle cx="12.5" cy="12" r="3.6"/><path d="M5.5 24c0-4 3.1-6.5 7-6.5s7 2.5 7 6.5"/><path d="M21.5 11v6M18.5 14h6" stroke-width="1.8"/>',
     sym:'<path d="M9.5 24h4v-2.2a7 7 0 1 1 5 0V24h4"/>'
   };
   var ATS = [
@@ -47800,6 +47801,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     { id:'docs', t:'Documents', d:'Ouvrez vos documents', ic:['#5b97ff','#2858d4','doc'], run:function(){ var b = document.querySelector('.nav-btn[data-view="documents"]'); if(b) b.click(); } },
     { id:'rep',  t:'Rapport', d:'Consultez vos rapports', ic:['#38d088','#12924f','chart'], run:function(){ var b = document.querySelector('.nav-btn[data-view="report"]'); if(b) b.click(); } },
     { id:'cat',  t:'Catalogue', d:'Parcourez le catalogue', ic:['#ffcb45','#e08a00','grid'], run:function(){ var b = document.querySelector('.nav-btn[data-view="catalogue"]'); if(b) b.click(); } },
+    { id:'ctc',  t:'Mes contacts', d:'Invitez un proche à essayer HelpNaud', ic:['#ee4aa6','#b3146f','ppl'], run:function(){ if(window.__hnContacts) window.__hnContacts.open(); } },
     { id:'sym',  t:'Caractères spéciaux', d:'Insérez un symbole', ic:['#94a0bb','#56627f','sym'], run:function(){ goAssistant(); clickId('symbols-btn'); } }
   ];
   function itemsHtml(list, sel){
@@ -48751,7 +48753,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
       var rows = document.querySelectorAll('.hnu-row[data-hnu="' + f[0] + '"]'), row = rows[0];
       for(var ri = 1; ri < rows.length; ri++) rows[ri].remove();   /* jamais de doublon, même si une barre (Suggestions) s'insère devant le champ */
       if(!row){ row = document.createElement('div'); row.className = 'hnu-row'; row.setAttribute('data-hnu', f[0]); form.parentNode.insertBefore(row, form); }
-      var html = (f[1] ? '<span class="hnu-av">' + avInner() + '</span>' : '') + (h ? '<span class="hnu-h">' + esc(h) + '</span>' : '');
+      var html = (f[1] ? '<span class="hnu-avw"><span class="hnu-av">' + avInner() + '</span><button type="button" class="hnct-plus" data-hnct="open" title="Inviter un contact à essayer HelpNaud" aria-label="Inviter un contact à essayer HelpNaud">+</button><i class="hnct-dot" title="Vous êtes actif"></i></span>' : '') + (h ? '<span class="hnu-h">' + esc(h) + '</span>' : '');
       if(row.getAttribute('data-sig') !== sig){ row.innerHTML = html; row.setAttribute('data-sig', sig); }
       row.hidden = !h && !f[1];
     });
@@ -49257,6 +49259,300 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   window.__hnCreate = { open:open, minimize:minimize, restore:restore, toggleMax:toggleMax, _t:{ renderDesign:renderDesign, cleanSvg:cleanSvg, normSpec:normSpec } };
 })();
 </script>
+<style id="hnct-css">
+:root{ --hn-plus:#D9238C; --hn-gold:#D9A400; --hn-on:#22C55E; }
+.hnct-wrap{ position:relative; display:inline-flex; flex:none; }
+.hnct-wrap.blk{ display:block; width:100%; }
+.hnu-avw{ position:relative; display:inline-flex; flex:none; }
+.hnct-plus{ position:absolute; z-index:3; right:-6px; bottom:-5px; width:17px; height:17px; box-sizing:border-box; border-radius:50%; border:2px solid var(--surface,#fff); background:var(--hn-plus); color:#fff; font:700 13px/1 system-ui,sans-serif; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.35); transition:transform .12s; }
+.hnct-plus::after{ content:''; position:absolute; inset:-9px; }
+.hnct-plus:hover,.hnct-plus:focus-visible{ transform:scale(1.18); outline:2px solid color-mix(in srgb,var(--hn-plus) 45%,transparent); outline-offset:1px; }
+.hnct-wrap.blk .hnct-plus{ right:auto; left:34px; bottom:10px; }
+.hnct-dot{ position:absolute; z-index:3; top:-2px; right:-2px; width:10px; height:10px; box-sizing:border-box; border-radius:50%; background:var(--hn-on); border:2px solid var(--surface,#fff); display:none; }
+.hnct-wrap.blk .hnct-dot{ right:auto; left:34px; top:8px; }
+body.hnct-on .hnct-dot{ display:block; }
+#hnct-dlg{ position:fixed; inset:0; z-index:99995; background:rgba(16,24,40,.5); display:flex; align-items:center; justify-content:center; padding:14px; }
+#hnct-dlg .hnct-box{ width:min(620px,100%); max-height:min(760px,94vh); background:var(--surface,#fff); color:var(--ink,#16304A); border-radius:18px; box-shadow:0 24px 70px rgba(16,24,40,.35); display:flex; flex-direction:column; overflow:hidden; }
+#hnct-dlg header{ display:flex; align-items:center; gap:10px; padding:14px 16px 8px; }
+#hnct-dlg header h3{ margin:0; font-size:17px; flex:1; }
+#hnct-dlg header .x{ border:0; background:transparent; font-size:20px; line-height:1; cursor:pointer; color:var(--muted); padding:4px 8px; }
+#hnct-dlg .bd{ padding:0 16px 14px; overflow:auto; }
+#hnct-dlg .m{ color:var(--muted); font-size:12.5px; margin:4px 0 8px; }
+#hnct-dlg .srcs,#hnct-dlg .soc{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+#hnct-dlg .srcs .btn,#hnct-dlg .soc .btn{ font-size:13px; padding:7px 11px; }
+#hnct-dlg .add{ display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
+#hnct-dlg .add input{ flex:1 1 140px; min-width:0; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:inherit; font:inherit; font-size:13.5px; }
+#hnct-dlg .ck{ display:flex; gap:8px; align-items:flex-start; font-size:12.5px; margin:8px 0; }
+#hnct-dlg .ck input{ margin-top:3px; }
+#hnct-dlg .list{ border:1px solid var(--line); border-radius:12px; margin-top:8px; max-height:300px; overflow:auto; }
+#hnct-dlg .row{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-top:1px solid var(--line); }
+#hnct-dlg .row:first-child{ border-top:0; }
+#hnct-dlg .av{ position:relative; width:34px; height:34px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex:none; color:var(--muted); }
+#hnct-dlg .av i{ position:absolute; right:-2px; top:-2px; width:10px; height:10px; box-sizing:border-box; border-radius:50%; background:var(--hn-on); border:2px solid var(--surface,#fff); }
+#hnct-dlg .nm{ flex:1; min-width:0; line-height:1.25; }
+#hnct-dlg .nm b{ display:flex; align-items:center; gap:6px; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#hnct-dlg .nm small{ display:block; font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#hnct-dlg .gold{ display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; color:#6b4f00; background:linear-gradient(135deg,#FFE27A,#D9A400); border-radius:999px; padding:1px 8px; flex:none; }
+#hnct-dlg .row .btn{ font-size:12.5px; padding:6px 10px; flex:none; }
+#hnct-dlg .foot{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; font-size:12.5px; color:var(--muted); }
+#hnct-dlg .err{ color:#b42318; font-size:12.5px; min-height:1em; margin:4px 0 0; }
+#hnct-dlg .ok{ color:#067647; }
+</style>
+<script id="hnct-js">
+(function(){
+  'use strict';
+  var CK = 'hn_contacts', PK = 'hn_presence_off', MAX = 500, FN = '/.netlify/functions/contacts', SM = '/.netlify/functions/share-mail';
+  var SITE = location.origin;
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  function toast(t){ var d = document.createElement('div'); d.textContent = t; d.setAttribute('role', 'status'); d.style.cssText = 'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;z-index:99999;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:90vw'; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3200); }
+  function token(){ return window.__hnAiToken ? Promise.resolve(window.__hnAiToken()) : Promise.resolve(null); }
+  function load(){ try{ var a = JSON.parse(localStorage.getItem(CK) || '[]'); return Array.isArray(a) ? a : []; }catch(e){ return []; } }
+  function save(a){ try{ localStorage.setItem(CK, JSON.stringify(a.slice(0, MAX))); return true; }catch(e){ return false; } }
+  var EMAIL = /^[^\s@<>",;]+@[^\s@<>",;]+\.[A-Za-z]{2,}$/;
+  function key(c){ return (c.e || c.t || '').toLowerCase(); }
+  function merge(list){
+    var a = load(), seen = {}, n = 0; a.forEach(function(c){ seen[key(c)] = 1; });
+    list.forEach(function(c){
+      var e = String(c.e || '').trim().toLowerCase(), t = String(c.t || '').replace(/[^\d+]/g, '').slice(0, 20), nm = String(c.n || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+      if(e && !EMAIL.test(e)) e = '';
+      if(!e && t.replace(/\D/g, '').length < 7) return;
+      var k = e || t; if(seen[k] || a.length >= MAX) return; seen[k] = 1; a.push({ n:nm, e:e, t:t }); n++;
+    });
+    save(a); return n;
+  }
+
+  /* ----- Pastille (+) à côté des photos de profil + point « actif » ----- */
+  var PLUS = '<button type="button" class="hnct-plus" data-hnct="open" title="Inviter un contact à essayer HelpNaud" aria-label="Inviter un contact à essayer HelpNaud">+</button><i class="hnct-dot" title="Vous êtes actif"></i>';
+  function wrapEl(el, blk){
+    if(!el || el.closest('.hnct-wrap')) return;
+    var w = document.createElement('span'); w.className = 'hnct-wrap' + (blk ? ' blk' : ''); el.parentNode.insertBefore(w, el); w.appendChild(el); w.insertAdjacentHTML('beforeend', PLUS);
+  }
+  function decorate(){
+    wrapEl(document.getElementById('hnd-avatar'), false);
+    var pb = document.getElementById('hn-prof-btn'); if(pb) wrapEl(pb, true);
+    document.querySelectorAll('#hnp .hnp-photo .hnp-av').forEach(function(a){ if(!a.parentNode.classList.contains('hnct-wrap')) wrapEl(a, false); });
+  }
+  var tm = null; function later(){ clearTimeout(tm); tm = setTimeout(decorate, 250); }
+  try{ new MutationObserver(later).observe(document.body, { childList:true, subtree:true }); }catch(e){}
+  setTimeout(decorate, 600);
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-hnct="open"]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); openDlg();
+  }, true);
+  function presenceOff(){ try{ return localStorage.getItem(PK) === '1'; }catch(e){ return false; } }
+  function paintOn(){ var on = navigator.onLine !== false && !document.hidden && !presenceOff(); document.body.classList.toggle('hnct-on', on); }
+  ['visibilitychange', 'online', 'offline'].forEach(function(ev){ (ev === 'visibilitychange' ? document : window).addEventListener(ev, function(){ paintOn(); if(ev === 'visibilitychange') ping(); }); });
+  paintOn();
+  var pingOff = false;
+  function ping(){
+    if(pingOff || document.hidden) return;
+    token().then(function(t){ if(!t) return;
+      return fetch(FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + t }, body:JSON.stringify({ action:'ping', visible:!presenceOff() }) }).then(function(r){ if(r.status === 404) pingOff = true; });
+    }).catch(function(){});
+  }
+  setInterval(ping, 60000); setTimeout(ping, 4000);
+
+  /* ----- Importation : fichier .vcf / .csv, sélecteur de contacts du téléphone ----- */
+  function parseVcf(txt){
+    var out = [], cur = null; txt = txt.replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '');
+    txt.split('\n').forEach(function(l){
+      if(/^BEGIN:VCARD/i.test(l)){ cur = { n:'', e:'', t:'' }; return; }
+      if(/^END:VCARD/i.test(l)){ if(cur) out.push(cur); cur = null; return; }
+      if(!cur) return;
+      var i = l.indexOf(':'); if(i < 0) return; var k = l.slice(0, i).split(';')[0].toUpperCase().replace(/^ITEM\d+\./, ''), v = l.slice(i + 1).trim();
+      if(k === 'FN' && !cur.n) cur.n = v; else if(k === 'N' && !cur.n) cur.n = v.split(';').reverse().join(' ').trim(); else if(k === 'EMAIL' && !cur.e) cur.e = v; else if(k === 'TEL' && !cur.t) cur.t = v;
+    });
+    return out;
+  }
+  function parseCsv(txt){
+    var rows = [], r = [], f = '', q = false;
+    txt = txt.replace(/^﻿/, '');
+    for(var i = 0; i < txt.length; i++){ var c = txt[i];
+      if(q){ if(c === '"'){ if(txt[i + 1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
+      else if(c === '"') q = true; else if(c === ',' || c === ';'){ r.push(f); f = ''; }
+      else if(c === '\n' || c === '\r'){ if(c === '\r' && txt[i + 1] === '\n') i++; r.push(f); f = ''; rows.push(r); r = []; if(rows.length > 5000) break; }
+      else f += c; }
+    if(f || r.length){ r.push(f); rows.push(r); }
+    if(rows.length < 2) return [];
+    var h = rows[0].map(function(x){ return x.toLowerCase().replace(/[^a-zà-ÿ0-9 ]/g, '').trim(); });
+    function cols(re){ var o = []; h.forEach(function(x, i){ if(re.test(x)) o.push(i); }); return o; }
+    var ce = cols(/e ?mail|courriel/), cp = cols(/phone|tel|mobile|cell/), cn = cols(/^(name|nom|display name|full name|nom complet)$/), cf = cols(/first name|given|prénom|prenom/), cl = cols(/last name|family|surname|nom de famille/);
+    var out = [];
+    rows.slice(1).forEach(function(x){
+      var e = '', t = '', n = '';
+      ce.forEach(function(i){ var v = (x[i] || '').trim(); if(!e && EMAIL.test(v)) e = v; });
+      cp.forEach(function(i){ var v = (x[i] || '').trim(); if(!t && v) t = v; });
+      if(cn.length) n = (x[cn[0]] || '').trim(); if(!n) n = ((cf.length ? x[cf[0]] || '' : '') + ' ' + (cl.length ? x[cl[0]] || '' : '')).trim();
+      if(e || t) out.push({ n:n, e:e, t:t });
+    });
+    return out;
+  }
+  function sha256hex(str){   /* repli sans crypto.subtle (page non sécurisée) */
+    var m = unescape(encodeURIComponent(str)), K = [], H = [], i, j, w = [], l = m.length * 8, p = 2, isP = function(n){ for(var k = 2; k * k <= n; k++) if(n % k === 0) return false; return true; };
+    var fr = function(x){ return ((x - Math.floor(x)) * 4294967296) | 0; };
+    for(i = 0; K.length < 64; p++) if(isP(p)){ if(H.length < 8) H.push(fr(Math.pow(p, .5))); K.push(fr(Math.pow(p, 1 / 3))); }
+    m += '\x80'; while(m.length % 64 - 56) m += '\x00';
+    for(i = 0; i < m.length; i++){ j = m.charCodeAt(i); w[i >> 2] = (w[i >> 2] || 0) | (j << ((3 - i % 4) * 8)); }
+    w[w.length] = Math.floor(l / 4294967296); w[w.length] = l | 0;
+    var rr = function(v, a){ return (v >>> a) | (v << (32 - a)); };
+    for(j = 0; j < w.length;){
+      var x = w.slice(j, j += 16), o = H.slice(0), a, t1, t2;
+      for(i = 0; i < 64; i++){
+        if(i >= 16){ var x15 = x[i - 15], x2 = x[i - 2]; x[i] = (x[i - 16] + (rr(x15, 7) ^ rr(x15, 18) ^ (x15 >>> 3)) + x[i - 7] + (rr(x2, 17) ^ rr(x2, 19) ^ (x2 >>> 10))) | 0; }
+        t1 = (o[7] + (rr(o[4], 6) ^ rr(o[4], 11) ^ rr(o[4], 25)) + ((o[4] & o[5]) ^ (~o[4] & o[6])) + K[i] + x[i]) | 0;
+        t2 = ((rr(o[0], 2) ^ rr(o[0], 13) ^ rr(o[0], 22)) + ((o[0] & o[1]) ^ (o[0] & o[2]) ^ (o[1] & o[2]))) | 0;
+        o = [(t1 + t2) | 0, o[0], o[1], o[2], (o[3] + t1) | 0, o[4], o[5], o[6]];
+      }
+      for(i = 0; i < 8; i++) H[i] = (H[i] + o[i]) | 0;
+    }
+    return H.map(function(v){ return ('00000000' + (v >>> 0).toString(16)).slice(-8); }).join('');
+  }
+  function hexHash(s){
+    if(!(window.crypto && crypto.subtle && window.TextEncoder)) return Promise.resolve(sha256hex(s));
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function(b){ return Array.prototype.map.call(new Uint8Array(b), function(x){ return ('0' + x.toString(16)).slice(-2); }).join(''); }).catch(function(){ return sha256hex(s); });
+  }
+  var status = {};   /* hash -> { active } pour les contacts qui utilisent déjà HelpNaud */
+  var statusErr = '';
+  function lookup(list){
+    var emails = list.filter(function(c){ return c.e; }).map(function(c){ return c.e.toLowerCase(); });
+    if(!emails.length) return Promise.resolve();
+    return token().then(function(t){
+      if(!t){ statusErr = 'Connectez-vous pour voir qui utilise déjà HelpNaud.'; return; }
+      var chunks = []; for(var i = 0; i < emails.length; i += 100) chunks.push(emails.slice(i, i + 100));
+      return chunks.reduce(function(p, ch){ return p.then(function(){
+        return Promise.all(ch.map(hexHash)).then(function(hs){
+          hs = hs.filter(Boolean); if(!hs.length) return;
+          return fetch(FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + t }, body:JSON.stringify({ action:'lookup', hashes:hs }) })
+            .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok || !j.ok){ statusErr = r.status === 404 ? 'Statut HelpNaud indisponible : fonction « contacts » non déployée.' : (j.message || 'Statut HelpNaud indisponible.'); return; } statusErr = ''; Object.keys(j.found || {}).forEach(function(h){ status[h] = j.found[h]; }); }); });
+        });
+      }); }, Promise.resolve());
+    }).catch(function(){ statusErr = 'Statut HelpNaud indisponible (réseau).'; });
+  }
+
+  /* ----- Boîte « Mes contacts » ----- */
+  var dlg = null, prevFocus = null, q = '', hashes = {};
+  function closeDlg(){ if(dlg){ dlg.remove(); dlg = null; } document.removeEventListener('keydown', onKey, true); if(prevFocus && prevFocus.focus) try{ prevFocus.focus(); }catch(e){} }
+  function onKey(e){ if(e.key === 'Escape'){ e.stopPropagation(); closeDlg(); } }
+  function who(){ try{ return (window.__hnU && window.__hnU.who && window.__hnU.who()) || {}; }catch(e){ return {}; } }
+  function firstName(){ return String(who().name || '').trim().split(/\s+/)[0].replace(/[<>"]/g, '').slice(0, 40); }
+  function msgText(){ return 'Je t’invite à essayer HelpNaud.ai, un assistant IA du quotidien : ' + SITE; }
+  var SOC = [
+    ['WhatsApp', function(){ return 'https://wa.me/?text=' + encodeURIComponent(msgText()); }],
+    ['Facebook', function(){ return 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(SITE); }],
+    ['X', function(){ return 'https://twitter.com/intent/tweet?text=' + encodeURIComponent('Essayez HelpNaud.ai, un assistant IA du quotidien') + '&url=' + encodeURIComponent(SITE); }],
+    ['LinkedIn', function(){ return 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(SITE); }],
+    ['Telegram', function(){ return 'https://t.me/share/url?url=' + encodeURIComponent(SITE) + '&text=' + encodeURIComponent('Essayez HelpNaud.ai, un assistant IA du quotidien'); }]
+  ];
+  function rowsHtml(){
+    var a = load(), t = q.trim().toLowerCase();
+    if(t) a = a.filter(function(c){ return (c.n + ' ' + c.e + ' ' + c.t).toLowerCase().indexOf(t) >= 0; });
+    if(!a.length) return '<div class="row"><span class="m" style="margin:0">' + (t ? 'Aucun résultat.' : 'Aucun contact pour l’instant. Choisissez-en dans votre téléphone, importez un fichier ou ajoutez une adresse ci-dessus.') + '</span></div>';
+    a.sort(function(x, y){ return (x.n || x.e || x.t).localeCompare(y.n || y.e || y.t); });
+    return a.slice(0, 300).map(function(c, i){
+      var h = hashes[(c.e || '').toLowerCase()], st = h && status[h], disp = c.n || c.e || c.t, ini = (disp.replace(/^[^A-Za-zÀ-ÿ0-9]+/, '').charAt(0) || '?').toUpperCase();
+      return '<div class="row" data-k="' + esc(key(c)) + '"><span class="av">' + esc(ini) + (st && st.active ? '<i title="Actif en ce moment"></i>' : '') + '</span>' +
+        '<span class="nm"><b>' + esc(disp) + (st ? ' <span class="gold" title="Ce contact utilise déjà HelpNaud">★ Déjà sur HelpNaud</span>' : '') + '</b><small>' + esc([c.n ? c.e : '', c.t].filter(Boolean).join(' · ') || (c.n ? '' : '')) + (st && st.active ? ' · actif' : '') + '</small></span>' +
+        (st ? '' : '<button type="button" class="btn primary" data-a="inv" disabled>Inviter</button>') + '<button type="button" class="btn" data-a="del" title="Retirer de la liste" aria-label="Retirer ce contact">✕</button></div>';
+    }).join('');
+  }
+  function refreshList(box){
+    var l = box.querySelector('.list'); l.innerHTML = rowsHtml();
+    var ok = box.querySelector('#hnct-ck').checked; l.querySelectorAll('[data-a="inv"]').forEach(function(b){ b.disabled = !ok; });
+    var n = load().length; box.querySelector('.cnt').textContent = n + ' contact' + (n > 1 ? 's' : '');
+    box.querySelector('.stt').textContent = statusErr;
+  }
+  function refreshStatus(box){
+    var a = load(); return Promise.all(a.filter(function(c){ return c.e; }).map(function(c){ return hexHash(c.e.toLowerCase()).then(function(h){ hashes[c.e.toLowerCase()] = h; }); }))
+      .then(function(){ return lookup(a); }).then(function(){ if(dlg) refreshList(box); });
+  }
+  function inviteVia(c, btn, box){
+    var err = box.querySelector('.err'); err.textContent = '';
+    var note = '';
+    if(c.e){
+      btn.disabled = true; btn.textContent = 'Envoi…';
+      token().then(function(t){
+        if(!t){ var e = new Error('Connectez-vous à votre compte HelpNaud (Paramètres › Compte) pour envoyer des invitations.'); e.code = 'login'; throw e; }
+        return fetch(SM, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + t }, body:JSON.stringify({ action:'invite', to:c.e, name:firstName(), note:note }) });
+      }).then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok || !j.ok){ var e = new Error(j.message || 'Envoi impossible (' + r.status + ').'); e.code = j.code || 'http'; throw e; } }); })
+      .then(function(){ btn.textContent = 'Invité ✓'; btn.disabled = true; })
+      .catch(function(e){
+        btn.disabled = false; btn.textContent = 'Inviter'; err.textContent = (e && e.message) || 'Échec de l’envoi.';
+        if(e && e.code !== 'rate' && e.code !== 'self'){ location.href = 'mailto:' + c.e + '?subject=' + encodeURIComponent('Une invitation à essayer HelpNaud') + '&body=' + encodeURIComponent('Bonjour,\n\n' + msgText() + '\n'); }
+      });
+    } else {
+      location.href = 'sms:' + c.t + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? '&' : '?') + 'body=' + encodeURIComponent(msgText());
+    }
+  }
+  function openDlg(){
+    if(dlg) return; prevFocus = document.activeElement; q = '';
+    dlg = document.createElement('div'); dlg.id = 'hnct-dlg'; dlg.setAttribute('role', 'dialog'); dlg.setAttribute('aria-modal', 'true'); dlg.setAttribute('aria-label', 'Mes contacts');
+    var canPick = !!(navigator.contacts && navigator.contacts.select);
+    dlg.innerHTML = '<div class="hnct-box"><header><h3>Mes contacts <small class="cnt" style="font-weight:400;color:var(--muted);font-size:12.5px"></small></h3><button type="button" class="x" data-a="x" aria-label="Fermer">✕</button></header><div class="bd">' +
+      '<p class="m">Invitez un membre de la famille, une connaissance, un collègue ou un ami à expérimenter HelpNaud.ai. Votre liste reste sur cet appareil.</p>' +
+      '<div class="srcs"><button type="button" class="btn" data-a="pick"' + (canPick ? '' : ' disabled title="Disponible dans Chrome sur Android seulement"') + '>📱 Contacts du téléphone</button>' +
+      '<button type="button" class="btn" data-a="file">📂 Importer (.vcf, .csv)</button><input type="file" id="hnct-file" accept=".vcf,.csv,text/vcard,text/x-vcard,text/csv" hidden></div>' +
+      (canPick ? '' : '<p class="m" style="margin-top:0">Le sélecteur de contacts du téléphone n’est pas disponible dans ce navigateur (il l’est dans Chrome sur Android). Importez un fichier exporté de Google Contacts, Outlook, iCloud ou du carnet de votre téléphone, ou ajoutez une adresse.</p>') +
+      '<div class="add"><input type="text" id="hnct-n" placeholder="Nom (facultatif)" maxlength="80" autocomplete="off"><input type="text" id="hnct-e" placeholder="Courriel ou téléphone" maxlength="190" autocomplete="off"><button type="button" class="btn" data-a="add">Ajouter</button></div>' +
+      '<div class="m" style="margin-bottom:2px">Réseaux sociaux : ouvrez la fenêtre de partage, puis choisissez vos amis dans le réseau.</div><div class="soc">' +
+      SOC.map(function(s, i){ return '<button type="button" class="btn" data-a="soc" data-i="' + i + '">' + s[0] + '</button>'; }).join('') +
+      '<button type="button" class="btn" data-a="sms">SMS</button><button type="button" class="btn" data-a="copy">🔗 Copier le lien</button>' + (navigator.share ? '<button type="button" class="btn" data-a="nat">Partager…</button>' : '') + '</div>' +
+      '<p class="m" style="margin-top:0">Les réseaux sociaux ne permettent pas à une application web de lire votre liste d’amis ; HelpNaud n’y a pas accès.</p>' +
+      '<input type="search" id="hnct-q" placeholder="Rechercher dans mes contacts" aria-label="Rechercher dans mes contacts" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:inherit;font:inherit;font-size:13.5px;box-sizing:border-box">' +
+      '<label class="ck"><input type="checkbox" id="hnct-ck"> <span>Je n’invite que des personnes qui accepteront de recevoir cette invitation (limite : 5 invitations par courriel par jour).</span></label>' +
+      '<div class="list"></div><p class="err" role="alert"></p><p class="m stt" style="color:#b54708"></p>' +
+      '<div class="foot"><label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="hnct-pr"' + (presenceOff() ? '' : ' checked') + '> Apparaître actif auprès de mes contacts</label><button type="button" class="btn" data-a="clr">Effacer ma liste</button></div>' +
+      '<p class="m" style="margin-top:8px">★ doré : ce contact utilise déjà HelpNaud. Point vert : actif en ce moment. Pour le savoir, seules des empreintes chiffrées (SHA-256) des adresses sont envoyées au serveur ; aucune adresse n’est conservée.</p>' +
+      '</div></div>';
+    document.body.appendChild(dlg); document.addEventListener('keydown', onKey, true);
+    var box = dlg.querySelector('.hnct-box'), err = box.querySelector('.err');
+    dlg.addEventListener('mousedown', function(e){ if(e.target === dlg) closeDlg(); });
+    function added(n, from){ err.textContent = ''; refreshList(box); refreshStatus(box); toast(n ? n + ' contact' + (n > 1 ? 's ajoutés' : ' ajouté') + (from ? ' (' + from + ')' : '') : 'Aucun nouveau contact (déjà dans la liste ou sans courriel/téléphone valide).'); }
+    box.querySelector('#hnct-q').addEventListener('input', function(){ q = this.value; refreshList(box); });
+    box.querySelector('#hnct-ck').addEventListener('change', function(){ refreshList(box); });
+    box.querySelector('#hnct-pr').addEventListener('change', function(){ try{ if(this.checked) localStorage.removeItem(PK); else localStorage.setItem(PK, '1'); }catch(e){} paintOn(); ping(); });
+    var file = box.querySelector('#hnct-file');
+    file.addEventListener('change', function(){
+      var f = file.files && file.files[0]; file.value = ''; if(!f) return;
+      if(f.size > 5 * 1024 * 1024){ err.textContent = 'Fichier trop volumineux (5 Mo maximum).'; return; }
+      var fr = new FileReader(); fr.onload = function(){
+        var txt = String(fr.result || ''), l = /\.vcf$/i.test(f.name) || /BEGIN:VCARD/i.test(txt.slice(0, 400)) ? parseVcf(txt) : parseCsv(txt);
+        if(!l.length){ err.textContent = 'Aucun contact lisible dans ce fichier (courriel ou téléphone requis).'; return; }
+        added(merge(l), 'fichier');
+      }; fr.onerror = function(){ err.textContent = 'Fichier illisible.'; }; fr.readAsText(f);
+    });
+    box.addEventListener('click', function(e){
+      var b = e.target.closest('[data-a]'); if(!b) return; var a = b.getAttribute('data-a');
+      if(a === 'x') return closeDlg();
+      if(a === 'file') return file.click();
+      if(a === 'pick'){
+        if(!canPick) return;
+        navigator.contacts.select(['name', 'email', 'tel'], { multiple:true }).then(function(r){
+          added(merge((r || []).map(function(c){ return { n:(c.name || [])[0] || '', e:(c.email || [])[0] || '', t:(c.tel || [])[0] || '' }; })), 'téléphone');
+        }).catch(function(x){ if(x && x.name !== 'AbortError') err.textContent = 'Accès aux contacts refusé ou impossible.'; });
+        return;
+      }
+      if(a === 'add'){
+        var v = box.querySelector('#hnct-e').value.trim(), n = box.querySelector('#hnct-n').value.trim();
+        var c = EMAIL.test(v) ? { n:n, e:v } : { n:n, t:v };
+        if(!EMAIL.test(v) && v.replace(/\D/g, '').length < 7){ err.textContent = 'Saisissez un courriel valide ou un numéro de téléphone.'; return; }
+        var k = merge([c]); box.querySelector('#hnct-e').value = ''; box.querySelector('#hnct-n').value = ''; added(k, ''); return;
+      }
+      if(a === 'soc'){ var s = SOC[Number(b.getAttribute('data-i'))]; if(s) window.open(s[1](), '_blank', 'noopener,noreferrer'); return; }
+      if(a === 'sms'){ location.href = 'sms:' + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? '&' : '?') + 'body=' + encodeURIComponent(msgText()); return; }
+      if(a === 'nat'){ navigator.share({ title:'HelpNaud.ai', text:'Essayez HelpNaud.ai', url:SITE }).catch(function(){}); return; }
+      if(a === 'copy'){ (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(SITE) : Promise.reject()).then(function(){ toast('Lien copié.'); }, function(){ toast('Copie impossible ici : ' + SITE); }); return; }
+      if(a === 'clr'){ if(window.confirm('Effacer toute ma liste de contacts sur cet appareil ?')){ try{ localStorage.removeItem(CK); }catch(x){} status = {}; refreshList(box); } return; }
+      var row = b.closest('.row'); if(!row) return; var kk = row.getAttribute('data-k'), c2 = load().filter(function(c){ return key(c) === kk; })[0]; if(!c2) return;
+      if(a === 'del'){ save(load().filter(function(c){ return key(c) !== kk; })); refreshList(box); return; }
+      if(a === 'inv') inviteVia(c2, b, box);
+    });
+    refreshList(box); refreshStatus(box);
+    var f0 = box.querySelector('button:not([disabled])'); if(f0) f0.focus();
+  }
+  window.__hnContacts = { open:openDlg, close:closeDlg, _parseVcf:parseVcf, _parseCsv:parseCsv, _merge:merge, _load:load };
+})();
+</script>
+
 <style id="hnmx-css">
 .msg.bot[data-hnmx]{ position:relative; }
 .hnmx-x{ position:absolute; top:5px; right:5px; width:26px; height:26px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; opacity:.7; padding:0; z-index:2; }
@@ -49292,6 +49588,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   'use strict';
   var ICO_SHARE = '<svg viewBox="0 0 24 24"><circle cx="18" cy="5.2" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="18.8" r="2.3"/><path d="M8 10.6l8-4.1M8 13.4l8 4.1"/></svg>';
   var ICO_EXP = '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
+  var ICO_DOTS = '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>';
   var SITE = location.origin;
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
   function toast(t){ var d = document.createElement('div'); d.textContent = t; d.setAttribute('role', 'status'); d.style.cssText = 'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:90vw;text-align:center'; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 2600); }
@@ -49311,6 +49608,9 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     sb.addEventListener('click', function(e){ e.stopPropagation(); openPop(sb, m); });
     var st = bar.querySelector('.msg-status'); if(st) bar.insertBefore(sb, st); else bar.appendChild(sb);
     }
+    var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'msg-action-btn hnmx-more'; mb.title = 'Plus d’actions'; mb.setAttribute('aria-label', 'Plus d’actions'); mb.setAttribute('aria-haspopup', 'menu'); mb.innerHTML = ICO_DOTS;
+    mb.addEventListener('click', function(e){ e.stopPropagation(); openMore(mb, m, priv); });
+    var st2 = bar.querySelector('.msg-status'); if(st2) bar.insertBefore(mb, st2); else bar.appendChild(mb);
     var xb = document.createElement('button'); xb.type = 'button'; xb.className = 'hnmx-x'; xb.title = 'Agrandir cette réponse'; xb.setAttribute('aria-label', 'Agrandir cette réponse'); xb.innerHTML = ICO_EXP;
     xb.addEventListener('click', function(){ openView(m); });
     m.appendChild(xb);
@@ -49319,6 +49619,87 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   var tmr = null; function later(){ clearTimeout(tmr); tmr = setTimeout(scan, 250); }
   try{ new MutationObserver(later).observe(document.body, { childList:true, subtree:true }); }catch(e){}
   document.addEventListener('DOMContentLoaded', scan); setTimeout(scan, 600);
+
+  /* ----- Menu « … » : heure, Réessayer, Créer une branche dans un nouveau chat ----- */
+  function whenOf(m){
+    var el = m.querySelector('.msg-time'), ts = el && Number(el.getAttribute('data-ts'));
+    if(!ts) return '';
+    var d = new Date(ts), now = new Date(), hm = d.toLocaleTimeString('fr-CA', { hour:'2-digit', minute:'2-digit' }).replace(/ | /g, ' ');
+    if(d.toDateString() === now.toDateString()) return 'aujourd’hui, ' + hm;
+    var y = new Date(now.getTime() - 864e5); if(d.toDateString() === y.toDateString()) return 'hier, ' + hm;
+    return d.toLocaleDateString('fr-CA', { day:'numeric', month:'short', year:'numeric' }) + ', ' + hm;
+  }
+  function logOf(m){ return m.closest('#chat-log, #cowork-discuss-log, #hstat-log, #hstatis-log'); }
+  function cutIndex(m, hist){
+    var log = logOf(m); if(!log) return -1;
+    var n = 0, all = log.querySelectorAll('.msg.user, .msg.bot');
+    for(var i = 0; i < all.length && all[i] !== m; i++) if(all[i].classList.contains('user')) n++;
+    if(n === 0) return -1;
+    var seen = 0, end = -1;
+    for(var j = 0; j < hist.length; j++){
+      if(hist[j].role === 'user'){ if(end >= 0) break; seen++; if(seen === n) end = j + 1; }
+      else if(end >= 0) end = j + 1;
+    }
+    return end;
+  }
+  function branchOf(m){
+    var log = logOf(m); if(!log){ toast('Branche indisponible ici.'); return; }
+    var id = log.id, stamp = Date.now(), rnd = Math.random().toString(36).slice(2, 7);
+    try{
+      if(id === 'hstatis-log'){
+        var B = window.__hnHstatisBridge; if(!B || !B.restore){ toast('Branche indisponible ici.'); return; }
+        var fh = B.history(), fe = cutIndex(m, fh);
+        if(fe < 1){ toast('Posez d’abord une question : il n’y a rien à brancher avant cette réponse.'); return; }
+        if(!window.confirm('F-i-Stat n’enregistre rien : la branche remplace la conversation affichée (la suite après cette réponse ne sera pas conservée). Continuer ?')) return;
+        B.restore(fh.slice(0, fe));
+        toast('Branche créée à partir de cette réponse ✓ (conversation F-i-Stat temporaire, non enregistrée).');
+        var fl = document.getElementById(id); if(fl) fl.scrollTop = fl.scrollHeight; return;
+      }
+      if(id === 'hstat-log'){
+        var H = window.__hnHH, S = window.__hnHstat; if(!H || !S){ toast('Branche indisponible ici.'); return; }
+        var hist = S.history(), end = cutIndex(m, hist);
+        if(end < 1){ toast('Posez d’abord une question : il n’y a rien à brancher avant cette réponse.'); return; }
+        if(window.__hnHstatChanged) window.__hnHstatChanged();
+        var msgs = hist.slice(0, end).map(function(x){ return { role:x.role, content:x.content }; });
+        var arr = H.load(), old = arr.filter(function(c){ return c.id === H.cur(); })[0];
+        var base = (old && old.title) || (msgs[0] && String(msgs[0].content).replace(/\s+/g, ' ').trim().slice(0, 50)) || 'Conversation';
+        var nid = 'c' + stamp.toString(36) + rnd;
+        var rec = { id:nid, pinned:false, title:('Branche — ' + base).slice(0, 80), messages:msgs.slice(-60), updated:stamp, domain:S.domainId() };
+        if(old && old.projectId) rec.projectId = old.projectId;
+        if(!window.__hnIncognito){ arr.unshift(rec); H.save(arr.slice(0, 60)); }
+        H.setCur(window.__hnIncognito ? null : nid); S.restore(msgs); H.render();
+      } else {
+        var scope = id === 'chat-log' ? 'assistant' : 'cowork-discuss', A = window.__hnConvAPI && window.__hnConvAPI[scope];
+        if(!A){ toast('Branche indisponible ici.'); return; }
+        var h = A.cfg.getHistory() || [], e2 = cutIndex(m, h);
+        if(e2 < 1){ toast('Posez d’abord une question : il n’y a rien à brancher avant cette réponse.'); return; }
+        A.persist();
+        var cur = A.rec(), keep = h.slice(0, e2), nid2 = 'conv_' + stamp.toString(36) + rnd;
+        var t = (cur && cur.title) || A.cfg.defaultTitle;
+        if(!window.__hnIncognito) A.store.save(scope, { id:nid2, title:('Branche — ' + t).slice(0, 80), projectId:(cur && cur.projectId) || null, messages:keep.slice() });
+        A.cfg.setConvId(nid2); A.cfg.setHistory(keep.slice()); A.cfg.renderLog(keep); A.refresh();
+        if(window.__hnIncognito){ var tt = A.cfg.titleEl; if(tt) tt.textContent = 'Branche — ' + t; }
+      }
+      toast('Nouvelle conversation créée à partir de cette réponse ✓ (l’original est conservé dans l’historique).');
+      var nl = document.getElementById(id); if(nl) nl.scrollTop = nl.scrollHeight;
+    }catch(err){ toast('Création de la branche impossible.'); }
+  }
+  function openMore(btn, m, priv){
+    if(pop){ closePop(); return; }
+    pop = document.createElement('div'); pop.className = 'hnmx-pop'; pop.setAttribute('role', 'menu');
+    var w0 = whenOf(m);
+    pop.innerHTML = (w0 ? '<small class="hnmx-h">' + esc(w0) + '</small>' : '') +
+      '<button type="button" role="menuitem" data-k="retry">↻ Réessayer</button>' +
+      ('<button type="button" role="menuitem" data-k="branch">⑂ Créer une branche dans un nouveau chat</button>');
+    document.body.appendChild(pop);
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    var left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left)), top = r.bottom + 6; if(top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    pop.style.left = left + 'px'; pop.style.top = top + 'px';
+    pop.addEventListener('click', function(e){ var b = e.target.closest('[data-k]'); if(!b) return; var k = b.getAttribute('data-k'); closePop();
+      if(k === 'retry'){ if(window.__hnRetry) window.__hnRetry(m); } else if(k === 'branch') branchOf(m); });
+    document.addEventListener('mousedown', outside, true); document.addEventListener('keydown', escPop, true);
+    var f = pop.querySelector('button'); if(f) f.focus();
+  }
 
   /* ----- Menu de partage ----- */
   var pop = null;
