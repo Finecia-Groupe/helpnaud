@@ -47262,12 +47262,13 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(!rows.length) return A + '<p class="hint">Aucune utilisation enregistrée pour le moment. Chaque opération (message, image, design…) apparaîtra ici avec ses crédits, à partir de maintenant.</p>';
     var tot = rows.reduce(function(a, r){ return a + (+r.cost || 0); }, 0);
     var h = A + '<p class="hint">' + rows.length + ' opération' + (rows.length > 1 ? 's' : '') + ' sur 60 jours · ' + tot + ' crédit' + (tot > 1 ? 's' : '') + ' au total. Seules la date, la fonction et le coût sont conservés, jamais le contenu.</p>';
-    h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;opacity:.7"><th style="padding:6px 8px 6px 0">Date</th><th style="padding:6px 8px">Fonction</th><th style="padding:6px 8px">Détail</th><th style="padding:6px 0 6px 8px;text-align:right">Crédits</th></tr></thead><tbody>';
+    var tdc = 'padding:7px 6px;overflow-wrap:anywhere';
+    h += '<table style="width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;font-size:13px"><colgroup><col style="width:31%"><col style="width:23%"><col style="width:28%"><col style="width:18%"></colgroup><thead><tr style="text-align:left;opacity:.7"><th style="padding:6px 6px 6px 0;overflow-wrap:anywhere">Date</th><th style="padding:6px;overflow-wrap:anywhere">Fonction</th><th style="padding:6px;overflow-wrap:anywhere">Détail</th><th style="padding:6px 0 6px 6px;text-align:right;overflow-wrap:anywhere">Crédits</th></tr></thead><tbody>';
     rows.slice(0, histN).forEach(function(r){
       var d = new Date(r.created_at), dt = d.toLocaleDateString('fr-CA', { day:'numeric', month:'short' }) + ' ' + d.toLocaleTimeString('fr-CA', { hour:'2-digit', minute:'2-digit' });
-      h += '<tr style="border-top:1px solid var(--line)"><td style="padding:7px 8px 7px 0;white-space:nowrap">' + esc(dt) + '</td><td style="padding:7px 8px">' + esc(FEAT[r.feature] || 'Autres') + '</td><td style="padding:7px 8px">' + esc(r.model || '') + '</td><td style="padding:7px 0 7px 8px;text-align:right;font-weight:600">−' + (+r.cost || 0) + '</td></tr>';
+      h += '<tr style="border-top:1px solid var(--line)"><td style="padding:7px 6px 7px 0;overflow-wrap:anywhere">' + esc(dt) + '</td><td style="' + tdc + '">' + esc(FEAT[r.feature] || 'Autres') + '</td><td style="' + tdc + '">' + esc(r.model || '') + '</td><td style="padding:7px 0 7px 6px;text-align:right;font-weight:600">−' + (+r.cost || 0) + '</td></tr>';
     });
-    h += '</tbody></table></div>';
+    h += '</tbody></table>';
     if(rows.length > histN) h += '<div class="hnp-tabs"><button type="button" data-hnp-st="histmore:20">Voir plus</button></div>';
     return h;
   }
