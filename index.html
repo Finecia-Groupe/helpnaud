@@ -45918,7 +45918,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
 
   /* ---------- Menu ⋯ ---------- */
   var openM = null;
-  function closeMenu(refocus){ if(!openM) return; var b = openM.btn; var _cs = document.getElementById('hstat-currency'), _ch = document.getElementById('hstat-cur-holder'); if(_cs && _ch && !_ch.contains(_cs)){ _cs.style.cssText = ''; _ch.appendChild(_cs); } if(openM.el.parentNode) openM.el.parentNode.removeChild(openM.el); b.setAttribute('aria-expanded', 'false'); openM = null; if(refocus) try{ b.focus(); }catch(e){} }
+  function closeMenu(refocus){ if(!openM) return; var b = openM.btn; if(window.__hnfsRestore) try{ window.__hnfsRestore(); }catch(e){} var _cs = document.getElementById('hstat-currency'), _ch = document.getElementById('hstat-cur-holder'); if(_cs && _ch && !_ch.contains(_cs)){ _cs.style.cssText = ''; _ch.appendChild(_cs); } if(openM.el.parentNode) openM.el.parentNode.removeChild(openM.el); b.setAttribute('aria-expanded', 'false'); openM = null; if(refocus) try{ b.focus(); }catch(e){} }
   function place(m, btn){
     var r = btn.getBoundingClientRect(), w = m.offsetWidth || 268;
     var left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8), top = r.bottom + 6;
@@ -45940,6 +45940,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
         item(IC.pin, ad.pinned() ? 'Désépingler' : 'Épingler', function(){ if(ad.pin()){ closeMenu(); toast(ad.pinned() ? 'Conversation épinglée.' : 'Épinglage retiré.'); } else { toast(ad.note || 'Envoyez d’abord un message.'); } }, { disabled:!has });
       }
       if(can) sep();
+      if(key === 'hstatis' && window.__hnfsAttach){ var _h = mk('div', 'hn-mn-sep'); try{ window.__hnfsAttach(m); }catch(e){} }
       if(key === 'hstat' && _cs){ var _row = mk('div', 'hn-mn-cur'); _row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;'; var _lb = mk('span', '', 'Devise'); _lb.style.cssText = 'font-size:13.5px;'; _row.appendChild(_lb); _cs.style.cssText = 'flex:1;min-width:0;'; _row.appendChild(_cs); m.appendChild(_row); }
       item(IC.files, 'Afficher les fichiers du chat', function(){ closeMenu(); openViewer(key); });
       item(IC.gear, 'Réglages de la conversation', function(){ closeMenu(); var sh = btn.closest('.chat-shell'), t = sh && sh.querySelector('.hn-opt-toggle'); if(t) t.click(); var p = sh && sh.querySelector('.hn-opts-panel'); if(p && p.scrollIntoView) setTimeout(function(){ p.scrollIntoView({ block:'nearest' }); }, 30); });
@@ -49276,6 +49277,60 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-hncr]'); if(!b) return; e.preventDefault(); var m = b.closest('.attach-menu'); if(m) m.hidden = true; open('home', null, !!(m && m.id === 'hstatis-attach-menu')); });
   addEntries(); document.addEventListener('DOMContentLoaded', addEntries); setTimeout(addEntries, 800); setInterval(addEntries, 2000);   /* le menu de l'espace équipe est construit plus tard */
   window.__hnCreate = { open:open, minimize:minimize, restore:restore, toggleMax:toggleMax, _t:{ renderDesign:renderDesign, cleanSvg:cleanSvg, normSpec:normSpec } };
+})();
+</script>
+<style id="hnfs-css">
+/* F-i-Stat : titre à gauche, onglets dans la barre du haut, devise + niveau expert + dans le menu ⋯ → zone de réponse agrandie */
+#fghlab-panel-hstatis .cowork-panel-head{ display:flex !important; align-items:center; justify-content:flex-start !important; flex-wrap:wrap; gap:6px 12px; margin-bottom:6px; }
+#fghlab-panel-hstatis .cowork-panel-head > h2{ order:1; margin:0 !important; justify-content:flex-start !important; text-align:left !important; flex:none; }
+#fghlab-panel-hstatis .cowork-panel-head > .hstatis-tabbar{ order:2; margin:0 !important; flex:1 1 auto; min-width:0; justify-content:flex-start; flex-wrap:wrap; gap:6px; }
+#fghlab-panel-hstatis .cowork-panel-head > .hstatis-tabbar .btn{ padding:6px 11px; font-size:13px; white-space:nowrap; }
+#fghlab-panel-hstatis .cowork-panel-head > .chat-info-wrap{ order:3; margin-left:auto; }
+#fghlab-panel-hstatis > p.hint{ margin:0 0 6px !important; }
+#fghlab-panel-hstatis .cowork-panel-head > .hstatis-tabbar{ overflow:visible !important; }
+@media (max-width:700px){ html.hn-conv #fghlab-panel-hstatis .cowork-panel-head > .hstatis-tabbar{ flex-wrap:wrap !important; overflow:visible !important; } #fghlab-panel-hstatis .cowork-panel-head > .hstatis-tabbar{ order:4; flex:1 1 100%; } #fghlab-panel-hstatis .cowork-panel-head > .hstatis-tabbar .btn{ flex:1 1 auto; } }
+#fghlab-panel-hstatis .chat-shell{ height:clamp(440px, calc(100dvh - 150px), 1000px) !important; }
+@media (max-width:860px){ #fghlab-panel-hstatis .chat-shell{ height:clamp(380px, calc(100dvh - 180px), 900px) !important; } }
+#fghlab-panel-hstatis #hstatis-log{ min-height:0; }
+#hnfs-holder{ display:none !important; }
+.hn-mn .hnfs-row{ padding:6px 12px; }
+.hn-mn .hnfs-row .hn-fcur{ display:flex !important; flex-wrap:wrap; align-items:center; gap:6px 8px; margin:0 !important; padding:0 !important; border:0 !important; background:none !important; width:auto; }
+.hn-mn .hnfs-row .hn-fcur > *{ order:0 !important; }
+.hn-mn .hnfs-row .hn-fcur > label:first-child{ flex:1 1 100%; }
+.hn-mn .hnfs-row .hn-fcur select{ flex:1 1 150px; min-width:0; max-width:100%; }
+.hn-mn .hnfs-row label.hint{ display:flex; align-items:flex-start; gap:8px; margin:0 !important; font-size:12.5px; line-height:1.35; white-space:normal; }
+.hn-mn .hnfs-row label.hint input{ margin-top:3px; flex:none; }
+</style>
+<script id="hnfs-js">
+(function(){
+  'use strict';
+  var holder = null, hostPanel = null;
+  function panel(){ return document.getElementById('fghlab-panel-hstatis'); }
+  function ensure(){
+    var p = panel(); if(!p) return;
+    hostPanel = p;
+    if(!holder || !p.contains(holder)){ holder = document.createElement('div'); holder.id = 'hnfs-holder'; holder.hidden = true; p.appendChild(holder); }
+    var head = p.querySelector('.cowork-panel-head'), tabs = p.querySelector('.hstatis-tabbar');
+    if(head && tabs && tabs.parentNode !== head){ var info = head.querySelector('.chat-info-wrap'); head.insertBefore(tabs, info || null); }
+    /* devise + niveau expert + : rangés (hors de la vue) tant que le menu ⋯ n'est pas ouvert */
+    var bar = p.querySelector('.hn-fcur'); if(bar && !bar.closest('.hn-mn') && bar.parentNode !== holder) holder.appendChild(bar);
+    var ex = document.getElementById('hstatis-expertplus'), lab = ex && ex.closest('label'); if(lab && !lab.closest('.hn-mn') && lab.parentNode !== holder) holder.appendChild(lab);
+  }
+  var tm = null; function later(){ clearTimeout(tm); tm = setTimeout(ensure, 200); }
+  try{ new MutationObserver(later).observe(document.body, { childList:true, subtree:true }); }catch(e){}
+  setInterval(ensure, 1500); setTimeout(ensure, 500);
+  /* appelés par le menu ⋯ */
+  window.__hnfsAttach = function(menu){
+    ensure(); if(!holder) return;
+    var exl = document.getElementById('hstatis-expertplus'); exl = exl && exl.closest('label');
+    [holder.querySelector('.hn-fcur'), exl && holder.contains(exl) ? exl : null].forEach(function(el){
+      if(!el) return; var row = document.createElement('div'); row.className = 'hnfs-row'; row.appendChild(el); menu.appendChild(row);
+    });
+  };
+  window.__hnfsRestore = function(){
+    if(!holder) return; var p = hostPanel || panel(); if(!p) return;
+    document.querySelectorAll('.hn-mn .hnfs-row').forEach(function(r){ while(r.firstChild) holder.appendChild(r.firstChild); });
+  };
 })();
 </script>
 <style id="hnct-css">
