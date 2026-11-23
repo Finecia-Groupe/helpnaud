@@ -48892,6 +48892,55 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     (Array.isArray(d.elements) ? d.elements : []).slice(0, 60).forEach(function(e, i){ if(e && typeof e === 'object' && typeof e.type === 'string'){ e.id = e.type === 'text' ? String(e.id || ('t' + (i + 1))).replace(/[^\w-]/g, '').slice(0, 20) : e.id; spec.elements.push(e); } });
     return spec;
   }
+  /* ---------- Ajustement des textes (Design et Templates Creators, aperçu ET exports : tout passe par renderDesign) ---------- */
+  var mctx = null;
+  function tw(str, size, wt, fam){   /* largeur réelle du texte (canvas) ; repli sur une estimation si indisponible */
+    try{ if(!mctx) mctx = document.createElement('canvas').getContext('2d'); mctx.font = wt + ' ' + size + 'px ' + fam; var w = mctx.measureText(str).width; if(w > 0) return w; }catch(e){}
+    return String(str).length * size * (wt >= 700 ? 0.6 : 0.54);
+  }
+  function wrapM(text, size, wt, fam, maxW){
+    var out = [];
+    String(text).split(/\n/).forEach(function(par){
+      if(!maxW){ out.push(par); return; }
+      var line = '';
+      par.split(/\s+/).forEach(function(w){ var t = line ? line + ' ' + w : w; if(line && tw(t, size, wt, fam) > maxW){ out.push(line); line = w; } else line = t; });
+      out.push(line);
+    });
+    return out;
+  }
+  function container(spec, tx, ty, size, an){   /* plus petit rectangle (cartouche, bouton, bandeau, carte) qui contient le point d'ancrage du texte */
+    var W = spec.width, H = spec.height, best = null;
+    spec.elements.forEach(function(r){ if(r.type !== 'rect') return;
+      var rx = num(r.x, 0, -3000, 6000), ry = num(r.y, 0, -3000, 6000), rw = num(r.w, 10, 0, 6000), rh = num(r.h, 10, 0, 6000);
+      if(rw >= W * 0.97 && rh >= H * 0.97) return;   /* fond plein écran : pas un cartouche */
+      if(rw < size * 1.2 || rh < size * 0.8) return;
+      if(tx < rx - 2 || tx > rx + rw + 2 || ty < ry - size * 0.1 || ty > ry + rh + size * 0.6) return;
+      if(!best || rw * rh < best.w * best.h) best = { x:rx, y:ry, w:rw, h:rh };
+    });
+    return best;
+  }
+  function fitText(spec, e, txt, size0, wt, lh, an, tx, ty, fam){
+    var W = spec.width, mw0 = e.maxWidth ? num(e.maxWidth, 0, 20, 6000) : 0, size = size0, box = container(spec, tx, ty, size0, an);
+    var margin = Math.max(24, W * 0.04), canvasW = an === 'middle' ? 2 * Math.min(tx, W - tx) - 2 * margin : (an === 'end' ? tx - margin : W - tx - margin);
+    var availW = canvasW > 40 ? canvasW : W * 0.9, bottom = null;
+    if(box){
+      var pad = Math.max(size * 0.45, box.w * 0.05), inner = box.w - 2 * pad;
+      var bw = an === 'middle' ? Math.min(2 * (tx - box.x) - 2 * pad, 2 * (box.x + box.w - tx) - 2 * pad, inner) : (an === 'end' ? tx - box.x - pad : box.x + box.w - pad - tx);
+      availW = Math.min(availW, Math.max(bw, 20)); bottom = box.y + box.h - Math.max(box.h * 0.06, 4);
+    }
+    var cap = mw0 ? Math.min(mw0, availW) : availW, single = txt.length <= 48 && txt.indexOf('\n') < 0, lines, g = 0, minS = Math.max(10, size0 * 0.4);
+    /* Dans un cartouche, un texte court garde UNE ligne (on réduit la taille plutôt que de passer à la ligne). */
+    if(box && single){ var need = tw(txt, size, wt, fam); if(need > availW) size = Math.max(minS, Math.floor(size * availW / need * 0.99)); lines = [txt]; }
+    else lines = wrapM(txt, size, wt, fam, cap);
+    /* Contrôle final : aucune ligne plus large que la place disponible, et le bloc ne dépasse pas le bas du cartouche. */
+    while(g++ < 60){
+      var wide = lines.some(function(l){ return tw(l, size, wt, fam) > availW + 0.5; }), low = bottom !== null && ty >= box.y && (ty + (lines.length - 1) * size * lh + size * 0.25) > bottom;
+      if(!(wide || low) || size <= minS) break;
+      size = Math.max(minS, Math.floor(size * 0.93));
+      lines = (box && single) ? [txt] : wrapM(txt, size, wt, fam, mw0 ? Math.min(mw0, availW) : availW);
+    }
+    return { size:size, lines:lines };
+  }
   function renderDesign(spec, ctx){
     var W = spec.width, H = spec.height, defs = '', bg = '#ffffff';
     if(Array.isArray(spec.background) && spec.background.length >= 2){ defs += '<linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col(spec.background[0], '#fff') + '"/><stop offset="1" stop-color="' + col(spec.background[1], '#eee') + '"/></linearGradient>'; bg = 'url(#hg)'; }
@@ -48908,16 +48957,8 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
         body += '<image href="' + ctx.photo + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#hc' + i + ')"/>'; }
       else if(t === 'text'){
         var txt = ctx.texts && ctx.texts[e.id] != null ? ctx.texts[e.id] : String(e.text || ''), size = num(e.size, 48, 8, 400), wt = num(e.weight, 400, 100, 900), lh = num(e.lineHeight, 1.2, 0.8, 2.5), an = /^(start|middle|end)$/.test(e.anchor) ? e.anchor : 'start';
-        var tx = num(e.x, 0, -3000, 6000), ty = num(e.y, 0, -3000, 6000), mw = e.maxWidth ? num(e.maxWidth, 0, 20, 6000) : 0;
-        /* Texte dans un cartouche (bouton, pastille, bandeau d'une ligne) : on garde UNE ligne et on réduit la taille pour qu'il reste dedans,
-           au lieu de passer à la ligne et de déborder (ex. « 15 décembre 2026 » dans une pastille). Se recalcule à chaque modification de texte. */
-        if(txt.length <= 48 && txt.indexOf('\n') < 0){
-          var best = null, cwf = wt >= 700 ? 0.6 : 0.54;
-          spec.elements.forEach(function(r){ if(r.type !== 'rect') return; var rx = num(r.x, 0, -3000, 6000), ry = num(r.y, 0, -3000, 6000), rw = num(r.w, 10, 0, 6000), rh = num(r.h, 10, 0, 6000);
-            if(rw < W * 0.97 && rh >= size * 0.8 && rh <= size * 3.2 && tx >= rx - 2 && tx <= rx + rw + 2 && ty >= ry && ty <= ry + rh + size * 0.45 && (!best || rw * rh < best.w * best.h)) best = { w:rw, h:rh }; });
-          if(best){ var room = best.w * 0.88, need = txt.length * size * cwf; if(need > room) size = Math.max(10, Math.floor(size * room / need)); mw = 0; }
-        }
-        var lines = wrap(txt, size, wt, mw);
+        var tx = num(e.x, 0, -3000, 6000), ty = num(e.y, 0, -3000, 6000), fit = fitText(spec, e, txt, size, wt, lh, an, tx, ty, FONTS[e.font] || FONTS.sans);
+        size = fit.size; var lines = fit.lines;
         body += '<text x="' + tx + '" y="' + ty + '" font-size="' + size + '" font-weight="' + wt + '" fill="' + col(e.fill, '#111111') + '" text-anchor="' + an + '" font-family="' + (FONTS[e.font] || FONTS.sans).replace(/"/g, "'") + '">' + lines.map(function(l, k){ return '<tspan x="' + tx + '" dy="' + (k ? size * lh : 0) + '">' + esc(l) + '</tspan>'; }).join('') + '</text>';
       }
     });
