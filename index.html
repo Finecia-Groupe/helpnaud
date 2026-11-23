@@ -49271,6 +49271,12 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
 .hnct-dot{ position:absolute; z-index:3; top:-2px; right:-2px; width:10px; height:10px; box-sizing:border-box; border-radius:50%; background:var(--hn-on); border:2px solid var(--surface,#fff); display:none; }
 .hnct-wrap.blk .hnct-dot{ right:auto; left:34px; top:8px; }
 body.hnct-on .hnct-dot{ display:block; }
+@media (max-width:860px){
+  .hnct-wrap.blk{ display:none !important; }
+  .sidebar .brand .tag{ display:none !important; }
+  .main{ padding-top:calc(var(--hn-top, 60px) + 6px) !important; }
+  .view, .cowork-panel, .hn-panel, [id^="fghlab-panel-"]{ scroll-margin-top:calc(var(--hn-top, 60px) + 10px); }
+}
 #hnct-dlg{ position:fixed; inset:0; z-index:99995; background:rgba(16,24,40,.5); display:flex; align-items:center; justify-content:center; padding:14px; }
 #hnct-dlg .hnct-box{ width:min(620px,100%); max-height:min(760px,94vh); background:var(--surface,#fff); color:var(--ink,#16304A); border-radius:18px; box-shadow:0 24px 70px rgba(16,24,40,.35); display:flex; flex-direction:column; overflow:hidden; }
 #hnct-dlg header{ display:flex; align-items:center; gap:10px; padding:14px 16px 8px; }
@@ -49335,6 +49341,15 @@ body.hnct-on .hnct-dot{ display:block; }
   var tm = null; function later(){ clearTimeout(tm); tm = setTimeout(decorate, 250); }
   try{ new MutationObserver(later).observe(document.body, { childList:true, subtree:true }); }catch(e){}
   setTimeout(decorate, 600);
+  /* Barre du haut mobile : le contenu commence toujours sous elle (aucun outil masque) */
+  function topFix(){
+    var sb = document.querySelector('aside.sidebar'); if(!sb) return; var cs = getComputedStyle(sb), h = 0;
+    if(cs.position === 'fixed' && cs.display !== 'none') h = Math.round(sb.getBoundingClientRect().bottom);
+    document.documentElement.style.setProperty('--hn-top', (h > 0 ? h : 60) + 'px');
+  }
+  window.addEventListener('resize', topFix); window.addEventListener('orientationchange', topFix);
+  try{ var sbx = document.querySelector('aside.sidebar'); if(sbx && window.ResizeObserver) new ResizeObserver(topFix).observe(sbx); }catch(e){}
+  setTimeout(topFix, 300); setTimeout(topFix, 1500);
   document.addEventListener('click', function(e){
     var b = e.target.closest && e.target.closest('[data-hnct="open"]'); if(!b) return;
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); openDlg();
