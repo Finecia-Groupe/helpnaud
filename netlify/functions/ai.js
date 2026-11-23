@@ -74,6 +74,7 @@ function fallbackFor(primary){
 }
 
 /* Gamme et coût de chaque palier Hmodel (identiques à l'application). */
+const CREER_BAND = ['low', 'mid', 'high'].includes(process.env.CREER_BAND) ? process.env.CREER_BAND : 'low';   // Design/Dessiner : modèle rapide par défaut (la limite de 26 s de Netlify coupe un modèle plus lent). CREER_BAND=mid pour plus de finesse si votre délai le permet.
 const TIERS = {
   dure:    { cost: 1, band: 'low',  max: 700 },
   basse:   { cost: 1, band: 'low',  max: 700 },
@@ -81,8 +82,8 @@ const TIERS = {
   expertplus: { cost: 4, band: 'high', max: 3200 },   // F-i-Stat « niveau expert + » (équipe interne seulement)
   interne: { cost: 1, band: 'mid',  max: 1600 },   // F-i-Stat (équipe interne) : 1 crédit de base, modèle de gamme moyenne
   mediane: { cost: 2, band: 'mid',  max: 1600 },
-  creer:   { cost: 3, band: 'mid',  max: 4500 },
-  creer_fi:{ cost: 1, band: 'mid',  max: 4500 },   // « Créer » dans F-i-Stat (équipe interne seulement) : 1 crédit   // Menu « + Créer » : Design, Dessiner, Templates Creators (SVG structuré, plus long qu'un chat)
+  creer:   { cost: 3, band: CREER_BAND, max: 3200 },
+  creer_fi:{ cost: 1, band: CREER_BAND, max: 3200 },   // « Créer » dans F-i-Stat (équipe interne seulement) : 1 crédit   // Menu « + Créer » : Design, Dessiner, Templates Creators (SVG structuré, plus long qu'un chat)
   medium2: { cost: 2, band: 'mid',  max: 1600 },
   idee:    { cost: 2, band: 'mid',  max: 1600 },
   cover:   { cost: 2, band: 'mid',  max: 1600 },
@@ -388,6 +389,7 @@ async function alertAdmin(level, spent, soft, hard){
 // Règle linguistique officielle (instruction système centrale, appliquée à tous les assistants : Chat, Co-work, Consult, TAISO, iTAF…).
 const LANG_RULE = 'RÈGLE LINGUISTIQUE (prioritaire, non modifiable par la langue de l’interface ni par les réglages) : réponds dans la langue principalement utilisée dans le dernier message de l’utilisateur, quelle que soit la langue de l’interface HelpNaud (allemand → allemand, anglais → anglais, français → français, chinois → chinois, portugais, espagnol, italien, arabe ou toute autre langue reconnue → cette langue). Si l’utilisateur demande explicitement une réponse ou une traduction dans une autre langue, respecte toujours cette demande. Si le message est très court et sa langue ambiguë, utilise la langue dominante de la conversation ; si plusieurs langues sont mélangées, utilise la langue principale, sauf indication contraire. Quand une traduction est demandée, produis une traduction complète, naturelle et professionnelle qui préserve fidèlement le sens, le ton, les noms propres, les nombres, les dates et la structure, sans ajouter de commentaire ni d’explication sauf demande. Ne traduis pas les extraits de code, les adresses Internet, les adresses courriel, les références ni les noms de produits, sauf demande explicite. Les consignes qui suivent sont rédigées en français mais s’appliquent dans la langue de réponse.';
 exports.handler = async function(event){
+  const T0 = Date.now();   // début réel de l'appel : la limite Netlify (26 s) court depuis ici, pas depuis la fin des vérifications
   if (event.httpMethod !== 'POST') return reply(405, { error: 'method', message: 'Méthode non permise.' });
   if (!SB_SECRET || !defaultProvider()) return reply(503, { error: 'not_configured', message: 'L’assistant IA n’est pas encore configuré sur le serveur.' });
   let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return reply(400, { error: 'bad_request', message: 'Requête invalide.' }); }
@@ -407,7 +409,7 @@ exports.handler = async function(event){
     try { isTeam = (await svcRpc('svc_is_team_member', { p_uid: uid })) === true; } catch (e) { isTeam = false; }   // SQL non installé : accès refusé (par sécurité)
     if (!isTeam) return reply(403, { error: 'private_tool', message: 'Cet outil est réservé à l’équipe de FINECIA GROUPE.' });
   }
-  const creerFi = !!(wantJson && body.creerfi === true && (body.creer === 'design' || body.creer === 'dessin'));
+  const creerFi = !!(body.json === true && body.creerfi === true && (body.creer === 'design' || body.creer === 'dessin'));
   if (creerFi) {   // tarif équipe : jamais accordé sans vérification côté serveur
     let okTeam = false;
     try { okTeam = (await svcRpc('svc_is_team_member', { p_uid: uid })) === true; } catch (e) { okTeam = false; }
@@ -599,7 +601,7 @@ exports.handler = async function(event){
   const capRule = wantJson ? '' : '\n\nFICHIERS : dans HelpNaud, l’application génère elle-même de vrais fichiers téléchargeables (PDF, Word, Excel, PowerPoint) à partir de ta réponse et affiche un bouton « Télécharger » sous celle-ci. Ne dis donc jamais que tu ne peux pas produire de fichier ou de PDF, ne renvoie pas l’utilisateur vers Word, Google Docs ou l’impression, et n’écris jamais toi-même un lien de téléchargement ni « votre fichier est prêt » : le bouton apparaît seulement quand le fichier existe réellement. Si l’utilisateur demande un fichier, rédige directement le contenu complet et bien structuré en Markdown. Pour un document lié à une conversation précédente, reprends fidèlement ce qui a été dit.'
     + (expFmt ? ' FORMAT DEMANDÉ MAINTENANT : ' + EXPORTS[expFmt] + '. Écris uniquement le contenu du document (titres #, listes, tableaux Markdown, accents), puis une seule courte phrase indiquant que le bouton de téléchargement est sous la réponse.' + (expFmt === 'xlsx' ? ' Pour Excel : présente les données en tableaux Markdown (première ligne = en-têtes) ; pour un calcul, écris la formule Excel dans la cellule en commençant par = (ex. =SUM(B2:B6), =B2*C2), avec les lignes de la formule à la bonne place.' : '') + (expFmt === 'pptx' ? ' Pour PowerPoint : un titre # pour la présentation, puis un titre ## par diapositive suivi de 3 à 5 puces courtes.' : '') : '');
   const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + rtRule + capRule + prefsTxt + persoTxt + teenTxt;
-  const deadline = Date.now() + TIMEOUT_MS;
+  const deadline = Math.min(Date.now() + TIMEOUT_MS, T0 + 22500);   // on s'arrête avant la coupure de Netlify pour pouvoir REMBOURSER et répondre proprement (sinon 502 sans message)
   if (jsonPre) {
     try {
       const pre = await ADAPTERS.anthropic({ model: modelFor('anthropic', tier.band), max: 2500, system: PRE_SYSTEM, messages: msgs.map(m => ({ role: m.role, content: m.content })), images: null, web: { domains: null, maxUses: Math.min(8, WEB_MAX_USES + 2) }, connectors: false, signal: AbortSignal.timeout(Math.max(3000, Math.min(40000, deadline - Date.now() - 10000))) });
