@@ -47029,7 +47029,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
         var tr = window.__hnTrrac;
         h += '<div class="hnp-row"><div class="hnp-l"><b>Recharge automatique</b><small>Achète automatiquement des crédits quand votre solde passe sous le minimum que vous fixez.</small></div>' + (tr && tr.rate != null ? '<span class="hnp-pill">Jusqu’à ' + esc(tr.rate) + ' % de réduction</span>' : '') + '<label class="hnp-sw" title="Réservé au propriétaire de HelpNaud"><input type="checkbox" disabled><i></i></label></div>';
         h += '<div class="hnp-row"><div class="hnp-l"><small>Le taux de réduction est fixé par HelpNaud et ne peut pas être modifié par les utilisateurs. La recharge automatique se règle dans « Ajouter des crédits ».</small></div><button type="button" class="btn" data-hnp="more">Configurer</button></div>';
-        h += '<h4>Historique d’utilisation des crédits</h4><p class="hint">L’historique détaillé sera affiché ici prochainement.</p>';
+        h += historyHtml();
       }
     } else if(k === 'notif'){
       var tipsOff = false; try{ tipsOff = localStorage.getItem('helpnaud_tips_off') === '1'; }catch(e){}
@@ -47192,7 +47192,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   var stat = null, statLoading = false, stRange = 7, stOff = 0, stBy = 'feature', msgRange = 7, msgBy = 'model';
   var PAL = ['#0a6fd0','#ee8a2e','#5fc771','#8a5fd0','#d05f8a','#2d9c93'];
   /* ---- Coût quotidien en jetons (barres empilées par modèle, vue graphique / tableau) ---- */
-  var tkRange = 30, tkView = 'chart', tkUnit = 'tok';
+  var tkRange = 30, tkView = 'chart', tkUnit = 'tok', histN = 20;
   /* Estimation en $US : tarifs publics par million de jetons (entrée/sortie) — à vérifier sur la page de tarification Anthropic. Réservé au propriétaire. */
   var TK_PRICES = [ [/haiku/i, 1, 5], [/sonnet/i, 3, 15], [/opus/i, 5, 25] ];
   function tkRow(r){ var inT = +r.input_tokens || 0, outT = +r.output_tokens || 0, nm = String(r.model_id || r.model || 'Autres').replace(/^[^:]*:/, ''), usd = 0, known = false;
@@ -47230,11 +47230,11 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     return h;
   }
 
-  var FEAT = { assistant:'Chat', cowork:'Co-work', consult:'Consult', ifhelp:'Code', hweb:'H-Web', fistat:'F-i-Stat', taiso:'TAISO', itaf:'iTAF', dashboard:'Tableau de bord', report:'Rapport' };
+  var FEAT = { assistant:'Chat', cowork:'Co-work', consult:'Consult', ifhelp:'Code', hweb:'H-Web', fistat:'F-i-Stat', creer:'Créer', taiso:'TAISO', itaf:'iTAF', dashboard:'Tableau de bord', report:'Rapport' };
   function loadStats(){ if(statLoading) return; statLoading = true; var A = window.__hnAuth; Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){
       if(!tk || !A || !A.url) throw new Error('auth');
       return fetch(A.url + '/rest/v1/rpc/my_usage_events', { method:'POST', headers:{ 'Content-Type':'application/json', apikey:A.key, Authorization:'Bearer ' + tk }, body:JSON.stringify({ p_days:60 }) }).then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); });
-    }).then(function(rows){ stat = { rows:rows || [] }; }).catch(function(){ stat = { error:'Statistiques indisponibles pour le moment (service non installé ou hors ligne).' }; }).then(function(){ statLoading = false; if(root && root.classList.contains('on') && cur === 'usage' && usageTab === 'stats') render(); }); }
+    }).then(function(rows){ stat = { rows:rows || [] }; }).catch(function(){ stat = { error:'Statistiques indisponibles pour le moment (service non installé ou hors ligne).' }; }).then(function(){ statLoading = false; if(root && root.classList.contains('on') && cur === 'usage') render(); }); }
   function dkey(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function dayList(range, off){ var out = [], e = new Date(); e.setHours(12, 0, 0, 0); e.setDate(e.getDate() - off * range); for(var i = range - 1; i >= 0; i--){ var d = new Date(e); d.setDate(e.getDate() - i); out.push(d); } return out; }
   function gname(r, by){ return by === 'feature' ? (FEAT[r.feature] || 'Autres') : by === 'model' ? r.model : r.surface; }
@@ -47253,6 +47253,23 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     svg += '</svg>';
     var leg = kind === 'line' ? '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px">' + names.map(function(n, ni){ return '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + PAL[ni % PAL.length] + ';margin-right:6px"></i>' + esc(n) + '</span>'; }).join('') + '</div>' : '<div style="display:flex;flex-wrap:wrap;gap:14px 22px;margin-top:8px">' + names.map(function(n, ni){ return '<div style="border-left:4px solid ' + PAL[ni % PAL.length] + ';padding-left:8px"><small>' + esc(n) + '</small><div style="font-size:20px;font-weight:700">' + (tot ? Math.round(keys[n] / tot * 100) : 0) + ' %</div></div>'; }).join('') + '</div>';
     return { svg:svg, leg:leg, total:tot, empty:!tot };
+  }
+  function historyHtml(){
+    var A = '<h4>Historique d’utilisation des crédits</h4>';
+    if(stat === null) return A + '<p class="hint">Chargement…</p>';
+    if(stat.error) return A + '<p class="hint">' + esc(stat.error) + '</p>';
+    var rows = (stat.rows || []).slice().sort(function(a, b){ return new Date(b.created_at) - new Date(a.created_at); });
+    if(!rows.length) return A + '<p class="hint">Aucune utilisation enregistrée pour le moment. Chaque opération (message, image, design…) apparaîtra ici avec ses crédits, à partir de maintenant.</p>';
+    var tot = rows.reduce(function(a, r){ return a + (+r.cost || 0); }, 0);
+    var h = A + '<p class="hint">' + rows.length + ' opération' + (rows.length > 1 ? 's' : '') + ' sur 60 jours · ' + tot + ' crédit' + (tot > 1 ? 's' : '') + ' au total. Seules la date, la fonction et le coût sont conservés, jamais le contenu.</p>';
+    h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;opacity:.7"><th style="padding:6px 8px 6px 0">Date</th><th style="padding:6px 8px">Fonction</th><th style="padding:6px 8px">Détail</th><th style="padding:6px 0 6px 8px;text-align:right">Crédits</th></tr></thead><tbody>';
+    rows.slice(0, histN).forEach(function(r){
+      var d = new Date(r.created_at), dt = d.toLocaleDateString('fr-CA', { day:'numeric', month:'short' }) + ' ' + d.toLocaleTimeString('fr-CA', { hour:'2-digit', minute:'2-digit' });
+      h += '<tr style="border-top:1px solid var(--line)"><td style="padding:7px 8px 7px 0;white-space:nowrap">' + esc(dt) + '</td><td style="padding:7px 8px">' + esc(FEAT[r.feature] || 'Autres') + '</td><td style="padding:7px 8px">' + esc(r.model || '') + '</td><td style="padding:7px 0 7px 8px;text-align:right;font-weight:600">−' + (+r.cost || 0) + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    if(rows.length > histN) h += '<div class="hnp-tabs"><button type="button" data-hnp-st="histmore:20">Voir plus</button></div>';
+    return h;
   }
   function statsHtml(li){
     if(!li) return '<p class="hint">Connectez-vous pour voir vos statistiques.</p>';
@@ -47387,7 +47404,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     root.querySelector('.hnp-nav').innerHTML = SECS.map(function(s){ return '<button type="button" data-hnp-sec="' + s[0] + '" class="' + (s[0] === cur && root.getAttribute('data-m') !== 'list' ? 'on' : (s[0] === cur && window.innerWidth > 860 ? 'on' : '')) + '"><span>' + s[1] + '</span><span>' + s[2] + '</span><span class="hnp-chev">›</span></button>'; }).join('');
     if(cur === 'factu' && billing === null && !loadingB){ loadingB = true; loadBilling(); setTimeout(function(){ loadingB = false; }, 8000); }
     if((cur === 'parental' || cur === 'confiance') && fam === null && signedIn()) loadFam();
-    if(cur === 'usage' && usageTab === 'stats' && stat === null && signedIn()) loadStats();
+    if(cur === 'usage' && stat === null && signedIn()) loadStats();
     root.querySelector('.hnp-pane').innerHTML = secHtml(cur);
     if(root.querySelector('[data-rot]')) startRot();
     try{ var ce = $('hnp-country'), re = $('hnp-region'); if(ce && re && window.__hnGeo){ window.__hnGeo.bind(ce, re); } }catch(e){}
@@ -47407,6 +47424,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(!root) build();
     try{ if(window.__hnDrawer && window.__hnDrawer.isOpen()) window.__hnDrawer.close(); }catch(e){}
     cur = sec || cur || 'profil';
+    if(cur === 'usage' && !statLoading) stat = null;   // historique à jour à chaque ouverture
     billing = null; loadingB = false; fam = null; stat = null; trracLoad(); pePull(); if(signedIn()){ loadSess(); mySub().then(function(id){ if(id){ acctId = id; if(root && root.classList.contains('on') && cur === 'compte') render(); } }); }
     root.setAttribute('data-m', window.innerWidth > 860 ? 'desk' : (sec ? 'det' : 'list'));
     render(); root.classList.add('on');
@@ -47421,7 +47439,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(t.hasAttribute('data-hnp-cp')){ if(acctId && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(acctId).then(function(){ toast('Identifiant copié.'); }); return; }
     if(t.hasAttribute('data-hnp-act')){ var ac = t.getAttribute('data-hnp-act'); if(ac === 'export') exportData(); else if(ac === 'passkey') toast('Les clés d’accès arrivent bientôt.'); else if(ac === 'lib'){ closePanel(); var lb = document.querySelector('.nav-btn[data-view="library"]'); if(lb) lb.click(); } else if(ac === 'fb'){ closePanel(); var fb = document.getElementById('btn-feedback'); if(fb) fb.click(); } return; }
     if(t.hasAttribute('data-hnp-pe')){ peAct(t); return; }
-    if(t.hasAttribute('data-hnp-st')){ var sp = t.getAttribute('data-hnp-st').split(':'), sv = +sp[1]; if(sp[0] === 'range'){ stRange = sv; stOff = 0; } else if(sp[0] === 'off') stOff = Math.max(0, stOff + sv); else if(sp[0] === 'mrange') msgRange = sv; else if(sp[0] === 'tkrange') tkRange = sv; else if(sp[0] === 'tkview') tkView = sp[1]; else if(sp[0] === 'tkunit') tkUnit = sp[1]; else if(sp[0] === 'mby') msgBy = sp[1]; render(); return; }
+    if(t.hasAttribute('data-hnp-st')){ var sp = t.getAttribute('data-hnp-st').split(':'), sv = +sp[1]; if(sp[0] === 'histmore') histN += sv; else if(sp[0] === 'range'){ stRange = sv; stOff = 0; } else if(sp[0] === 'off') stOff = Math.max(0, stOff + sv); else if(sp[0] === 'mrange') msgRange = sv; else if(sp[0] === 'tkrange') tkRange = sv; else if(sp[0] === 'tkview') tkView = sp[1]; else if(sp[0] === 'tkunit') tkUnit = sp[1]; else if(sp[0] === 'mby') msgBy = sp[1]; render(); return; }
     if(t.hasAttribute('data-hnp-fa')){ famAct(t); return; }
     if(t.hasAttribute('data-hnp-tab')){ usageTab = t.getAttribute('data-hnp-tab'); render(); return; }
     if(t.hasAttribute('data-hnp-fam')){ famMode = t.getAttribute('data-hnp-fam'); render(); return; }
