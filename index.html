@@ -45679,7 +45679,14 @@ html.hn-private-tab:not(.hn-private-ready) body{ visibility:hidden; }
     /* retour depuis la navigation privée : revenir à l'écran où l'utilisateur était */
     (function(){ var m = /[?&]hnview=([a-z0-9_-]{1,40})/i.exec(location.search); if(!m) return; var v = m[1];
       try{ history.replaceState(null, '', location.pathname + location.hash); }catch(e){}
-      var n = 0, iv = setInterval(function(){ var nav = document.querySelector('[data-view="' + v + '"]'); if(nav){ clearInterval(iv); nav.click(); } else if(++n > 40) clearInterval(iv); }, 300); })();
+      /* l'application peut rouvrir sa vue par défaut (Assistant) pendant le chargement : on réapplique tant que l'utilisateur n'a rien touché */
+      var n = 0, touched = false, stop = function(){ touched = true; };
+      ['pointerdown', 'keydown', 'touchstart'].forEach(function(ev){ window.addEventListener(ev, stop, { once:true, capture:true, passive:true }); });
+      var iv = setInterval(function(){
+        if(touched || ++n > 60){ clearInterval(iv); return; }
+        var nav = document.querySelector('[data-view="' + v + '"]'); if(!nav) return;
+        if(currentView() !== v) nav.click();
+      }, 400); })();
     document.addEventListener('click', function(e){
       var b = e.target && e.target.closest && e.target.closest('.incog-toggle'); if(!b) return;
       e.preventDefault(); e.stopImmediatePropagation();
