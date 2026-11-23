@@ -3,7 +3,7 @@
  * Génère ou transforme une image avec un MOTEUR D'IMAGES (Claude ne génère pas d'images : il faut un fournisseur d'images).
  * Fournisseur pris en charge ici : OpenAI Images (gpt-image-1). La clé reste dans les variables Netlify, jamais dans Git :
  *   IMAGE_API_KEY      (obligatoire)  clé du fournisseur d'images
- *   IMAGE_MODEL        (optionnel)    défaut « gpt-image-1 »
+ *   IMAGE_MODEL        (optionnel)    défaut « gpt-image-2.5-flare » (ou gpt-image-2.5-sunburst) — doit exister dans votre compte OpenAI
  *   IMAGE_QUALITY      (optionnel)    low | medium | high — défaut « medium »
  *   IMAGE_CREDITS      (optionnel)    crédits HelpNaud débités par image — défaut 15 (à définir selon votre tarification)
  *   IMAGE_CREDITS_TEAM (optionnel)    crédits débités pour l'équipe interne — défaut 5
@@ -15,7 +15,7 @@ const SB_URL = (process.env.SUPABASE_URL || 'https://elzdsyfxpeqnrhlxbgbk.supaba
 const SB_PUB = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_5ZLQ6FIGJMATE6YslnS_Dw_D9x8TL7P';
 const SB_SECRET = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const KEY = process.env.IMAGE_API_KEY || '';
-const MODEL = process.env.IMAGE_MODEL || 'gpt-image-1';
+const MODEL = process.env.IMAGE_MODEL || 'gpt-image-2.5-flare';   // modèles actuels d'OpenAI (docs) : gpt-image-2.5-flare (rapide) ou gpt-image-2.5-sunburst (précision d'édition)
 const QUALITY = ['low', 'medium', 'high'].includes(process.env.IMAGE_QUALITY) ? process.env.IMAGE_QUALITY : 'medium';
 const CREDITS = Math.max(1, parseInt(process.env.IMAGE_CREDITS || '15', 10) || 15);
 const CREDITS_TEAM = Math.max(1, parseInt(process.env.IMAGE_CREDITS_TEAM || '5', 10) || 5);   // tarif équipe (F-i-Stat)
@@ -92,17 +92,28 @@ exports.handler = async function(event){
 
   try {
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 24000);
-    let res;
-    try {
+    const call = async (minimal) => {
       if (src) {
-        const fd = new FormData(); fd.append('model', MODEL); fd.append('prompt', prompt); fd.append('size', size); fd.append('quality', QUALITY); fd.append('output_format', 'jpeg'); fd.append('output_compression', '85');
+        const fd = new FormData(); fd.append('model', MODEL); fd.append('prompt', prompt); fd.append('size', size);
+        if (!minimal) { fd.append('quality', QUALITY); fd.append('output_format', 'jpeg'); fd.append('output_compression', '85'); }
         fd.append('image', src, 'image.' + (src.type.split('/')[1] || 'png'));
-        res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + KEY }, body: fd, signal: ctl.signal });
-      } else {
-        res = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: MODEL, prompt, size, quality: QUALITY, n: 1, output_format: 'jpeg', output_compression: 85 }), signal: ctl.signal });
+        return fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + KEY }, body: fd, signal: ctl.signal });
+      }
+      const payload = minimal ? { model: MODEL, prompt, size, n: 1 } : { model: MODEL, prompt, size, quality: QUALITY, n: 1, output_format: 'jpeg', output_compression: 85 };
+      return fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctl.signal });
+    };
+    let res, j0 = null;
+    try {
+      res = await call(false);
+      if (res.status === 400) {   // un modèle plus récent peut refuser certains réglages facultatifs : on réessaie avec le strict minimum
+        j0 = await res.clone().json().catch(() => null);
+        if (j0 && j0.error && /unknown|unsupported|not supported|invalid.*(quality|output|compression|size)/i.test(String(j0.error.message || '') + ' ' + String(j0.error.param || ''))) res = await call(true);
       }
     } finally { clearTimeout(timer); }
     const j = await res.json().catch(() => null);
+    if (res.ok && j && j.data && j.data[0] && !j.data[0].b64_json && j.data[0].url) {   // certains modèles renvoient une URL temporaire
+      try { const ir = await fetch(j.data[0].url); if (ir.ok) j.data[0].b64_json = Buffer.from(await ir.arrayBuffer()).toString('base64'); } catch (e) {}
+    }
     if (!res.ok || !j || !j.data || !j.data[0] || !j.data[0].b64_json) {
       const upstreamError = (j && j.error) || {};
       const code = String(upstreamError.code || upstreamError.type || 'invalid_response').replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 100);
@@ -117,7 +128,7 @@ exports.handler = async function(event){
       });
     }
     try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: COST_MICRO }); } catch (e) {}
-    return reply(200, { image: 'data:image/jpeg;base64,' + j.data[0].b64_json, credits: { used: r.used, limit: r.limit, plan: r.plan }, cost: COST });
+    return reply(200, { image: 'data:' + (/^iVBOR/.test(j.data[0].b64_json) ? 'image/png' : 'image/jpeg') + ';base64,' + j.data[0].b64_json, credits: { used: r.used, limit: r.limit, plan: r.plan }, cost: COST });
   } catch (e) {
     await refund();
     return reply(e && e.name === 'AbortError' ? 504 : 502, { error: e && e.name === 'AbortError' ? 'timeout' : 'upstream', message: e && e.name === 'AbortError' ? 'La génération a pris trop de temps. Vos crédits ont été remboursés ; réessayez.' : 'Le moteur d’images est momentanément indisponible. Vos crédits ont été remboursés.' });
