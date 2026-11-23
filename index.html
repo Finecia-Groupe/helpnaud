@@ -13684,6 +13684,7 @@
   }
   function aiServerToken(){ return aiServerSession().then(function(x){ return x ? x.token : null; }); }
   window.__hnAiToken = aiServerToken;
+  window.__hnSyncCredits = function(c){ try{ aiServerSync(c); }catch(e){} };
   window.__hnAiCall = function(i, o, j){ return aiServerCall(i, o, j); };
   function aiServerFile(file){
     return new Promise(function(resolve, reject){
@@ -13711,6 +13712,7 @@
   function aiServerCall(input, opts, wantJson){
     opts = opts || {};
     var tier = (typeof opts.modelTier === 'string' && getHmodelTierDef(opts.modelTier)) ? opts.modelTier : 'mediane';
+    if(wantJson && (opts.creer === 'design' || opts.creer === 'dessin')) tier = 'creer';
     var imgList = !opts.images ? [] : (Array.isArray(opts.images) ? opts.images : [opts.images]).filter(function(b){ return typeof Blob !== 'undefined' && b instanceof Blob; }).slice(0, 6);
     var imgP = Promise.all(imgList.map(aiServerFile));
     return Promise.all([aiServerToken(), imgP]).then(function(a){
@@ -13720,6 +13722,8 @@
       try{ var cv = document.querySelector('.view:not([hidden])'); if(cv && cv.id) body.tool = cv.id.replace(/^view-/, ''); }catch(e){}
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
       if(opts.expert) body.fistat = 'expertplus';
+      if(wantJson && (opts.creer === 'design' || opts.creer === 'dessin')) body.creer = opts.creer;
+      if(opts.creerFi === true && body.creer) body.creerfi = true;
       if(Array.isArray(input)) body.messages = input; else body.prompt = String(input == null ? '' : input);
       try{ var pf = JSON.parse(localStorage.getItem('helpnaud_prof_prefs') || 'null') || {}, pe = JSON.parse(localStorage.getItem('helpnaud_perso') || 'null') || {}, pr = { nick:String(pf.nick || '').slice(0, 40), how:String(pf.how || '').slice(0, 600) }; ['style','warm','enth','emoji','visual','heads'].forEach(function(k2){ if(pe[k2]) pr[k2] = String(pe[k2]).slice(0, 20); }); if(pe.mystyle) pr.mystyle = true; if(pf.role) pr.role = String(pf.role).slice(0, 60); if(pf.org) pr.org = String(pf.org).slice(0, 60); try{ var PL = window.__hnPerso; if(PL && PL.on('loc')){ var rg = document.getElementById('hp-region'), ct = document.getElementById('hp-country'), cy = document.getElementById('hp-city'), lc = [cy && cy.value, rg && rg.value, ct && ct.value].filter(Boolean).join(', '); if(lc) pr.loc = lc.slice(0, 80); } }catch(e6){} if(pe.hcode) pr.hcode = String(pe.hcode).slice(0, 500); try{ var PO = window.__hnPerso; if(PO){ if(PO.on('quick')) pr.quick = true; if(PO.on('hist')) pr.hist = true; if(PO.on('conn')) pr.conn = true; if(PO.on('lib') && window.__hnLibSearch){ var ms = Array.isArray(body.messages) ? body.messages : [{ role:'user', content:body.prompt }], lu = ''; for(var q = ms.length - 1; q >= 0; q--){ if(ms[q] && ms[q].role !== 'assistant'){ lu = String(ms[q].content || ''); break; } } var lb = window.__hnLibSearch(lu); if(lb.length) pr.lib = lb; } } }catch(e5){} if(pe.mem !== false && Array.isArray(pe.notes) && pe.notes.length) pr.mem = pe.notes.slice(0, 30).map(function(n){ return String(n.t || '').slice(0, 300); }); if(Object.keys(pr).some(function(k3){ return pr[k3]; })) body.prefs = pr; }catch(e){}
       try{ if(opts.researchView && window.__hnResearch){ var rp = window.__hnResearch.payload(opts.researchView); var wOff = false; try{ wOff = localStorage.getItem('helpnaud_web_auto') === '0'; }catch(e){} if(window.__hnWebOnce && !wantJson){ rp.web = true; window.__hnWebOnce = false; } if(wOff) rp.auto = false; if(rp.web || rp.public || rp.adapted !== 'general' || rp.deep || rp.multi || rp.mode || wOff) body.research = rp; } }catch(e){}
@@ -48761,6 +48765,340 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   window.addEventListener('storage', refresh);
   document.addEventListener('click', function(){ setTimeout(refresh, 250); }, true);
   document.addEventListener('DOMContentLoaded', refresh); setTimeout(refresh, 300);
+})();
+</script>
+<style id="hncr-css">
+#hncr{ position:fixed; inset:0; z-index:99990; background:rgba(15,23,42,.5); display:flex; align-items:center; justify-content:center; padding:12px; }
+#hncr[hidden]{ display:none; }
+#hncr .hncr-box{ background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:18px; width:min(980px,100%); max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,.28); overflow:hidden; }
+#hncr .hncr-head{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); }
+#hncr .hncr-head h2{ margin:0; font-size:17px; flex:1; }
+#hncr .hncr-x{ border:0; background:transparent; font-size:22px; cursor:pointer; color:var(--muted); padding:2px 8px; }
+#hncr .hncr-body{ padding:16px; overflow:auto; }
+#hncr .hncr-cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
+#hncr .hncr-card{ text-align:left; border:1px solid var(--line); border-radius:14px; padding:14px; background:var(--surface-2); color:var(--ink); cursor:pointer; font:inherit; }
+#hncr .hncr-card:hover{ border-color:var(--accent); }
+#hncr .hncr-card b{ display:block; font-size:15px; margin:4px 0; } #hncr .hncr-card span{ font-size:12.5px; color:var(--muted); display:block; }
+#hncr .hncr-ico{ font-size:26px; }
+#hncr .hncr-grid{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; } @media (max-width:760px){ #hncr .hncr-grid{ grid-template-columns:1fr; } }
+#hncr label.hncr-l{ display:block; font-size:12px; font-weight:600; color:var(--muted); margin:10px 0 4px; }
+#hncr textarea, #hncr input[type=text], #hncr select{ width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; }
+#hncr textarea{ min-height:86px; resize:vertical; }
+#hncr .hncr-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+#hncr .hncr-cost{ font-size:12.5px; color:var(--muted); margin:10px 0 6px; padding:8px 10px; border:1px dashed var(--line); border-radius:10px; }
+#hncr .hncr-prev{ border:1px solid var(--line); border-radius:12px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; min-height:220px; padding:8px; overflow:hidden; }
+#hncr .hncr-prev svg, #hncr .hncr-prev img{ max-width:100%; max-height:56vh; height:auto; display:block; }
+#hncr .hncr-msg{ min-height:18px; font-size:13px; margin:8px 0 0; font-weight:600; }
+#hncr .hncr-msg.err{ color:var(--danger,#b91c1c); } #hncr .hncr-msg.ok{ color:var(--ok,#15803d); }
+#hncr .hncr-tpl{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+#hncr .hncr-tpl button{ border:1px solid var(--line); border-radius:12px; background:var(--surface-2); color:var(--ink); padding:10px; text-align:left; cursor:pointer; font:inherit; font-size:13px; }
+#hncr .hncr-tpl button small{ display:block; color:var(--muted); font-size:11.5px; margin-top:2px; }
+#hncr .hncr-sw{ display:flex; gap:8px; align-items:center; } #hncr input[type=color]{ width:38px; height:32px; padding:0; border:1px solid var(--line); border-radius:8px; background:none; }
+#hncr .hncr-thumb{ max-height:70px; max-width:140px; border:1px solid var(--line); border-radius:8px; margin-top:6px; display:block; }
+</style>
+<script id="hncr-js">
+(function(){
+  'use strict';
+  var EP_IMG = '/.netlify/functions/image';
+  var CR = { design: 3, dessin: 3, template: 3, image: 15 };
+  var CR_FI = { design: 1, dessin: 1, template: 1, image: 5 };   /* tarif équipe (menu « + » de l'espace équipe) ; vérifié aussi côté serveur */
+  function cr(kind){ return (S && S.fi ? CR_FI : CR)[kind] || (S && S.fi ? CR_FI : CR).design; }   /* crédits affichés avant chaque génération (image : doit correspondre à IMAGE_CREDITS côté serveur) */
+  var BK = 'helpnaud_brandkit';
+  var FONTS = { sans:"Inter,'Segoe UI',Helvetica,Arial,sans-serif", serif:"Georgia,'Times New Roman',serif", display:"'Arial Black','Segoe UI Black',Impact,sans-serif" };
+  var FORMATS = [ ['Carré 1080×1080 (publication)',1080,1080], ['Portrait 1080×1350',1080,1350], ['Story 1080×1920',1080,1920], ['Paysage 1280×720',1280,720], ['Bannière Facebook 820×312',820,312], ['Bannière LinkedIn 1584×396',1584,396], ['Affiche A4 portrait 1240×1754',1240,1754], ['Carte d’affaires 1050×600',1050,600] ];
+  var TEMPLATES = [
+    ['📣','Affiche','Événement ou promotion',1240,1754,'Affiche percutante avec un grand titre, une date, un lieu et un appel à l’action.'],
+    ['📄','Flyer','Dépliant promotionnel',1240,1754,'Flyer commercial clair : titre, 3 points forts, coordonnées et appel à l’action.'],
+    ['📘','Bannière Facebook','820×312',820,312,'Bannière de page Facebook : nom de l’entreprise, slogan, zone libre à gauche pour la photo de profil.'],
+    ['💼','Bannière LinkedIn','1584×396',1584,396,'Bannière LinkedIn sobre et professionnelle : nom, titre professionnel, proposition de valeur.'],
+    ['📷','Publication Instagram','1080×1080',1080,1080,'Publication carrée accrocheuse avec un message court et fort.'],
+    ['📱','Story','1080×1920',1080,1920,'Story verticale : titre en haut, message central, appel à l’action en bas (zones sûres).'],
+    ['🪪','Carte d’affaires','1050×600',1050,600,'Carte d’affaires : nom, titre, entreprise, téléphone, courriel, site web.'],
+    ['💌','Invitation','Fête, événement',1080,1528,'Invitation élégante : titre de l’événement, date, heure, lieu, RSVP.'],
+    ['🏅','Certificat','Diplôme, reconnaissance',1754,1240,'Certificat formel : titre, nom du ou de la récipiendaire, motif, date, signature.'],
+    ['🍽️','Menu','Restaurant, café',1240,1754,'Menu lisible en sections (entrées, plats, desserts, boissons) avec prix.'],
+    ['🛍️','Présentation de produit','1280×720',1280,720,'Présentation de produit : nom, 3 avantages, prix, appel à l’action, zone photo.'],
+    ['▶️','Miniature vidéo','1280×720',1280,720,'Miniature de vidéo : gros titre court très contrasté, zone visage/photo.'],
+    ['✉️','En-tête de courriel','600×200',600,200,'En-tête de courriel/infolettre : logo, titre, sous-titre.'],
+    ['🎉','Carte de vœux','Occasion spéciale',1080,1528,'Carte de vœux chaleureuse : message principal et signature.']
+  ];
+  var STYLES = ['Moderne et épuré','Sobre et corporatif','Festif et coloré','Luxe et élégant','Minimaliste','Audacieux et contrasté'];
+  var cfgStyle = { image:['Photo réaliste','Illustration','Portrait','Peinture','Rendu 3D','Arrière-plan modifié (avec image importée)'], dessin:['Dessin au trait','Coloriage','Croquis','Illustration colorée','Personnage original'] };
+  var root = null, S = null;
+
+  function $(s, r){ return (r || root).querySelector(s); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
+  function num(v, d, lo, hi){ v = parseFloat(v); if(!isFinite(v)) v = d; return Math.min(hi, Math.max(lo, v)); }
+  function col(v, d){ v = String(v || '').trim(); return /^#[0-9a-f]{3,8}$/i.test(v) || /^(white|black|none|transparent)$/i.test(v) ? v : d; }
+  function kit(){ try{ return JSON.parse(localStorage.getItem(BK) || 'null') || {}; }catch(e){ return {}; } }
+  function saveKit(k){ try{ localStorage.setItem(BK, JSON.stringify(k)); return true; }catch(e){ return false; } }
+  function msg(t, cls){ var m = $('.hncr-msg'); if(m){ m.textContent = t || ''; m.className = 'hncr-msg ' + (cls || ''); } }
+
+  /* ---------- Images importées : redimensionnées avant envoi ---------- */
+  function fileToImage(file, max, type, q){
+    return new Promise(function(res, rej){
+      if(!file || !/^image\//.test(file.type)) return rej(new Error('Choisissez un fichier image.'));
+      var fr = new FileReader(); fr.onerror = function(){ rej(new Error('Image illisible.')); };
+      fr.onload = function(){ var im = new Image(); im.onerror = function(){ rej(new Error('Image illisible.')); };
+        im.onload = function(){ var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+          var x = c.getContext('2d'); if(type === 'image/jpeg'){ x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); } x.drawImage(im, 0, 0, c.width, c.height);
+          var url = c.toDataURL(type, q); c.toBlob(function(b){ res({ url:url, blob:b }); }, type, q); };
+        im.src = fr.result; };
+      fr.readAsDataURL(file);
+    });
+  }
+  function download(name, blob){ var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+
+  /* ---------- Design : spécification JSON -> SVG ---------- */
+  function wrap(text, size, bold, maxW){
+    var cw = size * (bold >= 700 ? 0.6 : 0.54), out = [];
+    String(text).split(/\n/).forEach(function(par){
+      if(!maxW){ out.push(par); return; }
+      var line = '';
+      par.split(/\s+/).forEach(function(w){ var t = line ? line + ' ' + w : w; if(t.length * cw > maxW && line){ out.push(line); line = w; } else line = t; });
+      out.push(line);
+    });
+    return out;
+  }
+  function normSpec(d){
+    if(!d || typeof d !== 'object') return null;
+    var spec = { title:String(d.title || 'Design').slice(0, 80), width:num(d.width, 1080, 200, 3000), height:num(d.height, 1080, 200, 3000), background:d.background, elements:[] };
+    (Array.isArray(d.elements) ? d.elements : []).slice(0, 60).forEach(function(e, i){ if(e && typeof e === 'object' && typeof e.type === 'string'){ e.id = e.type === 'text' ? String(e.id || ('t' + (i + 1))).replace(/[^\w-]/g, '').slice(0, 20) : e.id; spec.elements.push(e); } });
+    return spec;
+  }
+  function renderDesign(spec, ctx){
+    var W = spec.width, H = spec.height, defs = '', bg = '#ffffff';
+    if(Array.isArray(spec.background) && spec.background.length >= 2){ defs += '<linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col(spec.background[0], '#fff') + '"/><stop offset="1" stop-color="' + col(spec.background[1], '#eee') + '"/></linearGradient>'; bg = 'url(#hg)'; }
+    else bg = col(spec.background, '#ffffff');
+    var body = '<rect width="' + W + '" height="' + H + '" fill="' + bg + '"/>';
+    spec.elements.forEach(function(e, i){
+      var t = e.type;
+      if(t === 'rect') body += '<rect x="' + num(e.x, 0, -3000, 6000) + '" y="' + num(e.y, 0, -3000, 6000) + '" width="' + num(e.w, 10, 0, 6000) + '" height="' + num(e.h, 10, 0, 6000) + '" rx="' + num(e.rx, 0, 0, 500) + '" fill="' + col(e.fill, '#cccccc') + '" opacity="' + num(e.opacity, 1, 0, 1) + '"/>';
+      else if(t === 'circle') body += '<circle cx="' + num(e.cx, 0, -3000, 6000) + '" cy="' + num(e.cy, 0, -3000, 6000) + '" r="' + num(e.r, 10, 0, 3000) + '" fill="' + col(e.fill, '#cccccc') + '" opacity="' + num(e.opacity, 1, 0, 1) + '"/>';
+      else if(t === 'line') body += '<line x1="' + num(e.x1, 0, -3000, 6000) + '" y1="' + num(e.y1, 0, -3000, 6000) + '" x2="' + num(e.x2, 0, -3000, 6000) + '" y2="' + num(e.y2, 0, -3000, 6000) + '" stroke="' + col(e.stroke, '#333333') + '" stroke-width="' + num(e.sw, 2, 0, 100) + '"/>';
+      else if(t === 'logo' && ctx.logo) body += '<image href="' + ctx.logo + '" x="' + num(e.x, 0, -3000, 6000) + '" y="' + num(e.y, 0, -3000, 6000) + '" width="' + num(e.w, 150, 1, 3000) + '" height="' + num(e.h, 150, 1, 3000) + '" preserveAspectRatio="xMidYMid meet"/>';
+      else if(t === 'photo' && ctx.photo){ var x = num(e.x, 0, -3000, 6000), y = num(e.y, 0, -3000, 6000), w = num(e.w, 300, 1, 6000), h = num(e.h, 300, 1, 6000);
+        defs += '<clipPath id="hc' + i + '"><rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + num(e.rx, 0, 0, 500) + '"/></clipPath>';
+        body += '<image href="' + ctx.photo + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#hc' + i + ')"/>'; }
+      else if(t === 'text'){
+        var txt = ctx.texts && ctx.texts[e.id] != null ? ctx.texts[e.id] : String(e.text || ''), size = num(e.size, 48, 8, 400), wt = num(e.weight, 400, 100, 900), lh = num(e.lineHeight, 1.2, 0.8, 2.5), an = /^(start|middle|end)$/.test(e.anchor) ? e.anchor : 'start';
+        var lines = wrap(txt, size, wt, e.maxWidth ? num(e.maxWidth, 0, 20, 6000) : 0), tx = num(e.x, 0, -3000, 6000), ty = num(e.y, 0, -3000, 6000);
+        body += '<text x="' + tx + '" y="' + ty + '" font-size="' + size + '" font-weight="' + wt + '" fill="' + col(e.fill, '#111111') + '" text-anchor="' + an + '" font-family="' + (FONTS[e.font] || FONTS.sans).replace(/"/g, "'") + '">' + lines.map(function(l, k){ return '<tspan x="' + tx + '" dy="' + (k ? size * lh : 0) + '">' + esc(l) + '</tspan>'; }).join('') + '</text>';
+      }
+    });
+    return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '"><defs>' + defs + '</defs>' + body + '</svg>';
+  }
+
+  /* ---------- Dessiner : SVG généré -> nettoyé (liste blanche) ---------- */
+  var OKTAG = /^(svg|g|path|circle|ellipse|rect|line|polyline|polygon|defs|lineargradient|radialgradient|stop|clippath|title|desc)$/i;
+  var OKATTR = /^(d|x|y|x1|x2|y1|y2|cx|cy|r|rx|ry|width|height|viewBox|points|fill|stroke|stroke-width|stroke-linecap|stroke-linejoin|stroke-dasharray|opacity|fill-opacity|stroke-opacity|transform|id|offset|stop-color|stop-opacity|gradientUnits|gradientTransform|xmlns|fill-rule|clip-rule|clip-path|preserveAspectRatio|version|fx|fy)$/;
+  function cleanSvg(str){
+    try{
+      var doc = new DOMParser().parseFromString(String(str || ''), 'image/svg+xml'), svg = doc.documentElement;
+      if(!svg || svg.nodeName.toLowerCase() !== 'svg' || doc.querySelector('parsererror')) return '';
+      (function walk(n){ Array.prototype.slice.call(n.children).forEach(function(c){
+        if(!OKTAG.test(c.nodeName)){ c.remove(); return; }
+        Array.prototype.slice.call(c.attributes).forEach(function(a){ var v = a.value; if(!OKATTR.test(a.name) || /javascript:|data:|<|expression\(/i.test(v) || (/url\(/i.test(v) && !/^url\(#[\w-]+\)$/.test(v.trim()))) c.removeAttribute(a.name); });
+        walk(c); }); })(svg);
+      Array.prototype.slice.call(svg.attributes).forEach(function(a){ if(!OKATTR.test(a.name) || /javascript:|</i.test(a.value)) svg.removeAttribute(a.name); });
+      if(!svg.getAttribute('viewBox')) svg.setAttribute('viewBox', '0 0 800 800');
+      svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); svg.removeAttribute('width'); svg.removeAttribute('height');
+      return new XMLSerializer().serializeToString(svg);
+    }catch(e){ return ''; }
+  }
+
+  /* ---------- Exports ---------- */
+  function svgToCanvas(svgStr, w, h, maxSide){
+    return new Promise(function(res, rej){
+      var k = Math.min(1, maxSide / Math.max(w, h)) || 1, cw = Math.round(w * k), ch = Math.round(h * k);
+      var s = svgStr.replace(/^<svg\b[^>]*>/, function(tag){ return tag.replace(/\s(width|height)="[^"]*"/g, '').replace(/^<svg/, '<svg width="' + w + '" height="' + h + '"'); });
+      var im = new Image(); im.onerror = function(){ rej(new Error('Conversion impossible sur ce navigateur.')); };
+      im.onload = function(){ var c = document.createElement('canvas'); c.width = cw; c.height = ch; var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, cw, ch); x.drawImage(im, 0, 0, cw, ch); res(c); };
+      im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+    });
+  }
+  function currentSvg(){
+    if(S.kind === 'dessin') return { svg:S.res.svg, w:800, h:800 };
+    return { svg:renderDesign(S.res.spec, { logo:S.logo, photo:S.photo, texts:S.texts }), w:S.res.spec.width, h:S.res.spec.height };
+  }
+  function exportAs(fmt){
+    var base = (S.kind === 'image' ? 'image-ia' : (S.res.title || S.kind)).toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'creation';
+    if(S.kind === 'image'){ fetch(S.res.url).then(function(r){ return r.blob(); }).then(function(b){ download(base + '.jpg', b); }); return; }
+    var cur = currentSvg();
+    if(fmt === 'svg'){ download(base + '.svg', new Blob([cur.svg], { type:'image/svg+xml' })); return; }
+    svgToCanvas(cur.svg, cur.w, cur.h, 2400).then(function(c){
+      if(fmt === 'png'){ c.toBlob(function(b){ download(base + '.png', b); }, 'image/png'); return; }
+      if(fmt === 'pdf'){
+        var J = window.jspdf && window.jspdf.jsPDF; if(!J){ msg('Export PDF indisponible (bibliothèque non chargée).', 'err'); return; }
+        var o = c.width >= c.height ? 'l' : 'p', d = new J({ orientation:o, unit:'px', format:[c.width, c.height], hotfixes:['px_scaling'] });
+        d.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, c.width, c.height); d.save(base + '.pdf');
+      }
+    }).catch(function(e){ msg(e.message, 'err'); });
+  }
+
+  /* ---------- Appels serveur ---------- */
+  function ai(prompt, kind, blob){
+    if(!window.__hnAiCall) return Promise.reject(new Error('L’assistant IA n’est pas disponible ici. Connectez-vous à votre compte HelpNaud.'));
+    return window.__hnAiCall(prompt, { creer:kind, creerFi:!!(S && S.fi), images: blob ? [blob] : null }, true).then(function(j){ return j && j.data; });
+  }
+  function genImage(prompt, format, dataUrl){
+    return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){
+      if(!tk) throw new Error('Connectez-vous à votre compte HelpNaud pour créer une image.');
+      return fetch(EP_IMG, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tk }, body:JSON.stringify({ prompt:prompt, format:format, image:dataUrl || undefined, fi:(S && S.fi) ? true : undefined }) })
+        .catch(function(){ throw new Error('Impossible de joindre le serveur (réseau ou fonction non déployée).'); });
+    }).then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
+      if(!r.ok) throw new Error((j && j.message) || (r.status === 404 ? 'La fonction « Image IA » n’est pas encore déployée.' : 'Erreur du serveur (' + r.status + ').'));
+      try{ if(j.credits && window.__hnSyncCredits) window.__hnSyncCredits(j.credits); }catch(e){}
+      return j; }); });
+  }
+
+  /* ---------- Écrans ---------- */
+  function open(screen, preset, fi){ ensure(); root.hidden = false; document.body.style.overflow = 'hidden'; S = { fi:!!fi, kind:'', preset:preset || null, res:null, texts:{}, logo:'', photo:'', ref:null, busy:false }; show(screen || 'home'); }
+  function close(){ if(root){ root.hidden = true; } document.body.style.overflow = ''; }
+  function ensure(){
+    if(root) return;
+    root = document.createElement('div'); root.id = 'hncr'; root.hidden = true; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true');
+    root.innerHTML = '<div class="hncr-box"><div class="hncr-head"><button type="button" class="hncr-x" data-a="back" aria-label="Retour" style="font-size:18px" hidden>←</button><h2></h2><button type="button" class="hncr-x" data-a="close" aria-label="Fermer">×</button></div><div class="hncr-body"></div></div>';
+    document.body.appendChild(root);
+    root.addEventListener('click', function(e){ if(e.target === root){ close(); return; } var a = e.target.closest && e.target.closest('[data-a]'); if(a) act(a.getAttribute('data-a'), a); });
+    root.addEventListener('input', function(e){ var t = e.target; if(t.getAttribute && t.getAttribute('data-txt')){ S.texts[t.getAttribute('data-txt')] = t.value; refreshPreview(); } });
+    root.addEventListener('change', function(e){ var t = e.target; if(t.id === 'hncr-file') onFile(t, 'ref'); else if(t.id === 'hncr-logo') onFile(t, 'logo'); else if(t.id === 'hncr-kitlogo') onKitLogo(t); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && root && !root.hidden) close(); });
+  }
+  function head(title, back){ $('.hncr-head h2').textContent = title; var b = $('[data-a="back"]'); b.hidden = !back; b.setAttribute('data-back', back || ''); }
+  function body(h){ $('.hncr-body').innerHTML = h; }
+  function show(name){
+    if(name === 'home') return home();
+    if(name === 'templates') return templates();
+    if(name === 'kit') return kitScreen();
+    if(name === 'form') return form();
+    if(name === 'result') return result();
+  }
+  function home(){
+    head('Créer', ''); S.kind = '';
+    body('<div class="hncr-cards">' +
+      '<button type="button" class="hncr-card" data-a="pick" data-k="image"><span class="hncr-ico">🖼️</span><b>Image IA</b><span>Générer une image à partir d’une description ou transformer une image importée.</span><span>Photos, illustrations, portraits, modification d’arrière-plan.</span></button>' +
+      '<button type="button" class="hncr-card" data-a="pick" data-k="design"><span class="hncr-ico">🎨</span><b>Design</b><span>Concevoir un visuel en combinant images, textes et éléments graphiques.</span><span>Bannières Facebook ou LinkedIn, affiches, publications, flyers, présentations de produits.</span></button>' +
+      '<button type="button" class="hncr-card" data-a="pick" data-k="dessin"><span class="hncr-ico">✏️</span><b>Dessiner</b><span>Créer un dessin à partir d’une consigne ou d’un croquis fourni.</span><span>Croquis, personnages originaux, dessins au trait, coloriages, illustrations.</span></button>' +
+      '<button type="button" class="hncr-card" data-a="pick" data-k="template"><span class="hncr-ico">🧩</span><b>Templates Creators</b><span>Partir d’un modèle prêt à personnaliser : affiche, flyer, bannière, carte, menu, certificat…</span></button>' +
+      '</div><p style="margin:14px 2px 0"><button type="button" class="btn" data-a="kit">🏷️ Mon kit de marque (logo et couleurs)</button></p><p class="hint" style="margin:10px 2px 0">Le coût en crédits est affiché avant chaque génération ou modification.</p>');
+  }
+  function templates(){
+    head('Templates Creators', 'home'); S.kind = 'template';
+    body('<p class="hint" style="margin:0 0 10px">Choisissez un modèle : le format et la mise en page sont préparés, vous n’avez plus qu’à fournir vos textes.</p><div class="hncr-tpl">' + TEMPLATES.map(function(t, i){ return '<button type="button" data-a="tpl" data-i="' + i + '"><span class="hncr-ico" style="font-size:22px">' + t[0] + '</span><br><b>' + esc(t[1]) + '</b><small>' + esc(t[2]) + '</small></button>'; }).join('') + '</div>');
+  }
+  function costLine(kind){ var n = cr(kind); return '<div class="hncr-cost">💳 Coût : <b>' + n + ' crédits</b> par génération' + (kind === 'image' ? '' : ' ou modification') + ' (+ supplément éventuel si l’image jointe est lourde). Les crédits sont remboursés si la création échoue.</div>'; }
+  function form(){
+    var k = S.kind, t = S.preset, title = k === 'image' ? 'Image IA' : k === 'dessin' ? 'Dessiner' : (k === 'template' && t ? t[1] : 'Design');
+    head(title, k === 'template' ? 'templates' : 'home');
+    var h = '<div class="hncr-grid"><div>';
+    h += '<label class="hncr-l" for="hncr-desc">' + (k === 'dessin' ? 'Votre consigne' : k === 'image' ? 'Décrivez l’image à créer' : 'Décrivez votre besoin') + '</label><textarea id="hncr-desc" placeholder="' + esc(k === 'image' ? 'Ex. : un chalet au bord d’un lac au lever du soleil, lumière douce' : k === 'dessin' ? 'Ex. : un renard qui lit un livre, style simple' : (t ? t[5] : 'Ex. : bannière pour le lancement de mon service de comptabilité')) + '">' + esc(S.desc || '') + '</textarea>';
+    if(k === 'image'){
+      h += '<label class="hncr-l" for="hncr-fmt">Format</label><select id="hncr-fmt"><option value="carre">Carré</option><option value="portrait">Portrait</option><option value="paysage">Paysage</option></select>';
+      h += '<label class="hncr-l" for="hncr-sty">Style</label><select id="hncr-sty">' + cfgStyle.image.map(function(s){ return '<option>' + esc(s) + '</option>'; }).join('') + '</select>';
+    } else if(k === 'dessin'){
+      h += '<label class="hncr-l" for="hncr-sty">Type de dessin</label><select id="hncr-sty">' + cfgStyle.dessin.map(function(s){ return '<option>' + esc(s) + '</option>'; }).join('') + '</select>';
+    } else {
+      if(!t){ h += '<label class="hncr-l" for="hncr-fmt">Format</label><select id="hncr-fmt">' + FORMATS.map(function(f, i){ return '<option value="' + i + '">' + esc(f[0]) + '</option>'; }).join('') + '</select>'; }
+      else h += '<p class="hint" style="margin:8px 0 0">Format : ' + t[3] + '×' + t[4] + ' px</p>';
+      h += '<label class="hncr-l" for="hncr-sty">Style</label><select id="hncr-sty">' + STYLES.map(function(s){ return '<option>' + esc(s) + '</option>'; }).join('') + '</select>';
+      h += '<label class="hncr-l" for="hncr-txt">Textes à afficher (un par ligne : titre, sous-titre, appel à l’action, coordonnées…)</label><textarea id="hncr-txt" placeholder="Ex.&#10;Grande vente d’été&#10;Jusqu’à 30 % de rabais&#10;Visitez helpnaud.ai">' + esc(S.txt || '') + '</textarea>';
+      var kk = kit();
+      h += '<label class="hncr-l"><input type="checkbox" id="hncr-usekit" ' + ((kk.logo || (kk.colors && kk.colors.length)) ? 'checked' : '') + '> Utiliser mon kit de marque (logo et couleurs)</label>' + (kk.logo ? '<img class="hncr-thumb" alt="" src="' + esc(kk.logo) + '">' : '<p class="hint" style="margin:2px 0 0">Aucun logo enregistré. <button type="button" class="btn" data-a="kit" style="padding:2px 8px;font-size:12px">Ajouter mon kit</button></p>');
+    }
+    h += '<label class="hncr-l">' + (k === 'dessin' ? 'Croquis ou image de référence (facultatif)' : k === 'image' ? 'Image à transformer (facultatif)' : 'Photo ou image de référence (facultatif)') + '</label><input type="file" id="hncr-file" accept="image/png,image/jpeg,image/webp">' + (S.refUrl ? '<img class="hncr-thumb" alt="" src="' + esc(S.refUrl) + '">' : '');
+    h += '</div><div>' + costLine(k) + '<div class="hncr-row"><button type="button" class="btn primary" data-a="gen">✨ Générer</button></div><p class="hncr-msg" role="status"></p>' +
+      (k === 'image' ? '<p class="hint">L’IA ne reproduit pas de personnages, logos ou œuvres protégés, ni de personnes réelles identifiables. Décrivez des sujets originaux.</p>' : '') + '</div></div>';
+    body(h);
+    var y = $('#hncr-sty'); if(y && S.sty) y.value = S.sty; var f = $('#hncr-fmt'); if(f && S.fmt) f.value = S.fmt; var u = $('#hncr-usekit'); if(u && S.useKit !== undefined) u.checked = !!S.useKit;
+  }
+  function result(){
+    var k = S.kind, h = '<div class="hncr-grid"><div><div class="hncr-prev" id="hncr-prev"></div></div><div>';
+    h += '<div class="hncr-row">' + (k === 'image' ? '<button type="button" class="btn primary" data-a="dl" data-f="jpg">⬇️ Télécharger (JPG)</button>' : '<button type="button" class="btn primary" data-a="dl" data-f="png">⬇️ PNG</button><button type="button" class="btn" data-a="dl" data-f="svg">SVG</button><button type="button" class="btn" data-a="dl" data-f="pdf">PDF</button>') + '</div>';
+    if(k !== 'image' && k !== 'dessin' && S.res.spec){
+      var ts = S.res.spec.elements.filter(function(e){ return e.type === 'text'; });
+      if(ts.length){ h += '<h4 style="margin:14px 0 4px;font-size:13.5px">Textes (modifiables sans régénérer, gratuit)</h4>' + ts.map(function(e){ var v = S.texts[e.id] != null ? S.texts[e.id] : e.text; return '<label class="hncr-l">' + esc(e.label || e.id) + '</label><input type="text" data-txt="' + esc(e.id) + '" value="' + esc(v) + '">'; }).join(''); }
+      h += '<label class="hncr-l">Logo</label><input type="file" id="hncr-logo" accept="image/png,image/jpeg,image/webp">';
+    }
+    h += '<h4 style="margin:14px 0 4px;font-size:13.5px">Demander une modification</h4><textarea id="hncr-mod" placeholder="Ex. : rends le fond plus sombre et agrandis le titre"></textarea>' + costLine(k) + '<div class="hncr-row"><button type="button" class="btn" data-a="mod">🔁 Modifier</button><button type="button" class="btn" data-a="home">Nouvelle création</button></div><p class="hncr-msg" role="status"></p></div></div>';
+    head(S.res.title || 'Résultat', 'form'); body(h); refreshPreview();
+  }
+  function refreshPreview(){
+    var p = $('#hncr-prev'); if(!p || !S.res) return;
+    if(S.kind === 'image') p.innerHTML = '<img alt="Image créée" src="' + esc(S.res.url) + '">';
+    else p.innerHTML = currentSvg().svg.replace(/ width="\d+(\.\d+)?" height="\d+(\.\d+)?"/, '');
+  }
+  function kitScreen(){
+    head('Mon kit de marque', 'home'); var k = kit(), c = (k.colors || []).concat(['#1f4e8c', '#ee8a2e', '#ffffff', '#111111']).slice(0, 4);
+    body('<p class="hint" style="margin:0 0 8px">Enregistré sur cet appareil. Utilisé par Design et Templates Creators : le logo est placé dans vos créations et les couleurs guident la palette.</p><label class="hncr-l">Logo</label><input type="file" id="hncr-kitlogo" accept="image/png,image/jpeg,image/webp">' + (k.logo ? '<img class="hncr-thumb" alt="" src="' + esc(k.logo) + '"><button type="button" class="btn" data-a="kitrm" style="margin-top:6px">Retirer le logo</button>' : '') +
+      '<label class="hncr-l">Couleurs de marque</label><div class="hncr-sw">' + c.map(function(x, i){ return '<input type="color" data-kc="' + i + '" value="' + esc(col(x, '#1f4e8c').length === 7 ? x : '#1f4e8c') + '">'; }).join('') + '</div><div class="hncr-row" style="margin-top:14px"><button type="button" class="btn primary" data-a="kitsave">Enregistrer</button></div><p class="hncr-msg" role="status"></p>');
+  }
+  function onKitLogo(t){ var f = t.files && t.files[0]; t.value = ''; fileToImage(f, 400, 'image/png', 1).then(function(r){ var k = kit(); k.logo = r.url; if(!saveKit(k)){ msg('Stockage impossible sur cet appareil.', 'err'); return; } kitScreen(); msg('Logo enregistré ✓', 'ok'); }).catch(function(e){ msg(e.message, 'err'); }); }
+  function onFile(t, which){
+    var f = t.files && t.files[0]; t.value = ''; if(!f) return;
+    fileToImage(f, which === 'logo' ? 400 : 1280, which === 'logo' ? 'image/png' : 'image/jpeg', 0.85).then(function(r){
+      if(which === 'logo'){ S.logo = r.url; refreshPreview(); msg('Logo ajouté ✓', 'ok'); }
+      else { keepForm(); S.ref = r.blob; S.refUrl = r.url; S.photo = r.url; form(); }
+    }).catch(function(e){ msg(e.message, 'err'); });
+  }
+  function keepForm(){ var d = $('#hncr-desc'); if(d) S.desc = d.value; var x = $('#hncr-txt'); if(x) S.txt = x.value; var y = $('#hncr-sty'); if(y) S.sty = y.value; var f = $('#hncr-fmt'); if(f) S.fmt = f.value; var u = $('#hncr-usekit'); if(u) S.useKit = u.checked; }
+
+  /* ---------- Actions ---------- */
+  function act(a, el){
+    if(a === 'close') return close();
+    if(a === 'back'){ var b = $('[data-a="back"]').getAttribute('data-back'); if(b === 'form') keepForm(); return show(b || 'home'); }
+    if(a === 'home'){ S = { fi:S.fi, kind:'', preset:null, res:null, texts:{}, logo:'', photo:'', ref:null }; return home(); }
+    if(a === 'kit') return kitScreen();
+    if(a === 'kitrm'){ var k0 = kit(); delete k0.logo; saveKit(k0); return kitScreen(); }
+    if(a === 'kitsave'){ var k1 = kit(); k1.colors = Array.prototype.map.call(root.querySelectorAll('[data-kc]'), function(i){ return i.value; }); if(saveKit(k1)) msg('Kit de marque enregistré ✓', 'ok'); else msg('Stockage impossible sur cet appareil.', 'err'); return; }
+    if(a === 'pick'){ var kd = el.getAttribute('data-k'); S.kind = kd; S.preset = null; S.ref = null; S.refUrl = ''; S.photo = ''; if(kd === 'template') return templates(); return form(); }
+    if(a === 'tpl'){ S.preset = TEMPLATES[+el.getAttribute('data-i')]; S.kind = 'template'; S.ref = null; S.refUrl = ''; S.photo = ''; S.desc = ''; return form(); }
+    if(a === 'dl') return exportAs(el.getAttribute('data-f'));
+    if(a === 'gen') return generate(false);
+    if(a === 'mod') return generate(true);
+  }
+  function lock(on){ S.busy = on; root.querySelectorAll('[data-a="gen"],[data-a="mod"]').forEach(function(b){ b.disabled = on; }); }
+  function generate(isMod){
+    if(S.busy) return;
+    var k = S.kind, d = ($('#hncr-desc') || {}).value, mod = ($('#hncr-mod') || {}).value;
+    if(!isMod && (!d || d.trim().length < 4)){ msg('Décrivez ce que vous voulez créer.', 'err'); return; }
+    if(isMod && (!mod || mod.trim().length < 3)){ msg('Décrivez la modification souhaitée.', 'err'); return; }
+    if(!isMod){ S.desc = d; var sty = ($('#hncr-sty') || {}).value || ''; S.sty = sty; var tx = $('#hncr-txt'); S.txt = tx ? tx.value : ''; var fm = $('#hncr-fmt'); S.fmt = fm ? fm.value : ''; var uk = $('#hncr-usekit'); S.useKit = !!(uk && uk.checked); }
+    var n = cr(k);
+    if(!window.confirm('Cette ' + (isMod ? 'modification' : 'création') + ' coûte ' + n + ' crédits. Continuer ?')) return;
+    lock(true); msg(k === 'image' ? 'Création de l’image… (jusqu’à 30 secondes)' : 'Création en cours…', '');
+    var p;
+    if(k === 'image'){
+      var fmt = S.fmt || 'carre', prompt = isMod ? 'Modifie cette image : ' + mod.trim() : (d.trim() + (S.sty && !/Arrière-plan/.test(S.sty) ? '. Style : ' + S.sty : (S.sty ? '. Modifie l’arrière-plan de l’image importée selon cette description.' : '')));
+      p = genImage(prompt, fmt, isMod ? S.res.url : S.refUrl).then(function(j){ S.res = { url:j.image, title:'Image IA' }; });
+    } else if(k === 'dessin'){
+      var pr = isMod ? 'Dessin SVG précédent :\n' + S.res.svg + '\n\nModification demandée : ' + mod.trim() : 'Consigne : ' + d.trim() + '\nType : ' + (S.sty || 'Dessin au trait') + (S.ref ? '\nUn croquis/une image de référence est jointe : redessine-le proprement en SVG.' : '');
+      p = ai(pr, 'dessin', isMod ? null : S.ref).then(function(data){ var svg = cleanSvg(data && data.svg); if(!svg) throw new Error('Le dessin généré est illisible. Réessayez (vos crédits sont remboursés).'); S.res = { svg:svg, title:String((data && data.title) || 'Dessin').slice(0, 80) }; });
+    } else {
+      var t = S.preset, f = t ? { w:t[3], h:t[4] } : (FORMATS[+S.fmt] ? { w:FORMATS[+S.fmt][1], h:FORMATS[+S.fmt][2] } : { w:1080, h:1080 }), kk = kit();
+      var brand = S.useKit && kk.colors && kk.colors.length ? '\nCouleurs de marque à privilégier : ' + kk.colors.join(', ') + '.' : '';
+      if(S.useKit && kk.logo){ S.logo = kk.logo; }
+      var hasLogo = !!S.logo, hasPhoto = !!S.photo;
+      var pr2;
+      if(isMod){ pr2 = 'Design précédent (JSON) :\n' + JSON.stringify(Object.assign({}, S.res.spec, { elements:S.res.spec.elements.map(function(e){ if(e.type === 'text' && S.texts[e.id] != null) return Object.assign({}, e, { text:S.texts[e.id] }); return e; }) })) + '\n\nModification demandée : ' + mod.trim() + '\nGarde width=' + S.res.spec.width + ' et height=' + S.res.spec.height + '.'; }
+      else pr2 = 'Besoin : ' + d.trim() + (t ? '\nModèle : ' + t[1] + ' — ' + t[5] : '') + '\nFormat : width=' + f.w + ', height=' + f.h + '\nStyle : ' + (S.sty || 'Moderne et épuré') + '\nTextes à afficher (exactement) :\n' + (S.txt && S.txt.trim() ? S.txt.trim() : '(aucun texte fourni : n’affiche que les textes indispensables tirés du besoin, sans rien inventer)') + brand + '\n' + (hasLogo ? 'Un logo est fourni : prévois un élément "logo".\n' : 'Aucun logo fourni : n’ajoute pas d’élément "logo".\n') + (hasPhoto ? 'Une photo est fournie : prévois un élément "photo".' : 'Aucune photo fournie : n’ajoute pas d’élément "photo".');
+      p = ai(pr2, 'design', null).then(function(data){ var spec = normSpec(data); if(!spec || !spec.elements.length) throw new Error('Le design généré est illisible. Réessayez (vos crédits sont remboursés).'); if(!isMod){ spec.width = f.w; spec.height = f.h; } else { spec.width = S.res.spec.width; spec.height = S.res.spec.height; } S.res = { spec:spec, title:spec.title }; S.texts = {}; });
+    }
+    p.then(function(){ lock(false); result(); msg(isMod ? 'Modification appliquée ✓' : 'Création terminée ✓', 'ok'); })
+     .catch(function(e){ lock(false); msg((e && e.message) || 'La création a échoué.', 'err'); });
+  }
+
+  /* ---------- Entrée dans le menu « + » ---------- */
+  function addEntries(){
+    ['attach-menu', 'cowork-discuss-attach-menu', 'hstat-attach-menu', 'hstatis-attach-menu'].forEach(function(id){
+      var m = document.getElementById(id); if(!m || m.querySelector('[data-hncr]')) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'attach-menu-opt'; b.setAttribute('data-hncr', 'open'); b.innerHTML = '<span aria-hidden="true">🎨</span> <span>Créer (Image IA, Design, Dessiner…)</span>';
+      m.insertBefore(b, m.firstChild);
+    });
+  }
+  document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-hncr]'); if(!b) return; e.preventDefault(); var m = b.closest('.attach-menu'); if(m) m.hidden = true; open('home', null, !!(m && m.id === 'hstatis-attach-menu')); });
+  addEntries(); document.addEventListener('DOMContentLoaded', addEntries); setTimeout(addEntries, 800); setInterval(addEntries, 2000);   /* le menu de l'espace équipe est construit plus tard */
+  window.__hnCreate = { open:open, _t:{ renderDesign:renderDesign, cleanSvg:cleanSvg, normSpec:normSpec } };
 })();
 </script>
 <script id="hnl-js">

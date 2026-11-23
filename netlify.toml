@@ -7,6 +7,9 @@
 [functions."ai"]
   timeout = 26
 # Rappels de rendez-vous : exécution toutes les heures (fuseau UTC)
+# Image IA : génération d'images (plus longue)
+[functions."image"]
+  timeout = 26
 [functions."rdv-reminders"]
   schedule = "@hourly"
 # Rappels de tâches par courriel : toutes les 10 minutes
