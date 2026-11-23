@@ -47262,7 +47262,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     return h;
   }
 
-  var FEAT = { assistant:'Chat', cowork:'Co-work', consult:'Consult', ifhelp:'Code', hweb:'H-Web', fistat:'F-i-Stat', creer:'Créer', taiso:'TAISO', itaf:'iTAF', dashboard:'Tableau de bord', report:'Rapport' };
+  var FEAT = { assistant:'Chat', cowork:'Co-work', consult:'Consult', hstat:'Consult', fghlab:'FGH-Colab', library:'Bibliothèque', documents:'Documents', database:'Base de données', catalogue:'Catalogue', anomalies:'Alertes', tasks:'Tâches', hntools:'Outils', resolutions:'Résolutions', settings:'Paramètres', ifhelp:'Code', hweb:'H-Web', fistat:'F-i-Stat', creer:'Créer', taiso:'TAISO', itaf:'iTAF', dashboard:'Tableau de bord', report:'Rapport' };
   function loadStats(){ if(statLoading) return; statLoading = true; var A = window.__hnAuth; Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){
       if(!tk || !A || !A.url) throw new Error('auth');
       return fetch(A.url + '/rest/v1/rpc/my_usage_events', { method:'POST', headers:{ 'Content-Type':'application/json', apikey:A.key, Authorization:'Bearer ' + tk }, body:JSON.stringify({ p_days:60 }) }).then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); });
