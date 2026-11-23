@@ -46839,6 +46839,10 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 #hnp .btn{ padding:7px 14px; font-size:13px; }
 #hnp .hnp-photo{ display:flex; align-items:center; gap:14px; margin-bottom:12px; }
 #hnp .hnp-photo .hnp-av{ width:72px; height:72px; font-size:28px; }
+#hnp .hnp-avbtn{ position:relative; display:inline-flex; flex:none; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+#hnp .hnp-avbtn:hover .hnp-av,#hnp .hnp-avbtn:focus-visible .hnp-av{ filter:brightness(.88); }
+#hnp .hnp-avbtn:focus-visible{ outline:3px solid color-mix(in srgb,var(--accent,#2b4c8c) 55%,transparent); outline-offset:3px; }
+#hnp .hnp-avbtn::after{ content:'📷'; position:absolute; left:-4px; bottom:-4px; width:24px; height:24px; border-radius:50%; background:var(--surface,#fff); border:1px solid var(--line,#d5dde6); box-shadow:0 1px 3px rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; font-size:12px; pointer-events:none; }
 #hnp .hnp-sw{ position:relative; width:42px; height:24px; flex:none; }
 #hnp .hnp-sw input{ opacity:0; position:absolute; inset:0; margin:0; cursor:pointer; width:100%; height:100%; z-index:1; }
 #hnp .hnp-sw i{ position:absolute; inset:0; background:var(--line); border-radius:99px; transition:.15s; }
@@ -47007,7 +47011,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       var fresh = invite;
       var fi = $('hp-first'), la = $('hp-last');
       h += '<h3>Profil</h3><p class="hint">Votre photo reste sur cet appareil. Le nom est enregistré dans votre compte.</p>';
-      h += '<div class="hnp-photo">' + avHtml() + '<div><button type="button" class="btn" data-hnp="pick">📷 ' + (photo() ? 'Changer la photo' : 'Ajouter une photo') + '</button> ' + (photo() ? '<button type="button" class="btn" data-hnp="rmphoto">Retirer</button>' : '') + '</div></div>';
+      h += '<div class="hnp-photo"><span class="hnp-avbtn" role="button" tabindex="0" data-hnp="pick" title="' + (photo() ? 'Changer la photo' : 'Ajouter une photo') + '" aria-label="' + (photo() ? 'Changer la photo de profil' : 'Ajouter une photo de profil') + '">' + avHtml() + '</span><div><button type="button" class="btn" data-hnp="pick">📷 ' + (photo() ? 'Changer la photo' : 'Ajouter une photo') + '</button> ' + (photo() ? '<button type="button" class="btn" data-hnp="rmphoto">Retirer</button>' : '') + '</div></div>';
       h += '<div class="hnp-f">';
       if(li) h += '<label>Prénom<input type="text" id="hnp-first" maxlength="80" value="' + esc(fi ? fi.value : '') + '" autocomplete="given-name"></label><label>Nom<input type="text" id="hnp-last" maxlength="80" value="' + esc(la ? la.value : '') + '" autocomplete="family-name"></label>';
       if(li){ var gv = function(id){ var e = $(id); return e ? e.value : ''; };
@@ -47216,7 +47220,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   function famDone(r, okMsg){ if(r && r.ok){ if(okMsg) toast(okMsg); } else toast((r && r.message) || 'Échec.'); fam = null; render(); }
   function famToken(){ var t = ''; try{ var m = /[?&]famille=([0-9a-f]{48})/.exec(location.search); if(m){ t = m[1]; sessionStorage.setItem('hn_fam_tok', t); history.replaceState(null, '', location.pathname + location.hash); } else t = sessionStorage.getItem('hn_fam_tok') || ''; }catch(e){} return t; }
   function tryFamToken(){ var t = famToken(); if(!t || !signedIn()) return; try{ sessionStorage.removeItem('hn_fam_tok'); }catch(e){} fapi({ action:'accept', token:t }).then(function(r){ toast(r && r.ok ? 'Invitation acceptée ✓' : ((r && r.message) || 'Invitation impossible.')); fam = null; openPanel('parental'); }); }
-  var stat = null, statLoading = false, stRange = 7, stOff = 0, stBy = 'feature', msgRange = 7, msgBy = 'model';
+  var stat = null, statLoading = false, stRange = 7, stOff = 0, stBy = 'feature', msgRange = 7, msgBy = 'model', trRange = 30;
   var PAL = ['#0a6fd0','#ee8a2e','#5fc771','#8a5fd0','#d05f8a','#2d9c93'];
   /* ---- Coût quotidien en jetons (barres empilées par modèle, vue graphique / tableau) ---- */
   var tkRange = 30, tkView = 'chart', tkUnit = 'tok', histN = 20;
@@ -47299,6 +47303,38 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(rows.length > histN) h += '<div class="hnp-tabs"><button type="button" data-hnp-st="histmore:20">Voir plus</button></div>';
     return h;
   }
+  /* Tendances : courbes superposées (une par série, à l'échelle de chaque série), repères de fin, dates de début/fin, légende avec total et variation */
+  function nf(v){ return (Math.round(v * 10) / 10).toLocaleString('fr-CA'); }
+  function trendHtml(rows, seg){
+    var days = dayList(trRange, 0), prevDays = dayList(trRange, 1), idx = {}; days.forEach(function(d, i){ idx[dkey(d)] = i; });
+    var pk = {}; prevDays.forEach(function(d){ pk[dkey(d)] = 1; });
+    var S2 = [
+      { n:'Messages', c:'#3b82f6', f:function(r){ return r.feature === 'creer' ? 0 : 1; } },
+      { n:'Créations', c:'#7c5cd6', f:function(r){ return r.feature === 'creer' ? 1 : 0; } },
+      { n:'Crédits', c:'#e39b5f', f:function(r){ return +r.cost || 0; } }
+    ];
+    S2.forEach(function(x){ x.v = days.map(function(){ return 0; }); x.cur = 0; x.prev = 0; });
+    (rows || []).forEach(function(r){ var k = dkey(new Date(r.created_at)); S2.forEach(function(x){ var q = x.f(r); if(!q) return; if(idx[k] !== undefined){ x.v[idx[k]] += q; x.cur += q; } else if(pk[k]) x.prev += q; }); });
+    var any = S2.some(function(x){ return x.cur > 0; });
+    var h = '<h4>Tendances</h4><p class="hint">Évolution de votre utilisation. Chaque courbe est à l’échelle de sa propre série ; la variation compare à la période précédente de même durée.</p>' + seg('trange', trRange, [[7, '7 j'], [30, '30 j']]);
+    if(!any) return h + '<p class="hint">Aucune utilisation enregistrée sur cette période.</p>';
+    var W = 560, H = 210, L = 14, R = 14, T = 14, B = 30, n = days.length, X = function(i){ return L + (n < 2 ? 0 : i * (W - L - R) / (n - 1)); };
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Tendances d’utilisation : messages, créations et crédits" style="max-width:100%;display:block">';
+    svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '" stroke="currentColor" opacity=".14"/>';
+    S2.forEach(function(x){
+      var mx = Math.max.apply(null, x.v) || 1, Y = function(v){ return T + (H - T - B - 6) * (1 - v / mx); };
+      if(!x.cur) return;
+      svg += '<polyline fill="none" stroke="' + x.c + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="' + x.v.map(function(v, i){ return X(i).toFixed(1) + ',' + Y(v).toFixed(1); }).join(' ') + '"/>';
+      var li = n - 1; svg += '<circle cx="' + X(li).toFixed(1) + '" cy="' + Y(x.v[li]).toFixed(1) + '" r="4.5" fill="var(--surface,#fff)" stroke="' + x.c + '" stroke-width="2.5"/>';
+    });
+    svg += '<text x="' + L + '" y="' + (H - 8) + '" font-size="11" fill="currentColor" opacity=".6">' + esc(fday(days[0])) + '</text><text x="' + (W - R) + '" y="' + (H - 8) + '" font-size="11" text-anchor="end" fill="currentColor" opacity=".6">' + esc(fday(days[n - 1])) + '</text></svg>';
+    h += '<div style="margin-top:8px">' + svg + '</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px 16px;margin-top:10px">';
+    S2.forEach(function(x){
+      var d = x.cur - x.prev, up = d > 0, same = d === 0;
+      h += '<div><div style="font-size:13px;opacity:.75"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + x.c + ';margin-right:6px"></i>' + esc(x.n) + '</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:24px;font-weight:600">' + esc(nf(x.cur)) + '</b><span title="Variation par rapport à la période précédente (' + esc(nf(x.prev)) + ')" style="font-size:12px;font-weight:600;border-radius:999px;padding:2px 8px;background:' + (same ? 'rgba(120,130,140,.16)' : up ? 'rgba(34,160,90,.16)' : 'rgba(210,90,60,.16)') + ';color:' + (same ? 'inherit' : up ? '#1a7a46' : '#b4452a') + '">' + (same ? '＝ 0' : (up ? '↗ +' : '↘ −') + esc(nf(Math.abs(d)))) + '</span></div></div>';
+    });
+    return h + '</div>';
+  }
   function statsHtml(li){
     if(!li) return '<p class="hint">Connectez-vous pour voir vos statistiques.</p>';
     if(stat === null) return '<p class="hint">Chargement…</p>';
@@ -47306,6 +47342,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     var rows = stat.rows, h = '<p class="hint">Vous ne voyez que les statistiques de votre propre compte. Elles se remplissent à partir de maintenant (pas d’historique avant l’activation).</p>';
     var seg = function(attr, cur2, opts){ return '<div class="hnp-tabs">' + opts.map(function(o){ return '<button type="button" data-hnp-st="' + attr + ':' + o[0] + '" class="' + (String(cur2) === String(o[0]) ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>'; };
     var d1 = dayList(stRange, stOff), c1 = chartHtml(d1, rows, stBy, 'bar');
+    h += trendHtml(rows, seg);
     h += '<h4>Historique d’utilisation</h4><p class="hint">Consultez l’utilisation de vos crédits dans les outils HelpNaud.</p>';
     h += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">' + seg('range', stRange, [[7, '7 j'], [30, '30 j']]) + '<select id="hnp-stby" style="border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:var(--surface);color:var(--ink);font:inherit;"><option value="feature"' + (stBy === 'feature' ? ' selected' : '') + '>Par fonctionnalité</option><option value="model"' + (stBy === 'model' ? ' selected' : '') + '>Par modèle</option><option value="surface"' + (stBy === 'surface' ? ' selected' : '') + '>Par surface</option></select></div>';
     h += '<div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0"><b style="font-weight:500">' + esc(fday(d1[0])) + ' – ' + esc(fday(d1[d1.length - 1])) + ' ' + d1[d1.length - 1].getFullYear() + '</b><span><button type="button" class="btn" data-hnp-st="off:1" aria-label="Période précédente">‹</button> <button type="button" class="btn" data-hnp-st="off:-1" aria-label="Période suivante"' + (stOff === 0 ? ' disabled' : '') + '>›</button></span></div>';
@@ -47497,7 +47534,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     if(t.hasAttribute('data-hnp-cp')){ if(acctId && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(acctId).then(function(){ toast('Identifiant copié.'); }); return; }
     if(t.hasAttribute('data-hnp-act')){ var ac = t.getAttribute('data-hnp-act'); if(ac === 'export') exportData(); else if(ac === 'passkey') toast('Les clés d’accès arrivent bientôt.'); else if(ac === 'lib'){ closePanel(); var lb = document.querySelector('.nav-btn[data-view="library"]'); if(lb) lb.click(); } else if(ac === 'fb'){ closePanel(); var fb = document.getElementById('btn-feedback'); if(fb) fb.click(); } return; }
     if(t.hasAttribute('data-hnp-pe')){ peAct(t); return; }
-    if(t.hasAttribute('data-hnp-st')){ var sp = t.getAttribute('data-hnp-st').split(':'), sv = +sp[1]; if(sp[0] === 'histmore') histN += sv; else if(sp[0] === 'range'){ stRange = sv; stOff = 0; } else if(sp[0] === 'off') stOff = Math.max(0, stOff + sv); else if(sp[0] === 'mrange') msgRange = sv; else if(sp[0] === 'tkrange') tkRange = sv; else if(sp[0] === 'tkview') tkView = sp[1]; else if(sp[0] === 'tkunit') tkUnit = sp[1]; else if(sp[0] === 'mby') msgBy = sp[1]; render(); return; }
+    if(t.hasAttribute('data-hnp-st')){ var sp = t.getAttribute('data-hnp-st').split(':'), sv = +sp[1]; if(sp[0] === 'histmore') histN += sv; else if(sp[0] === 'range'){ stRange = sv; stOff = 0; } else if(sp[0] === 'off') stOff = Math.max(0, stOff + sv); else if(sp[0] === 'mrange') msgRange = sv; else if(sp[0] === 'trange') trRange = sv; else if(sp[0] === 'tkrange') tkRange = sv; else if(sp[0] === 'tkview') tkView = sp[1]; else if(sp[0] === 'tkunit') tkUnit = sp[1]; else if(sp[0] === 'mby') msgBy = sp[1]; render(); return; }
     if(t.hasAttribute('data-hnp-fa')){ famAct(t); return; }
     if(t.hasAttribute('data-hnp-tab')){ usageTab = t.getAttribute('data-hnp-tab'); render(); return; }
     if(t.hasAttribute('data-hnp-fam')){ famMode = t.getAttribute('data-hnp-fam'); render(); return; }
@@ -49638,6 +49675,7 @@ body.hnct-on .hnct-dot{ display:block; }
     refreshList(box); refreshStatus(box);
     var f0 = box.querySelector('button:not([disabled])'); if(f0) f0.focus();
   }
+  document.addEventListener('keydown', function(e){ var t = e.target; if((e.key === 'Enter' || e.key === ' ') && t && t.classList && t.classList.contains('hnp-avbtn')){ e.preventDefault(); t.click(); } });
   window.__hnContacts = { open:openDlg, close:closeDlg, _parseVcf:parseVcf, _parseCsv:parseCsv, _merge:merge, _load:load };
 })();
 </script>
