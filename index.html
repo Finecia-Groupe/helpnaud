@@ -48813,6 +48813,13 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
 #hncr .hncr-tpl button{ border:1px solid var(--line); border-radius:12px; background:var(--surface-2); color:var(--ink); padding:10px; text-align:left; cursor:pointer; font:inherit; font-size:13px; }
 #hncr .hncr-tpl button small{ display:block; color:var(--muted); font-size:11.5px; margin-top:2px; }
 #hncr .hncr-sw{ display:flex; gap:8px; align-items:center; } #hncr input[type=color]{ width:38px; height:32px; padding:0; border:1px solid var(--line); border-radius:8px; background:none; }
+#hncr .hncr-x.hncr-ib{ font-size:16px; line-height:1; min-width:30px; border-radius:8px; } #hncr .hncr-x.hncr-ib:hover{ background:var(--surface-2); color:var(--ink); }
+#hncr.max{ padding:0; } #hncr.max .hncr-box{ width:100%; height:100vh; height:100dvh; max-height:none; border-radius:0; border:0; } #hncr.max .hncr-body{ flex:1; } #hncr.max .hncr-prev img, #hncr.max .hncr-prev svg{ max-height:78vh; }
+#hncr-chip{ position:fixed; bottom:max(16px,env(safe-area-inset-bottom)); right:16px; z-index:99991; display:flex; align-items:stretch; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:999px; box-shadow:0 10px 30px rgba(0,0,0,.28); overflow:hidden; max-width:calc(100vw - 32px); touch-action:none; }
+#hncr-chip[hidden]{ display:none; } #hncr-chip.left{ right:auto; left:16px; }
+#hncr-chip button{ border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; padding:9px 12px; } #hncr-chip button:hover{ background:var(--surface-2); }
+#hncr-chip .hncr-chip-main{ display:flex; align-items:center; gap:8px; font-weight:600; font-size:13.5px; text-align:left; min-width:0; } #hncr-chip .hncr-chip-t{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#hncr-chip.ready{ border-color:var(--accent); animation:hncrpulse 1.6s ease-in-out 3; } @keyframes hncrpulse{ 50%{ box-shadow:0 0 0 6px rgba(31,78,140,.25); } }
 #hncr .hncr-thumb{ max-height:70px; max-width:140px; border:1px solid var(--line); border-radius:8px; margin-top:6px; display:block; }
 </style>
 <script id="hncr-js">
@@ -48972,17 +48979,45 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   }
 
   /* ---------- Écrans ---------- */
-  function open(screen, preset, fi){ ensure(); root.hidden = false; document.body.style.overflow = 'hidden'; S = { fi:!!fi, kind:'', preset:preset || null, res:null, texts:{}, logo:'', photo:'', ref:null, busy:false }; show(screen || 'home'); }
-  function close(){ if(root){ root.hidden = true; } document.body.style.overflow = ''; }
+  var chip = null, minimized = false, chipTimer = null;
+  function chipPos(){ try{ return localStorage.getItem('helpnaud_cr_chip') === 'left' ? 'left' : 'right'; }catch(e){ return 'right'; } }
+  function chipEl(){
+    if(chip) return chip;
+    chip = document.createElement('div'); chip.id = 'hncr-chip'; chip.hidden = true; chip.className = chipPos();
+    chip.innerHTML = '<button type="button" class="hncr-chip-main" data-c="restore" title="Rouvrir et reprendre le travail"><span aria-hidden="true">🎨</span><span class="hncr-chip-t"></span></button><button type="button" data-c="side" title="Placer à gauche ou à droite" aria-label="Changer de côté">⇄</button><button type="button" data-c="x" title="Fermer" aria-label="Fermer">×</button>';
+    document.body.appendChild(chip);
+    chip.addEventListener('click', function(e){ var c = e.target.closest && e.target.closest('[data-c]'); if(!c) return; var k = c.getAttribute('data-c');
+      if(k === 'restore') restore();
+      else if(k === 'side'){ chip.classList.toggle('left'); try{ localStorage.setItem('helpnaud_cr_chip', chip.classList.contains('left') ? 'left' : 'right'); }catch(er){} }
+      else if(k === 'x'){ if(S && S.res && !confirm('Fermer cette création ? Les modifications non téléchargées seront perdues.')) return; close(); } });
+    var drag = null;   /* glisser la pastille vers la gauche ou la droite de l'écran */
+    chip.addEventListener('pointerdown', function(e){ if(e.target.closest('[data-c="side"],[data-c="x"]')) return; drag = { x:e.clientX, moved:false }; });
+    window.addEventListener('pointermove', function(e){ if(drag && Math.abs(e.clientX - drag.x) > 12) drag.moved = true; });
+    window.addEventListener('pointerup', function(e){ if(!drag) return; var d = drag; drag = null; if(d.moved){ var left = e.clientX < window.innerWidth / 2; chip.classList.toggle('left', left); try{ localStorage.setItem('helpnaud_cr_chip', left ? 'left' : 'right'); }catch(er){} chip._dragged = true; setTimeout(function(){ chip._dragged = false; }, 50); } });
+    chip.addEventListener('click', function(e){ if(chip._dragged){ e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+    return chip;
+  }
+  function chipUpdate(){
+    if(!chip) return; var h = root && root.querySelector('.hncr-head h2'), t = (h && h.textContent) || 'Créer';
+    var st = S && S.busy ? '⏳ en cours…' : (S && S.res ? '✓ prête' : 'ouverte');
+    var was = chip.getAttribute('data-st'); chip.setAttribute('data-st', st);
+    chip.querySelector('.hncr-chip-t').textContent = t + ' · ' + st;
+    if(st === '✓ prête' && was && was !== st){ chip.classList.remove('ready'); void chip.offsetWidth; chip.classList.add('ready'); }
+  }
+  function minimize(){ if(!root || root.hidden) return; root.hidden = true; document.body.style.overflow = ''; minimized = true; chipEl().hidden = false; chip.removeAttribute('data-st'); chipUpdate(); clearInterval(chipTimer); chipTimer = setInterval(chipUpdate, 700); }
+  function restore(){ if(!root) return; minimized = false; clearInterval(chipTimer); if(chip) chip.hidden = true; root.hidden = false; document.body.style.overflow = 'hidden'; }
+  function toggleMax(){ if(!root) return; var on = root.classList.toggle('max'); var b = root.querySelector('[data-a="max"]'); if(b){ b.textContent = on ? '❐' : '□'; b.title = on ? 'Réduire la fenêtre' : 'Agrandir la fenêtre'; b.setAttribute('aria-label', b.title); } }
+  function open(screen, preset, fi){ ensure(); if(minimized && S && (S.res || S.busy || S.kind) && !!fi === !!S.fi){ restore(); return; } minimized = false; clearInterval(chipTimer); if(chip) chip.hidden = true; root.hidden = false; document.body.style.overflow = 'hidden'; S = { fi:!!fi, kind:'', preset:preset || null, res:null, texts:{}, logo:'', photo:'', ref:null, busy:false }; show(screen || 'home'); }
+  function close(){ if(root){ root.hidden = true; } minimized = false; clearInterval(chipTimer); if(chip) chip.hidden = true; document.body.style.overflow = ''; }
   function ensure(){
     if(root) return;
     root = document.createElement('div'); root.id = 'hncr'; root.hidden = true; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true');
-    root.innerHTML = '<div class="hncr-box"><div class="hncr-head"><button type="button" class="hncr-x" data-a="back" aria-label="Retour" style="font-size:18px" hidden>←</button><h2></h2><button type="button" class="hncr-x" data-a="close" aria-label="Fermer">×</button></div><div class="hncr-body"></div></div>';
+    root.innerHTML = '<div class="hncr-box"><div class="hncr-head"><button type="button" class="hncr-x" data-a="back" aria-label="Retour" style="font-size:18px" hidden>←</button><h2></h2><button type="button" class="hncr-x hncr-ib" data-a="min" title="Réduire (reprendre plus tard)" aria-label="Réduire">—</button><button type="button" class="hncr-x hncr-ib" data-a="max" title="Agrandir la fenêtre" aria-label="Agrandir la fenêtre">□</button><button type="button" class="hncr-x" data-a="close" aria-label="Fermer">×</button></div><div class="hncr-body"></div></div>';
     document.body.appendChild(root);
-    root.addEventListener('click', function(e){ if(e.target === root){ close(); return; } var a = e.target.closest && e.target.closest('[data-a]'); if(a) act(a.getAttribute('data-a'), a); });
+    root.addEventListener('click', function(e){ if(e.target === root){ if(S && (S.res || S.busy)) minimize(); else close(); return; } var a = e.target.closest && e.target.closest('[data-a]'); if(a) act(a.getAttribute('data-a'), a); });
     root.addEventListener('input', function(e){ var t = e.target; if(t.getAttribute && t.getAttribute('data-txt')){ S.texts[t.getAttribute('data-txt')] = t.value; refreshPreview(); } });
     root.addEventListener('change', function(e){ var t = e.target; if(t.id === 'hncr-file') onFile(t, 'ref'); else if(t.id === 'hncr-logo') onFile(t, 'logo'); else if(t.id === 'hncr-kitlogo') onKitLogo(t); });
-    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && root && !root.hidden) close(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && root && !root.hidden){ if(S && (S.res || S.busy)) minimize(); else close(); } });
   }
   function head(title, back){ $('.hncr-head h2').textContent = title; var b = $('[data-a="back"]'); b.hidden = !back; b.setAttribute('data-back', back || ''); }
   function body(h){ $('.hncr-body').innerHTML = h; }
@@ -49065,6 +49100,8 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   /* ---------- Actions ---------- */
   function act(a, el){
     if(a === 'close') return close();
+    if(a === 'min') return minimize();
+    if(a === 'max') return toggleMax();
     if(a === 'back'){ var b = $('[data-a="back"]').getAttribute('data-back'); if(b === 'form') keepForm(); return show(b || 'home'); }
     if(a === 'home'){ S = { fi:S.fi, kind:'', preset:null, res:null, texts:{}, logo:'', photo:'', ref:null }; return home(); }
     if(a === 'kit') return kitScreen();
@@ -49117,7 +49154,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   }
   document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-hncr]'); if(!b) return; e.preventDefault(); var m = b.closest('.attach-menu'); if(m) m.hidden = true; open('home', null, !!(m && m.id === 'hstatis-attach-menu')); });
   addEntries(); document.addEventListener('DOMContentLoaded', addEntries); setTimeout(addEntries, 800); setInterval(addEntries, 2000);   /* le menu de l'espace équipe est construit plus tard */
-  window.__hnCreate = { open:open, _t:{ renderDesign:renderDesign, cleanSvg:cleanSvg, normSpec:normSpec } };
+  window.__hnCreate = { open:open, minimize:minimize, restore:restore, toggleMax:toggleMax, _t:{ renderDesign:renderDesign, cleanSvg:cleanSvg, normSpec:normSpec } };
 })();
 </script>
 <script id="hnl-js">
