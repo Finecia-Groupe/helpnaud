@@ -46791,6 +46791,13 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 #hnp .hnp-head{ display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--line); }
 #hnp .hnp-head h2{ margin:0; font-size:17px; flex:1; }
 #hnp .hnp-x, #hnp .hnp-back{ border:1px solid var(--line); background:var(--surface); color:var(--ink); width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:16px; }
+#hnp .hnp-ib{ font-size:15px; }
+#hnp.max{ padding:0; } #hnp.max .hnp-box{ width:100vw; height:100vh; height:100dvh; max-width:none; border-radius:0; border:0; }
+#hnp.min{ visibility:hidden; pointer-events:none; background:transparent; } #hnp.min *{ pointer-events:none; }
+#hnp-chip{ position:fixed; bottom:max(16px,env(safe-area-inset-bottom)); right:16px; z-index:99991; display:flex; align-items:stretch; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:999px; box-shadow:0 10px 30px rgba(0,0,0,.28); overflow:hidden; max-width:calc(100vw - 32px); touch-action:none; }
+#hnp-chip[hidden]{ display:none; } #hnp-chip.left{ right:auto; left:16px; }
+#hnp-chip button{ border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; padding:9px 12px; } #hnp-chip button:hover{ background:var(--surface-2); }
+#hnp-chip .hnp-chip-main{ display:flex; align-items:center; gap:8px; font-weight:600; font-size:13.5px; }
 #hnp .hnp-back{ display:none; }
 #hnp .hnp-body{ flex:1; display:flex; min-height:0; }
 #hnp .hnp-nav{ width:230px; flex:none; border-right:1px solid var(--line); overflow-y:auto; padding:8px; }
@@ -47129,7 +47136,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       var o = J('hn_shared_links', {}), ks = Object.keys(o).filter(function(x){ return o[x] && o[x].id; });
       h += '<h3>Liens partagés</h3><p class="hint">Conversations que vous avez rendues lisibles par lien public (texte seul).</p>';
       if(!ks.length) h += '<p class="hint">Aucun lien partagé sur cet appareil.</p>';
-      ks.forEach(function(x){ var d = o[x]; h += '<div class="hnp-row"><div class="hnp-l">Conversation partagée<small>' + (d.at ? new Date(d.at).toLocaleDateString('fr-CA') : '') + (d.n ? ' · ' + d.n + ' messages' : '') + '</small></div><button type="button" class="btn" data-hnp-copy="' + esc(d.id) + '">Copier</button><button type="button" class="btn hnp-danger" data-hnp-off="' + esc(x) + '">Désactiver</button></div>'; });
+      ks.forEach(function(x){ var d = o[x]; h += '<div class="hnp-row"><div class="hnp-l">' + (/^rep_/.test(x) ? 'Réponse partagée' : 'Conversation partagée') + '<small>' + (d.at ? new Date(d.at).toLocaleDateString('fr-CA') : '') + (d.n ? ' · ' + d.n + ' messages' : '') + '</small></div><button type="button" class="btn" data-hnp-copy="' + esc(d.id) + '">Copier</button><button type="button" class="btn hnp-danger" data-hnp-off="' + esc(x) + '">Désactiver</button></div>'; });
     } else if(k === 'comp'){
       h += (window.__hnComp ? window.__hnComp.html() : '<p class="hint">Indisponible.</p>');
     } else if(k === 'capa'){
@@ -47414,7 +47421,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   }
   function build(){
     root = document.createElement('div'); root.id = 'hnp'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Paramètres du profil');
-    root.innerHTML = '<div class="hnp-box"><div class="hnp-head"><button type="button" class="hnp-back" data-hnp="back" aria-label="Retour">‹</button><h2>Paramètres</h2><button type="button" class="hnp-x" data-hnp="close" aria-label="Fermer">✕</button></div><div class="hnp-body"><div class="hnp-nav"></div><div class="hnp-pane"></div></div></div>';
+    root.innerHTML = '<div class="hnp-box"><div class="hnp-head"><button type="button" class="hnp-back" data-hnp="back" aria-label="Retour">‹</button><h2>Paramètres</h2><button type="button" class="hnp-x hnp-ib" data-hnp="min" title="Réduire (reprendre plus tard)" aria-label="Réduire">—</button><button type="button" class="hnp-x hnp-ib" data-hnp="max" title="Agrandir la fenêtre" aria-label="Agrandir la fenêtre">□</button><button type="button" class="hnp-x" data-hnp="close" aria-label="Fermer">✕</button></div><div class="hnp-body"><div class="hnp-nav"></div><div class="hnp-pane"></div></div></div>';
     document.body.appendChild(root);
     root.addEventListener('mousedown', function(e){ if(e.target === root) closePanel(); });
     root.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ e.stopPropagation(); closePanel(); } });
@@ -47423,6 +47430,8 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   }
   function openPanel(sec){
     if(!root) build();
+    if(minimized && !sec){ restorePanel(); return; }
+    minimized = false; if(chip) chip.hidden = true; root.classList.remove('min');
     try{ if(window.__hnDrawer && window.__hnDrawer.isOpen()) window.__hnDrawer.close(); }catch(e){}
     cur = sec || cur || 'profil';
     if(cur === 'usage' && !statLoading) stat = null;   // historique à jour à chaque ouverture
@@ -47431,7 +47440,35 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     render(); root.classList.add('on');
     var f = root.querySelector('.hnp-x'); if(f) f.focus();
   }
-  function closePanel(){ invite = false; if(root) root.classList.remove('on'); }
+  var chip = null, minimized = false, sv = null;
+  function chipPos(){ try{ return localStorage.getItem('helpnaud_hnp_chip') === 'left' ? 'left' : 'right'; }catch(e){ return 'right'; } }
+  function setSide(left){ if(!chip) return; chip.classList.toggle('left', !!left); try{ localStorage.setItem('helpnaud_hnp_chip', left ? 'left' : 'right'); }catch(e){} }
+  function chipEl(){
+    if(chip) return chip;
+    chip = document.createElement('div'); chip.id = 'hnp-chip'; chip.hidden = true; chip.className = chipPos();
+    chip.innerHTML = '<button type="button" class="hnp-chip-main" data-c="restore" title="Rouvrir les Paramètres exactement où vous les avez laissés"><span aria-hidden="true">⚙️</span><span>Paramètres</span></button><button type="button" data-c="side" title="Placer à gauche ou à droite" aria-label="Changer de côté">⇄</button><button type="button" data-c="x" title="Fermer les Paramètres" aria-label="Fermer les Paramètres">✕</button>';
+    document.body.appendChild(chip);
+    chip.addEventListener('click', function(e){ var c = e.target.closest && e.target.closest('[data-c]'); if(!c) return; var k = c.getAttribute('data-c');
+      if(k === 'restore') restorePanel(); else if(k === 'side') setSide(!chip.classList.contains('left')); else if(k === 'x') closePanel(); });
+    var drag = null;   /* glisser la pastille à gauche ou à droite ; le côté est mémorisé */
+    chip.addEventListener('pointerdown', function(e){ if(e.target.closest('[data-c="side"],[data-c="x"]')) return; drag = { x:e.clientX, moved:false }; });
+    window.addEventListener('pointermove', function(e){ if(drag && Math.abs(e.clientX - drag.x) > 12) drag.moved = true; });
+    window.addEventListener('pointerup', function(e){ if(!drag) return; var d = drag; drag = null; if(d.moved){ setSide(e.clientX < window.innerWidth / 2); chip._dragged = true; setTimeout(function(){ chip._dragged = false; }, 50); } });
+    chip.addEventListener('click', function(e){ if(chip._dragged){ e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+    return chip;
+  }
+  function minimizePanel(){
+    if(!root || !root.classList.contains('on') || minimized) return;
+    var pn = root.querySelector('.hnp-pane'), nv = root.querySelector('.hnp-nav'); sv = { p:pn ? pn.scrollTop : 0, n:nv ? nv.scrollTop : 0 };
+    minimized = true; root.classList.add('min'); chipEl().hidden = false;
+  }
+  function restorePanel(){
+    if(!root) return; minimized = false; root.classList.remove('min'); if(chip) chip.hidden = true;
+    if(sv){ var pn = root.querySelector('.hnp-pane'), nv = root.querySelector('.hnp-nav'); if(pn) pn.scrollTop = sv.p; if(nv) nv.scrollTop = sv.n; }
+    var f = root.querySelector('.hnp-ib'); if(f) f.focus();
+  }
+  function toggleMaxPanel(){ if(!root) return; var on = root.classList.toggle('max'), b = root.querySelector('[data-hnp="max"]'); if(b){ b.textContent = on ? '❐' : '□'; b.title = on ? 'Réduire la fenêtre' : 'Agrandir la fenêtre'; b.setAttribute('aria-label', b.title); } }
+  function closePanel(){ invite = false; minimized = false; if(chip) chip.hidden = true; if(root){ root.classList.remove('on', 'min', 'max'); var b = root.querySelector('[data-hnp="max"]'); if(b){ b.textContent = '□'; b.title = 'Agrandir la fenêtre'; } } }
   function reveal(sel){ var el = document.querySelector(sel); if(!el) return false; var v = el.closest('.view'); if(v && v.hidden){ var id = v.id.replace(/^view-/, ''); var b = document.querySelector('[data-view="' + id + '"]'); if(b) b.click(); } setTimeout(function(){ try{ el.scrollIntoView({ block:'center' }); }catch(e){} }, 150); return true; }
   function clickId(id){ var b = $(id); if(b) b.click(); return !!b; }
   function onClick(e){
@@ -47459,6 +47496,8 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     }
     switch(t.getAttribute('data-hnp')){
       case 'close': closePanel(); break;
+      case 'min': minimizePanel(); break;
+      case 'max': toggleMaxPanel(); break;
       case 'back': root.setAttribute('data-m', 'list'); render(); break;
       case 'pick': pickPhoto(); break;
       case 'rmphoto': try{ localStorage.removeItem(PH); }catch(x){} renderBtn(); render(); toast('Photo retirée.'); break;
@@ -48920,7 +48959,11 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     return best;
   }
   function fitText(spec, e, txt, size0, wt, lh, an, tx, ty, fam){
-    var W = spec.width, mw0 = e.maxWidth ? num(e.maxWidth, 0, 20, 6000) : 0, size = size0, box = container(spec, tx, ty, size0, an);
+    var W = spec.width, mw0 = e.maxWidth ? num(e.maxWidth, 0, 20, 6000) : 0;
+    /* Lisibilité : aucun texte sous 2,6 % de la largeur du visuel (ex. 32 px pour 1240 px). Les lignes de coordonnées / d'inscription
+       trop petites sont relevées à ce seuil, puis seulement ensuite ajustées au cadre. */
+    var floorS = Math.round(W * 0.026), size = Math.max(size0, floorS); size0 = size;
+    var box = container(spec, tx, ty, size0, an);
     var margin = Math.max(24, W * 0.04), canvasW = an === 'middle' ? 2 * Math.min(tx, W - tx) - 2 * margin : (an === 'end' ? tx - margin : W - tx - margin);
     var availW = canvasW > 40 ? canvasW : W * 0.9, bottom = null;
     if(box){
@@ -48930,16 +48973,23 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     }
     var cap = mw0 ? Math.min(mw0, availW) : availW, single = txt.length <= 48 && txt.indexOf('\n') < 0, lines, g = 0, minS = Math.max(10, size0 * 0.4);
     /* Dans un cartouche, un texte court garde UNE ligne (on réduit la taille plutôt que de passer à la ligne). */
-    if(box && single){ var need = tw(txt, size, wt, fam); if(need > availW) size = Math.max(minS, Math.floor(size * availW / need * 0.99)); lines = [txt]; }
+    minS = Math.max(10, Math.min(size0, floorS), size0 * 0.55);
+    if(box && single){ var need = tw(txt, size, wt, fam);
+      if(need > availW){ var fs = Math.floor(size * availW / need * 0.99); if(fs >= minS) size = fs; else { size = minS; single = false; } }   /* trop long pour une ligne lisible : on passe sur 2 lignes plutôt que de rapetisser */
+      lines = single ? [txt] : wrapM(txt, size, wt, fam, availW); }
     else lines = wrapM(txt, size, wt, fam, cap);
-    /* Contrôle final : aucune ligne plus large que la place disponible, et le bloc ne dépasse pas le bas du cartouche. */
+    /* Contrôle final : aucune ligne plus large que la place disponible ; si le bloc dépasse le bas du cartouche, on le REMONTE un peu
+       (texte collé au bord du cartouche) avant de réduire la taille. Le texte n'est jamais réduit à l'illisible : plancher à 55 % de la taille d'origine. */
+    var dy = 0;
+    function over(){ return (bottom !== null && ty >= box.y - size * 0.1) ? (ty + (lines.length - 1) * size * lh + size * 0.25) - bottom : 0; }
     while(g++ < 60){
-      var wide = lines.some(function(l){ return tw(l, size, wt, fam) > availW + 0.5; }), low = bottom !== null && ty >= box.y && (ty + (lines.length - 1) * size * lh + size * 0.25) > bottom;
-      if(!(wide || low) || size <= minS) break;
-      size = Math.max(minS, Math.floor(size * 0.93));
+      var wide = lines.some(function(l){ return tw(l, size, wt, fam) > availW + 0.5; }), ov = over();
+      if(ov > 0 && !wide){ var room = Math.max(0, Math.min(ov, size * 1.5 * lines.length, ty - (box.y + size * 0.9))); dy = -room; ov -= room; } else dy = 0;
+      if(!(wide || ov > 0) || size <= minS) break;
+      size = Math.max(minS, Math.floor(size * 0.93)); dy = 0;
       lines = (box && single) ? [txt] : wrapM(txt, size, wt, fam, mw0 ? Math.min(mw0, availW) : availW);
     }
-    return { size:size, lines:lines };
+    return { size:size, lines:lines, dy:dy };
   }
   function renderDesign(spec, ctx){
     var W = spec.width, H = spec.height, defs = '', bg = '#ffffff';
@@ -48959,7 +49009,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
         var txt = ctx.texts && ctx.texts[e.id] != null ? ctx.texts[e.id] : String(e.text || ''), size = num(e.size, 48, 8, 400), wt = num(e.weight, 400, 100, 900), lh = num(e.lineHeight, 1.2, 0.8, 2.5), an = /^(start|middle|end)$/.test(e.anchor) ? e.anchor : 'start';
         var tx = num(e.x, 0, -3000, 6000), ty = num(e.y, 0, -3000, 6000), fit = fitText(spec, e, txt, size, wt, lh, an, tx, ty, FONTS[e.font] || FONTS.sans);
         size = fit.size; var lines = fit.lines;
-        body += '<text x="' + tx + '" y="' + ty + '" font-size="' + size + '" font-weight="' + wt + '" fill="' + col(e.fill, '#111111') + '" text-anchor="' + an + '" font-family="' + (FONTS[e.font] || FONTS.sans).replace(/"/g, "'") + '">' + lines.map(function(l, k){ return '<tspan x="' + tx + '" dy="' + (k ? size * lh : 0) + '">' + esc(l) + '</tspan>'; }).join('') + '</text>';
+        body += '<text x="' + tx + '" y="' + (ty + (fit.dy || 0)) + '" font-size="' + size + '" font-weight="' + wt + '" fill="' + col(e.fill, '#111111') + '" text-anchor="' + an + '" font-family="' + (FONTS[e.font] || FONTS.sans).replace(/"/g, "'") + '">' + lines.map(function(l, k){ return '<tspan x="' + tx + '" dy="' + (k ? size * lh : 0) + '">' + esc(l) + '</tspan>'; }).join('') + '</text>';
       }
     });
     return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '"><defs>' + defs + '</defs>' + body + '</svg>';
@@ -49205,6 +49255,225 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-hncr]'); if(!b) return; e.preventDefault(); var m = b.closest('.attach-menu'); if(m) m.hidden = true; open('home', null, !!(m && m.id === 'hstatis-attach-menu')); });
   addEntries(); document.addEventListener('DOMContentLoaded', addEntries); setTimeout(addEntries, 800); setInterval(addEntries, 2000);   /* le menu de l'espace équipe est construit plus tard */
   window.__hnCreate = { open:open, minimize:minimize, restore:restore, toggleMax:toggleMax, _t:{ renderDesign:renderDesign, cleanSvg:cleanSvg, normSpec:normSpec } };
+})();
+</script>
+<style id="hnmx-css">
+.msg.bot[data-hnmx]{ position:relative; }
+.hnmx-x{ position:absolute; top:5px; right:5px; width:26px; height:26px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; opacity:.7; padding:0; z-index:2; }
+.hnmx-x:hover, .hnmx-x:focus-visible{ opacity:1; color:var(--ink); background:var(--surface-2); }
+.hnmx-x svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.hnmx-pop{ position:fixed; z-index:99996; min-width:250px; max-width:min(330px,92vw); background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 40px rgba(0,0,0,.28); padding:6px; }
+.hnmx-pop small.hnmx-h{ display:block; padding:6px 10px 4px; color:var(--muted); font-size:11.5px; }
+.hnmx-pop button{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0; background:transparent; color:inherit; font:inherit; font-size:13.5px; padding:9px 10px; border-radius:8px; cursor:pointer; }
+.hnmx-pop button:hover, .hnmx-pop button:focus-visible{ background:var(--surface-2); }
+.hnmx-pop hr{ border:0; border-top:1px solid var(--line); margin:4px 2px; }
+#hnmx-dlg{ position:fixed; inset:0; z-index:99997; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; padding:12px; }
+#hnmx-dlg .hnmx-box{ background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:16px; width:min(480px,100%); max-height:calc(100dvh - 24px); overflow:auto; padding:18px; box-shadow:0 20px 60px rgba(0,0,0,.35); }
+#hnmx-dlg h3{ margin:0 0 8px; font-size:17px; } #hnmx-dlg p{ margin:6px 0; font-size:13.5px; line-height:1.5; } #hnmx-dlg .hnmx-m{ color:var(--muted); font-size:12.5px; }
+#hnmx-dlg label.hnmx-l{ display:block; font-size:12px; font-weight:600; color:var(--muted); margin:12px 0 4px; }
+#hnmx-dlg input[type=email], #hnmx-dlg input[type=text], #hnmx-dlg textarea{ width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:10px; padding:9px 10px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; }
+#hnmx-dlg .hnmx-ck{ display:flex; gap:8px; align-items:flex-start; font-size:13px; margin:12px 0 0; } #hnmx-dlg .hnmx-ck input{ margin-top:3px; }
+#hnmx-dlg .hnmx-row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:14px; }
+#hnmx-dlg .hnmx-err{ color:var(--danger,#b91c1c); font-size:13px; font-weight:600; min-height:18px; margin-top:8px; } #hnmx-dlg .hnmx-ok{ color:var(--ok,#15803d); font-size:13px; font-weight:600; }
+#hnmx-dlg .hnmx-pre{ max-height:110px; overflow:auto; font-size:12.5px; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; white-space:pre-wrap; }
+#hnmx-view{ position:fixed; inset:0; z-index:99995; background:var(--surface); color:var(--ink); display:flex; flex-direction:column; }
+#hnmx-view header{ display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+#hnmx-view header b{ flex:1; font-size:15px; min-width:120px; }
+#hnmx-view .hnmx-body{ flex:1; overflow:auto; padding:18px 14px 40px; }
+#hnmx-view .hnmx-doc{ max-width:980px; margin:0 auto; font-size:16px; line-height:1.65; }
+#hnmx-view .hnmx-doc pre{ font-size:14px; }
+#hnmx-view .hnmx-pc{ position:absolute; top:6px; right:6px; font-size:12px; padding:3px 9px; }
+#hnmx-view .hnmx-doc pre{ position:relative; padding-top:34px; }
+#hnmx-view .hnmx-ib{ border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:9px; font:inherit; font-size:13px; font-weight:600; padding:7px 12px; cursor:pointer; }
+#hnmx-view .hnmx-ib:hover{ background:var(--surface-2); }
+</style>
+<script id="hnmx-js">
+(function(){
+  'use strict';
+  var ICO_SHARE = '<svg viewBox="0 0 24 24"><circle cx="18" cy="5.2" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="18.8" r="2.3"/><path d="M8 10.6l8-4.1M8 13.4l8 4.1"/></svg>';
+  var ICO_EXP = '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
+  var SITE = location.origin;
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  function toast(t){ var d = document.createElement('div'); d.textContent = t; d.setAttribute('role', 'status'); d.style.cssText = 'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:90vw;text-align:center'; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 2600); }
+  function textOf(m){ var t = m.querySelector('.msg-text'); return t ? String(t.innerText || t.textContent || '').trim() : ''; }
+  function token(){ return window.__hnAiToken ? Promise.resolve(window.__hnAiToken()) : Promise.resolve(null); }
+  function who(){ try{ return (window.__hnU && window.__hnU.who && window.__hnU.who()) || { name:'', email:'' }; }catch(e){ return { name:'', email:'' }; } }
+  function firstName(){ var n = String(who().name || '').trim().split(/\s+/)[0] || ''; return n.replace(/[<>"]/g, '').slice(0, 40); }
+  function copy(text){ if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text); return Promise.reject(new Error('copy')); }
+
+  /* ----- Pastille d'action sur chaque réponse de l'IA : bouton Partager (cette réponse seulement) + bouton Agrandir ----- */
+  function decorate(m){
+    var bar = m.querySelector('.msg-actions'); if(!bar || !m.querySelector('.msg-text')) return;
+    m.setAttribute('data-hnmx', '1');
+    var priv = !!(m.closest && m.closest('#hstatis-log'));   /* F-i-Stat : espace privé de l'équipe — jamais de courriel, de lien public ni d'invitation depuis ses réponses (Agrandir seulement) */
+    if(!priv){
+    var sb = document.createElement('button'); sb.type = 'button'; sb.className = 'msg-action-btn'; sb.title = 'Partager cette réponse'; sb.setAttribute('aria-label', 'Partager cette réponse'); sb.setAttribute('aria-haspopup', 'menu'); sb.innerHTML = ICO_SHARE;
+    sb.addEventListener('click', function(e){ e.stopPropagation(); openPop(sb, m); });
+    var st = bar.querySelector('.msg-status'); if(st) bar.insertBefore(sb, st); else bar.appendChild(sb);
+    }
+    var xb = document.createElement('button'); xb.type = 'button'; xb.className = 'hnmx-x'; xb.title = 'Agrandir cette réponse'; xb.setAttribute('aria-label', 'Agrandir cette réponse'); xb.innerHTML = ICO_EXP;
+    xb.addEventListener('click', function(){ openView(m); });
+    m.appendChild(xb);
+  }
+  function scan(){ var l = document.querySelectorAll('.msg.bot:not([data-hnmx])'); for(var i = 0; i < l.length; i++) decorate(l[i]); }
+  var tmr = null; function later(){ clearTimeout(tmr); tmr = setTimeout(scan, 250); }
+  try{ new MutationObserver(later).observe(document.body, { childList:true, subtree:true }); }catch(e){}
+  document.addEventListener('DOMContentLoaded', scan); setTimeout(scan, 600);
+
+  /* ----- Menu de partage ----- */
+  var pop = null;
+  function closePop(){ if(pop){ pop.remove(); pop = null; } document.removeEventListener('mousedown', outside, true); document.removeEventListener('keydown', escPop, true); }
+  function outside(e){ if(pop && !pop.contains(e.target)) closePop(); }
+  function escPop(e){ if(e.key === 'Escape'){ e.stopPropagation(); closePop(); } }
+  function openPop(btn, m){
+    if(pop){ closePop(); return; }
+    pop = document.createElement('div'); pop.className = 'hnmx-pop'; pop.setAttribute('role', 'menu');
+    pop.innerHTML = '<small class="hnmx-h">Cette réponse uniquement</small>' +
+      '<button type="button" role="menuitem" data-k="text">📤 Partager le texte</button>' +
+      '<button type="button" role="menuitem" data-k="mail">✉️ Envoyer par courriel…</button>' +
+      '<button type="button" role="menuitem" data-k="link">🔗 Créer un lien public</button>' +
+      '<hr><button type="button" role="menuitem" data-k="invite">🎁 Inviter quelqu’un à essayer HelpNaud</button>' +
+      '<button type="button" role="menuitem" data-k="expand">⤢ Agrandir cette réponse</button>';
+    document.body.appendChild(pop);
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    var left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left)), top = r.bottom + 6; if(top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    pop.style.left = left + 'px'; pop.style.top = top + 'px';
+    pop.addEventListener('click', function(e){ var b = e.target.closest('[data-k]'); if(!b) return; var k = b.getAttribute('data-k'); closePop(); act(k, m); });
+    document.addEventListener('mousedown', outside, true); document.addEventListener('keydown', escPop, true);
+    var f = pop.querySelector('button'); if(f) f.focus();
+  }
+  function act(k, m){
+    var text = textOf(m); if(!text){ toast('Rien à partager.'); return; }
+    if(k === 'expand') return openView(m);
+    if(k === 'text'){
+      if(navigator.share){ navigator.share({ text:text }).catch(function(){}); return; }
+      copy(text).then(function(){ toast('Réponse copiée : collez-la où vous voulez la partager.'); }, function(){ toast('Copie impossible ici.'); }); return;
+    }
+    if(k === 'mail') return mailDialog(text);
+    if(k === 'invite') return inviteDialog();
+    if(k === 'link') return linkDialog(text);
+  }
+
+  /* ----- Boîte de dialogue commune ----- */
+  var dlg = null, prevFocus = null;
+  function closeDlg(){ if(dlg){ dlg.remove(); dlg = null; } if(prevFocus && prevFocus.focus) try{ prevFocus.focus(); }catch(e){} }
+  function openDlg(html){
+    closeDlg(); prevFocus = document.activeElement;
+    dlg = document.createElement('div'); dlg.id = 'hnmx-dlg'; dlg.setAttribute('role', 'dialog'); dlg.setAttribute('aria-modal', 'true');
+    dlg.innerHTML = '<div class="hnmx-box">' + html + '</div>';
+    document.body.appendChild(dlg);
+    dlg.addEventListener('mousedown', function(e){ if(e.target === dlg) closeDlg(); });
+    dlg.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ e.stopPropagation(); closeDlg(); } });
+    var f = dlg.querySelector('input,textarea,button'); if(f) f.focus();
+    return dlg.querySelector('.hnmx-box');
+  }
+  function call(body){
+    return token().then(function(t){
+      if(!t){ var e = new Error('Connectez-vous à votre compte HelpNaud (Paramètres › Compte) pour envoyer un courriel depuis HelpNaud.'); e.code = 'login'; throw e; }
+      return fetch('/.netlify/functions/share-mail', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + t }, body:JSON.stringify(body) })
+        .catch(function(){ var e = new Error('Impossible de joindre le serveur (réseau ou déploiement).'); e.code = 'network'; throw e; });
+    }).then(function(res){ return res.json().catch(function(){ return {}; }).then(function(j){
+      if(!res.ok || !j.ok){ var e = new Error(j.message || (res.status === 404 ? 'Fonction d’envoi non déployée (share-mail.js).' : 'Envoi impossible (' + res.status + ').')); e.code = j.code || (res.status === 404 ? 'missing' : 'http'); throw e; }
+      return j; }); });
+  }
+  function mailto(to, subject, body){ return 'mailto:' + encodeURIComponent(to || '').replace(/%40/g, '@') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body); }
+
+  /* ----- Envoyer cette réponse par courriel ----- */
+  function mailDialog(text){
+    var box = openDlg('<h3>Envoyer cette réponse par courriel</h3>' +
+      '<p class="hnmx-m">Seul le texte de cette réponse est envoyé : ni le reste de la conversation, ni vos fichiers.</p>' +
+      '<div class="hnmx-pre">' + esc(text.slice(0, 400)) + (text.length > 400 ? '…' : '') + '</div>' +
+      '<label class="hnmx-ck"><input type="radio" name="hnmx-w" value="self" checked> <span>À moi-même (l’adresse de mon compte HelpNaud)</span></label>' +
+      '<label class="hnmx-ck"><input type="radio" name="hnmx-w" value="other"> <span>À un contact</span></label>' +
+      '<label class="hnmx-l" for="hnmx-to">Adresse courriel du contact</label><input type="email" id="hnmx-to" placeholder="nom@exemple.com" autocomplete="off" disabled>' +
+      '<p class="hnmx-err" role="alert"></p><div class="hnmx-row"><button type="button" class="btn" data-a="x">Annuler</button><button type="button" class="btn" data-a="mt" hidden>Ouvrir mon application de courriel</button><button type="button" class="btn primary" data-a="go">Envoyer</button></div>');
+    var to = box.querySelector('#hnmx-to'), err = box.querySelector('.hnmx-err'), go = box.querySelector('[data-a="go"]'), mt = box.querySelector('[data-a="mt"]');
+    box.querySelectorAll('input[name="hnmx-w"]').forEach(function(r){ r.addEventListener('change', function(){ var o = box.querySelector('input[name="hnmx-w"]:checked').value === 'other'; to.disabled = !o; if(o) to.focus(); }); });
+    box.querySelector('[data-a="x"]').addEventListener('click', closeDlg);
+    function target(){ return box.querySelector('input[name="hnmx-w"]:checked').value === 'other' ? to.value.trim() : ''; }
+    mt.addEventListener('click', function(){ var body = text.length > 1500 ? text.slice(0, 1500) + '\n\n[…] (texte tronqué : copiez la réponse complète depuis HelpNaud)' : text; location.href = mailto(target(), 'Réponse HelpNaud', body + '\n\n—\nEnvoyé depuis HelpNaud (' + SITE + ')'); });
+    go.addEventListener('click', function(){
+      var other = box.querySelector('input[name="hnmx-w"]:checked').value === 'other', addr = to.value.trim();
+      if(other && !/^[^\s@<>",;]+@[^\s@<>",;]+\.[A-Za-z]{2,}$/.test(addr)){ err.textContent = 'Saisissez une adresse courriel valide.'; to.focus(); return; }
+      err.textContent = ''; go.disabled = true; go.textContent = 'Envoi…';
+      call({ action:'send_response', text:text, to:other ? addr : undefined, name:firstName() }).then(function(){
+        box.innerHTML = '<h3>Courriel envoyé ✓</h3><p class="hnmx-ok">' + (other ? 'La réponse a été envoyée à ' + esc(addr) + '.' : 'La réponse a été envoyée à votre adresse HelpNaud.') + '</p><div class="hnmx-row"><button type="button" class="btn primary" data-a="x">Fermer</button></div>';
+        box.querySelector('[data-a="x"]').addEventListener('click', closeDlg);
+      }).catch(function(e){ go.disabled = false; go.textContent = 'Envoyer'; err.textContent = e.message || 'Échec de l’envoi.'; if(/^(login|network|missing|mail_unconfigured|http)$/.test(e.code || '')) mt.hidden = false; });
+    });
+  }
+
+  /* ----- Inviter quelqu'un à essayer HelpNaud ----- */
+  function inviteDialog(){
+    var box = openDlg('<h3>Inviter quelqu’un à essayer HelpNaud</h3>' +
+      '<p class="hnmx-m">Un courriel avec le lien de HelpNaud est envoyé à la personne. Aucun compte n’est créé à sa place.</p>' +
+      '<label class="hnmx-l" for="hnmx-to">Adresse courriel de la personne</label><input type="email" id="hnmx-to" placeholder="nom@exemple.com" autocomplete="off">' +
+      '<label class="hnmx-l" for="hnmx-note">Petit mot (facultatif, 200 caractères)</label><textarea id="hnmx-note" rows="2" maxlength="200" placeholder="Ex. : Je l’utilise tous les jours, essaie-le !"></textarea>' +
+      '<label class="hnmx-ck"><input type="checkbox" id="hnmx-ck"> <span>Je confirme que cette personne est un contact qui acceptera de recevoir cette invitation.</span></label>' +
+      '<p class="hnmx-err" role="alert"></p><div class="hnmx-row"><button type="button" class="btn" data-a="x">Annuler</button><button type="button" class="btn" data-a="mt" hidden>Ouvrir mon application de courriel</button><button type="button" class="btn primary" data-a="go" disabled>Envoyer l’invitation</button></div>');
+    var to = box.querySelector('#hnmx-to'), note = box.querySelector('#hnmx-note'), ck = box.querySelector('#hnmx-ck'), err = box.querySelector('.hnmx-err'), go = box.querySelector('[data-a="go"]'), mt = box.querySelector('[data-a="mt"]');
+    ck.addEventListener('change', function(){ go.disabled = !ck.checked; });
+    box.querySelector('[data-a="x"]').addEventListener('click', closeDlg);
+    mt.addEventListener('click', function(){ var n = note.value.trim(); location.href = mailto(to.value.trim(), 'Une invitation à essayer HelpNaud', 'Bonjour,\n\nJe t’invite à essayer HelpNaud, un assistant IA du quotidien.\n' + (n ? '\n' + n + '\n' : '') + '\nDécouvrir HelpNaud : ' + SITE + '\n'); });
+    go.addEventListener('click', function(){
+      var addr = to.value.trim();
+      if(!/^[^\s@<>",;]+@[^\s@<>",;]+\.[A-Za-z]{2,}$/.test(addr)){ err.textContent = 'Saisissez une adresse courriel valide.'; to.focus(); return; }
+      err.textContent = ''; go.disabled = true; go.textContent = 'Envoi…';
+      call({ action:'invite', to:addr, note:note.value.trim(), name:firstName() }).then(function(){
+        box.innerHTML = '<h3>Invitation envoyée ✓</h3><p class="hnmx-ok">Un courriel a été envoyé à ' + esc(addr) + '.</p><div class="hnmx-row"><button type="button" class="btn primary" data-a="x">Fermer</button></div>';
+        box.querySelector('[data-a="x"]').addEventListener('click', closeDlg);
+      }).catch(function(e){ go.disabled = !ck.checked; go.textContent = 'Envoyer l’invitation'; err.textContent = e.message || 'Échec de l’envoi.'; if(/^(login|network|missing|mail_unconfigured|http)$/.test(e.code || '')) mt.hidden = false; });
+    });
+  }
+
+  /* ----- Lien public : cette réponse seulement (même service que « Partager la conversation », révocable dans Paramètres › Liens partagés) ----- */
+  function linkDialog(text){
+    var box = openDlg('<h3>Créer un lien public pour cette réponse</h3>' +
+      '<p>Toute personne qui possède le lien pourra <b>lire cette seule réponse</b>, sans compte. Le reste de la conversation et les fichiers joints ne sont jamais partagés.</p>' +
+      '<p class="hnmx-m">Vous pouvez désactiver le lien à tout moment dans Paramètres › Liens partagés.</p>' +
+      '<label class="hnmx-ck"><input type="checkbox" id="hnmx-ck"> <span>Je comprends que cette réponse sera lisible par toute personne ayant le lien.</span></label>' +
+      '<p class="hnmx-err" role="alert"></p><div class="hnmx-row"><button type="button" class="btn" data-a="x">Annuler</button><button type="button" class="btn primary" data-a="go" disabled>Créer le lien</button></div>');
+    var ck = box.querySelector('#hnmx-ck'), go = box.querySelector('[data-a="go"]'), err = box.querySelector('.hnmx-err');
+    ck.addEventListener('change', function(){ go.disabled = !ck.checked; });
+    box.querySelector('[data-a="x"]').addEventListener('click', closeDlg);
+    go.addEventListener('click', function(){
+      go.disabled = true; go.textContent = 'Création…'; err.textContent = '';
+      token().then(function(t){ if(!t) throw new Error('Connectez-vous à votre compte HelpNaud (Paramètres › Compte) pour créer un lien public.');
+        return fetch('/.netlify/functions/share', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + t }, body:JSON.stringify({ action:'create', title:'Réponse HelpNaud', messages:[{ role:'assistant', content:text.slice(0, 20000) }] }) }).catch(function(){ throw new Error('Impossible de joindre le serveur (réseau ou déploiement).'); }); })
+        .then(function(res){ return res.json().catch(function(){ return {}; }).then(function(j){ if(!res.ok || !j.id) throw new Error(j.message || 'Échec de la création du lien (' + res.status + ').'); return j; }); })
+        .then(function(j){
+          try{ var o = JSON.parse(localStorage.getItem('hn_shared_links') || '{}') || {}; o['rep_' + Date.now()] = { id:j.id, at:Date.now(), n:1 }; localStorage.setItem('hn_shared_links', JSON.stringify(o)); }catch(e){}
+          var u = SITE + '/partage.html?c=' + j.id;
+          box.innerHTML = '<h3>Lien créé ✓</h3><label class="hnmx-l" for="hnmx-u">Lien de cette réponse</label><input type="text" id="hnmx-u" readonly value="' + esc(u) + '"><div class="hnmx-row"><button type="button" class="btn" data-a="x">Fermer</button><button type="button" class="btn primary" data-a="cp">Copier le lien</button></div>';
+          var inp = box.querySelector('#hnmx-u'); inp.select();
+          box.querySelector('[data-a="x"]').addEventListener('click', closeDlg);
+          box.querySelector('[data-a="cp"]').addEventListener('click', function(){ copy(u).then(function(){ toast('Lien copié.'); }, function(){ inp.select(); toast('Copiez le lien sélectionné (Ctrl+C).'); }); });
+        }).catch(function(e){ go.disabled = !ck.checked; go.textContent = 'Créer le lien'; err.textContent = e.message || 'Échec.'; });
+    });
+  }
+
+  /* ----- Agrandir : la réponse (texte, tableaux, SQL…) en plein écran ----- */
+  var view = null;
+  function closeView(){ if(view){ view.el.remove(); view = null; document.removeEventListener('keydown', escView, true); try{ if(view0 && view0.focus) view0.focus(); }catch(e){} } }
+  var view0 = null;
+  function escView(e){ if(e.key === 'Escape' && !dlg && !pop){ e.stopPropagation(); closeView(); } }
+  function openView(m){
+    closeView(); view0 = document.activeElement;
+    var src = m.querySelector('.msg-text'); if(!src) return;
+    var el = document.createElement('div'); el.id = 'hnmx-view'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Réponse HelpNaud agrandie');
+    el.innerHTML = '<header><b>Réponse HelpNaud</b><button type="button" class="hnmx-ib" data-a="cp">Copier</button><button type="button" class="hnmx-ib" data-a="sh">Partager…</button><button type="button" class="hnmx-ib" data-a="x" aria-label="Fermer">✕ Fermer</button></header><div class="hnmx-body"><div class="hnmx-doc msg-text md"></div></div>';
+    var doc = el.querySelector('.hnmx-doc'); doc.innerHTML = src.innerHTML;
+    doc.querySelectorAll('.hnx-row,.hnx-open,.hnx-note,button').forEach(function(n){ n.remove(); });
+    doc.querySelectorAll('[data-hnx]').forEach(function(n){ n.removeAttribute('data-hnx'); });
+    doc.querySelectorAll('pre').forEach(function(p){ var b = document.createElement('button'); b.type = 'button'; b.className = 'hnmx-ib hnmx-pc'; b.textContent = 'Copier le code'; b.addEventListener('click', function(){ var c = p.querySelector('code') || p; copy(c.innerText || c.textContent || '').then(function(){ toast('Code copié ✓'); }, function(){ toast('Copie impossible ici.'); }); }); p.insertBefore(b, p.firstChild); });
+    document.body.appendChild(el); view = { el:el };
+    el.querySelector('[data-a="x"]').addEventListener('click', closeView);
+    el.querySelector('[data-a="cp"]').addEventListener('click', function(){ copy(textOf(m)).then(function(){ toast('Réponse copiée ✓'); }, function(){ toast('Copie impossible ici.'); }); });
+    el.querySelector('[data-a="sh"]').addEventListener('click', function(e){ e.stopPropagation(); openPop(e.currentTarget, m); });
+    document.addEventListener('keydown', escView, true);
+    el.querySelector('[data-a="x"]').focus();
+  }
+  window.__hnMsgX = { scan:scan, openView:openView };
 })();
 </script>
 <script id="hnl-js">
