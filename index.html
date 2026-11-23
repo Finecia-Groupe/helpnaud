@@ -45662,13 +45662,24 @@ html.hn-private-tab:not(.hn-private-ready) body{ visibility:hidden; }
   function toast(t){ var d = document.createElement('div'); d.className = 'hn-priv-toast'; d.setAttribute('role', 'alert'); d.textContent = t; document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 8000); }
 
   /* ---------- Onglet principal : « Navigation privée » ouvre un NOUVEL onglet ---------- */
+  var RK = 'hn_priv_return';
+  function currentView(){ try{ var v = document.querySelector('.view:not([hidden])'); return v && /^view-[a-z0-9_-]+$/i.test(v.id) ? v.id.slice(5) : ''; }catch(e){ return ''; } }
+  function rememberReturn(){ try{ localStorage.setItem(RK, JSON.stringify({ view: currentView(), ts: Date.now() })); }catch(e){} }
+  function returnUrl(){   /* toujours HelpNaud (même origine), à l'écran où l'utilisateur était */
+    var v = ''; try{ var o = JSON.parse(localStorage.getItem(RK) || '{}'); if(o && o.view && /^[a-z0-9_-]{1,40}$/i.test(o.view) && Date.now() - (o.ts || 0) < 864e5) v = o.view; }catch(e){}
+    return location.pathname + (v ? '?hnview=' + encodeURIComponent(v) : '');
+  }
   function openPrivate(){
-    var w = null;
+    var w = null; rememberReturn();
     try{ w = window.open(location.pathname + '?private=1', '_blank'); }catch(e){}
     if(w){ try{ w.opener = null; }catch(e){} return true; }
     return false;
   }
   if(!PRIV){
+    /* retour depuis la navigation privée : revenir à l'écran où l'utilisateur était */
+    (function(){ var m = /[?&]hnview=([a-z0-9_-]{1,40})/i.exec(location.search); if(!m) return; var v = m[1];
+      try{ history.replaceState(null, '', location.pathname + location.hash); }catch(e){}
+      var n = 0, iv = setInterval(function(){ var nav = document.querySelector('[data-view="' + v + '"]'); if(nav){ clearInterval(iv); nav.click(); } else if(++n > 40) clearInterval(iv); }, 300); })();
     document.addEventListener('click', function(e){
       var b = e.target && e.target.closest && e.target.closest('.incog-toggle'); if(!b) return;
       e.preventDefault(); e.stopImmediatePropagation();
@@ -45688,7 +45699,8 @@ html.hn-private-tab:not(.hn-private-ready) body{ visibility:hidden; }
   root.classList.add('hn-private-tab');
   document.title = 'Navigation privée — HelpNaud.ai';
   // le raccourci ne doit pas faire sortir du mode : l'onglet se ferme avec le bouton ou avec le navigateur
-  function closeTab(){ try{ window.close(); }catch(e){} setTimeout(function(){ if(!window.closed) location.href = location.pathname; }, 250); }
+  /* Quitter : on ne ferme jamais l'onglet (le navigateur pourrait revenir sur un autre site) ; on revient dans HelpNaud, à l'écran d'avant */
+  function closeTab(){ location.replace(returnUrl()); }
   // barre noire « Navigation privée · Quitter le mode Ctrl+Maj+I · ✕ » : quitter = fermer cet onglet privé
   document.addEventListener('keydown', function(e){
     if((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')){ e.preventDefault(); e.stopImmediatePropagation(); closeTab(); }
