@@ -73,16 +73,22 @@ exports.handler = async function(event){
     if (!okTeam) return reply(403, { error: 'private_tool', message: 'Cet outil est réservé à l’équipe de FINECIA GROUPE.' });
     COST = CREDITS_TEAM;
   }
-  let r;
-  try { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: COST }); }
-  catch (e) { return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
+  // svc_ai_reserve n'accepte que 1 à 10 crédits par appel : on réserve par tranches (ex. 15 = 10 + 5) et on rembourse tout si une tranche échoue.
+  const chunks = []; for (let left = COST; left > 0; left -= 10) chunks.push(Math.min(10, left));
+  let r = null, reserved = 0;
+  const undo = async () => { for (const c of chunks.slice(0, reserved)) { try { await svcRpc('svc_ai_refund', { p_uid: uid, p_cost: c }); } catch (e) {} } reserved = 0; };
+  try {
+    for (const c of chunks) { r = await svcRpc('svc_ai_reserve', { p_uid: uid, p_cost: c }); if (!r || r.ok !== true) break; reserved++; }
+  } catch (e) { await undo(); return reply(502, { error: 'credits_unavailable', message: 'Compteur de crédits indisponible.' }); }
   if (!r || r.ok !== true) {
+    await undo();
     if (r && (r.error === 'quota' || r.error === 'pool_quota' || r.error === 'member_quota')) return reply(402, { error: 'quota', message: 'Crédits IA insuffisants pour cette image (' + COST + ' crédits requis).', credits: { used: r.used, limit: r.limit, plan: r.plan } });
     if (r && (r.error === 'budget' || r.error === 'pool_budget')) return reply(402, { error: 'budget', message: 'Limite d’utilisation mensuelle atteinte pour votre forfait.', credits: { used: r.used, limit: r.limit, plan: r.plan } });
     if (r && r.error === 'suspended') return reply(403, { error: 'suspended', message: 'Compte suspendu : contactez le support.' });
-    return reply(403, { error: r && r.error || 'refused', message: 'Demande refusée.' });
+    if (r && r.error === 'not_member') return reply(403, { error: 'not_member', message: 'Créez votre compte HelpNaud (Réglages › Mon compte) pour utiliser Image IA.' });
+    return reply(400, { error: r && r.error || 'refused', message: 'Demande refusée par le compteur de crédits' + (r && r.error ? ' (' + r.error + ')' : '') + '.' });
   }
-  const refund = async () => { try { await svcRpc('svc_ai_refund', { p_uid: uid, p_cost: COST }); } catch (e) {} };
+  const refund = undo;
 
   try {
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 24000);
