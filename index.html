@@ -48615,12 +48615,12 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   function fixedTop(){ var sb = document.querySelector('.sidebar'); if(!sb) return 0; var cs = getComputedStyle(sb); if(cs.position !== 'fixed' || cs.display === 'none') return 0; return Math.round(sb.getBoundingClientRect().bottom); }
   /* espace structurel sous la conversation (marges, remplissages, éléments suivants) — indépendant de la hauteur de la conversation elle-même */
   function px(v){ return parseFloat(v) || 0; }
-  function belowOf(sh){
+  function belowOf(sh, noSib){
     var b = 0, e = sh;
     while(e && e !== document.documentElement){
       var P = e.parentElement; if(!P) break; var pc = getComputedStyle(P), ec = getComputedStyle(e);
       b += px(ec.marginBottom) + px(pc.paddingBottom) + px(pc.borderBottomWidth);
-      for(var n = e.nextElementSibling; n; n = n.nextElementSibling){
+      for(var n = noSib ? null : e.nextElementSibling; n; n = n.nextElementSibling){
         var nc = getComputedStyle(n); if(nc.display === 'none' || nc.position === 'fixed' || nc.position === 'absolute') continue;
         var rr = n.getBoundingClientRect(); if(rr.height > 0) b += rr.height + px(nc.marginTop) + px(nc.marginBottom) + (pc.display.indexOf('flex') >= 0 ? px(pc.rowGap) : 0);
       }
@@ -48633,7 +48633,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     if(!sh || !sh.getClientRects().length){ if(sh){ sh.classList.remove('hn-fit'); sh.style.removeProperty('--hn-fit-h'); } return false; }
     sh.classList.add('hn-fit'); sh.style.removeProperty('height');
     var vh = vvh(), r = sh.getBoundingClientRect(), top = r.top + (window.pageYOffset || 0);
-    var below = belowOf(sh);
+    var below = belowOf(sh, !!sh.closest('#fghlab-panel-hstatis'));   /* F-i-Stat : même hauteur que Consult — la zone descend jusqu'au bas de l'écran */
     var pin = Math.max(fixedTop(), 0) + 4, h;
     if(top <= vh * 0.38) h = vh - top - Math.max(below, 0);          // la vue est en haut : tout tient sans défiler
     else h = vh - pin - Math.max(below, 0);                          // beaucoup de contenu au-dessus (grille Co-work) : on remonte la conversation en haut de l'écran
