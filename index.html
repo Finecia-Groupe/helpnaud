@@ -47011,7 +47011,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       var fresh = invite;
       var fi = $('hp-first'), la = $('hp-last');
       h += '<h3>Profil</h3><p class="hint">Votre photo reste sur cet appareil. Le nom est enregistré dans votre compte.</p>';
-      h += '<div class="hnp-photo"><span class="hnp-avbtn" role="button" tabindex="0" data-hnp="pick" title="' + (photo() ? 'Changer la photo' : 'Ajouter une photo') + '" aria-label="' + (photo() ? 'Changer la photo de profil' : 'Ajouter une photo de profil') + '">' + avHtml() + '</span><div><button type="button" class="btn" data-hnp="pick">📷 ' + (photo() ? 'Changer la photo' : 'Ajouter une photo') + '</button> ' + (photo() ? '<button type="button" class="btn" data-hnp="rmphoto">Retirer</button>' : '') + '</div></div>';
+      h += '<div class="hnp-photo"><span class="hnp-avbtn" role="button" tabindex="0" data-hnp="pick" title="' + (photo() ? 'Changer la photo' : 'Ajouter une photo') + '" aria-label="' + (photo() ? 'Changer la photo de profil' : 'Ajouter une photo de profil') + '">' + avHtml() + '</span>' + (photo() ? '<div><button type="button" class="btn" data-hnp="rmphoto">Retirer la photo</button></div>' : '<div class="hint" style="margin:0">Touchez le rond pour ajouter une photo.</div>') + '</div>';
       h += '<div class="hnp-f">';
       if(li) h += '<label>Prénom<input type="text" id="hnp-first" maxlength="80" value="' + esc(fi ? fi.value : '') + '" autocomplete="given-name"></label><label>Nom<input type="text" id="hnp-last" maxlength="80" value="' + esc(la ? la.value : '') + '" autocomplete="family-name"></label>';
       if(li){ var gv = function(id){ var e = $(id); return e ? e.value : ''; };
