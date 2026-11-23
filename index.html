@@ -48908,7 +48908,16 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
         body += '<image href="' + ctx.photo + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#hc' + i + ')"/>'; }
       else if(t === 'text'){
         var txt = ctx.texts && ctx.texts[e.id] != null ? ctx.texts[e.id] : String(e.text || ''), size = num(e.size, 48, 8, 400), wt = num(e.weight, 400, 100, 900), lh = num(e.lineHeight, 1.2, 0.8, 2.5), an = /^(start|middle|end)$/.test(e.anchor) ? e.anchor : 'start';
-        var lines = wrap(txt, size, wt, e.maxWidth ? num(e.maxWidth, 0, 20, 6000) : 0), tx = num(e.x, 0, -3000, 6000), ty = num(e.y, 0, -3000, 6000);
+        var tx = num(e.x, 0, -3000, 6000), ty = num(e.y, 0, -3000, 6000), mw = e.maxWidth ? num(e.maxWidth, 0, 20, 6000) : 0;
+        /* Texte dans un cartouche (bouton, pastille, bandeau d'une ligne) : on garde UNE ligne et on réduit la taille pour qu'il reste dedans,
+           au lieu de passer à la ligne et de déborder (ex. « 15 décembre 2026 » dans une pastille). Se recalcule à chaque modification de texte. */
+        if(txt.length <= 48 && txt.indexOf('\n') < 0){
+          var best = null, cwf = wt >= 700 ? 0.6 : 0.54;
+          spec.elements.forEach(function(r){ if(r.type !== 'rect') return; var rx = num(r.x, 0, -3000, 6000), ry = num(r.y, 0, -3000, 6000), rw = num(r.w, 10, 0, 6000), rh = num(r.h, 10, 0, 6000);
+            if(rw < W * 0.97 && rh >= size * 0.8 && rh <= size * 3.2 && tx >= rx - 2 && tx <= rx + rw + 2 && ty >= ry && ty <= ry + rh + size * 0.45 && (!best || rw * rh < best.w * best.h)) best = { w:rw, h:rh }; });
+          if(best){ var room = best.w * 0.88, need = txt.length * size * cwf; if(need > room) size = Math.max(10, Math.floor(size * room / need)); mw = 0; }
+        }
+        var lines = wrap(txt, size, wt, mw);
         body += '<text x="' + tx + '" y="' + ty + '" font-size="' + size + '" font-weight="' + wt + '" fill="' + col(e.fill, '#111111') + '" text-anchor="' + an + '" font-family="' + (FONTS[e.font] || FONTS.sans).replace(/"/g, "'") + '">' + lines.map(function(l, k){ return '<tspan x="' + tx + '" dy="' + (k ? size * lh : 0) + '">' + esc(l) + '</tspan>'; }).join('') + '</text>';
       }
     });
