@@ -128,6 +128,10 @@ exports.handler = async function(event){
       });
     }
     try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: COST_MICRO }); } catch (e) {}
+    try {   // historique des crédits (Compte › Utilisation) : aucune image ni texte de demande n'est conservé
+      const ua = String((event.headers && event.headers['user-agent']) || '');
+      await fetch(SB_URL + '/rest/v1/ai_usage_events', { method: 'POST', headers: svcHeaders(), body: JSON.stringify({ user_id: uid, feature: body.fi === true ? 'fistat' : 'creer', model: src ? 'Image IA (modification)' : 'Image IA', surface: /Mobi|Android|iPhone|iPad/i.test(ua) ? 'Mobile' : 'Web', cost: COST, ok: true }) });
+    } catch (e) {}
     return reply(200, { image: 'data:' + (/^iVBOR/.test(j.data[0].b64_json) ? 'image/png' : 'image/jpeg') + ';base64,' + j.data[0].b64_json, credits: { used: r.used, limit: r.limit, plan: r.plan }, cost: COST });
   } catch (e) {
     await refund();
