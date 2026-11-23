@@ -104,9 +104,17 @@ exports.handler = async function(event){
     } finally { clearTimeout(timer); }
     const j = await res.json().catch(() => null);
     if (!res.ok || !j || !j.data || !j.data[0] || !j.data[0].b64_json) {
+      const upstreamError = (j && j.error) || {};
+      const code = String(upstreamError.code || upstreamError.type || 'invalid_response').replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 100);
+      // Détail réservé aux journaux serveur (Netlify › Functions › image), clé masquée.
+      const detail = String(upstreamError.message || '').split(KEY).join('[clé masquée]').replace(/sk-[a-zA-Z0-9_-]+/g, '[clé masquée]').slice(0, 1000);
+      console.error('HelpNaud Image IA — erreur fournisseur', { status: res.status, code, message: detail, requestId: res.headers.get('x-request-id'), model: MODEL });
       await refund();
-      const blocked = j && j.error && /safety|moderation|content_policy/i.test(String(j.error.code || '') + ' ' + String(j.error.message || ''));
-      return reply(blocked ? 422 : 502, { error: blocked ? 'blocked' : 'upstream', message: blocked ? 'Cette demande ne peut pas être traitée (contenu refusé par le moteur d’images). Reformulez-la.' : 'Le moteur d’images est momentanément indisponible. Vos crédits ont été remboursés.' });
+      const blocked = /safety|moderation|content_policy/i.test(code + ' ' + detail);
+      return reply(blocked ? 422 : 502, {
+        error: blocked ? 'blocked' : 'upstream', upstream_status: res.status, upstream_code: code,
+        message: blocked ? 'Contenu refusé par le moteur d’images. Reformulez la demande.' : 'Échec du moteur d’images (HTTP ' + res.status + ', code ' + code + '). Vos crédits ont été remboursés. Consultez les journaux serveur.'
+      });
     }
     try { await svcRpc('svc_ai_charge', { p_uid: uid, p_micro: COST_MICRO }); } catch (e) {}
     return reply(200, { image: 'data:image/jpeg;base64,' + j.data[0].b64_json, credits: { used: r.used, limit: r.limit, plan: r.plan }, cost: COST });
