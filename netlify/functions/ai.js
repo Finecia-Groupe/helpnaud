@@ -81,6 +81,8 @@ const TIERS = {
   expertplus: { cost: 4, band: 'high', max: 3200 },   // F-i-Stat « niveau expert + » (équipe interne seulement)
   interne: { cost: 1, band: 'mid',  max: 1600 },   // F-i-Stat (équipe interne) : 1 crédit de base, modèle de gamme moyenne
   mediane: { cost: 2, band: 'mid',  max: 1600 },
+  creer:   { cost: 3, band: 'mid',  max: 4500 },
+  creer_fi:{ cost: 1, band: 'mid',  max: 4500 },   // « Créer » dans F-i-Stat (équipe interne seulement) : 1 crédit   // Menu « + Créer » : Design, Dessiner, Templates Creators (SVG structuré, plus long qu'un chat)
   medium2: { cost: 2, band: 'mid',  max: 1600 },
   idee:    { cost: 2, band: 'mid',  max: 1600 },
   cover:   { cost: 2, band: 'mid',  max: 1600 },
@@ -405,7 +407,14 @@ exports.handler = async function(event){
     try { isTeam = (await svcRpc('svc_is_team_member', { p_uid: uid })) === true; } catch (e) { isTeam = false; }   // SQL non installé : accès refusé (par sécurité)
     if (!isTeam) return reply(403, { error: 'private_tool', message: 'Cet outil est réservé à l’équipe de FINECIA GROUPE.' });
   }
-  let tierId = isFistat ? (body.fistat === 'expertplus' ? 'expertplus' : 'interne') : (Object.prototype.hasOwnProperty.call(TIERS, body.tier) && body.tier !== 'interne' && body.tier !== 'expertplus' ? body.tier : 'mediane');
+  const creerFi = !!(wantJson && body.creerfi === true && (body.creer === 'design' || body.creer === 'dessin'));
+  if (creerFi) {   // tarif équipe : jamais accordé sans vérification côté serveur
+    let okTeam = false;
+    try { okTeam = (await svcRpc('svc_is_team_member', { p_uid: uid })) === true; } catch (e) { okTeam = false; }
+    if (!okTeam) return reply(403, { error: 'private_tool', message: 'Cet outil est réservé à l’équipe de FINECIA GROUPE.' });
+  }
+  let tierId = isFistat ? (body.fistat === 'expertplus' ? 'expertplus' : 'interne') : (Object.prototype.hasOwnProperty.call(TIERS, body.tier) && body.tier !== 'interne' && body.tier !== 'expertplus' && body.tier !== 'creer_fi' ? body.tier : 'mediane');
+  if (creerFi) tierId = 'creer_fi';
   let tier = TIERS[tierId];
   const msgs = buildMessages(body);
   msgs.forEach(m => { if (m && typeof m.content === 'string') m.content = m.content.replace(/\s*HNWEBSEARCHBTN/g, ''); });   // marqueur du bouton « Rechercher sur le Web » : jamais renvoyé au modèle
@@ -558,7 +567,12 @@ exports.handler = async function(event){
     catch (e) { try { await svcRpc('svc_ai_log', base); } catch (e2) {} }   // 3w pas encore installé : journal simple
   };
 
-  const system = wantJson ? 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ni après, sans bloc de code markdown.' : LANG_RULE + ' Pour une question simple (calcul, définition, fait précis, salutation) : le résultat d’abord en une ligne, puis 2 à 4 lignes d’explication, sans titres ni tableau ni sections « application » ou « prochaine étape ». Ne termine jamais par une question de relance automatique (« Voulez-vous plus de détails ? », « Une aide sur un autre sujet ? ») : arrête-toi quand la réponse est donnée. Ne développe en détail que si l’utilisateur le demande ou si la question est complexe ; dans ce cas, reste concis (environ 600 mots maximum) et termine proprement. Mise en forme : Markdown simple (titres ##, listes, **gras**, tableaux). N’utilise jamais LaTeX ni $$ : écris les formules en texte simple (ex. moyenne = (10+15+20)/3 = 15).';
+  const CREER_RULES = {
+    design: ' TÂCHE : conçois un visuel graphique (affiche, bannière, publication, flyer, carte…) sous forme de JSON : {"title":"...","width":N,"height":N,"background":"#RRGGBB" ou ["#RRGGBB","#RRGGBB"] (dégradé vertical),"elements":[...]}. Éléments possibles (coordonnées en pixels dans width×height, origine en haut à gauche) : {"type":"rect","x","y","w","h","fill","rx","opacity"} ; {"type":"circle","cx","cy","r","fill","opacity"} ; {"type":"line","x1","y1","x2","y2","stroke","sw"} ; {"type":"text","id":"t1","label":"Titre","text":"...","x","y","size","weight":400|700|900,"fill","anchor":"start"|"middle"|"end","font":"sans"|"serif"|"display","maxWidth":N,"lineHeight":1.2} (y = ligne de base de la première ligne) ; {"type":"logo","x","y","w","h"} (emplacement du logo importé par l’utilisateur, seulement s’il en a fourni un) ; {"type":"photo","x","y","w","h","rx"} (emplacement de la photo de référence importée, seulement si fournie). Chaque texte a un id unique (t1, t2…) et un label court (ex. « Titre », « Sous-titre », « Appel à l’action ») car l’utilisateur les modifiera séparément. Respecte la hiérarchie visuelle, la lisibilité (contraste), les marges (≥ 5 % des bords) et utilise EXACTEMENT les textes fournis par l’utilisateur, sans en inventer (ni prix, ni coordonnées, ni slogan non fournis). Utilise les couleurs de marque fournies si présentes. Maximum 40 éléments. Si on te donne un design précédent et une demande de modification, renvoie le design COMPLET modifié en gardant les ids.',
+    dessin: ' TÂCHE : crée un dessin vectoriel original à partir de la consigne (ou du croquis joint, que tu redessines proprement). Réponds en JSON : {"title":"...","svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 800 800\">...</svg>"}. SVG autonome et compact : formes (path, circle, rect, ellipse, line, polyline, polygon, g) avec fill/stroke, sans script, sans image externe, sans texte sauf si demandé, au plus 3500 caractères de tracés. Pour « dessin au trait » ou « coloriage » : traits noirs (stroke-width 3-5) sur fond blanc, sans remplissage. N’imite aucun personnage, logo ou œuvre protégé : propose un équivalent original. Si on te donne un dessin précédent et une modification, renvoie le SVG COMPLET modifié.'
+  };
+  const creerKind = (wantJson && (body.creer === 'design' || body.creer === 'dessin')) ? body.creer : '';
+  const system = wantJson ? 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ni après, sans bloc de code markdown.' + (creerKind ? CREER_RULES[creerKind] : '') : LANG_RULE + ' Pour une question simple (calcul, définition, fait précis, salutation) : le résultat d’abord en une ligne, puis 2 à 4 lignes d’explication, sans titres ni tableau ni sections « application » ou « prochaine étape ». Ne termine jamais par une question de relance automatique (« Voulez-vous plus de détails ? », « Une aide sur un autre sujet ? ») : arrête-toi quand la réponse est donnée. Ne développe en détail que si l’utilisateur le demande ou si la question est complexe ; dans ce cas, reste concis (environ 600 mots maximum) et termine proprement. Mise en forme : Markdown simple (titres ##, listes, **gras**, tableaux). N’utilise jamais LaTeX ni $$ : écris les formules en texte simple (ex. moyenne = (10+15+20)/3 = 15).';
   const prefsTxt = (wantJson || quickMode) ? '' : (function (pr) {
     if (!pr || typeof pr !== 'object') return '';
     const clean = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n);
