@@ -49141,7 +49141,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
       p = ai(pr2, 'design', null).then(function(data){ var spec = normSpec(data); if(!spec || !spec.elements.length) throw new Error('Le design généré est illisible. Réessayez (vos crédits sont remboursés).'); if(!isMod){ spec.width = f.w; spec.height = f.h; } else { spec.width = S.res.spec.width; spec.height = S.res.spec.height; } S.res = { spec:spec, title:spec.title }; S.texts = {}; });
     }
     p.then(function(){ lock(false); result(); msg(isMod ? 'Modification appliquée ✓' : 'Création terminée ✓', 'ok'); })
-     .catch(function(e){ lock(false); msg((e && e.message) || 'La création a échoué.', 'err'); });
+     .catch(function(e){ lock(false); var m = (e && e.message) || 'La création a échoué.'; if(/\(50[234]\)|trop de temps|momentanément indisponible/i.test(m) && S.kind !== 'image') m += ' Réessayez avec une demande plus courte ; vos crédits sont remboursés quand le serveur répond. En cas de doute, vérifiez Compte › Utilisation › Historique.'; msg(m, 'err'); });
   }
 
   /* ---------- Entrée dans le menu « + » ---------- */
