@@ -47226,16 +47226,17 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   var tkRange = 30, tkView = 'chart', tkUnit = 'tok', histN = 20;
   /* Estimation en $US : tarifs publics par million de jetons (entrée/sortie) — à vérifier sur la page de tarification Anthropic. Réservé au propriétaire. */
   var TK_PRICES = [ [/haiku/i, 1, 5], [/sonnet/i, 3, 15], [/opus/i, 5, 25] ];
-  function tkRow(r){ var inT = +r.input_tokens || 0, outT = +r.output_tokens || 0, nm = String(r.model_id || r.model || 'Autres').replace(/^[^:]*:/, ''), usd = 0, known = false;
+  function tkRow(r, owner){ var inT = +r.input_tokens || 0, outT = +r.output_tokens || 0, nm = String(r.model_id || r.model || 'Autres').replace(/^[^:]*:/, ''), usd = 0, known = false;
+    var shown = owner ? nm : String(r.model || 'Autres');   /* clients : noms HelpNaud (Médiane, Lumière…), jamais le fournisseur ni l'identifiant technique */
     TK_PRICES.forEach(function(x){ if(!known && x[0].test(nm)){ usd = (inT * x[1] + outT * x[2]) / 1e6; known = true; } });
-    return { name: nm, tok: inT + outT, usd: usd }; }
+    return { name: shown, tok: inT + outT, usd: usd }; }
   function fmtTok(v){ return v >= 1e6 ? (v / 1e6).toFixed(2).replace('.', ',') + ' M' : v >= 1e3 ? (v / 1e3).toFixed(v >= 1e4 ? 0 : 1).replace('.', ',') + ' k' : String(Math.round(v)); }
   function fmtUsd(v){ return v.toFixed(v >= 10 ? 0 : 2).replace('.', ',') + ' $US'; }
   function niceMax(v){ if(v <= 0) return 1; var e = Math.pow(10, Math.floor(Math.log10(v))), m = v / e; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * e; }
   function tokenCostHtml(rows, owner){
     var unit = owner ? tkUnit : 'tok', days = dayList(tkRange, 0), byDay = {}, tot = {}, any = false;
     days.forEach(function(d){ byDay[dkey(d)] = {}; });
-    rows.forEach(function(r){ var k = dkey(new Date(r.created_at)); if(!byDay[k]) return; var x = tkRow(r), v = unit === 'usd' ? x.usd : x.tok; if(!v) return; any = true; byDay[k][x.name] = (byDay[k][x.name] || 0) + v; tot[x.name] = (tot[x.name] || 0) + v; });
+    rows.forEach(function(r){ var k = dkey(new Date(r.created_at)); if(!byDay[k]) return; var x = tkRow(r, owner), v = unit === 'usd' ? x.usd : x.tok; if(!v) return; any = true; byDay[k][x.name] = (byDay[k][x.name] || 0) + v; tot[x.name] = (tot[x.name] || 0) + v; });
     var names = Object.keys(tot).sort(function(a, b){ return tot[b] - tot[a]; }), fmt = unit === 'usd' ? fmtUsd : fmtTok;
     var seg = function(attr, cur2, opts){ return '<div class="hnp-tabs" style="margin:0">' + opts.map(function(o){ return '<button type="button" data-hnp-st="' + attr + ':' + o[0] + '" class="' + (String(cur2) === String(o[0]) ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>'; };
     var h = '<h4>' + (unit === 'usd' ? 'Coût quotidien en jetons' : 'Consommation quotidienne en jetons') + '</h4><p class="hint">' + (unit === 'usd' ? 'Estimation en $US d’après les jetons réellement consommés (tarifs publics, à titre indicatif).' : 'Jetons d’entrée et de sortie consommés chaque jour, par modèle.') + '</p>';
