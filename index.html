@@ -39840,7 +39840,7 @@
       document.body.appendChild(mn); cb.setAttribute('aria-expanded', 'true');
       return;
     }
-    var it = t.closest('[data-hnr-create-img]'); if(it){ var v = it.getAttribute('data-hnr-create-img'); hnrCloseCreate(); if(window.__hnCreate && window.__hnCreate.open){ window.__hnCreate.open('home', null, v === 'hstatis'); } else { hnrOpenImageDialog(v); } return; }
+    var it = t.closest('[data-hnr-create-img]'); if(it){ var v = it.getAttribute('data-hnr-create-img'); hnrCloseCreate(); if(window.__hnCreate && window.__hnCreate.open && window.__hnCreerOn()){ window.__hnCreate.open('home', null, v === 'hstatis'); } else { hnrOpenImageDialog(v); } return; }
     if(!t.closest('#hnr-create-menu')) hnrCloseCreate();
   });
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ hnrCloseCreate(); var d = document.getElementById('hnr-img-dlg'); if(d) d.remove(); } });
@@ -39864,6 +39864,7 @@
         }, function(){ ev.target.checked = !on; say('Connexion au serveur impossible.'); });
       });
     }
+    hnrCreerInject(card);
     card.style.display = hnrOwnerNow ? '' : 'none';
     var cb = card.querySelector('#hnr-imageia-toggle'); if(cb) cb.checked = hnrImgEnabled();
   }
@@ -39871,6 +39872,43 @@
   setTimeout(function(){ try{ hnrOwnerNow = !!(window.__hnAuth && window.__hnAuth.owner()); hnrImgCard(); hnrImgFetch(); }catch(e){} }, 1500);
   setInterval(hnrImgFetch, 300000);
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) hnrImgFetch(); });
+
+  /* ---- Bouton « Créer (Image IA, Design, Dessiner, Template créator…) » : réglage propriétaire séparé (clé serveur « creer ») ---- */
+  var HNC_KEY = 'hn_flag_creer', hncOn = true;
+  try{ if(localStorage.getItem(HNC_KEY) === '0') hncOn = false; }catch(e){}
+  (function(){ var st = document.createElement('style'); st.id = 'hnc-flag-css'; st.textContent = 'html.hn-nocreer [data-hncr], html.hn-nocreer #hncr-chip{ display:none !important; }'; document.head.appendChild(st); })();
+  window.__hnCreerOn = function(){ return hncOn; };
+  function hncApply(v){
+    hncOn = !!v; try{ localStorage.setItem(HNC_KEY, v ? '1' : '0'); }catch(e){}
+    document.documentElement.classList.toggle('hn-nocreer', !hncOn);
+    var cb = document.getElementById('hnr-creer-toggle'); if(cb) cb.checked = hncOn;
+  }
+  hncApply(hncOn);
+  function hncFetch(){
+    var A = window.__hnAuth; if(!A) return;
+    var ctl = window.AbortController ? new AbortController() : null; if(ctl) setTimeout(function(){ ctl.abort(); }, 7000);
+    fetch(A.url + '/rest/v1/rpc/feature_flag_get', { method:'POST', headers:{ 'Content-Type':'application/json', apikey:A.key }, body: JSON.stringify({ p_key:'creer' }), signal: ctl ? ctl.signal : undefined })
+      .then(function(r){ return r.ok ? r.json() : undefined; }).then(function(v){ if(typeof v === 'boolean') hncApply(v); }).catch(function(){});
+  }
+  function hnrCreerInject(card){
+    if(card.querySelector('#hnr-creer-toggle')) return;
+    var h = card.querySelector('h2'); if(h) h.textContent = 'Boutons ＋ Créer';
+    var w = document.createElement('div'); w.style.cssText = 'margin-top:12px;';
+    w.innerHTML = '<label style="display:flex; gap:8px; align-items:center; font-size:13.5px;"><input type="checkbox" id="hnr-creer-toggle"> Afficher le bouton « Créer (Image IA, Design, Dessiner, Template créator…) »</label><p class="hint" id="hnr-creer-status" style="margin:6px 0 0;"></p><p class="hint" style="margin:6px 0 0;">Ce bouton se trouve dans le menu de pièces jointes (＋) et dans la pastille flottante. Par défaut il est affiché.</p>';
+    card.appendChild(w);
+    var cb = w.querySelector('#hnr-creer-toggle'); cb.checked = hncOn;
+    cb.addEventListener('change', function(ev){
+      var on = ev.target.checked, st = document.getElementById('hnr-creer-status'), A = window.__hnAuth, sb = A && A.client && A.client();
+      var say = function(t){ if(st){ st.textContent = t; setTimeout(function(){ if(st.textContent === t) st.textContent = ''; }, 6000); } };
+      if(!sb){ ev.target.checked = !on; say('Service indisponible.'); return; }
+      sb.rpc('feature_flag_set', { p_key:'creer', p_enabled:on }).then(function(r){
+        if(r && r.error){ ev.target.checked = !on; var c = String(r.error.code || ''); say(c === '42501' ? 'Action réservée au propriétaire.' : (c === 'PGRST202' ? 'Le serveur n’est pas encore configuré : exécutez le fichier supabase-image-ia.sql.' : 'Enregistrement impossible (le serveur doit accepter la clé « creer »).')); return; }
+        hncApply(on); say(on ? 'Affiché pour tous les utilisateurs ✓' : 'Masqué pour tous les utilisateurs ✓');
+      }, function(){ ev.target.checked = !on; say('Connexion au serveur impossible.'); });
+    });
+  }
+  setTimeout(hncFetch, 1600); setInterval(hncFetch, 300000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) hncFetch(); });
 
   function hnrBarHtml(view, isOpen){
     if(isOpen === undefined) isOpen = window.innerWidth > 860;
