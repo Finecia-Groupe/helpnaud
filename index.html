@@ -39873,7 +39873,7 @@
   setInterval(hnrImgFetch, 300000);
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) hnrImgFetch(); });
 
-  /* ---- Bouton « Créer (Image IA, Design, Dessiner, Template créator…) » : réglage propriétaire séparé (clé serveur « creer ») ---- */
+  /* ---- Bouton « Créer (Image IA, Design, Dessiner, Template créator…) » : réglage propriétaire séparé (clé serveur « creer_hide ») ---- */
   var HNC_KEY = 'hn_flag_creer', hncOn = true;
   try{ if(localStorage.getItem(HNC_KEY) === '0') hncOn = false; }catch(e){}
   (function(){ var st = document.createElement('style'); st.id = 'hnc-flag-css'; st.textContent = 'html.hn-nocreer [data-hncr], html.hn-nocreer #hncr-chip{ display:none !important; }'; document.head.appendChild(st); })();
@@ -39887,8 +39887,8 @@
   function hncFetch(){
     var A = window.__hnAuth; if(!A) return;
     var ctl = window.AbortController ? new AbortController() : null; if(ctl) setTimeout(function(){ ctl.abort(); }, 7000);
-    fetch(A.url + '/rest/v1/rpc/feature_flag_get', { method:'POST', headers:{ 'Content-Type':'application/json', apikey:A.key }, body: JSON.stringify({ p_key:'creer' }), signal: ctl ? ctl.signal : undefined })
-      .then(function(r){ return r.ok ? r.json() : undefined; }).then(function(v){ if(typeof v === 'boolean') hncApply(v); }).catch(function(){});
+    fetch(A.url + '/rest/v1/rpc/feature_flag_get', { method:'POST', headers:{ 'Content-Type':'application/json', apikey:A.key }, body: JSON.stringify({ p_key:'creer_hide' }), signal: ctl ? ctl.signal : undefined })
+      .then(function(r){ return r.ok ? r.json() : undefined; }).then(function(v){ if(typeof v === 'boolean') hncApply(!v); }).catch(function(){});
   }
   function hnrCreerInject(card){
     if(card.querySelector('#hnr-creer-toggle')) return;
@@ -39901,8 +39901,8 @@
       var on = ev.target.checked, st = document.getElementById('hnr-creer-status'), A = window.__hnAuth, sb = A && A.client && A.client();
       var say = function(t){ if(st){ st.textContent = t; setTimeout(function(){ if(st.textContent === t) st.textContent = ''; }, 6000); } };
       if(!sb){ ev.target.checked = !on; say('Service indisponible.'); return; }
-      sb.rpc('feature_flag_set', { p_key:'creer', p_enabled:on }).then(function(r){
-        if(r && r.error){ ev.target.checked = !on; var c = String(r.error.code || ''); say(c === '42501' ? 'Action réservée au propriétaire.' : (c === 'PGRST202' ? 'Le serveur n’est pas encore configuré : exécutez le fichier supabase-image-ia.sql.' : 'Enregistrement impossible (le serveur doit accepter la clé « creer »).')); return; }
+      sb.rpc('feature_flag_set', { p_key:'creer_hide', p_enabled:!on }).then(function(r){
+        if(r && r.error){ ev.target.checked = !on; var c = String(r.error.code || ''); say(c === '42501' ? 'Action réservée au propriétaire.' : (c === 'PGRST202' ? 'Le serveur n’est pas encore configuré : exécutez le fichier supabase-image-ia.sql.' : 'Enregistrement impossible (exécutez d’abord supabase-creer-flag.sql dans Supabase).')); return; }
         hncApply(on); say(on ? 'Affiché pour tous les utilisateurs ✓' : 'Masqué pour tous les utilisateurs ✓');
       }, function(){ ev.target.checked = !on; say('Connexion au serveur impossible.'); });
     });
