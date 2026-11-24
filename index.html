@@ -37933,11 +37933,22 @@
     { cmd:'sharpe', aliases:['sharpe','ratio'], label:"Calculer un ratio de Sharpe", icon:'📐', text:'Calcule le ratio de Sharpe de ce portefeuille : ' },
     { cmd:'interet', aliases:['interet','intérêt','compose','composé'], label:'Calculer un intérêt composé', icon:'💹', text:"Calcule l'intérêt composé pour : " },
     { cmd:'amortissement', aliases:['amortissement','pret','prêt'], label:"Calculer l'amortissement d'un prêt", icon:'🏦', text:"Calcule l'amortissement de ce prêt : " },
+    { cmd:'rediger', aliases:['rediger','rédiger','document','doc','lettre'], label:'Rédiger un document', icon:'📝', tool:'draft', inputId:'cowork-draft-input' },
+    { cmd:'graphique', aliases:['graphique','chart','graph'], label:'Créer un graphique', icon:'📈', tool:'chart', inputId:'cowork-chart-input' },
+    { cmd:'interroger', aliases:['interroger','query','fichier'], label:'Interroger un fichier', icon:'🔎', tool:'query', inputId:'cowork-query-input' },
     { cmd:'clavarder', aliases:['clavarder','clavardage','clavardez','clavarde','discuter','chat'], label:'Clavarder (clavardage) librement avec Consult', icon:'💬', action:'chat' },
     { cmd:'calculateurs', aliases:['calculateurs','calc','calculatrice','calculatrices'], label:'Ouvrir les calculateurs hors-ligne', icon:'🧮', action:'calc' },
     { cmd:'domaine', aliases:['domaine','domain','domaines'], label:'Choisir un domaine de consultation', icon:'🗂️', action:'domain' }
   ];
   function runHstatSlashCommand(command, rest){
+    if(command.tool){
+      if(hstatToolActiveTool !== command.tool || (document.getElementById('hstat-tab-tools') || {}).hidden) openCoworkToolForced(command.tool);
+      hstatInput.value = '';
+      hstatInputResize();
+      var tIn = document.getElementById(command.inputId);
+      if(tIn){ if(rest) tIn.value = rest; setTimeout(function(){ tIn.focus(); }, 120); }
+      return;
+    }
     if(command.action === 'chat'){ switchHstatTab('consult'); hstatInput.value = rest || ''; hstatInputResize(); setTimeout(function(){ hstatInput.focus(); }, 80); return; }
     if(command.action === 'calc'){ switchHstatTab('calc'); return; }
     if(command.action === 'domain'){ if(hstatDomainToggle) hstatDomainToggle.click(); return; }
@@ -37953,7 +37964,7 @@
     if(!parsed){ menu.hidden = true; menu.innerHTML = ''; return; }
     var matches = matchSlashCommands(parsed.token, HSTAT_SLASH_COMMANDS);
     if(!matches.length){
-      menu.innerHTML = '<div class="cowork-slash-empty">Aucune commande ne correspond. Essayez /van, /ecart-type, /calculateurs…</div>';
+      menu.innerHTML = '<div class="cowork-slash-empty">Aucune commande ne correspond. Essayez /van, /graphique, /rediger, /interroger, /calculateurs…</div>';
     } else {
       menu.innerHTML = matches.map(function(c, i){
         return '<button type="button" class="cowork-slash-opt' + (i === 0 ? ' active' : '') + '" data-slash-cmd="' + c.cmd + '" role="option">' +
@@ -47826,10 +47837,17 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   function put(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
   function $(id){ return document.getElementById(id); }
   function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
-  function view(){ var f = $('chat-form'); return f ? f.closest('.view') : null; }
-  function goAssistant(){ var v = view(); if(v && !v.hidden && v.offsetParent) return; var b = document.querySelector('.nav-btn[data-view="assistant"]'); if(b) b.click(); }
-  function clickId(id){ var e = $(id); if(e) e.click(); }
+  /* zones de saisie où @H-Liste s'ouvre : Assistant, Co-work › Discussion, Consult, F-i-Stat (préfixe des identifiants de chaque zone) */
+  var ZONES = { 'chat-input':{ p:'', v:'assistant' }, 'cowork-discuss-input':{ p:'cowork-discuss-', v:'cowork' }, 'hstat-input':{ p:'hstat-', v:'hstat' }, 'hstatis-input':{ p:'hstatis-', v:'hstatis' } };
+  var zone = 'chat-input';
+  function zta(){ return $(zone) || $('chat-input'); }
+  function zp(){ return (ZONES[zone] || ZONES['chat-input']).p; }
+  function view(){ var f = zta(); return f ? f.closest('.view') : null; }
+  function goAssistant(){ if(zone !== 'chat-input') return; var v = view(); if(v && !v.hidden && v.offsetParent) return; var b = document.querySelector('.nav-btn[data-view="assistant"]'); if(b) b.click(); }
+  function clickId(id){ var e = $(id); if(e) e.click(); else toast('Fonction indisponible dans cette zone.'); }
   function chip(key){ var v = view(); var b = v && v.querySelector('[data-hnr-toggle="' + key + '"]'); if(b) b.click(); else toast('Option de recherche indisponible ici.'); }
+  function consultTool(t){ var tab = $('hstat-tab-btn-tools'); if(tab) tab.click(); setTimeout(function(){ var c = document.querySelector('#hstat-tools-grid [data-tool="' + t + '"]'); if(c && !c.classList.contains('active')) c.click(); }, 80); }
+  function openCreer(){ var m = $(zp() + 'attach-menu'), b = m && m.querySelector('[data-hncr]'); if(b) b.click(); else toast('« Créer » est indisponible dans cette zone.'); }
   function toast(t){ var d = document.createElement('div'); d.textContent = t; d.style.cssText = 'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink,#16304A);color:var(--surface,#fff);padding:9px 14px;border-radius:10px;font-size:13px;z-index:99999;max-width:90vw'; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 2600); }
   /* ===== Icônes @H-Liste : tuiles en dégradé + pictogramme blanc ===== */
   function tile(c1, c2, glyph){
@@ -47847,20 +47865,25 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     chart:'<path d="M7 25.5h18"/><rect x="9" y="15" width="3.4" height="8" rx="1"/><rect x="14.3" y="10" width="3.4" height="13" rx="1"/><rect x="19.6" y="6.5" width="3.4" height="16.5" rx="1"/>',
     grid:'<rect x="7" y="7" width="7.5" height="7.5" rx="2"/><rect x="17.5" y="7" width="7.5" height="7.5" rx="2"/><rect x="7" y="17.5" width="7.5" height="7.5" rx="2"/><rect x="17.5" y="17.5" width="7.5" height="7.5" rx="2"/>',
     ppl:'<circle cx="12.5" cy="12" r="3.6"/><path d="M5.5 24c0-4 3.1-6.5 7-6.5s7 2.5 7 6.5"/><path d="M21.5 11v6M18.5 14h6" stroke-width="1.8"/>',
+    pal:'<path d="M16 6.5a9.5 9.5 0 1 0 0 19c1.6 0 2.2-1 1.7-2.2-.6-1.4.2-2.8 1.8-2.8H22a3.5 3.5 0 0 0 3.5-3.5C25.5 10.3 21.2 6.5 16 6.5z"/><circle cx="11.5" cy="14" r="1.1"/><circle cx="16" cy="11.5" r="1.1"/><circle cx="20.5" cy="14" r="1.1"/>',
     sym:'<path d="M9.5 24h4v-2.2a7 7 0 1 1 5 0V24h4"/>'
   };
   var ATS = [
-    { id:'file', t:'Ajouter des photos et fichiers', d:'Importez des fichiers depuis l’appareil', ic:['#7b8cff','#4553e0','clip'], run:function(){ goAssistant(); clickId('attach-file-input'); } },
+    { id:'file', t:'Ajouter des photos et fichiers', d:'Importez des fichiers depuis l’appareil', ic:['#7b8cff','#4553e0','clip'], run:function(){ goAssistant(); clickId(zp() ? zp() + 'attach-opt-file' : 'attach-file-input'); } },
     { id:'lib',  t:'Ajouter depuis la bibliothèque', d:'Parcourez et retrouvez vos fichiers', ic:['#ffb04d','#ee6f17','lib'], run:function(){ var b = document.querySelector('.nav-btn[data-view="library"]'); if(b) b.click(); } },
-    { id:'cam',  t:'Prendre une photo', d:'Utilisez l’appareil photo', ic:['#3fd0a8','#13906d','cam'], run:function(){ goAssistant(); clickId('attach-opt-camera'); } },
+    { id:'cam',  t:'Prendre une photo', d:'Utilisez l’appareil photo', ic:['#3fd0a8','#13906d','cam'], run:function(){ goAssistant(); clickId(zp() + 'attach-opt-camera'); } },
     { id:'web',  t:'Recherche sur le Web', d:'Trouvez des infos en temps réel', ic:['#46adff','#1c68e0','globe'], run:function(){ goAssistant(); chip('web'); } },
     { id:'deep', t:'Recherche approfondie', d:'Obtenez un rapport détaillé', ic:['#9a7bff','#5733d6','deep'], run:function(){ goAssistant(); chip('deep'); } },
-    { id:'mic',  t:'Dictée vocale', d:'Parlez au lieu d’écrire', ic:['#ff7a98','#dc2f64','mic'], run:function(){ goAssistant(); clickId('btn-mic'); } },
+    { id:'mic',  t:'Dictée vocale', d:'Parlez au lieu d’écrire', ic:['#ff7a98','#dc2f64','mic'], run:function(){ goAssistant(); clickId(zp() ? zp() + 'mic' : 'btn-mic'); } },
+    { id:'creer', t:'Créer (Image IA, Design, Dessiner, Template créator…)', d:'Images, designs, dessins et modèles prêts à personnaliser', ic:['#ee8a2e','#c25a00','pal'], run:function(){ openCreer(); } },
     { id:'docs', t:'Documents', d:'Ouvrez vos documents', ic:['#5b97ff','#2858d4','doc'], run:function(){ var b = document.querySelector('.nav-btn[data-view="documents"]'); if(b) b.click(); } },
     { id:'rep',  t:'Rapport', d:'Consultez vos rapports', ic:['#38d088','#12924f','chart'], run:function(){ var b = document.querySelector('.nav-btn[data-view="report"]'); if(b) b.click(); } },
     { id:'cat',  t:'Catalogue', d:'Parcourez le catalogue', ic:['#ffcb45','#e08a00','grid'], run:function(){ var b = document.querySelector('.nav-btn[data-view="catalogue"]'); if(b) b.click(); } },
     { id:'ctc',  t:'Mes contacts', d:'Invitez un proche à essayer HelpNaud', ic:['#ee4aa6','#b3146f','ppl'], run:function(){ if(window.__hnContacts) window.__hnContacts.open(); } },
-    { id:'sym',  t:'Caractères spéciaux', d:'Insérez un symbole', ic:['#94a0bb','#56627f','sym'], run:function(){ goAssistant(); clickId('symbols-btn'); } }
+    { id:'sym',  t:'Caractères spéciaux', d:'Insérez un symbole', ic:['#94a0bb','#56627f','sym'], run:function(){ goAssistant(); clickId(zp() + 'symbols-btn'); } },
+    { id:'cr-draft', only:'hstat', t:'Rédiger un document', d:'Outils de Consult : décrivez le texte à écrire', ic:['#5b97ff','#2858d4','doc'], run:function(){ consultTool('draft'); } },
+    { id:'cr-chart', only:'hstat', t:'Créer un graphique', d:'Outils de Consult : visualisez vos données', ic:['#38d088','#12924f','chart'], run:function(){ consultTool('chart'); } },
+    { id:'cr-query', only:'hstat', t:'Interroger un fichier', d:'Outils de Consult : posez des questions à un PDF, Excel ou une image', ic:['#9a7bff','#5733d6','deep'], run:function(){ consultTool('query'); } }
   ];
   function itemsHtml(list, sel){
     return list.map(function(a, i){ return '<div class="hnk-it' + (i === sel ? ' on' : '') + '" role="option" data-hnk-it="' + a.id + '">' + tile(a.ic[0], a.ic[1], G[a.ic[2]]) + '<b>' + esc(a.t) + '</b><span class="d">' + esc(a.d) + '</span></div>'; }).join('');
@@ -47906,7 +47929,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       h += '<div class="hnk-row"><div class="hnk-l">' + esc(x.t) + (x.small && (x.fixed ? !c.on : true) ? '<small>' + esc(x.small) + '</small>' : '') + '</div>' + (x.fixed ? '<span class="hnk-keys fixed">' + show(x.k) + '</span>' : kb('k', c.k) + (x.k2 ? kb('k2', c.k2) : '')) + sw(x.id, c.on) + '</div>';
     });
     if(open) h += '</div>';
-    h += '<div class="hnk-prev"><div class="hnk-grp" style="margin-top:6px">Aperçu de @H-Liste</div><div class="hnk-menu static">' + itemsHtml(ATS, 0) + '<div class="hnk-foot">↑ ↓ pour naviguer · Entrée pour choisir · Échap pour fermer</div></div></div>';
+    h += '<div class="hnk-prev"><div class="hnk-grp" style="margin-top:6px">Aperçu de @H-Liste</div><div class="hnk-menu static">' + itemsHtml(ATS.filter(function(a){ return !a.only; }), 0) + '<div class="hnk-foot">↑ ↓ pour naviguer · Entrée pour choisir · Échap pour fermer</div></div><p class="hnk-sub" style="margin:8px 2px 0">Disponible dans Assistant, Co-work › Discussion, Consult et F-i-Stat. Dans Consult, la liste ajoute aussi : Rédiger un document, Créer un graphique, Interroger un fichier.</p></div>';
     h += '<div style="margin-top:14px"><button type="button" class="btn" data-hnk-reset>Rétablir les valeurs par défaut</button></div>';
     return h;
   }
@@ -47954,26 +47977,27 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
     var on = menu.querySelector('.hnk-it.on'); if(on && on.scrollIntoView) on.scrollIntoView({ block:'nearest' });
   }
   function choose(id){
-    var a = ATS.filter(function(x){ return x.id === id; })[0], ta = $('chat-input');
+    var a = ATS.filter(function(x){ return x.id === id; })[0], ta = zta();
     if(ta && range){ ta.value = ta.value.slice(0, range[0]) + ta.value.slice(range[1]); ta.selectionStart = ta.selectionEnd = range[0]; ta.dispatchEvent(new Event('input', { bubbles:true })); }
     closeMenu(); if(a) try{ a.run(); }catch(e){}
   }
   function norm(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
   document.addEventListener('input', function(e){
-    var ta = e.target; if(!ta || ta.id !== 'chat-input') return;
+    var ta = e.target; if(!ta || !ZONES[ta.id]) return;
     if(!atOn()){ closeMenu(); return; }
+    zone = ta.id;
     var p = ta.selectionStart, m = /(^|\s)@([^\s@]{0,20})$/.exec(ta.value.slice(0, p));
     if(!m){ closeMenu(); return; }
     var q = norm(m[2]); range = [p - m[2].length - 1, p];
-    list = ATS.filter(function(a){ return !q || norm(a.t).indexOf(q) >= 0 || norm(a.d).indexOf(q) >= 0; }); sel = 0; paint(ta);
+    list = ATS.filter(function(a){ return (!a.only || a.only === ZONES[zone].v) && (!q || norm(a.t).indexOf(q) >= 0 || norm(a.d).indexOf(q) >= 0); }); sel = 0; paint(ta);
   });
   window.addEventListener('keydown', function(e){
-    if(!menu || !e.isTrusted) return; var ta = $('chat-input'); if(e.target !== ta) return;
+    if(!menu || !e.isTrusted) return; var ta = zta(); if(e.target !== ta) return;
     if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); e.stopImmediatePropagation(); sel = (sel + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length; paint(ta); }
     else if(e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); e.stopImmediatePropagation(); if(list[sel]) choose(list[sel].id); }
     else if(e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); closeMenu(); }
   }, true);
-  document.addEventListener('mousedown', function(e){ if(menu && !menu.contains(e.target) && e.target.id !== 'chat-input') closeMenu(); });
+  document.addEventListener('mousedown', function(e){ if(menu && !menu.contains(e.target) && !ZONES[e.target.id]) closeMenu(); });
   window.addEventListener('resize', closeMenu);
   /* ===== Panneau ===== */
   document.addEventListener('click', function(e){
@@ -48948,7 +48972,8 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     ['🎉','Carte de vœux','Occasion spéciale',1080,1528,'Carte de vœux chaleureuse : message principal et signature.']
   ];
   var STYLES = ['Moderne et épuré','Sobre et corporatif','Festif et coloré','Luxe et élégant','Minimaliste','Audacieux et contrasté'];
-  var cfgStyle = { image:['Photo réaliste','Illustration','Portrait','Peinture','Rendu 3D','Arrière-plan modifié (avec image importée)'], dessin:['Dessin au trait','Coloriage','Croquis','Illustration colorée','Personnage original'] };
+  var STYLE_HINT = { 'Schéma':'schéma clair et pédagogique : fond blanc, formes simples, blocs et flèches bien alignés, peu de couleurs, étiquettes courtes et lisibles', 'Informatique':'illustration informatique et technologie : ordinateurs, serveurs, réseau, nuage, code ou interface, style moderne et propre, sans marque ni logo existant', 'Logo':'logo original : design simple et vectoriel à plat, formes nettes, une à trois couleurs, fond uni, composition centrée, sans texte inventé et sans marque existante' };
+  var cfgStyle = { image:['Photo réaliste','Illustration','Portrait','Peinture','Rendu 3D','Schéma','Informatique','Logo','Arrière-plan modifié (avec image importée)'], dessin:['Dessin au trait','Coloriage','Croquis','Illustration colorée','Personnage original'] };
   var root = null, S = null;
 
   function $(s, r){ return (r || root).querySelector(s); }
@@ -49191,7 +49216,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   function home(){
     head('Créer', ''); S.kind = '';
     body('<div class="hncr-cards">' +
-      '<button type="button" class="hncr-card" data-a="pick" data-k="image"><span class="hncr-ico">🖼️</span><b>Image IA</b><span>Générer une image à partir d’une description ou transformer une image importée.</span><span>Photos, illustrations, portraits, modification d’arrière-plan.</span></button>' +
+      '<button type="button" class="hncr-card" data-a="pick" data-k="image"><span class="hncr-ico">🖼️</span><b>Image IA</b><span>Générer une image à partir d’une description ou transformer une image importée.</span><span>Photos, illustrations, portraits, schémas, informatique, logos, modification d’arrière-plan.</span></button>' +
       '<button type="button" class="hncr-card" data-a="pick" data-k="design"><span class="hncr-ico">🎨</span><b>Design</b><span>Concevoir un visuel en combinant images, textes et éléments graphiques.</span><span>Bannières Facebook ou LinkedIn, affiches, publications, flyers, présentations de produits.</span></button>' +
       '<button type="button" class="hncr-card" data-a="pick" data-k="dessin"><span class="hncr-ico">✏️</span><b>Dessiner</b><span>Créer un dessin à partir d’une consigne ou d’un croquis fourni.</span><span>Croquis, personnages originaux, dessins au trait, coloriages, illustrations.</span></button>' +
       '<button type="button" class="hncr-card" data-a="pick" data-k="template"><span class="hncr-ico">🧩</span><b>Templates Creators</b><span>Partir d’un modèle prêt à personnaliser : affiche, flyer, bannière, carte, menu, certificat…</span></button>' +
@@ -49285,7 +49310,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     lock(true); msg(k === 'image' ? 'Création de l’image… (jusqu’à 30 secondes)' : 'Création en cours…', '');
     var p;
     if(k === 'image'){
-      var fmt = S.fmt || 'carre', prompt = isMod ? 'Modifie cette image : ' + mod.trim() : (d.trim() + (S.sty && !/Arrière-plan/.test(S.sty) ? '. Style : ' + S.sty : (S.sty ? '. Modifie l’arrière-plan de l’image importée selon cette description.' : '')));
+      var fmt = S.fmt || 'carre', prompt = isMod ? 'Modifie cette image : ' + mod.trim() : (d.trim() + (S.sty && !/Arrière-plan/.test(S.sty) ? '. Style : ' + (STYLE_HINT[S.sty] || S.sty) : (S.sty ? '. Modifie l’arrière-plan de l’image importée selon cette description.' : '')));
       p = genImage(prompt, fmt, isMod ? S.res.url : S.refUrl).then(function(j){ S.res = { url:j.image, title:'Image IA' }; });
     } else if(k === 'dessin'){
       var pr = isMod ? 'Dessin SVG précédent :\n' + S.res.svg + '\n\nModification demandée : ' + mod.trim() : 'Consigne : ' + d.trim() + '\nType : ' + (S.sty || 'Dessin au trait') + (S.ref ? '\nUn croquis/une image de référence est jointe : redessine-le proprement en SVG.' : '');
@@ -49308,7 +49333,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   function addEntries(){
     ['attach-menu', 'cowork-discuss-attach-menu', 'hstat-attach-menu', 'hstatis-attach-menu'].forEach(function(id){
       var m = document.getElementById(id); if(!m || m.querySelector('[data-hncr]')) return;
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'attach-menu-opt'; b.setAttribute('data-hncr', 'open'); b.innerHTML = '<span aria-hidden="true">🎨</span> <span>Créer (Image IA, Design, Dessiner…)</span>';
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'attach-menu-opt'; b.setAttribute('data-hncr', 'open'); b.innerHTML = '<span aria-hidden="true">🎨</span> <span>Créer (Image IA, Design, Dessiner, Template créator…)</span>';
       m.insertBefore(b, m.firstChild);
     });
   }
