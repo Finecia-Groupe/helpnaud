@@ -46847,6 +46847,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
 <style id="hnp-css">
 #hn-prof-btn{ display:flex; align-items:center; gap:10px; width:100%; padding:8px 8px; margin:6px 0 4px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); cursor:pointer; text-align:left; font:inherit; }
 #hn-prof-btn:hover{ background:var(--surface-2); }
+#hn-prof-btn .hnp-dev{ display:flex; gap:7px; margin-top:3px; color:var(--muted); } #hn-prof-btn .hnp-dev svg{ width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
 #hn-prof-btn .hnp-av{ width:34px; height:34px; flex:none; }
 #hn-prof-btn .hnp-nm{ min-width:0; flex:1; line-height:1.25; }
 #hn-prof-btn .hnp-nm b{ display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -46991,7 +46992,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
   function renderBtn(){
     var b = $('hn-prof-btn'); if(!b) return;
     var li = signedIn();
-    b.innerHTML = avHtml() + '<span class="hnp-nm"><b>' + esc(li ? displayName() : 'Mon profil') + '</b><small>' + esc(li ? (planTxt().split(' — ')[0] || who().email) : 'Se connecter / paramètres') + '</small></span><span style="color:var(--muted)">⚙</span>';
+    b.innerHTML = avHtml() + '<span class="hnp-nm"><b>' + esc(li ? displayName() : 'Mon profil') + '</b><small>' + esc(li ? (planTxt().split(' — ')[0] || who().email) : 'Se connecter / paramètres') + '</small><span class="hnp-dev" role="img" aria-label="Disponible sur ordinateur, tablette et téléphone" title="HelpNaud fonctionne sur ordinateur, tablette et téléphone"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="2"/><path d="M11 18h2"/></svg></span></span><span style="color:var(--muted)">⚙</span>';
     var m = $('hnd-avatar-in'); if(m){ var u = photo(); if(u){ m.innerHTML = '<img alt="" src="' + esc(u) + '" style="width:100%;height:100%;object-fit:cover;display:block;">'; m.style.cssText = 'width:100%;height:100%;display:block;'; } else { m.textContent = (displayName().charAt(0) || 'H').toUpperCase(); m.style.cssText = ''; } }
   }
 
