@@ -39840,7 +39840,7 @@
       document.body.appendChild(mn); cb.setAttribute('aria-expanded', 'true');
       return;
     }
-    var it = t.closest('[data-hnr-create-img]'); if(it){ hnrOpenImageDialog(it.getAttribute('data-hnr-create-img')); return; }
+    var it = t.closest('[data-hnr-create-img]'); if(it){ var v = it.getAttribute('data-hnr-create-img'); hnrCloseCreate(); if(window.__hnCreate && window.__hnCreate.open){ window.__hnCreate.open('home', null, v === 'hstatis'); } else { hnrOpenImageDialog(v); } return; }
     if(!t.closest('#hnr-create-menu')) hnrCloseCreate();
   });
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ hnrCloseCreate(); var d = document.getElementById('hnr-img-dlg'); if(d) d.remove(); } });
