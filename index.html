@@ -49191,6 +49191,33 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     if(!window.__hnAiCall) return Promise.reject(new Error('L’assistant IA n’est pas disponible ici. Connectez-vous à votre compte HelpNaud.'));
     return window.__hnAiCall(prompt, { creer:kind, creerFi:!!(S && S.fi), images: blob ? [blob] : null }, true).then(function(j){ return j && j.data; });
   }
+  /* Formats Image IA : proportions L:H (1 à 5). Le moteur produit 3 tailles natives ; les autres proportions sont recadrées au centre. */
+  var RATIO_OPTS = (function(){
+    function gcd(a, b){ return b ? gcd(b, a % b) : a; }
+    var P = [], L = [];
+    for(var a = 1; a <= 5; a++) for(var b = 1; b <= 5; b++){ if(gcd(a, b) !== 1) continue; if(a < b) P.push([a, b]); else if(a > b) L.push([a, b]); }
+    function opt(v, t){ return '<option value="' + v + '">' + t + '</option>'; }
+    var h = '<optgroup label="Carré">' + opt('carre', 'Carré 1:1') + '</optgroup><optgroup label="Portrait">';
+    P.forEach(function(r){ h += (r[0] === 2 && r[1] === 3) ? opt('portrait', 'Portrait 2:3 (natif)') : opt('portrait:' + r[0] + ':' + r[1], 'Portrait ' + r[0] + ':' + r[1]); });
+    h += '</optgroup><optgroup label="Paysage">';
+    L.forEach(function(r){ h += (r[0] === 3 && r[1] === 2) ? opt('paysage', 'Paysage 3:2 (natif)') : opt('paysage:' + r[0] + ':' + r[1], 'Paysage ' + r[0] + ':' + r[1]); });
+    return h + '</optgroup>';
+  })();
+  function parseFmt(v){ var m = /^(carre|portrait|paysage)(?::(\d):(\d))?$/.exec(String(v || 'carre')) || [0, 'carre']; return { o:m[1], w:m[2] ? +m[2] : 0, h:m[3] ? +m[3] : 0 }; }
+  function cropRatio(url, w, h){
+    return new Promise(function(res){
+      if(!w || !h){ res(url); return; }
+      var im = new Image(); im.onload = function(){
+        try{
+          var W = im.naturalWidth, H = im.naturalHeight, tr = w / h, cw = W, ch = Math.round(W / tr);
+          if(ch > H){ ch = H; cw = Math.round(H * tr); }
+          var c = document.createElement('canvas'); c.width = cw; c.height = ch;
+          c.getContext('2d').drawImage(im, Math.round((W - cw) / 2), Math.round((H - ch) / 2), cw, ch, 0, 0, cw, ch);
+          res(c.toDataURL('image/jpeg', 0.9));
+        }catch(e){ res(url); }
+      }; im.onerror = function(){ res(url); }; im.src = url;
+    });
+  }
   function genImage(prompt, format, dataUrl){
     return Promise.resolve(window.__hnAiToken ? window.__hnAiToken() : null).then(function(tk){
       if(!tk) throw new Error('Connectez-vous à votre compte HelpNaud pour créer une image.');
@@ -49272,7 +49299,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     var h = '<div class="hncr-grid"><div>';
     h += '<label class="hncr-l" for="hncr-desc">' + (k === 'dessin' ? 'Votre consigne' : k === 'image' ? 'Décrivez l’image à créer' : 'Décrivez votre besoin') + '</label><textarea id="hncr-desc" placeholder="' + esc(k === 'image' ? 'Ex. : un chalet au bord d’un lac au lever du soleil, lumière douce' : k === 'dessin' ? 'Ex. : un renard qui lit un livre, style simple' : (t ? t[5] : 'Ex. : bannière pour le lancement de mon service de comptabilité')) + '">' + esc(S.desc || '') + '</textarea>';
     if(k === 'image'){
-      h += '<label class="hncr-l" for="hncr-fmt">Format</label><select id="hncr-fmt"><option value="carre">Carré</option><option value="portrait">Portrait</option><option value="paysage">Paysage</option></select>';
+      h += '<label class="hncr-l" for="hncr-fmt">Format</label><select id="hncr-fmt">' + RATIO_OPTS + '</select>';
       h += '<label class="hncr-l" for="hncr-sty">Style</label><select id="hncr-sty">' + cfgStyle.image.map(function(s){ return '<option>' + esc(s) + '</option>'; }).join('') + '</select>';
     } else if(k === 'dessin'){
       h += '<label class="hncr-l" for="hncr-sty">Type de dessin</label><select id="hncr-sty">' + cfgStyle.dessin.map(function(s){ return '<option>' + esc(s) + '</option>'; }).join('') + '</select>';
@@ -49349,8 +49376,9 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     lock(true); msg(k === 'image' ? 'Création de l’image… (jusqu’à 30 secondes)' : 'Création en cours…', '');
     var p;
     if(k === 'image'){
-      var fmt = S.fmt || 'carre', prompt = isMod ? 'Modifie cette image : ' + mod.trim() : (d.trim() + (S.sty && !/Arrière-plan/.test(S.sty) ? '. Style : ' + (STYLE_HINT[S.sty] || S.sty) : (S.sty ? '. Modifie l’arrière-plan de l’image importée selon cette description.' : '')));
-      p = genImage(prompt, fmt, isMod ? S.res.url : S.refUrl).then(function(j){ S.res = { url:j.image, title:'Image IA' }; });
+      var pf = parseFmt(S.fmt), fmt = pf.o, prompt = isMod ? 'Modifie cette image : ' + mod.trim() : (d.trim() + (S.sty && !/Arrière-plan/.test(S.sty) ? '. Style : ' + (STYLE_HINT[S.sty] || S.sty) : (S.sty ? '. Modifie l’arrière-plan de l’image importée selon cette description.' : '')));
+      if(pf.w && !isMod) prompt += '. Format de l’image : proportion ' + pf.w + ':' + pf.h + ', composition adaptée, sujet principal bien centré, rien d’important près des bords.';
+      p = genImage(prompt, fmt, isMod ? S.res.url : S.refUrl).then(function(j){ return cropRatio(j.image, pf.w, pf.h).then(function(u){ S.res = { url:u, title:'Image IA' }; }); });
     } else if(k === 'dessin'){
       var pr = isMod ? 'Dessin SVG précédent :\n' + S.res.svg + '\n\nModification demandée : ' + mod.trim() : 'Consigne : ' + d.trim() + '\nType : ' + (S.sty || 'Dessin au trait') + (S.ref ? '\nUn croquis/une image de référence est jointe : redessine-le proprement en SVG.' : '');
       p = ai(pr, 'dessin', isMod ? null : S.ref).then(function(data){ var svg = cleanSvg(data && data.svg); if(!svg) throw new Error('Le dessin généré est illisible. Réessayez (vos crédits sont remboursés).'); S.res = { svg:svg, title:String((data && data.title) || 'Dessin').slice(0, 80) }; });
