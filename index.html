@@ -49714,6 +49714,7 @@ body.hnct-on .hnct-dot{ display:block; }
       '<div class="add"><input type="text" id="hnct-n" placeholder="Nom (facultatif)" maxlength="80" autocomplete="off"><input type="text" id="hnct-e" placeholder="Courriel ou téléphone" maxlength="190" autocomplete="off"><button type="button" class="btn" data-a="add">Ajouter</button></div>' +
       '<div class="m" style="margin-bottom:2px">Réseaux sociaux : ouvrez la fenêtre de partage, puis choisissez vos amis dans le réseau.</div><div class="soc">' +
       SOC.map(function(s, i){ return '<button type="button" class="btn" data-a="soc" data-i="' + i + '">' + s[0] + '</button>'; }).join('') +
+      (navigator.share ? '<button type="button" class="btn" data-a="share">Autres applications…</button>' : '') +
       '<button type="button" class="btn" data-a="sms">SMS</button><button type="button" class="btn" data-a="copy">🔗 Copier le lien</button>' + (navigator.share ? '<button type="button" class="btn" data-a="nat">Partager…</button>' : '') + '</div>' +
       '<p class="m" style="margin-top:0">Les réseaux sociaux ne permettent pas à une application web de lire votre liste d’amis ; HelpNaud n’y a pas accès.</p>' +
       '<input type="search" id="hnct-q" placeholder="Rechercher dans mes contacts" aria-label="Rechercher dans mes contacts" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:inherit;font:inherit;font-size:13.5px;box-sizing:border-box">' +
@@ -49756,7 +49757,14 @@ body.hnct-on .hnct-dot{ display:block; }
         if(!EMAIL.test(v) && v.replace(/\D/g, '').length < 7){ err.textContent = 'Saisissez un courriel valide ou un numéro de téléphone.'; return; }
         var k = merge([c]); box.querySelector('#hnct-e').value = ''; box.querySelector('#hnct-n').value = ''; added(k, ''); return;
       }
-      if(a === 'soc'){ var s = SOC[Number(b.getAttribute('data-i'))]; if(s) window.open(s[1](), '_blank', 'noopener,noreferrer'); return; }
+      if(a === 'soc'){ var s = SOC[Number(b.getAttribute('data-i'))];
+        /* Mobile : la feuille de partage du système se superpose à HelpNaud ; en la fermant (✕) ou après l'envoi, l'utilisateur reste sur « Mes contacts ». Un lien WhatsApp externe le laisserait dans l'app WhatsApp. */
+        if(s && s[0] === 'WhatsApp' && navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+          navigator.share({ text: msgText() }).catch(function(e){ if(!e || e.name !== 'AbortError') window.open(s[1](), '_blank', 'noopener,noreferrer'); });
+          return;
+        }
+        if(s) window.open(s[1](), '_blank', 'noopener,noreferrer'); return; }
+      if(a === 'share'){ if(navigator.share){ navigator.share({ text: msgText() }).catch(function(){}); } return; }
       if(a === 'sms'){ location.href = 'sms:' + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? '&' : '?') + 'body=' + encodeURIComponent(msgText()); return; }
       if(a === 'nat'){ navigator.share({ title:'HelpNaud.ai', text:'Essayez HelpNaud.ai', url:SITE }).catch(function(){}); return; }
       if(a === 'copy'){ (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(SITE) : Promise.reject()).then(function(){ toast('Lien copié.'); }, function(){ toast('Copie impossible ici : ' + SITE); }); return; }
