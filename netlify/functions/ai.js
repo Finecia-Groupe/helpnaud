@@ -488,7 +488,9 @@ exports.handler = async function(event){
   let autoSearched = false, needsWeb = false;
   const deepMode = research.mode === 'consultant' || research.mode === 'statisticien';   // Consult et F-i-Stat : recherche documentaire et universitaire, pas seulement l'actualité
   const lastUserTxt = (() => { const u = msgs.filter(m => m && m.role === 'user' && typeof m.content === 'string'); return u.length ? u[u.length - 1].content : ''; })();
-  const wantsSearch = needsRealtime(msgs) || (deepMode && lastUserTxt.replace(/\s+/g, ' ').trim().length >= 25);
+  const noSearchAsked = /sans\s+(aucune\s+)?(la\s+)?(recherche|internet|web)|pas\s+de\s+recherche|ne\s+(fais|cherche)\s+pas\s+de\s+recherche|texte\s+uniquement/i.test(lastUserTxt);   // demande explicite : pas de recherche web
+  const isWriting = /^\s*(r[ée]dige|[ée]cris|pr[ée]pare|g[ée]n[èe]re|cr[ée]e|fais|donne|propose|reformule|traduis|corrige)\b/i.test(lastUserTxt);   // tâche de rédaction : pas de recherche automatique
+  const wantsSearch = !noSearchAsked && (needsRealtime(msgs) || (deepMode && !isWriting && lastUserTxt.replace(/\s+/g, ' ').trim().length >= 25));
   if (!wantJson && !research.web && available('anthropic') && wantsSearch) {
     if (research.auto) { research.web = true; autoSearched = true; } else needsWeb = true;
   }
@@ -694,6 +696,7 @@ exports.handler = async function(event){
       if (needsWeb && !rplan && !wantJson) finalText += '\n\nHNWEBSEARCHBTN';
       return reply(200, { text: finalText, data, autoWeb: autoSearched && !!rplan, needsWeb: needsWeb && !rplan, credits: { used: Math.max(0, r.used - refundedSearch), limit: r.limit, plan: r.plan }, attachExtra: extra, charged: { model: baseCost, attachments: extra - rSearch - rOther, search: rSearch - refundedSearch, deep: research.deep ? COST_DEEP : 0, multi: research.multi ? COST_MULTI : 0, total: cost - refundedSearch, refunded: refundedSearch } });
     } catch (e) {
+      console.log('ai ' + (e && e.name === 'AbortError' ? 'timeout' : 'error'), label, 'elapsed=' + (Date.now() - T0) + 'ms', 'web=' + !!rplan, 'msg=' + String(e && e.message || '').slice(0, 120));
       lastErr = e && e.name === 'AbortError' ? { code: 'timeout', status: 504, message: 'L’assistant IA a mis trop de temps à répondre.' } : { code: 'upstream', status: 502, message: 'L’assistant IA est momentanément indisponible.' };
     } finally { clearTimeout(timer); }
   }
