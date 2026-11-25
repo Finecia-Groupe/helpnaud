@@ -11327,13 +11327,17 @@
     return 'il y a ' + d + ' j';
   }
   var msgTimeTickers = [];
-  setInterval(function(){
+  function tickMsgTimes(){
+    msgTimeTickers = msgTimeTickers.filter(function(el){ return el.isConnected; });
     msgTimeTickers.forEach(function(el){
-      if(!el.isConnected) return;
       var ts = Number(el.dataset.ts);
       if(ts) el.textContent = formatElapsed(Date.now() - ts);
     });
-  }, 15000);
+  }
+  setInterval(tickMsgTimes, 15000);
+  /* Sur téléphone, les minuteurs sont gelés quand l'application est en arrière-plan : on remet les heures à jour dès le retour. */
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) tickMsgTimes(); });
+  window.addEventListener('focus', tickMsgTimes); window.addEventListener('pageshow', tickMsgTimes);
   function getMsgText(el){
     var t = el.querySelector('.msg-text');
     return t ? (t.dataset && t.dataset.raw != null ? t.dataset.raw : t.textContent) : el.textContent;
