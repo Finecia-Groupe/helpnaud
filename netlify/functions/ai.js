@@ -305,7 +305,7 @@ async function postJson(url, headers, payload, signal){
 }
 /* Lecture en flux (SSE) : si le délai est atteint pendant la rédaction, le texte déjà écrit est renvoyé (marqué « tronqué ») au lieu d'une erreur. */
 async function streamAnthropic(p, H, signal){
-  let text = '', tin = 0, tout = 0, why = '', aborted = false;
+  let text = '', tin = 0, tout = 0, why = '', aborted = false, tStart = Date.now(), tFirst = 0;
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: Object.assign({ 'Content-Type': 'application/json' }, H), body: JSON.stringify(Object.assign({}, p, { stream: true })) });
     if (!res.ok || !res.body) { const err = new Error('upstream ' + res.status); err.status = res.status; throw err; }
@@ -318,7 +318,7 @@ async function streamAnthropic(p, H, signal){
         if (line.slice(0, 5) !== 'data:') continue;
         let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
         if (ev.type === 'message_start' && ev.message && ev.message.usage) tin = ev.message.usage.input_tokens || 0;
-        else if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') text += ev.delta.text || '';
+        else if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') { if (!tFirst) tFirst = Date.now(); text += ev.delta.text || ''; }
         else if (ev.type === 'message_delta') { if (ev.usage && ev.usage.output_tokens) tout = ev.usage.output_tokens; if (ev.delta && ev.delta.stop_reason) why = ev.delta.stop_reason; }
         else if (ev.type === 'error') { const err = new Error('upstream stream'); err.status = 502; throw err; }
       }
@@ -327,6 +327,7 @@ async function streamAnthropic(p, H, signal){
     if (e && e.name === 'AbortError' && text.trim().length >= 150) aborted = true; else throw e;
   }
   if (aborted) { why = 'timeout'; if (!tout) tout = Math.ceil(text.length / 3.5); }
+  console.log('ai stream', p.model, 'ttfb=' + (tFirst ? tFirst - tStart : -1) + 'ms', 'total=' + (Date.now() - tStart) + 'ms', 'chars=' + text.length, 'tin=' + tin, 'tout=' + tout, 'stop=' + (why || '?'));
   return { text: text.trim(), tin, tout, cut: aborted || why === 'max_tokens', why, sources: [], found: [], searches: 0, connCalls: 0 };
 }
 const ADAPTERS = {
@@ -490,6 +491,7 @@ exports.handler = async function(event){
   const lastUserTxt = (() => { const u = msgs.filter(m => m && m.role === 'user' && typeof m.content === 'string'); return u.length ? u[u.length - 1].content : ''; })();
   const noSearchAsked = /sans\s+(aucune\s+)?(la\s+)?(recherche|internet|web)|pas\s+de\s+recherche|ne\s+(fais|cherche)\s+pas\s+de\s+recherche|texte\s+uniquement/i.test(lastUserTxt);   // demande explicite : pas de recherche web
   const isWriting = /^\s*(r[ée]dige|[ée]cris|pr[ée]pare|g[ée]n[èe]re|cr[ée]e|fais|donne|propose|reformule|traduis|corrige)\b/i.test(lastUserTxt);   // tâche de rédaction : pas de recherche automatique
+  if (noSearchAsked) { research.web = false; research.pub = false; research.spec = false; research.auto = false; }   // « sans recherche web » : respecté même si le bouton de recherche est activé
   const wantsSearch = !noSearchAsked && (needsRealtime(msgs) || (deepMode && !isWriting && lastUserTxt.replace(/\s+/g, ' ').trim().length >= 25));
   if (!wantJson && !research.web && available('anthropic') && wantsSearch) {
     if (research.auto) { research.web = true; autoSearched = true; } else needsWeb = true;
@@ -652,6 +654,7 @@ exports.handler = async function(event){
   let lastErr = null, label = attempts[0] + ':' + modelFor(attempts[0], tier.band);
   for (const provider of attempts) {
     const model = modelFor(provider, tier.band); label = provider + ':' + model;
+    console.log('ai start', label, 'before-main=' + (Date.now() - T0) + 'ms', 'web=' + !!rplan, 'sys=' + systemFull.length + 'ch', 'max=' + tier.max);
     const left = deadline - Date.now(); if (left < 3000) break;
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), left);
     try {
@@ -660,7 +663,7 @@ exports.handler = async function(event){
         const web = rplan && provider === 'anthropic' && !webFailed ? { domains: rplan.domains, maxUses: research.mode === 'statisticien' ? (tierId === 'expertplus' ? 5 : 3) : Math.min(8, WEB_MAX_USES + (research.deep ? 2 : 0) + (research.mode ? 2 : 0)) } : null;
         let wctl = null, wtimer = null;
         if (web) {   // la recherche web ne doit pas consommer tout le délai : au besoin on répond sans elle avec le temps restant
-          wctl = new AbortController(); const rest = deadline - Date.now(); const webMs = Math.max(5000, Math.min(rest * 0.6, rest - 8000));
+          wctl = new AbortController(); const rest = deadline - Date.now(); const webMs = Math.max(5000, Math.min(rest * 0.45, rest - 9000));
           ctl.signal.addEventListener('abort', () => wctl.abort()); wtimer = setTimeout(() => wctl.abort(), webMs);
         }
         try { return await ADAPTERS[provider]({ model, max: maxTok, system: systemFull, messages: msgs, images, web, connectors: !!web || connAuto, signal: wctl ? wctl.signal : ctl.signal }); }
