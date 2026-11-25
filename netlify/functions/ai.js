@@ -303,6 +303,32 @@ async function postJson(url, headers, payload, signal){
   if (!res.ok || !j) { const err = new Error('upstream ' + res.status); err.status = res.status; throw err; }
   return j;
 }
+/* Lecture en flux (SSE) : si le délai est atteint pendant la rédaction, le texte déjà écrit est renvoyé (marqué « tronqué ») au lieu d'une erreur. */
+async function streamAnthropic(p, H, signal){
+  let text = '', tin = 0, tout = 0, why = '', aborted = false;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: Object.assign({ 'Content-Type': 'application/json' }, H), body: JSON.stringify(Object.assign({}, p, { stream: true })) });
+    if (!res.ok || !res.body) { const err = new Error('upstream ' + res.status); err.status = res.status; throw err; }
+    const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
+    for (;;) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+        if (line.slice(0, 5) !== 'data:') continue;
+        let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
+        if (ev.type === 'message_start' && ev.message && ev.message.usage) tin = ev.message.usage.input_tokens || 0;
+        else if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') text += ev.delta.text || '';
+        else if (ev.type === 'message_delta') { if (ev.usage && ev.usage.output_tokens) tout = ev.usage.output_tokens; if (ev.delta && ev.delta.stop_reason) why = ev.delta.stop_reason; }
+        else if (ev.type === 'error') { const err = new Error('upstream stream'); err.status = 502; throw err; }
+      }
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError' && text.trim().length >= 150) aborted = true; else throw e;
+  }
+  if (aborted) { why = 'timeout'; if (!tout) tout = Math.ceil(text.length / 3.5); }
+  return { text: text.trim(), tin, tout, cut: aborted || why === 'max_tokens', why, sources: [], found: [], searches: 0, connCalls: 0 };
+}
 const ADAPTERS = {
   async anthropic(o){
     const msgs = o.messages.map(m => ({ role: m.role, content: m.content }));
@@ -314,6 +340,7 @@ const ADAPTERS = {
     if (o.connectors) CONNECTOR_TOOLS.forEach(t => p.tools.push(t));
     if (!p.tools.length) delete p.tools;
     const H = { 'x-api-key': KEYS.anthropic, 'anthropic-version': '2023-06-01' };
+    if (!p.tools) return await streamAnthropic(p, H, o.signal);   // réponse sans outils : lecture en flux, un texte partiel est conservé si le délai est dépassé
     let j = await postJson('https://api.anthropic.com/v1/messages', H, p, o.signal);
     let blocks = (Array.isArray(j.content) ? j.content : []).slice();
     let tin = 0, tout = 0, searches = 0, connCalls = 0;
@@ -600,7 +627,8 @@ exports.handler = async function(event){
   const expFmt = (typeof body.export === 'string' && Object.prototype.hasOwnProperty.call(EXPORTS, body.export)) ? body.export : '';
   const capRule = wantJson ? '' : '\n\nFICHIERS : dans HelpNaud, l’application génère elle-même de vrais fichiers téléchargeables (PDF, Word, Excel, PowerPoint) à partir de ta réponse et affiche un bouton « Télécharger » sous celle-ci. Ne dis donc jamais que tu ne peux pas produire de fichier ou de PDF, ne renvoie pas l’utilisateur vers Word, Google Docs ou l’impression, et n’écris jamais toi-même un lien de téléchargement ni « votre fichier est prêt » : le bouton apparaît seulement quand le fichier existe réellement. Si l’utilisateur demande un fichier, rédige directement le contenu complet et bien structuré en Markdown. Pour un document lié à une conversation précédente, reprends fidèlement ce qui a été dit.'
     + (expFmt ? ' FORMAT DEMANDÉ MAINTENANT : ' + EXPORTS[expFmt] + '. Écris uniquement le contenu du document (titres #, listes, tableaux Markdown, accents), puis une seule courte phrase indiquant que le bouton de téléchargement est sous la réponse.' + (expFmt === 'xlsx' ? ' Pour Excel : présente les données en tableaux Markdown (première ligne = en-têtes) ; pour un calcul, écris la formule Excel dans la cellule en commençant par = (ex. =SUM(B2:B6), =B2*C2), avec les lignes de la formule à la bonne place.' : '') + (expFmt === 'pptx' ? ' Pour PowerPoint : un titre # pour la présentation, puis un titre ## par diapositive suivi de 3 à 5 puces courtes.' : '') : '');
-  const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + rtRule + capRule + prefsTxt + persoTxt + teenTxt;
+  const toolsSheet = wantJson ? '' : '\n\nFICHE DES OUTILS HELPNAUD (réponds à partir de cette fiche ; n’invente rien au-delà, et dis-le si une fonction n’y figure pas) : TAISO = gestion et rapprochement des opérations (factures, paiements, relances d’échéances, courriels, rapprochement bancaire). iTAF = contrôles et analyse des anomalies sur les mêmes données (factures, paiements, courriels, lignes bancaires). H-Web = génère un site web HTML/CSS autonome à partir d’une description, avec aperçu et téléchargement. Interface Help = pages, mini-applications, tableaux de bord et maquettes générés à partir d’une description, avec aperçu mobile/tablette/ordinateur, gabarits de départ, copie et téléchargement. Outils HelpNaud = analyses et contrôles complémentaires pour le dossier ouvert (performances, analyse économique, analyse financière, comptabilité, évaluation rapide en feu vert/jaune/rouge, plan d’évaluation, comptages, calculs rapides dont taxes et seuil de rentabilité, modèles marketing). Créer = Image IA, Design, Dessiner et Templates Creators. H-Code = atelier de code (aucun détail supplémentaire disponible).';
+  const systemFull = system + (wantJson ? '' : researchSystem(research, !!rplan)) + toolsSheet + rtRule + capRule + prefsTxt + persoTxt + teenTxt;
   const deadline = Math.min(Date.now() + TIMEOUT_MS, T0 + 22500);   // on s'arrête avant la coupure de Netlify pour pouvoir REMBOURSER et répondre proprement (sinon 502 sans message)
   if (jsonPre) {
     try {
@@ -628,8 +656,14 @@ exports.handler = async function(event){
       const maxTok = extra > 0 ? Math.max(tier.max, research.deep ? 4000 : 3000, research.mode ? 3500 : 0) : tier.max;
       const call = async () => {
         const web = rplan && provider === 'anthropic' && !webFailed ? { domains: rplan.domains, maxUses: research.mode === 'statisticien' ? (tierId === 'expertplus' ? 5 : 3) : Math.min(8, WEB_MAX_USES + (research.deep ? 2 : 0) + (research.mode ? 2 : 0)) } : null;
-        try { return await ADAPTERS[provider]({ model, max: maxTok, system: systemFull, messages: msgs, images, web, connectors: !!web || connAuto, signal: ctl.signal }); }
-        catch (we) { if (!web || (we && we.name === 'AbortError')) throw we; webFailed = true; return await ADAPTERS[provider]({ model, max: maxTok, system: system + (wantJson ? '' : researchSystem(research, false)), messages: msgs, images, web: null, signal: ctl.signal }); }
+        let wctl = null, wtimer = null;
+        if (web) {   // la recherche web ne doit pas consommer tout le délai : au besoin on répond sans elle avec le temps restant
+          wctl = new AbortController(); const rest = deadline - Date.now(); const webMs = Math.max(5000, Math.min(rest * 0.6, rest - 8000));
+          ctl.signal.addEventListener('abort', () => wctl.abort()); wtimer = setTimeout(() => wctl.abort(), webMs);
+        }
+        try { return await ADAPTERS[provider]({ model, max: maxTok, system: systemFull, messages: msgs, images, web, connectors: !!web || connAuto, signal: wctl ? wctl.signal : ctl.signal }); }
+        catch (we) { if (!web || (we && we.name === 'AbortError' && ctl.signal.aborted)) throw we; if (web && !ctl.signal.aborted && we && we.name === 'AbortError') console.log('ai web timeout -> sans recherche', label); webFailed = true; return await ADAPTERS[provider]({ model, max: maxTok, system: system + (wantJson ? '' : researchSystem(research, false)), messages: msgs, images, web: null, signal: ctl.signal }); }
+        finally { if (wtimer) clearTimeout(wtimer); }
       };   // analyse de pièces jointes : réponse plus longue (moins de coupures)
       let out = await call();
       if (!out.text && Date.now() < deadline - 4000) {   // réponse vide : une seule nouvelle tentative
