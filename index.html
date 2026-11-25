@@ -29373,7 +29373,7 @@
           if(attachment.length){ setMsgText(thinkingEl, window.hnAttFail(attachment, ec)); return; }
           setMsgText(thinkingEl, ec === 'images_unavailable' ? "Les images ne sont pas prises en charge par l'assistant dans cette vue."
             : ec === 'image_rejected' ? "Les images jointes n'ont pas pu être analysées (format, taille ou fichier invalide). Retirez-les (✕) ou joignez-en de plus petites."
-            : "Erreur : la réponse n'a pas pu être complétée (" + (ec || 'inconnue') + "). Réessayez dans un instant.");
+            : window.hnErrText(ec));
         });
       });
     }
@@ -38084,7 +38084,7 @@
         if(attachment.length){ setMsgText(thinkingEl, window.hnAttFail(attachment, hc)); return; }
         setMsgText(thinkingEl, hc === 'images_unavailable' ? "Les images ne sont pas prises en charge par l'assistant dans cette vue."
           : hc === 'image_rejected' ? "Les images jointes n'ont pas pu être analysées (format, taille ou fichier invalide). Retirez-les (✕) ou joignez-en de plus petites."
-          : "Erreur : la réponse n'a pas pu être complétée. Réessayez dans un instant.");
+          : window.hnErrText(hc));
       });
     });
   }
@@ -45277,13 +45277,22 @@ html.hn-dragfile #view-assistant, html.hn-dragfile #view-hstat, html.hn-dragfile
              draftDocChars:D, overflow:overflow, limit:TEXT_LIMIT, budgetForDocs:Math.max(0, budget - MIN_HIST) };
   };
   window.hnAttFiles = function(th){ var f = th.images.map(function(a){ return a.file; }); return f.length ? (f.length === 1 ? f[0] : f) : null; };
+  window.hnErrText = function(code){
+    var why = code === 'timeout' ? "L'assistant a mis trop de temps à répondre (demande longue ou serveur occupé). Essayez une demande plus courte, ou une seule tâche à la fois."
+      : code === 'upstream' ? "Le service d'IA est momentanément indisponible."
+      : code === 'empty' ? "L'assistant n'a renvoyé aucune réponse."
+      : (code === 'quota' || code === 'budget') ? "Les crédits IA sont épuisés."
+      : "La réponse n'a pas pu être complétée.";
+    return "Erreur : " + why + " Réessayez dans un instant." + (code ? " (code : " + code + ")" : '');
+  };
   window.hnAttFail = function(atts, code){
     if(!atts || !atts.length) return '';
     var why = (code === 'too_long' || code === 'http_413') ? "Le message est trop volumineux."
       : code === 'image_rejected' ? "Une image est refusée (format ou taille)."
       : code === 'images_unavailable' ? "L'IA actuelle ne prend pas en charge les images."
       : (code === 'quota' || code === 'budget') ? "Les crédits IA sont épuisés."
-      : "L'analyse n'a pas abouti.";
+      : code === 'timeout' ? "L'assistant a mis trop de temps à répondre."
+      : "L'analyse n'a pas abouti" + (code ? " (code : " + code + ")" : '') + ".";
     return "⚠ " + why + " Vos fichiers sont conservés : cliquez sur ✎ sous votre message pour les remettre dans le brouillon, puis réessayez.";
   };
   /* Miniatures dans le message envoyé + agrandissement */
