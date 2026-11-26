@@ -49400,6 +49400,160 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   document.addEventListener('DOMContentLoaded', refresh); setTimeout(refresh, 300);
 })();
 </script>
+<style id="hnvid-css">
+#hnvid{position:fixed;inset:0;z-index:100000;background:rgba(10,20,34,.6);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px}
+#hnvid[hidden]{display:none}
+#hnvid .hv-box{background:var(--surface,#fff);color:var(--ink,#16304A);border-radius:16px;max-width:760px;width:100%;padding:16px 16px 22px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+#hnvid .hv-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#hnvid h2{margin:0;font-size:20px}
+#hnvid label.hv-l{display:block;font-weight:700;font-size:13px;margin:12px 0 4px}
+#hnvid textarea,#hnvid input[type=text],#hnvid select{width:100%;border:1px solid var(--line,#d5deea);border-radius:10px;padding:8px 10px;background:var(--surface-2,#f6f8fc);color:inherit;font:inherit;font-size:14px}
+#hnvid textarea{resize:vertical}
+#hnvid .hv-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+#hnvid .hv-sc{border:1px solid var(--line,#d5deea);border-radius:12px;padding:10px;margin-top:10px;display:grid;grid-template-columns:84px 1fr;gap:10px;background:var(--surface-2,#f6f8fc)}
+#hnvid .hv-th{width:84px;height:84px;border-radius:10px;background:#dfe8f6 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;text-align:center;cursor:pointer;color:#456;border:2px dashed #9fb3cf}
+#hnvid .hv-vis{font-size:12px;opacity:.7;margin:2px 0 0}
+#hnvid canvas{width:100%;max-height:60vh;object-fit:contain;background:#0d1f33;border-radius:12px;margin-top:10px}
+#hnvid video{width:100%;max-height:60vh;border-radius:12px;margin-top:10px;background:#000}
+#hnvid .hv-msg{font-size:13px;margin-top:8px;min-height:18px}
+#hnvid .hv-bar{height:8px;border-radius:6px;background:#dfe8f6;overflow:hidden;margin-top:8px}
+#hnvid .hv-bar i{display:block;height:100%;width:0;background:#1E4B8F}
+</style>
+<script id="hnvid-js">
+(function(){
+  'use strict';
+  var KEY='helpnaud_video_draft', FMT={'9:16':[1080,1920],'1:1':[1080,1080],'16:9':[1920,1080]}, root=null, rec=false, V=null;
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function $(s){ return root.querySelector(s); }
+  function fresh(){ return {fmt:'9:16',hook:'',scenes:[{text:'',img:null,dur:6,vis:''},{text:'',img:null,dur:6,vis:''},{text:'',img:null,dur:6,vis:''}],cta:'Suivez HelpNaud',ctaLine:'',url:'helpnaud.ai',music:true,c1:'#16304A',c2:'#E0A526'}; }
+  function load(){ V=fresh(); try{ var d=JSON.parse(localStorage.getItem(KEY)||'null'); if(d&&d.scenes){ ['fmt','hook','cta','ctaLine','url','music','c1','c2'].forEach(function(k){ if(d[k]!=null) V[k]=d[k]; }); V.scenes=d.scenes.slice(0,12).map(function(s){ return {text:String(s.text||''),img:null,dur:+s.dur||6,vis:String(s.vis||'')}; }); } }catch(e){} }
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify({fmt:V.fmt,hook:V.hook,cta:V.cta,ctaLine:V.ctaLine,url:V.url,music:V.music,c1:V.c1,c2:V.c2,scenes:V.scenes.map(function(s){return {text:s.text,dur:s.dur,vis:s.vis};})})); }catch(e){} }
+  function build(){
+    root=document.createElement('div'); root.id='hnvid'; root.hidden=true; root.setAttribute('role','dialog'); root.setAttribute('aria-modal','true'); root.setAttribute('aria-label','Studio vidéo');
+    root.innerHTML='<div class="hv-box"><div class="hv-top"><h2>🎬 Studio vidéo</h2><button type="button" class="btn" data-a="close">Fermer</button></div>'+
+      '<p class="hint" style="margin:6px 0 0">Assemblez une vidéo publicitaire à partir de vos images (Image IA, captures d’écran, photos), de textes animés et d’un appel à l’action. Le montage se fait sur votre appareil : aucune vidéo n’est envoyée.</p>'+
+      '<label class="hv-l" for="hv-brief">Décrivez votre vidéo (facultatif — l’IA écrit le script et propose les visuels)</label><textarea id="hv-brief" rows="2" placeholder="Ex. : publicité de 30 secondes pour mon atelier de céramique, ton chaleureux, appel à visiter la boutique"></textarea>'+
+      '<div class="hv-row"><button type="button" class="btn primary" data-a="ai">✨ Écrire le script avec l’IA</button><span class="hv-msg" id="hv-aimsg"></span></div>'+
+      '<label class="hv-l" for="hv-fmt">Format</label><select id="hv-fmt"><option value="9:16">Vertical 9:16 (Reels, Stories, TikTok)</option><option value="1:1">Carré 1:1</option><option value="16:9">Horizontal 16:9 (YouTube, site)</option></select>'+
+      '<label class="hv-l" for="hv-hook">Accroche (première scène, 3,5 s)</label><input type="text" id="hv-hook" maxlength="120">'+
+      '<div id="hv-list"></div><div class="hv-row"><button type="button" class="btn" data-a="add">＋ Ajouter une scène</button></div>'+
+      '<label class="hv-l" for="hv-cta">Appel à l’action (dernière scène, 4 s)</label><input type="text" id="hv-cta" maxlength="60" placeholder="Suivez HelpNaud"><input type="text" id="hv-ctal" maxlength="120" placeholder="Ligne de précision (ex. : Essayez Image IA sur HelpNaud.ai.)" style="margin-top:6px"><input type="text" id="hv-url" maxlength="60" placeholder="Adresse affichée (ex. : helpnaud.ai)" style="margin-top:6px">'+
+      '<div class="hv-row"><label>Fond <input type="color" id="hv-c1"></label><label>Accent <input type="color" id="hv-c2"></label><label><input type="checkbox" id="hv-mus"> Musique d’ambiance</label></div>'+
+      '<div class="hv-row"><button type="button" class="btn" data-a="prev">▶ Aperçu</button><button type="button" class="btn primary" data-a="make">🎬 Créer la vidéo</button><span class="hint" id="hv-dur"></span></div>'+
+      '<div class="hv-bar" id="hv-bar" hidden><i></i></div><div class="hv-msg" id="hv-msg" role="status"></div><canvas id="hv-cv"></canvas><div id="hv-out"></div></div>';
+    document.body.appendChild(root);
+    root.addEventListener('click',function(e){
+      if(e.target===root&&!rec){ close(); return; }
+      var b=e.target.closest('[data-a]'); if(!b) return; var a=b.getAttribute('data-a'), i=+b.getAttribute('data-i');
+      if(a==='close'){ if(!rec) close(); }
+      else if(a==='add'){ sync(); if(V.scenes.length<12){ V.scenes.push({text:'',img:null,dur:6,vis:''}); list(); } }
+      else if(a==='del'){ sync(); V.scenes.splice(i,1); list(); }
+      else if(a==='up'||a==='dn'){ sync(); var j=a==='up'?i-1:i+1; if(j>=0&&j<V.scenes.length){ var t=V.scenes[i]; V.scenes[i]=V.scenes[j]; V.scenes[j]=t; list(); } }
+      else if(a==='img'){ var f=document.createElement('input'); f.type='file'; f.accept='image/*'; f.onchange=function(){ pickImg(i,f.files&&f.files[0]); }; f.click(); }
+      else if(a==='ai') ai();
+      else if(a==='prev') preview();
+      else if(a==='make') make();
+    });
+    root.addEventListener('input',function(){ sync(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&root&&!root.hidden&&!rec) close(); });
+  }
+  function pickImg(i,file){
+    if(!file||!/^image\//.test(file.type)){ return; } var u=URL.createObjectURL(file), im=new Image();
+    im.onload=function(){ sync(); V.scenes[i].img=im; V.scenes[i].url=u; list(); }; im.onerror=function(){ msg('Image illisible.'); }; im.src=u;
+  }
+  function list(){
+    $('#hv-list').innerHTML=V.scenes.map(function(s,i){
+      return '<div class="hv-sc"><div class="hv-th" data-a="img" data-i="'+i+'" style="'+(s.url?'background-image:url('+s.url+');border-style:solid':'')+'" title="Choisir une image">'+(s.url?'':'🖼 Image<br>(facultatif)')+'</div><div>'+
+        '<textarea rows="2" data-f="text" data-i="'+i+'" maxlength="140" placeholder="Texte de la scène '+(i+1)+'" aria-label="Texte de la scène '+(i+1)+'">'+esc(s.text)+'</textarea>'+
+        (s.vis?'<p class="hv-vis">Visuel suggéré : '+esc(s.vis)+'</p>':'')+
+        '<div class="hv-row"><select data-f="dur" data-i="'+i+'" style="width:auto" aria-label="Durée">'+[3,4,5,6,7,8].map(function(d){return '<option value="'+d+'"'+(d===s.dur?' selected':'')+'>'+d+' s</option>';}).join('')+'</select>'+
+        '<button type="button" class="btn" data-a="up" data-i="'+i+'" aria-label="Monter">↑</button><button type="button" class="btn" data-a="dn" data-i="'+i+'" aria-label="Descendre">↓</button><button type="button" class="btn" data-a="del" data-i="'+i+'">Supprimer</button></div></div></div>';
+    }).join('');
+    sync();
+  }
+  function sync(){
+    if(!root) return; var q=function(id){return root.querySelector(id);};
+    V.fmt=q('#hv-fmt').value; V.hook=q('#hv-hook').value; V.cta=q('#hv-cta').value; V.ctaLine=q('#hv-ctal').value; V.url=q('#hv-url').value; V.c1=q('#hv-c1').value; V.c2=q('#hv-c2').value; V.music=q('#hv-mus').checked;
+    root.querySelectorAll('[data-f]').forEach(function(el){ var s=V.scenes[+el.getAttribute('data-i')]; if(!s) return; if(el.getAttribute('data-f')==='text') s.text=el.value; else s.dur=+el.value||6; });
+    q('#hv-dur').textContent='Durée totale : '+total().toFixed(1).replace('.',',')+' s'; save();
+  }
+  function fill(){ var q=function(id){return root.querySelector(id);}; q('#hv-fmt').value=V.fmt; q('#hv-hook').value=V.hook; q('#hv-cta').value=V.cta; q('#hv-ctal').value=V.ctaLine; q('#hv-url').value=V.url; q('#hv-c1').value=V.c1; q('#hv-c2').value=V.c2; q('#hv-mus').checked=V.music; list(); }
+  function total(){ return 3.5+V.scenes.reduce(function(a,s){return a+s.dur;},0)+4; }
+  function msg(t){ var m=$('#hv-msg'); if(m) m.textContent=t||''; }
+  /* ----- script par l'IA ----- */
+  function ai(){
+    var brief=$('#hv-brief').value.trim(), m=$('#hv-aimsg'); if(brief.length<10){ m.textContent='Décrivez votre vidéo en une ou deux phrases.'; return; }
+    if(!window.__hn||!window.__hn.requireSample){ m.textContent='L’assistant IA n’est pas disponible pour l’instant.'; return; }
+    m.textContent='Écriture du script…';
+    var p='Tu écris le script d’une courte publicité vidéo verticale (30 secondes). Demande :\n'+brief+'\n\nRéponds UNIQUEMENT par un objet JSON valide, sans texte autour ni balises ```, de la forme :\n{"hook":"accroche de 6 à 12 mots","scenes":[{"text":"texte à l’écran, 8 à 16 mots","visual":"idée d’image à créer ou à capturer"}],"cta":"appel à l’action court","ctaLine":"phrase de précision courte"}\nContraintes : français ; 3 scènes ; 60 mots au total au maximum ; n’invente aucun chiffre, prix, témoignage ni fonctionnalité qui ne figure pas dans la demande ; ne cite aucune marque, œuvre ni personnage protégé.';
+    window.__hn.requireSample($('#hv-aimsg')).then(function(cap){ if(!cap) throw {code:'ai_unavailable'}; return cap(p,{modelTier:'default',cache:false}); }).then(function(res){
+      var t=String(res&&res.text||''), a=t.indexOf('{'), b=t.lastIndexOf('}'), o; try{ o=JSON.parse(t.slice(a,b+1)); }catch(e){ m.textContent='Réponse illisible : réessayez.'; return; }
+      if(!o||!Array.isArray(o.scenes)||!o.scenes.length){ m.textContent='Script incomplet : réessayez.'; return; }
+      V.hook=String(o.hook||'').slice(0,120); V.cta=String(o.cta||V.cta).slice(0,60); V.ctaLine=String(o.ctaLine||'').slice(0,120);
+      V.scenes=o.scenes.slice(0,6).map(function(s){ return {text:String(s.text||'').slice(0,140),img:null,dur:6,vis:String(s.visual||'').slice(0,160)}; });
+      fill(); m.textContent='Script prêt : ajoutez vos images (facultatif), puis créez la vidéo.';
+    }).catch(function(e){ m.textContent='Le script n’a pas pu être écrit ('+((e&&e.code)||'erreur')+').'; });
+  }
+  /* ----- dessin ----- */
+  function wrap(ctx,t,maxW){ var w=String(t).split(/\s+/), l=[], c=''; w.forEach(function(x){ var n=c?c+' '+x:x; if(ctx.measureText(n).width>maxW&&c){ l.push(c); c=x; } else c=n; }); if(c) l.push(c); return l; }
+  function rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  function bg(ctx,W,H){ var g=ctx.createRadialGradient(W*.8,0,0,W*.8,0,Math.max(W,H)); g.addColorStop(0,'#1E4B8F'); g.addColorStop(.6,V.c1); ctx.fillStyle=V.c1; ctx.fillRect(0,0,W,H); ctx.globalAlpha=.55; ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
+  function brand(ctx,W,H,k){ var s=Math.round(W*.06); ctx.fillStyle='#fff'; rr(ctx,k*1.2,k*1.2,s,s,s*.24); ctx.fill(); ctx.fillStyle=V.c1; ctx.font='900 '+Math.round(s*.62)+'px Inter,system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('H',k*1.2+s/2,k*1.2+s/2+2); }
+  function big(ctx,W,H,text,size,y,color,weight){ ctx.font=(weight||800)+' '+size+'px Inter,system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle=color; var ls=wrap(ctx,text,W*.82), lh=size*1.15; ls.forEach(function(l,i){ ctx.fillText(l,W/2,y+i*lh); }); return ls.length*lh; }
+  function frame(ctx,W,H,t){
+    var k=W/1080*(W>H?.7:1), D=[3.5].concat(V.scenes.map(function(s){return s.dur;}),[4]), i=0, a=0; while(i<D.length-1&&t>=a+D[i]){ a+=D[i]; i++; }
+    var lt=t-a, d=D[i], al=Math.min(1,lt/.3,(d-lt)/.3); al=Math.max(0,Math.min(1,al)); bg(ctx,W,H); brand(ctx,W,H,k*30);
+    ctx.globalAlpha=al;
+    if(i===0){ var sz=Math.round(Math.min(W,H)*(W>H?.1:.095)); var h=big(ctx,W,H,V.hook||'Votre accroche ici',sz,H/2-sz,'#fff'); }
+    else if(i===D.length-1){
+      var s2=Math.round(Math.min(W,H)*.1), y=H*.4; var hh=big(ctx,W,H,V.cta||'Suivez HelpNaud',s2,y,V.c2);
+      if(V.ctaLine) big(ctx,W,H,V.ctaLine,Math.round(s2*.46),y+hh+s2*.25,'rgba(255,255,255,.9)',500);
+      var bs=Math.round(s2*.6); ctx.font='800 '+bs+'px Inter,system-ui,sans-serif'; var tw=ctx.measureText(V.url||'').width+bs*1.6, by=y+hh+s2*(V.ctaLine?1.9:.9); ctx.fillStyle=V.c2; rr(ctx,(W-tw)/2,by,tw,bs*1.8,bs); ctx.fill(); ctx.fillStyle=V.c1; ctx.textBaseline='middle'; ctx.fillText(V.url||'',W/2,by+bs*.92);
+    } else {
+      var sc=V.scenes[i-1], p=lt/d;
+      if(sc.img){ var im=sc.img, z=1.02+.06*p, r=Math.max(W/im.naturalWidth,H/im.naturalHeight)*z, iw=im.naturalWidth*r, ih=im.naturalHeight*r; ctx.save(); ctx.drawImage(im,(W-iw)/2,(H-ih)/2,iw,ih); var g=ctx.createLinearGradient(0,H*.55,0,H); g.addColorStop(0,'rgba(10,25,42,0)'); g.addColorStop(1,'rgba(10,25,42,.85)'); ctx.fillStyle=g; ctx.fillRect(0,H*.45,W,H*.55); ctx.restore(); brand(ctx,W,H,k*30); }
+      var fs=Math.round(Math.min(W,H)*(sc.img?.052:.075)); ctx.font='700 '+fs+'px Inter,system-ui,sans-serif'; var ls=wrap(ctx,sc.text||'',W*.82), lh=fs*1.25, y0=sc.img?H-ls.length*lh-H*.08:H/2-ls.length*lh/2+fs*.4;
+      if(sc.img&&ls.length){ ctx.fillStyle='rgba(10,25,42,.72)'; var mw=0; ls.forEach(function(l){ mw=Math.max(mw,ctx.measureText(l).width); }); rr(ctx,(W-mw)/2-fs*.6,y0-fs*1.05,mw+fs*1.2,ls.length*lh+fs*.4,fs*.5); ctx.fill(); }
+      ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ls.forEach(function(l,j){ ctx.fillText(l,W/2,y0+j*lh); });
+      ctx.fillStyle=V.c2; ctx.fillRect(W*.1,H*.12+k*40,W*.8*(p),Math.max(4,H*.004));
+    }
+    ctx.globalAlpha=1;
+  }
+  function setup(){ var d=FMT[V.fmt]||FMT['9:16'], cv=$('#hv-cv'); cv.width=d[0]; cv.height=d[1]; return cv.getContext('2d'); }
+  function drive(ctx,onT,done){ var W=ctx.canvas.width,H=ctx.canvas.height,T=total(),t0=performance.now(),stop=false; (function tick(){ if(stop) return; var t=(performance.now()-t0)/1000; if(t>=T){ frame(ctx,W,H,T-.001); onT&&onT(T); done(); return; } frame(ctx,W,H,t); onT&&onT(t); requestAnimationFrame(tick); })(); return function(){ stop=true; }; }
+  var prevStop=null;
+  function preview(){ if(rec) return; sync(); if(prevStop) prevStop(); msg(''); var ctx=setup(); prevStop=drive(ctx,null,function(){ prevStop=null; frame(ctx,ctx.canvas.width,ctx.canvas.height,.5); }); }
+  /* ----- musique d'ambiance (WebAudio) ----- */
+  function audio(T){
+    var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return null; var ac=new AC(), dst=ac.createMediaStreamDestination(), master=ac.createGain(); master.gain.value=.5; master.connect(dst);
+    var ch=[[220,277.2,329.6],[196,246.9,293.7],[174.6,220,261.6],[196,246.9,293.7]], n=Math.ceil(T/3), t0=ac.currentTime+.05;
+    for(var i=0;i<n;i++){ ch[i%4].forEach(function(f){ var o=ac.createOscillator(), g=ac.createGain(); o.type='sine'; o.frequency.value=f; var s=t0+i*3; g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(.07,s+1); g.gain.linearRampToValueAtTime(0,s+3.4); o.connect(g); g.connect(master); o.start(s); o.stop(s+3.5); }); }
+    master.gain.setValueAtTime(.5,t0+T-1.5); master.gain.linearRampToValueAtTime(0,t0+T); return {ac:ac,track:dst.stream.getAudioTracks()[0]};
+  }
+  function pickMime(){ var c=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']; if(!window.MediaRecorder) return ''; for(var i=0;i<c.length;i++){ try{ if(MediaRecorder.isTypeSupported(c[i])) return c[i]; }catch(e){} } return ''; }
+  function make(){
+    if(rec) return; sync(); if(prevStop){ prevStop(); prevStop=null; }
+    if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){ msg('Ce navigateur ne permet pas de créer la vidéo ici. Essayez Chrome, Edge ou Safari récents.'); return; }
+    if(!V.hook.trim()&&!V.scenes.some(function(s){return s.text.trim();})){ msg('Ajoutez au moins une accroche ou un texte de scène.'); return; }
+    var mime=pickMime(), ctx=setup(), T=total(), cv=ctx.canvas, stream=cv.captureStream(30), au=null; $('#hv-out').innerHTML='';
+    if(V.music){ try{ au=audio(T); if(au&&au.track) stream.addTrack(au.track); }catch(e){ au=null; } }
+    var chunks=[], mr; try{ mr=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{}); }catch(e){ msg('Impossible de démarrer l’enregistrement.'); return; }
+    mr.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+    mr.onstop=function(){
+      rec=false; $('#hv-bar').hidden=true; try{ au&&au.ac.close(); }catch(e){}
+      var type=mr.mimeType||mime||'video/webm', ext=/mp4/.test(type)?'mp4':'webm', blob=new Blob(chunks,{type:type}), url=URL.createObjectURL(blob), nm='helpnaud-video-'+Date.now()+'.'+ext;
+      $('#hv-out').innerHTML='<video controls playsinline src="'+url+'"></video><div class="hv-row"><a class="btn primary" download="'+nm+'" href="'+url+'">⬇ Télécharger la vidéo ('+ext.toUpperCase()+', '+(blob.size/1048576).toFixed(1).replace('.',',')+' Mo)</a></div>'+(ext==='webm'?'<p class="hint">Ce navigateur produit du WebM. Pour un MP4, utilisez un navigateur récent compatible ou convertissez le fichier.</p>':(/avc1|h264/i.test(type)?'':'<p class="hint">Fichier MP4 encodé en VP9 : il se lit dans les navigateurs récents. Si un réseau social le refuse, convertissez-le en H.264 ou refaites-le avec Chrome, Edge ou Safari.</p>'));
+      msg('Vidéo prête ✓'); root.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); window.__hnVideo._last={size:blob.size,type:type};
+    };
+    rec=true; root.querySelectorAll('[data-a="make"],[data-a="prev"],[data-a="ai"]').forEach(function(b){ b.disabled=true; }); $('#hv-bar').hidden=false; msg('Création en cours : gardez cet onglet visible jusqu’à la fin ('+Math.round(T)+' s).');
+    mr.start(500); drive(ctx,function(t){ $('#hv-bar i').style.width=Math.min(100,t/T*100)+'%'; },function(){ setTimeout(function(){ try{ mr.stop(); }catch(e){} },300); });
+  }
+  function close(){ if(prevStop){ prevStop(); prevStop=null; } root.hidden=true; document.body.style.overflow=''; }
+  function open(){ if(!root) build(); load(); fill(); root.hidden=false; document.body.style.overflow='hidden'; msg(''); var ctx=setup(); frame(ctx,ctx.canvas.width,ctx.canvas.height,.5); }
+  window.__hnVideo={ open:open, close:close, _t:{ get V(){return V;}, make:make, frame:frame } };
+})();
+</script>
+
 <style id="hncr-css">
 #hncr{ position:fixed; inset:0; z-index:99990; background:rgba(15,23,42,.5); display:flex; align-items:center; justify-content:center; padding:12px; }
 #hncr[hidden]{ display:none; }
@@ -49737,6 +49891,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
       '<button type="button" class="hncr-card" data-a="pick" data-k="image"><span class="hncr-ico">🖼️</span><b>Image IA</b><span>Générer une image à partir d’une description ou transformer une image importée.</span><span>Photos, illustrations, portraits, schémas, informatique, logos, modification d’arrière-plan.</span></button>' +
       '<button type="button" class="hncr-card" data-a="pick" data-k="design"><span class="hncr-ico">🎨</span><b>Design</b><span>Concevoir un visuel en combinant images, textes et éléments graphiques.</span><span>Bannières Facebook ou LinkedIn, affiches, publications, flyers, présentations de produits.</span></button>' +
       '<button type="button" class="hncr-card" data-a="pick" data-k="dessin"><span class="hncr-ico">✏️</span><b>Dessiner</b><span>Créer un dessin à partir d’une consigne ou d’un croquis fourni.</span><span>Croquis, personnages originaux, dessins au trait, coloriages, illustrations.</span></button>' +
+      '<button type="button" class="hncr-card" data-a="video"><span class="hncr-ico">🎬</span><b>Vidéo (montage)</b><span>Assembler une courte vidéo publicitaire : images, textes animés, musique et appel à l’action.</span><span>Reels, Stories, publicités de 30 secondes. Le script peut être écrit par l’IA.</span></button>' +
       '<button type="button" class="hncr-card" data-a="pick" data-k="template"><span class="hncr-ico">🧩</span><b>Templates Creators</b><span>Partir d’un modèle prêt à personnaliser : affiche, flyer, bannière, carte, menu, certificat…</span></button>' +
       '</div><p style="margin:14px 2px 0"><button type="button" class="btn" data-a="kit">🏷️ Mon kit de marque (logo et couleurs)</button></p><p class="hint" style="margin:10px 2px 0">Le coût en crédits est affiché avant chaque génération ou modification.</p>');
   }
@@ -49807,6 +49962,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     if(a === 'max') return toggleMax();
     if(a === 'back'){ var b = $('[data-a="back"]').getAttribute('data-back'); if(b === 'form') keepForm(); return show(b || 'home'); }
     if(a === 'home'){ S = { fi:S.fi, kind:'', preset:null, res:null, texts:{}, logo:'', photo:'', ref:null }; return home(); }
+    if(a === 'video'){ if(window.__hnVideo){ close(); window.__hnVideo.open(); } return; }
     if(a === 'kit') return kitScreen();
     if(a === 'kitrm'){ var k0 = kit(); delete k0.logo; saveKit(k0); return kitScreen(); }
     if(a === 'kitsave'){ var k1 = kit(); k1.colors = Array.prototype.map.call(root.querySelectorAll('[data-kc]'), function(i){ return i.value; }); if(saveKit(k1)) msg('Kit de marque enregistré ✓', 'ok'); else msg('Stockage impossible sur cet appareil.', 'err'); return; }
