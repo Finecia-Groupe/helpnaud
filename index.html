@@ -13315,6 +13315,33 @@
      l'identifiant "default" dès le premier message, sans jamais imposer un choix préalable. */
   var CONV_STORE_KEY = 'helpnaud_conversations';
   var CHAT_PROJECTS_KEY = 'helpnaud_chat_projects';
+  /* Saisie d'un texte dans une fenêtre HelpNaud (remplace window.prompt, parfois bloquée ou refermée aussitôt par les navigateurs mobiles). Renvoie une promesse : le texte saisi, ou null si annulé. */
+  window.hnAskText = function(title, initial, opts){
+    opts = opts || {};
+    return new Promise(function(resolve){
+      var ov = document.createElement('div'); ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', title);
+      ov.style.cssText = 'position:fixed;inset:0;z-index:200000;background:rgba(10,20,34,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+      var box = document.createElement('form'); box.style.cssText = 'background:var(--surface,#fff);color:var(--ink,#16304A);border-radius:14px;max-width:420px;width:100%;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.35)';
+      var h = document.createElement('div'); h.style.cssText = 'font-weight:700;font-size:16px;margin-bottom:10px'; h.textContent = title;
+      var inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = opts.max || 80; inp.value = initial || ''; inp.setAttribute('aria-label', title); inp.style.cssText = 'width:100%;box-sizing:border-box;border:1px solid var(--line,#d5deea);border-radius:10px;padding:10px;font:inherit;font-size:16px;background:var(--surface-2,#f6f8fc);color:inherit';
+      var row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:12px';
+      var no = document.createElement('button'); no.type = 'button'; no.className = 'btn'; no.textContent = 'Annuler';
+      var ok = document.createElement('button'); ok.type = 'submit'; ok.className = 'btn primary'; ok.textContent = opts.ok || 'Enregistrer';
+      row.appendChild(no); row.appendChild(ok); box.appendChild(h); box.appendChild(inp); box.appendChild(row); ov.appendChild(box); document.body.appendChild(ov);
+      var done = false; function end(v){ if(done) return; done = true; document.removeEventListener('keydown', onKey, true); if(ov.parentNode) ov.parentNode.removeChild(ov); resolve(v); }
+      function onKey(e){ if(e.key === 'Escape'){ e.stopPropagation(); end(null); } }
+      document.addEventListener('keydown', onKey, true);
+      box.addEventListener('submit', function(e){ e.preventDefault(); var v = inp.value.trim(); end(v ? v : null); });
+      no.addEventListener('click', function(){ end(null); });
+      ov.addEventListener('mousedown', function(e){ if(e.target === ov) end(null); });
+      setTimeout(function(){ inp.focus(); inp.select(); }, 30);
+    });
+  };
+  window.hnNote = function(t){
+    var el = document.createElement('div'); el.setAttribute('role', 'status'); el.textContent = t;
+    el.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:200001;background:#16304A;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;max-width:90vw;box-shadow:0 8px 30px rgba(0,0,0,.3)';
+    document.body.appendChild(el); setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 3200);
+  };
   var ConversationStore = {
     _loadAll: function(){
       try{
@@ -13432,14 +13459,15 @@
     cfg.projectSelect.addEventListener('change', function(){
       var v = cfg.projectSelect.value;
       if(v === '__new__'){
-        var name = window.prompt('Nom du nouveau projet :');
-        if(name && name.trim()){
-          var pid = ChatProjectStore.create(name.trim());
-          persistCurrent({ projectId: pid });
-        } else {
-          var rec = currentRecord();
-          cfg.projectSelect.value = (rec && rec.projectId) || '';
-        }
+        window.hnAskText('Nom du nouveau projet', '', { ok:'Créer' }).then(function(name){
+          if(name && name.trim()){
+            var pid = ChatProjectStore.create(name.trim());
+            persistCurrent({ projectId: pid });
+          } else {
+            var rec = currentRecord();
+            cfg.projectSelect.value = (rec && rec.projectId) || '';
+          }
+        });
         return;
       }
       persistCurrent({ projectId: v || null });
@@ -13447,8 +13475,9 @@
     cfg.renameBtn.addEventListener('click', function(){
       var rec = currentRecord();
       var current = (rec && rec.title) || deriveConvTitle(cfg.getHistory(), cfg.defaultTitle);
-      var name = window.prompt('Renommer cette conversation :', current);
-      if(name && name.trim()) persistCurrent({ title: name.trim() });
+      window.hnAskText('Renommer cette conversation', current).then(function(name){
+        if(name && name.trim()){ persistCurrent({ title: name.trim().slice(0, 80) }); window.hnNote('Conversation renommée : « ' + name.trim().slice(0, 80) + ' »'); }
+      });
     });
     function refreshHistoryMenu(){
       var allc = ConversationStore.list(cfg.scope), arch = allc.filter(function(r){ return r.archived; }), list = cfg.__showArch ? arch : allc.filter(function(r){ return !r.archived; });
@@ -46466,13 +46495,13 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
       rec:rec, note:HH_NOTE,
       linkKey:function(){ var h = H(); return 'hstat:' + (h && h.cur() || 'tmp'); },
       title:function(){ var r = rec(); return (r && r.title) || 'Consultation Consult'; },
-      rename:function(){ var r = rec(); if(!r){ toast(HH_NOTE); return; } var n = window.prompt('Renommer cette conversation :', r.title || ''); if(n && n.trim()) upd(function(c){ c.title = n.trim().slice(0, 80); }); },
+      rename:function(){ var r = rec(); if(!r){ toast(HH_NOTE); return; } window.hnAskText('Renommer cette conversation', r.title || '').then(function(n){ if(n && n.trim()){ var t = n.trim().slice(0, 80); if(upd(function(c){ c.title = t; })) window.hnNote('Conversation renommée : « ' + t + ' » (visible dans Historique et mémoire)'); } }); },
       pinned:function(){ var r = rec(); return !!(r && r.pinned); },
       pin:function(){ return upd(function(c){ c.pinned = !c.pinned; }); },
       archive:function(){ var ok = upd(function(c){ c.archived = true; }); if(ok){ window.__hnHH.setCur(null); window.__hnHstat.fresh(); window.__hnHH.render(); } return ok; },
       remove:function(){ var h = H(), id = h.cur(); if(id) h.save(h.load().filter(function(c){ return c.id !== id; })); h.setCur(null); window.__hnHstat.fresh(); h.render(); },
       project:function(){ var r = rec(); return (r && r.projectId) || ''; },
-      setProject:function(id){ if(id === '__new__'){ var P = projAPI(); var n = window.prompt('Nom du nouveau projet :'); if(!n || !n.trim() || !P) return; id = P.create(n.trim()); } upd(function(c){ c.projectId = id || null; }); }
+      setProject:function(id){ if(id === '__new__'){ var P = projAPI(); window.hnAskText('Nom du nouveau projet', '', { ok:'Créer' }).then(function(n){ if(!n || !n.trim() || !P) return; upd(function(c){ c.projectId = P.create(n.trim()) || null; }); }); return; } upd(function(c){ c.projectId = id || null; }); }
     };
   }
   function tmpAdapter(){
