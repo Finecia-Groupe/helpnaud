@@ -5362,7 +5362,8 @@
 <div class="card">
         <h2>Abonnements</h2>
         <p class="hint">Consultez et choisissez votre forfait HelpNaud.ai (Gratuit, Essentiel, Avancée, Professionnel, Affaires, Institution ; prix en dollars américains, hors taxes). Paiement sécurisé par Stripe.</p>
-        <button class="btn primary" id="btn-abonnements" type="button">
+        <div id="hn-costs-settings"></div>
+        <button class="btn primary" id="btn-abonnements" type="button" style="margin-top:10px">
           <svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h10"/></svg>
           Voir les forfaits
         </button>
@@ -8007,9 +8008,9 @@
     { id:'essentiel', nom:'Essentiel', prix:'29 USD', periode:'/ mois, hors taxes', actif:true,
       fonctionnalites:['Crédits IA : 850 / mois','Enveloppe API interne : 5 $ / mois','Calculateurs Consult débloqués, rapports sans filigrane','Support courriel 48 h'] },
     { id:'avancee', nom:'Avancée', prix:'79 USD', periode:'/ mois, hors taxes', actif:true,
-      fonctionnalites:['Crédits IA : 2 000 / mois','Enveloppe API interne : 10 $ / mois','Historique 1 an, exports Excel et PowerPoint','Support courriel prioritaire 36 h'] },
+      fonctionnalites:['Crédits IA : 2 000 / mois','Enveloppe API interne : 10 $ / mois','Exports Excel et PowerPoint','Support courriel prioritaire 36 h'] },
     { id:'pro', nom:'Professionnel', prix:'129 USD', periode:'/ mois, hors taxes', actif:true,
-      fonctionnalites:['Crédits IA : 3 500 / mois','Enveloppe API interne : 15 $ / mois','Sauvegardes auto, historique illimité, formation initiale','Support prioritaire 24 h'] },
+      fonctionnalites:['Crédits IA : 3 500 / mois','Enveloppe API interne : 15 $ / mois','Sauvegardes auto, formation initiale','Support prioritaire 24 h'] },
     { id:'affaires', nom:'Affaires', prix:'249 USD', periode:'/ mois, hors taxes', actif:true,
       fonctionnalites:['Crédits IA : 10 000 / mois','Enveloppe API interne : 50 $ / mois','Tableaux de bord multi-entités, sécurité avancée','Gestionnaire de compte, SLA 4 h ouvrables'] },
     { id:'institution', nom:'Institution', prix:'À partir de 999 USD', periode:'/ mois, sur devis', actif:true,
@@ -8103,13 +8104,13 @@
       avantages:["Vous choisissez votre montant, de 5 $ à 20 $ US","Crédits IA proportionnels au montant versé","Accès à Assistant, Co-work et Consult"],
       limites:"Montant compris entre 5 $ et 20 $ US (inclus). Au-delà, choisissez le forfait Essentiel ou un forfait supérieur." },
     { nom:'Essentiel', prix:'29 USD / mois, hors taxes', tagline:'Pour les indépendants',
-      avantages:["Tous les calculateurs Consult débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique de conversations 90 jours","Support par courriel (réponse sous 48h)"],
+      avantages:["Tous les calculateurs Consult débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique : jusqu'à 60 conversations enregistrées sur cet appareil","Support par courriel (réponse sous 48h)"],
       limites:"850 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
     { nom:'Avancée', prix:'79 USD / mois, hors taxes', tagline:'Pour les intermédiaires et les curieux',
-      avantages:["Tout le forfait Essentiel, plus :","Historique de conversations étendu à 1 an","Exports Excel et PowerPoint","Support par courriel prioritaire (réponse sous 36h)"],
+      avantages:["Tout le forfait Essentiel, plus :","Exports Excel et PowerPoint","Support par courriel prioritaire (réponse sous 36h)"],
       limites:"2 000 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
     { nom:'Professionnel', prix:'129 USD / mois, hors taxes', tagline:'Pour les professionnels et cabinets',
-      avantages:["Sauvegardes automatiques","Historique illimité","Formation initiale incluse","Support prioritaire (réponse sous 24h)","Exports Excel/PowerPoint personnalisés","Comptes d'équipe et rôles par utilisateur (à venir)"],
+      avantages:["Sauvegardes automatiques","Historique : jusqu'à 60 conversations enregistrées sur cet appareil (historique synchronisé à venir)","Formation initiale incluse","Support prioritaire (réponse sous 24h)","Exports Excel/PowerPoint personnalisés","Comptes d'équipe et rôles par utilisateur (à venir)"],
       limites:"3 500 crédits IA par mois ; 1 utilisateur au lancement (forfait par personne ; comptes d'équipe à venir) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
     { nom:'Affaires', prix:'249 USD / mois, hors taxes', tagline:'Pour les entreprises et organisations',
       avantages:["Tableaux de bord consolidés multi-entités","Sécurité avancée (authentification unique, journal d'audit)","Gestionnaire de compte dédié","SLA de support (réponse sous 4h ouvrables)","Comptes d'équipe multi-utilisateurs (à venir)","Accès API (à venir)"],
@@ -8118,6 +8119,34 @@
       avantages:["Tous les avantages du forfait Affaires, plus :","Conformité renforcée (résidence des données, normes gouvernementales)","Déploiement multi-organismes/multi-juridictions","Accompagnement dédié pour chercheurs, universités, banques et administrations","Formation sur mesure et ateliers","Support 24/7","Personnalisation de marque (marque blanche) possible"],
       limites:"Sur mesure — tarification, crédits et utilisateurs établis selon le contrat. Nous contacter." }
   ];
+
+  /* Coûts réels en crédits IA (relevés dans le code : paliers Hmodel, options de recherche, pièces jointes, Créer, Studio vidéo, H-Code). */
+  var COST_ROWS = [
+    ['Message (Assistant, Co-work, Consult)', '1 à 5 crédits selon le palier Hmodel : Dure, Basse, Lumière = 1 · Médiane (par défaut), Médium, Idée, Cover = 2 · Top, Prémium = 3 · Pretium = 4 · Plafond = 5'],
+    ['Options ajoutées à un message', 'Recherche approfondie +4 · Recherche Web +2 · Multi-sources +1 · Réponse adaptée (spécialiste ou publication) +2 chacune'],
+    ['Pièce jointe', '+0 si elle est très petite, sinon environ +1 par Mo (ou par 12 000 caractères de texte), maximum +8'],
+    ['Créer : design, dessin, gabarit', '3 crédits'],
+    ['Créer : image IA', '15 crédits par image'],
+    ['Studio vidéo : montage dans le navigateur', '0 crédit (aucun appel IA)'],
+    ['Studio vidéo : script écrit par l’IA', '2 crédits par appel (palier Médiane)'],
+    ['Studio vidéo : image IA d’une scène', '15 crédits par image (le coût est affiché avant confirmation)'],
+    ['H-Code : générer, corriger ou auditer', '2 crédits par appel IA. Une mission enchaîne plusieurs appels (3 passes au maximum) : son coût total varie, la règle est par appel'],
+    ['H-Code : import ZIP, aperçu, tests JavaScript', '0 crédit (exécutés dans votre navigateur)']
+  ];
+  var NOUV = ['Studio vidéo : montage dans le navigateur (0 crédit) et image IA par scène (15 crédits)', 'H-Code : import ZIP, tests JavaScript et mission en plusieurs étapes (2 crédits par appel IA)', 'Lecture à voix haute et dictée dans la langue de la conversation, dont l’anglais'];
+  function costsHtml(){
+    return '<table style="width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;font-size:12.5px;line-height:1.5;overflow-wrap:anywhere"><colgroup><col style="width:36%"><col style="width:64%"></colgroup><thead><tr><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)">Action</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)">Coût en crédits IA</th></tr></thead><tbody>' +
+      COST_ROWS.map(function(r){ return '<tr><td style="padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-weight:600">' + escapeHtml(r[0]) + '</td><td style="padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top">' + escapeHtml(r[1]) + '</td></tr>'; }).join('') +
+      '</tbody></table><p class="hint" style="margin:8px 0 0">Un appel IA qui échoue est remboursé. Ces règles sont les mêmes pour tous les forfaits ; seul le nombre de crédits mensuels change. Le montage vidéo local ne consomme rien.</p>';
+  }
+  function fillCosts(){
+    var g = document.getElementById('abonnements-grid'), m = document.getElementById('hn-costs-modal');
+    if(g && !m){ m = document.createElement('div'); m.id = 'hn-costs-modal'; m.className = 'card'; m.style.margin = '14px 0 0'; g.parentNode.insertBefore(m, g.nextSibling); }
+    if(m) m.innerHTML = '<h3 style="margin:0 0 6px;font-size:14.5px">Ce que coûte chaque action</h3>' + costsHtml() +
+      '<p class="hint" style="margin:10px 0 0"><strong>Essai gratuit de 14 jours :</strong> il concerne la suite TAISO + iTAF (organisations), sans carte bancaire. Les forfaits personnels ci-dessus n’ont pas d’essai ; le forfait Gratuit reste disponible.</p>';
+    var st = document.getElementById('hn-costs-settings');
+    if(st) st.innerHTML = '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;font-size:13.5px">Ce que coûte chaque action</summary><div style="margin-top:8px">' + costsHtml() + '</div></details>';
+  }
   function renderAbonnementsGrid(){
     var grid = document.getElementById('abonnements-grid');
     if(!grid) return;
@@ -8131,11 +8160,15 @@
         '<ul style="margin:0 0 10px; padding-left:18px; font-size:12.3px; line-height:1.6; color:var(--ink);">' +
           p.avantages.map(function(a){ return '<li>' + escapeHtml(a) + '</li>'; }).join('') +
         '</ul>' +
+        '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--accent,#2563eb); margin-bottom:4px;">Nouveautés</div>' +
+        '<ul style="margin:0 0 6px; padding-left:18px; font-size:12.3px; line-height:1.6; color:var(--ink);">' + NOUV.map(function(a){ return '<li>' + escapeHtml(a) + '</li>'; }).join('') + '</ul>' +
+        '<p class="hint" style="margin:0 0 10px;font-size:11.5px">' + (p.nom === 'Institution' ? 'Selon le contrat.' : 'Accessibles à ce forfait, dans la limite de vos crédits IA.') + '</p>' +
         '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--warn); margin-bottom:4px;">Limites</div>' +
         '<p style="font-size:12.3px; line-height:1.6; color:var(--muted); margin:0 0 12px;">' + escapeHtml(p.limites) + '</p>' +
         '<button class="btn" type="button" disabled title="Indicatif — à venir" style="width:100%; opacity:.6; cursor:not-allowed;">Choisir ce forfait <span class="badge-soon" style="margin-left:6px;">À venir</span></button>' +
       '</div>';
     }).join('');
+    fillCosts();
     var ba = document.getElementById('hn-base-amt'), bo = document.getElementById('hn-base-out');
     if(ba && bo) ba.addEventListener('input', function(){
       var r = baseCheck(ba.value);
@@ -8144,6 +8177,7 @@
       bo.textContent = r.ok ? ('Pour ' + r.amount.toFixed(2).replace('.', ',') + ' $ US : ' + r.credits + ' crédits IA (environ ' + Math.floor(r.credits / 2) + ' messages au palier Médiane).') : r.msg;
     });
   }
+  fillCosts();
   window.__hnBase = { check: baseCheck, min: BASE_MIN, max: BASE_MAX, rate: BASE_RATE };
   var btnAbonnements = document.getElementById('btn-abonnements');
   if(btnAbonnements){
