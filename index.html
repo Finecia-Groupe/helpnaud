@@ -11449,7 +11449,7 @@
     if(!voices.length) return null;
     var langPrefix = (lang || '').slice(0,2).toLowerCase();
     var inLang = voices.filter(function(v){ return (v.lang || '').toLowerCase().indexOf(langPrefix) === 0; });
-    var pool = inLang.length ? inLang : voices;
+    var pool = (inLang.length ? inLang : voices).slice().sort(function(a, b){ return hnVoiceScore(b, lang) - hnVoiceScore(a, lang); });
     var hint = gender === 'male' ? TTS_MALE_HINTS : TTS_FEMALE_HINTS;
     var match = pool.filter(function(v){ return hint.test(v.name || ''); });
     if(match.length) return match[0];
@@ -11459,6 +11459,54 @@
     var idx = gender === 'male' ? 1 : 0;
     return pool[idx % pool.length] || pool[0] || null;
   }
+  /* ----- Lecture à voix haute : langue du texte détectée, meilleure voix disponible, découpage en phrases ----- */
+  var HN_STOP={ fr:'le la les des du un une et est que qui dans pour pas sur avec vous nous je il elle ce cette sont mais ou au aux ne se en de d l votre vos ça être avoir fait peut comment pourquoi bonjour merci',
+    en:'the and you your is are to of that this with for it in on can will not have what how when if my we they there be do does from at by or but as an so just about would should could please thanks hello',
+    es:'el la los las de que y en un una es para por con no se su al lo como más pero sus le ya o este sí porque esta entre cuando muy sin sobre también hola gracias',
+    de:'der die das und ist nicht ein eine zu den mit für auf von sie ich es sich dem auch als wie bei oder wir aber noch nach wird hallo danke',
+    pt:'o a os as de que e do da em um uma para com não é se por mais mas como foi ao ele das tem à seu sua ou ser quando muito já também olá obrigado',
+    it:'il lo la i gli le di che e è un una per non con si su come ma più anche sono del della nel alla ho ha ciao grazie' };
+  var HN_STOPSETS=(function(){ var o={}; Object.keys(HN_STOP).forEach(function(k){ var m={}; HN_STOP[k].split(' ').forEach(function(w){ m[w]=1; }); o[k]=m; }); return o; })();
+  var HN_LOC={ fr:'fr-FR', en:'en-US', es:'es-ES', de:'de-DE', pt:'pt-PT', it:'it-IT' };
+  function hnDetectLang(text){
+    var t=String(text||''); if(/[؀-ۿ]{3,}/.test(t)) return 'ar-SA'; if(/[一-鿿]{2,}/.test(t)) return 'zh-CN';
+    var w=t.toLowerCase().replace(/[^a-zà-ÿ'’\s]/g,' ').split(/\s+/).filter(Boolean); if(w.length<3) return '';
+    var sc={}, best='', bs=0, second=0; Object.keys(HN_STOPSETS).forEach(function(k){ var n=0; w.forEach(function(x){ if(HN_STOPSETS[k][x]) n++; }); sc[k]=n; });
+    Object.keys(sc).forEach(function(k){ if(sc[k]>bs){ second=bs; bs=sc[k]; best=k; } else if(sc[k]>second) second=sc[k]; });
+    if(bs<2||bs<=second*1.25||bs/w.length<.12) return ''; return HN_LOC[best];
+  }
+  var HN_BAD_VOICE=/(albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|good news|hysterical|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|kathy|ralph|princess|bruce|agnes)/i;
+  function hnVoiceScore(v, lang){
+    var n=v.name||'', l=String(v.lang||'').replace('_','-').toLowerCase(), want=String(lang||'').toLowerCase(), sc=0;
+    if(l===want) sc+=6; else if(l.slice(0,2)===want.slice(0,2)) sc+=2; else return -100;
+    if(/premium|enhanced|natural|neural|siri|online|studio|wavenet/i.test(n)) sc+=6;
+    if(/google/i.test(n)) sc+=3; if(/compact|eloquence|espeak|robot/i.test(n)) sc-=4; if(HN_BAD_VOICE.test(n)) sc-=12;
+    if(/samantha|ava|allison|zoe|evan|nathan|aaron|nicky|susan|tom|jenny|aria|guy|sonia|ryan|amélie|amelie|thomas|audrey|marie|paulina|monica|anna|petra|alice/i.test(n)) sc+=2;
+    if(v.localService) sc+=1; return sc;
+  }
+  var hnVoiceCache=null;
+  function hnVoices(){
+    return new Promise(function(res){
+      var ss=window.speechSynthesis, v=ss.getVoices()||[]; if(v.length){ res(v); return; }
+      var done=false, fin=function(){ if(done) return; done=true; try{ ss.removeEventListener('voiceschanged',fin); }catch(e){} res(ss.getVoices()||[]); };
+      try{ ss.addEventListener('voiceschanged',fin); }catch(e){} setTimeout(fin,700);
+    });
+  }
+  function hnBestVoice(voices, lang){ var best=null, bs=-99; (voices||[]).forEach(function(v){ var sc=hnVoiceScore(v,lang); if(sc>bs){ bs=sc; best=v; } }); return bs>-50?best:null; }
+  function hnSpeakClean(text){
+    return String(text||'').replace(/```[\s\S]*?```/g,' ').replace(/`([^`]*)`/g,'$1').replace(/!\[[^\]]*\]\([^)]*\)/g,' ').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/https?:\/\/\S+/g,' ')
+      .replace(/^[ \t]*#{1,6}[ \t]*/gm,'').replace(/^[ \t]*[-*•]\s+/gm,'').replace(/^[ \t]*>\s?/gm,'').replace(/[*_~|]+/g,' ')
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu,' ').replace(/\s*[—–]\s*/g,', ').replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'.\n').replace(/\n/g,' ').trim();
+  }
+  function hnChunks(text,max){
+    var parts=String(text).match(/[^.!?…]+[.!?…]*\s*/g)||[String(text)], out=[], cur='';
+    parts.forEach(function(p){ if(p.length>max){ if(cur){ out.push(cur); cur=''; } p.replace(/([,;:])\s+/g,'$1\u0001').split('\u0001').forEach(function(q){ if((cur+q).length>max&&cur){ out.push(cur); cur=''; } cur+=(cur?' ':'')+q; }); return; } if((cur+p).length>max&&cur){ out.push(cur); cur=''; } cur+=p; });
+    if(cur) out.push(cur); return out.map(function(x){return x.trim();}).filter(Boolean);
+  }
+  /* Langue de la dictée (micro) : réglage explicite, sinon langue de la dernière réponse lue, sinon langue de l'interface. */
+  window.hnDictLang=function(){ var v=''; try{ v=localStorage.getItem('helpnaud_voice_lang')||''; }catch(e){} if(v&&v!=='auto') return v; return window.__hnLastReplyLang||(getStoredLang()==='en'?'en-US':'fr-FR'); };
+  window.__hnTts={ detect:hnDetectLang, clean:hnSpeakClean, chunks:hnChunks, best:hnBestVoice };
+  var speakCur=null;
   // `onEnd` (optionnel) : rappelé une fois la lecture terminée (fin normale OU erreur) — utilisé par
   // le Mode vocal (voir plus bas) pour relancer automatiquement l'écoute une fois la réponse lue.
   function speakMsgText(text, btn, onEnd){
@@ -11471,13 +11519,30 @@
       window.speechSynthesis.cancel();
       return;
     }
+    if(speakCur) speakCur.cancelled = true;
     window.speechSynthesis.cancel();
-    var utter = new SpeechSynthesisUtterance(text);
-    utter.lang = (function(){ var v=''; try{ v=localStorage.getItem('helpnaud_voice_lang')||''; }catch(e){} return (v && v!=='auto') ? v : (getStoredLang() === 'en' ? 'en-US' : 'fr-FR'); })();
-    utter.onstart = function(){ speakingBtn = btn; btn.classList.add('active'); btn.innerHTML = msgActionIcon('stop'); btn.title = 'Arrêter la lecture'; };
-    utter.onend = function(){ if(speakingBtn === btn) speakingBtn = null; btn.classList.remove('active'); btn.innerHTML = msgActionIcon('speak'); btn.title = 'Lire à haute voix'; if(onEnd) onEnd(); };
-    utter.onerror = utter.onend;
-    window.speechSynthesis.speak(utter);
+    var me = speakCur = { cancelled:false, ended:false };
+    var pref=''; try{ pref=localStorage.getItem('helpnaud_voice_lang')||''; }catch(e){}
+    var appLang = (pref && pref!=='auto') ? pref : (getStoredLang() === 'en' ? 'en-US' : 'fr-FR');
+    var clean = hnSpeakClean(text), msgLang = hnDetectLang(clean) || appLang, chunks = hnChunks(clean, 200), idx = 0;
+    window.__hnLastReplyLang = msgLang;
+    function finish(){
+      if(me.ended) return; me.ended = true; if(speakingBtn === btn) speakingBtn = null;
+      btn.classList.remove('active'); btn.innerHTML = msgActionIcon('speak'); btn.title = 'Lire à haute voix'; if(onEnd) onEnd();
+    }
+    if(!chunks.length){ finish(); return; }
+    hnVoices().then(function(voices){
+      if(me.cancelled){ finish(); return; }
+      function next(){
+        if(me.cancelled || idx >= chunks.length){ finish(); return; }
+        var c = chunks[idx++], lang = hnDetectLang(c) || msgLang, voice = hnBestVoice(voices, lang);
+        var u = new SpeechSynthesisUtterance(c); u.lang = (voice && voice.lang) || lang; if(voice) u.voice = voice; u.rate = 1; u.pitch = 1;
+        if(idx === 1) u.onstart = function(){ speakingBtn = btn; btn.classList.add('active'); btn.innerHTML = msgActionIcon('stop'); btn.title = 'Arrêter la lecture'; };
+        u.onend = next; u.onerror = function(){ if(me.cancelled || idx >= chunks.length) finish(); else next(); };
+        window.speechSynthesis.speak(u);
+      }
+      next();
+    });
   }
   // Lecture à voix haute d'un texte long (document entier) avec choix explicite du genre de voix
   // (« femme »/« homme »), réutilisée par l'outil « Rédiger un document » (et réutilisable ailleurs
@@ -11490,7 +11555,7 @@
       return null;
     }
     window.speechSynthesis.cancel();
-    var lang = getStoredLang() === 'en' ? 'en-US' : 'fr-FR';
+    var lang = hnDetectLang(text) || (getStoredLang() === 'en' ? 'en-US' : 'fr-FR');
     var voice = pickVoiceForGender(gender, lang);
     var chunks = String(text || '').match(/[\s\S]{1,600}(?:[.!?\n]|$)/g) || [String(text || '')];
     var idx = 0;
@@ -12063,7 +12128,7 @@
           recognitionEnded = false;
           try{
             recognizer = new SpeechRecognitionCtor();
-            recognizer.lang = (function(){ var v=''; try{ v=localStorage.getItem('helpnaud_voice_lang')||''; }catch(e){} return (v && v!=='auto') ? v : (getStoredLang() === 'en' ? 'en-US' : 'fr-FR'); })();
+            recognizer.lang = window.hnDictLang();
             recognizer.continuous = true;
             recognizer.interimResults = false;
             recognizer.addEventListener('result', function(ev){
@@ -47703,7 +47768,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       h += '<div class="hnp-row"><div class="hnp-l">Bientôt disponible<small>Aucun connecteur n’est actif pour le moment.</small></div></div>';
     } else if(k === 'voix'){
       var vl = ''; try{ vl = localStorage.getItem('helpnaud_voice_lang') || 'auto'; }catch(e){}
-      var VL = [['auto','Automatique (langue de l’interface)'],['fr-FR','Français'],['en-US','English'],['es-ES','Español'],['de-DE','Deutsch'],['pt-PT','Português'],['it-IT','Italiano'],['ar-SA','العربية'],['zh-CN','中文']];
+      var VL = [['auto','Automatique (langue de la conversation)'],['fr-FR','Français'],['en-US','English'],['es-ES','Español'],['de-DE','Deutsch'],['pt-PT','Português'],['it-IT','Italiano'],['ar-SA','العربية'],['zh-CN','中文']];
       h += '<h3>Voix et dictée</h3><p class="hint">Langue utilisée pour la dictée (micro) et la lecture à voix haute. Le mode vocal se lance depuis l’Assistant, Co-work ou Consult.</p>';
       h += '<div class="hnp-row"><div class="hnp-l">Langue de la dictée et de la lecture</div><select id="hnp-vlang" style="border:1px solid var(--line);border-radius:9px;padding:8px;background:var(--surface);color:var(--ink);font:inherit;">' + VL.map(function(o){ return '<option value="' + o[0] + '"' + (o[0] === vl ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
     } else if(k === 'nav'){
