@@ -40265,6 +40265,10 @@
 .cs-console .e{color:#B3261E}.cs-console .w{color:#9a6a00}.cs-console .i{color:var(--muted)}
 .cs-notes{padding:10px 12px;font-size:13px;line-height:1.55;white-space:pre-wrap}
 .cs-msg{font-size:12px;color:var(--muted)}
+.cs-rules{margin:6px 0}.cs-rules summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted)}.cs-rules textarea{width:100%;margin-top:6px;border:1px solid var(--line);border-radius:9px;padding:8px;background:var(--surface);color:var(--ink);font:12.5px/1.45 inherit}
+.cs-hunk{margin:8px 10px;border:1px solid var(--line);border-radius:9px;overflow:hidden}.cs-hunk.bad{opacity:.7}.cs-hh{display:flex;gap:7px;align-items:center;padding:7px 9px;background:var(--bg,#f3f6fb);font-size:12.5px;font-weight:600}.cs-hh code{font:12px ui-monospace,Menlo,Consolas,monospace}
+.cs-diff{font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}.cs-dr{background:rgba(179,38,30,.10);color:#8a1c14;padding:0 9px}.cs-da{background:rgba(30,140,70,.12);color:#146c35;padding:0 9px}.cs-dm{padding:3px 9px;font-size:11.5px;color:var(--muted)}
+.cs-imp{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
 </style>
 <script>
 (function(){
@@ -40336,6 +40340,21 @@
      '<button class="btn primary" id="cs-apply" type="button">Modifier</button>'+
      '<button class="btn" id="cs-audit" type="button">Audit qualité et sécurité</button>'+
    '</div>'+
+   '<div class="cs-sub" id="cs-tasks" aria-label="Tâches de l’agent">'+
+     '<button class="btn" type="button" data-task="bug">🐞 Corriger un bogue</button>'+
+     '<button class="btn" type="button" data-task="feat">✨ Ajouter une fonction</button>'+
+     '<button class="btn" type="button" data-task="tests">🧪 Écrire des tests</button>'+
+     '<button class="btn" type="button" data-task="refac">♻️ Refactoriser</button>'+
+     '<button class="btn" type="button" data-task="explain">📖 Expliquer le code</button>'+
+     '<button class="btn" type="button" id="cs-fixerr" title="Envoie les erreurs de la console à l’agent">🛠 Corriger l’erreur</button>'+
+   '</div>'+
+   '<div class="cs-sub">'+
+     '<button class="btn" id="cs-undo" type="button" disabled>↶ Annuler</button>'+
+     '<button class="btn" id="cs-pyrun" type="button" hidden>▶ Exécuter (Python)</button>'+
+     '<button class="btn" id="cs-pytest" type="button" hidden>🧪 Lancer les tests</button>'+
+   '</div>'+
+   '<details class="cs-rules"><summary>Consignes du projet (comme un fichier AGENTS.md)</summary><textarea id="cs-rules" rows="3" maxlength="1500" placeholder="Ex. : code en TypeScript strict, tests avec node:test, messages en français, ne pas ajouter de dépendances." aria-label="Consignes du projet"></textarea></details>'+
+   '<div class="cs-panel" id="cs-review-panel" hidden><header><span>Revue des modifications proposées</span><span class="cs-msg">Cochez ce que vous acceptez</span></header><div id="cs-review-body"></div></div>'+
    '<div class="cs-panel" id="cs-notes-panel" hidden><header><span id="cs-notes-title">Notes</span><button class="btn" id="cs-notes-close" type="button">Fermer</button></header><div class="cs-notes" id="cs-notes"></div></div>'+
    '<div class="cs-panel" id="cs-preview-panel" hidden><header><span>Aperçu</span><span class="cs-msg" id="cs-preview-msg"></span></header><iframe id="cs-frame" title="Aperçu du projet" sandbox="allow-scripts allow-forms allow-modals"></iframe></div>'+
    '<div class="cs-panel" id="cs-console-panel" hidden><header><span>Console <span id="cs-errcount"></span></span><button class="btn" id="cs-console-clear" type="button">Effacer</button></header><pre class="cs-console" id="cs-console"></pre></div>'+
@@ -40363,6 +40382,8 @@
     });
     var f=state.files[state.active]; editor.value=f?f.content:'';
     E('cs-name').value=state.name||'';
+    if(E('cs-rules')) E('cs-rules').value=state.rules||'';
+    if(typeof updTools==='function') updTools();
     E('cs-run').hidden=!runnable();
     refreshProjects();
   }
@@ -40525,12 +40546,12 @@
     state.name=(E('cs-name').value.trim()||'Projet sans nom');
     var a=load(), id=state.id, p=a.filter(function(x){return x.id===id;})[0];
     if(!p){ id='p'+Date.now().toString(36); state.id=id; p={id:id}; a.unshift(p); }
-    p.name=state.name; p.type=state.type; p.files=state.files; p.notes=state.notes; p.updated=Date.now();
+    p.name=state.name; p.type=state.type; p.files=state.files; p.notes=state.notes; p.rules=state.rules||''; p.updated=Date.now();
     if(store(a.slice(0,40))){ refreshProjects(); E('cs-open').value=id; say('Projet enregistré ✓'); }
   });
   E('cs-load').addEventListener('click',function(){
     var id=E('cs-open').value; var p=load().filter(function(x){return x.id===id;})[0]; if(!p) return;
-    state.id=p.id; state.name=p.name; state.type=p.type||'web'; state.files=p.files; state.notes=p.notes||''; state.active=0; typeSel.value=state.type; render(); if(runnable()) runPreview();
+    state.id=p.id; state.name=p.name; state.type=p.type||'web'; state.files=p.files; state.notes=p.notes||''; state.rules=p.rules||''; undoStack=[]; state.active=0; typeSel.value=state.type; render(); if(runnable()) runPreview();
   });
   E('cs-del').addEventListener('click',function(){
     var id=E('cs-open').value; if(!id||!confirm('Supprimer ce projet enregistré ?')) return;
@@ -40544,12 +40565,430 @@
     else if(t===copyBtn){ e.stopPropagation(); keep(); var f=state.files[state.active]; if(f&&window.__hn) window.__hn.copyText(f.content,statusEl,editor); }
     else if(t===dlBtn){ e.stopPropagation(); singleDownload(); }
   },true);
-  E('cs-apply').addEventListener('click',modify);
+  E('cs-apply').addEventListener('click',function(){ agentRun('edit'); });
   E('cs-audit').addEventListener('click',audit);
-  E('cs-change').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); modify(); } });
+  E('cs-change').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); agentRun('edit'); } });
   input.placeholder="Ex. : Un site vitrine pour une clinique dentaire avec prise de rendez-vous, ou une API de gestion de factures avec authentification et tests.";
   refreshProjects();
-  window.__hnCodeStudio={ state:state, parse:parseFiles, buildDoc:buildDoc, load:loadResult };
+  var impRow=document.createElement('div'); impRow.className='cs-imp';
+  impRow.innerHTML='<span class="cs-msg">Projet existant ?</span><button class="btn" type="button" id="cs-imp-b1">📂 Importer des fichiers</button><button class="btn" type="button" id="cs-imp-b2">📁 Importer un dossier</button>'+
+    '<input type="file" id="cs-imp-files" multiple hidden><input type="file" id="cs-imp-dir" webkitdirectory hidden>';
+  pre.parentNode.insertBefore(impRow, wrap);
+  impRow.querySelector('#cs-imp-b1').addEventListener('click',function(){ E('cs-imp-files').click(); });
+  impRow.querySelector('#cs-imp-b2').addEventListener('click',function(){ E('cs-imp-dir').click(); });
+  /* =====================================================================
+     MODE AGENT (style Codex) : tâches guidées, modifications par correctifs
+     (blocs SEARCH/REPLACE), revue avec acceptation/refus, annulation,
+     consignes du projet, import de fichiers/dossiers, exécution Python
+     (Pyodide) et lancement des tests. Tout s'exécute dans le navigateur.
+     ===================================================================== */
+  state.rules=state.rules||'';
+  var undoStack=[], tasksLog=[], pending=null;
+  var PATCH_FORMAT="\n\nFORMAT DE SORTIE OBLIGATOIRE (correctifs, pas de réécriture complète). N'écris aucune balise ``` et aucun texte en dehors de ces blocs :\n"+
+    "Pour MODIFIER un fichier existant (un ou plusieurs blocs par fichier) :\n=== EDIT: chemin/fichier.ext ===\n<<<<<<< SEARCH\n(lignes EXACTES existantes, indentation comprise, 2 à 6 lignes de contexte, unique dans le fichier)\n=======\n(nouvelles lignes)\n>>>>>>> REPLACE\n=== END EDIT ===\n"+
+    "Pour CRÉER un fichier :\n=== NEW: chemin/fichier.ext ===\n(contenu complet)\n=== END NEW ===\n"+
+    "Pour SUPPRIMER un fichier :\n=== DELETE: chemin/fichier.ext ===\n"+
+    "Termine TOUJOURS par :\n=== SUMMARY ===\n(en français : ce qui a changé et pourquoi, 2 à 6 lignes, et ce que l'utilisateur doit vérifier)\n=== END SUMMARY ===\n"+
+    "Règles : modifications MINIMALES et ciblées ; ne recopie jamais un fichier entier pour changer quelques lignes ; copie le texte SEARCH tel quel depuis le projet ; ne touche pas à ce qui fonctionne ; n'invente aucune API ni bibliothèque.";
+  function hcodePrefs(){ try{ var o=JSON.parse(localStorage.getItem('helpnaud_perso')||'null')||{}; return String(o.hcode||'').slice(0,500); }catch(e){ return ''; } }
+  function ctxPrompt(){
+    keep(); var BUDGET=26000, used=0, out=[], act=state.files[state.active];
+    var tree=state.files.map(function(f){return '- '+f.name+' ('+f.content.length+' car.)';}).join('\n');
+    var order=(act?[act]:[]).concat(state.files.filter(function(f){return f!==act;}));
+    order.forEach(function(f){
+      var room=BUDGET-used, c=f.content;
+      if(room<400){ out.push('=== FILE: '+f.name+' ===\n(contenu omis : budget de contexte atteint — ne modifie pas ce fichier sans le demander)\n=== END FILE ==='); return; }
+      if(c.length>room){ c=c.slice(0,room)+'\n… (fichier tronqué : ne propose pas de correctif sur la partie tronquée)'; }
+      used+=c.length; out.push('=== FILE: '+f.name+' ===\n'+c+'\n=== END FILE ===');
+    });
+    return 'ARBORESCENCE :\n'+tree+'\n\nFICHIER OUVERT : '+(act?act.name:'—')+'\n\nCONTENU :\n'+out.join('\n');
+  }
+  function rulesText(){ var r=[]; if(state.rules&&state.rules.trim()) r.push('CONSIGNES DU PROJET (à respecter) :\n'+state.rules.trim().slice(0,1500)); var hp=hcodePrefs(); if(hp) r.push('PRÉFÉRENCES DE L\u2019UTILISATEUR POUR H-CODE :\n'+hp); return r.length?'\n\n'+r.join('\n\n'):''; }
+  function agentSystem(mode){
+    var base="Tu es H-Code, un agent de développement logiciel intégré à HelpNaud. Tu travailles sur le projet fourni comme un ingénieur senior : tu lis le code, comprends la demande, puis proposes des changements précis, sûrs et testables, en respectant les conventions du projet. Sécurité (OWASP), lisibilité et accessibilité d'abord. Tu réponds en français.";
+    if(mode==='explain') return base+"\n\nMode EXPLICATION : n'écris aucun correctif. Réponds en français de façon claire et structurée : architecture, rôle de chaque fichier, flux principal, points fragiles, en citant les fichiers et fonctions concernés. Si une information manque, dis-le au lieu de deviner.";
+    return base+(mode==='tests'?"\n\nMode TESTS : ajoute des tests automatisés pertinents (unittest pour Python, node:test pour Node, sinon un fichier de tests simple et exécutable) couvrant les cas normaux, les cas limites et les erreurs ; ne modifie le code existant que si nécessaire pour le rendre testable.":"")+PATCH_FORMAT;
+  }
+  /* ----- analyse et application des correctifs ----- */
+  function nl(s){ return String(s).replace(/\r\n/g,'\n'); }
+  function cleanPath(p){ return String(p).trim().replace(/^\.?\/+/,'').replace(/^`|`$/g,''); }
+  function parsePatch(text){
+    var out={edits:[],news:[],dels:[],summary:''}, m, t=String(text||'');
+    var reE=/=== EDIT: (.+?) ===\r?\n([\s\S]*?)\r?\n=== END EDIT ===/g;
+    while((m=reE.exec(t))){
+      var file=cleanPath(m[1]), body=m[2], reB=/<<<<<<< SEARCH\r?\n([\s\S]*?)\r?\n=======\r?\n([\s\S]*?)\r?\n?>>>>>>> REPLACE/g, b;
+      while((b=reB.exec(body))) out.edits.push({file:file,search:b[1],replace:b[2]});
+    }
+    var reN=/=== NEW: (.+?) ===\r?\n([\s\S]*?)\r?\n=== END NEW ===/g;
+    while((m=reN.exec(t))) out.news.push({file:cleanPath(m[1]),content:m[2]});
+    var reD=/=== DELETE: (.+?) ===/g;
+    while((m=reD.exec(t))) out.dels.push(cleanPath(m[1]));
+    var sm=t.match(/=== SUMMARY ===\r?\n([\s\S]*?)(?:\r?\n=== END SUMMARY ===|$)/); if(sm) out.summary=sm[1].trim();
+    return out;
+  }
+  function applyOne(content,s,r){
+    var c=nl(content), S=nl(s), R=nl(r);
+    if(!S.trim()) return {ok:false,why:'Bloc de recherche vide.'};
+    var i=c.indexOf(S);
+    if(i>=0) return {ok:true,text:c.slice(0,i)+R+c.slice(i+S.length),amb:c.indexOf(S,i+1)>=0};
+    var cl=c.split('\n'), sl=S.split('\n'), tr=function(x){return x.trim();};
+    while(sl.length&&!tr(sl[0])) sl.shift(); while(sl.length&&!tr(sl[sl.length-1])) sl.pop();
+    if(!sl.length) return {ok:false,why:'Bloc de recherche vide.'};
+    for(var a=0;a<=cl.length-sl.length;a++){
+      var ok=true; for(var k=0;k<sl.length;k++){ if(tr(cl[a+k])!==tr(sl[k])){ ok=false; break; } }
+      if(ok) return {ok:true,fuzzy:true,text:cl.slice(0,a).concat(R.split('\n'),cl.slice(a+sl.length)).join('\n')};
+    }
+    return {ok:false,why:'Texte à remplacer introuvable (le fichier a peut-être changé).'};
+  }
+  function getFile(n){ return state.files.filter(function(f){return f.name===n;})[0]; }
+  function snapshot(label){ undoStack.push({label:label,files:JSON.parse(JSON.stringify(state.files)),active:state.active}); if(undoStack.length>20) undoStack.shift(); updUndo(); }
+  function updUndo(){ var b=E('cs-undo'); if(b){ b.disabled=!undoStack.length; b.textContent='↶ Annuler'+(undoStack.length?' ('+undoStack.length+')':''); } }
+  function h(s){ return esc(s); }
+  /* ----- panneau de revue ----- */
+  function buildReview(p,task){
+    var pend={task:task,summary:p.summary,items:[]}, work={};
+    p.edits.forEach(function(e){
+      var f=getFile(e.file), cur=work[e.file]!=null?work[e.file]:(f?f.content:null), it={kind:'edit',file:e.file,search:e.search,replace:e.replace,on:true};
+      if(cur==null){ it.err='Fichier introuvable : '+e.file; it.on=false; }
+      else { var r=applyOne(cur,e.search,e.replace); if(r.ok){ work[e.file]=r.text; it.note=r.amb?'Texte présent plusieurs fois : la première occurrence est modifiée.':(r.fuzzy?'Correspondance approchée (espaces/indentation).':''); } else { it.err=r.why; it.on=false; } }
+      pend.items.push(it);
+    });
+    p.news.forEach(function(n){ pend.items.push({kind:'new',file:n.file,content:n.content,over:!!getFile(n.file),on:!/\.\./.test(n.file)}); });
+    p.dels.forEach(function(d){ var ex=!!getFile(d); pend.items.push({kind:'del',file:d,on:ex&&state.files.length>1,err:ex?'':'Fichier introuvable.'}); });
+    return pend;
+  }
+  function lines(s,pre,cls,max){ var a=nl(s).split('\n'), cut=a.length>max; if(cut) a=a.slice(0,max); return a.map(function(l){return '<div class="'+cls+'">'+pre+' '+h(l)+'</div>';}).join('')+(cut?'<div class="cs-dm">… ('+(nl(s).split('\n').length-max)+' lignes de plus)</div>':''); }
+  function renderReview(){
+    var panel=E('cs-review-panel'); if(!pending){ panel.hidden=true; return; }
+    var n=pending.items.length, ok=pending.items.filter(function(x){return !x.err;}).length;
+    var body='<div class="cs-notes" style="padding-bottom:4px"><b>'+h(pending.task)+'</b>'+(pending.summary?'<div style="margin-top:6px">'+h(pending.summary)+'</div>':'')+'</div>';
+    pending.items.forEach(function(it,i){
+      body+='<div class="cs-hunk'+(it.err?' bad':'')+'"><label class="cs-hh"><input type="checkbox" data-hk="'+i+'" '+(it.on?'checked':'')+(it.err?' disabled':'')+'> '+
+        (it.kind==='edit'?'✏️ Modifier':it.kind==='new'?(it.over?'♻️ Remplacer':'➕ Créer'):'🗑 Supprimer')+' <code>'+h(it.file)+'</code></label>'+
+        (it.err?'<div class="cs-dm">⚠ '+h(it.err)+'</div>':(it.note?'<div class="cs-dm">ℹ '+h(it.note)+'</div>':''))+
+        '<div class="cs-diff">'+(it.kind==='edit'?lines(it.search,'−','cs-dr',40)+lines(it.replace,'+','cs-da',60):it.kind==='new'?lines(it.content,'+','cs-da',40):'')+'</div></div>';
+    });
+    body+='<div class="cs-sub" style="padding:0 10px 10px"><button class="btn primary" id="cs-rv-apply" type="button">Appliquer la sélection</button><button class="btn" id="cs-rv-none" type="button">Tout refuser</button><span class="cs-msg">'+ok+' / '+n+' modification(s) applicable(s)</span></div>';
+    E('cs-review-body').innerHTML=body; panel.hidden=false;
+  }
+  function applyReview(){
+    if(!pending) return; keep(); snapshot(pending.task);
+    var done=0, fail=0;
+    pending.items.forEach(function(it){
+      if(!it.on||it.err) return;
+      if(it.kind==='edit'){ var f=getFile(it.file); if(!f){fail++;return;} var r=applyOne(f.content,it.search,it.replace); if(r.ok){ f.content=r.text; done++; } else fail++; }
+      else if(it.kind==='new'){ var g=getFile(it.file); if(g) g.content=it.content; else state.files.push({name:it.file,content:it.content}); done++; }
+      else if(it.kind==='del'){ if(state.files.length>1){ state.files=state.files.filter(function(x){return x.name!==it.file;}); done++; } }
+    });
+    state.active=Math.min(state.active,state.files.length-1);
+    tasksLog.push({t:Date.now(),task:pending.task,n:done});
+    var wasM=!!pending.mission; pending=null; renderReview(); render(); if(runnable()) runPreview(); updTools();
+    say(done?('✓ '+done+' modification'+(done>1?'s':'')+' appliquée'+(done>1?'s':'')+(fail?' ('+fail+' échec'+(fail>1?'s':'')+')':'')):'Aucune modification appliquée.',4000);
+    if(wasM&&typeof mAfterApply==='function') mAfterApply(done);
+  }
+  E('cs-review-body').addEventListener('click',function(e){
+    var t=e.target; if(t.id==='cs-rv-apply') applyReview();
+    else if(t.id==='cs-rv-none'){ var wm=pending&&pending.mission; pending=null; renderReview(); say('Modifications refusées.'); if(wm&&mission){ mission.phase='stopped'; mission.msg='modifications refusées'; mSave(); mRender(); } }
+  });
+  E('cs-review-body').addEventListener('change',function(e){ var k=e.target.getAttribute&&e.target.getAttribute('data-hk'); if(k!=null&&pending) pending.items[+k].on=e.target.checked; });
+  E('cs-undo').addEventListener('click',function(){
+    var s=undoStack.pop(); if(!s) return; state.files=s.files; state.active=Math.min(s.active,s.files.length-1); render(); if(runnable()) runPreview(); updUndo(); updTools(); say('Annulé : '+s.label,3500);
+  });
+  /* ----- exécution d'une tâche ----- */
+  function agentRun(mode,text){
+    if(busy) return; if(!state.files.length){ say('Générez ou importez d’abord un projet.',3000); return; }
+    var q=(text!=null?text:E('cs-change').value).trim();
+    if(mode==='edit'&&!q){ say('Décrivez la tâche voulue (ou utilisez un bouton de tâche).',3000); return; }
+    var errs=consoleErrors(), title=({edit:'Tâche : ',tests:'Tests : ',explain:'Question : '})[mode]+(q||'écrire des tests pour ce projet').slice(0,90);
+    var p=agentSystem(mode)+rulesText()+'\n\n'+ctxPrompt()+(errs&&mode!=='explain'?'\n\nERREURS ACTUELLEMENT AFFICHÉES DANS LA CONSOLE :\n'+errs:'')+
+      '\n\n'+(mode==='explain'?'QUESTION :\n'+(q||'Explique l’architecture générale de ce projet.'):(mode==='tests'?'TÂCHE :\nÉcris des tests automatisés pour ce projet.'+(q?' Précision : '+q:''):'TÂCHE :\n'+q));
+    setBusy(true); pending=null; renderReview();
+    say(mode==='explain'?'Lecture du projet…':'L’agent analyse le projet…',90000);
+    var showLive=mode==='explain'; if(showLive) showNotes('Explication','Lecture du projet…');
+    ask(p,showLive?function(ev){E('cs-notes').textContent=ev.text;}:undefined).then(function(res){
+      setBusy(false);
+      if(mode==='explain'){ E('cs-notes').textContent=res.text; say('Réponse prête ✓'); return; }
+      var pt=parsePatch(res.text);
+      if(!pt.edits.length&&!pt.news.length&&!pt.dels.length){ showNotes('Réponse de l’agent (aucun correctif exploitable)',res.text); say('Aucun correctif exploitable : voir le détail.',4500); return; }
+      pending=buildReview(pt,title); renderReview(); say('Revoyez les modifications proposées ↓',4000);
+      try{ E('cs-review-panel').scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
+    }).catch(fail);
+  }
+  var TASKS={
+    bug:{mode:'edit',pre:'Corrige le bogue suivant : '}, feat:{mode:'edit',pre:'Ajoute la fonctionnalité suivante : '}, refac:{mode:'edit',pre:'Refactorise sans changer le comportement : '},
+    tests:{mode:'tests'}, explain:{mode:'explain'}, fixerr:{mode:'edit',text:'Corrige les erreurs affichées dans la console, avec la correction la plus simple et la plus sûre.'}
+  };
+  E('cs-tasks').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-task]'); if(!b) return; var k=TASKS[b.getAttribute('data-task')]; if(!k) return;
+    var inp=E('cs-change');
+    if(k.pre){ inp.value=k.pre; inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length); return; }
+    if(k.text){ if(!consoleErrors()){ say('Aucune erreur dans la console : lancez d’abord l’aperçu ou l’exécution.',3500); return; } agentRun('edit',k.text); return; }
+    agentRun(k.mode,k.mode==='explain'?inp.value:'');
+  });
+  /* ----- consignes du projet ----- */
+  E('cs-rules').addEventListener('input',function(){ state.rules=E('cs-rules').value.slice(0,1500); });
+  /* ----- import de fichiers / dossier ----- */
+  var OKEXT=/\.(html?|css|scss|js|mjs|cjs|jsx|ts|tsx|json|md|txt|py|sql|sh|java|gs|xml|yml|yaml|toml|csv|svg|ini|cfg|gitignore)$/i, SKIP=/(^|\/)(node_modules|\.git|dist|build|\.next|__pycache__|venv|\.venv)(\/|$)/;
+  function importFiles(list){
+    var arr=Array.prototype.slice.call(list||[]), keepF=[], skipped=0;
+    arr.forEach(function(f){
+      var rel=(f.webkitRelativePath||f.name).replace(/^[^/]+\//,function(m){ return f.webkitRelativePath?'':m; });
+      rel=cleanPath(rel); if(!rel||/\.\./.test(rel)||SKIP.test(rel)||!OKEXT.test(rel)||f.size>150000||keepF.length>=60){ skipped++; return; } keepF.push({f:f,name:rel});
+    });
+    if(!keepF.length){ say('Aucun fichier texte importable (limites : 60 fichiers, 150 Ko chacun).',4500); return; }
+    Promise.all(keepF.map(function(x){ return x.f.text().then(function(t){ return {name:x.name,content:t}; }); })).then(function(res){
+      keep(); if(state.files.length) snapshot('Import de fichiers');
+      res.forEach(function(r){ var g=getFile(r.name); if(g) g.content=r.content; else state.files.push(r); });
+      if(!state.name) state.name='Projet importé'; if(!state.type) state.type='web';
+      state.active=Math.min(state.active,state.files.length-1); render(); updTools();
+      say('✓ '+res.length+' fichier'+(res.length>1?'s':'')+' importé'+(res.length>1?'s':'')+(skipped?' ('+skipped+' ignoré'+(skipped>1?'s':'')+')':''),4500);
+    }).catch(function(){ say('Lecture des fichiers impossible.',3500); });
+  }
+  E('cs-imp-files').addEventListener('change',function(e){ importFiles(e.target.files); e.target.value=''; });
+  E('cs-imp-dir').addEventListener('change',function(e){ importFiles(e.target.files); e.target.value=''; });
+  /* ----- Python (Pyodide) et tests ----- */
+  var pyP=null, PYV='https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+  function loadPy(){
+    if(pyP) return pyP;
+    pyP=new Promise(function(res,rej){
+      var s=document.createElement('script'); s.src=PYV+'pyodide.js';
+      s.onload=function(){ window.loadPyodide({indexURL:PYV}).then(res,function(e){ pyP=null; rej(e); }); };
+      s.onerror=function(){ pyP=null; rej(new Error('Impossible de charger l’interpréteur Python (réseau ou bloqueur de contenu).')); };
+      document.head.appendChild(s);
+    });
+    return pyP;
+  }
+  function hasPy(){ return state.files.some(function(f){return /\.py$/i.test(f.name);}); }
+  function hasTests(){ return state.files.some(function(f){return /(^|\/)(test_[^/]*|[^/]*_test)\.py$/i.test(f.name);}); }
+  function updTools(){ var r=E('cs-pyrun'), t=E('cs-pytest'), j=E('cs-jstest'); if(r) r.hidden=!hasPy(); if(t) t.hidden=!hasTests(); if(j) j.hidden=!hasJsTests(); updUndo(); }
+  function runPy(mode){
+    keep(); clearConsole(); E('cs-console-panel').hidden=false;
+    var f=state.files[state.active]; var target=(f&&/\.py$/i.test(f.name))?f.name:(state.files.filter(function(x){return /(^|\/)(main|app|index)\.py$/i.test(x.name);})[0]||state.files.filter(function(x){return /\.py$/i.test(x.name)&&!/test/i.test(x.name);})[0]||{}).name;
+    if(mode==='file'&&!target){ log('error','Aucun fichier Python à exécuter.'); return; }
+    log('info','Chargement de l’interpréteur Python (la première fois : quelques secondes)…');
+    return loadPy().then(function(py){
+      var made={}; state.files.forEach(function(x){ var p='/proj/'+x.name, d=p.slice(0,p.lastIndexOf('/')); if(!made[d]){ try{ py.FS.mkdirTree(d); }catch(e){} made[d]=1; } py.FS.writeFile(p,x.content); });
+      var err=[]; py.setStdout({batched:function(s){ log('log',s); }}); py.setStderr({batched:function(s){ if(mode==='tests') err.push(s); else log('error',s); }});
+      var pre="import sys,os\nos.chdir('/proj')\nif '/proj' not in sys.path: sys.path.insert(0,'/proj')\nfor _m in [m for m,v in list(sys.modules.items()) if str(getattr(v,'__file__','') or '').startswith('/proj/')]: del sys.modules[_m]\n";
+      var code=mode==='tests'?pre+"import unittest\nunittest.main(module=None,argv=['t','discover','-s','/proj','-p','*test*.py','-v'],exit=False)\n":pre+"import runpy\nrunpy.run_path('/proj/"+target.replace(/'/g,"\\'")+"',run_name='__main__')\n";
+      log('info',mode==='tests'?'Exécution des tests…':'Exécution de '+target+'…');
+      return py.runPythonAsync(code).then(function(){ if(mode==='tests'){ var bad=/FAILED|ERROR|Traceback/.test(err.join('\n')); err.forEach(function(l){ log(bad&&/FAIL|ERROR|Traceback|Error|assert/i.test(l)?'error':'info',l); }); log(bad?'error':'info',bad?'Des tests échouent : utilisez « Corriger l’erreur ».':'Tous les tests réussissent ✓'); return {ran:true,ok:!bad,out:err.join('\n')}; } else log('info','Terminé ✓'); });
+    }).catch(function(e){ var m=String(e&&e.message||e).split('\n').slice(-6).join('\n'); log('error',m); return {ran:true,ok:false,out:m}; });
+  }
+  E('cs-pyrun').addEventListener('click',function(){ runPy('file'); });
+  E('cs-pytest').addEventListener('click',function(){ runPy('tests'); });
+  E('cs-fixerr').addEventListener('click',function(){ if(!consoleErrors()){ say('Aucune erreur dans la console.',3000); return; } agentRun('edit',TASKS.fixerr.text); });
+  /* ----- Import ZIP (lecture locale, sans bibliothèque) ----- */
+  function readZip(file){
+    return file.arrayBuffer().then(function(buf){
+      var dv=new DataView(buf), u8=new Uint8Array(buf), n=u8.length, eo=-1;
+      for(var i=n-22;i>=Math.max(0,n-65557);i--){ if(dv.getUint32(i,true)===0x06054b50){ eo=i; break; } }
+      if(eo<0) throw new Error('Ce fichier n’est pas un ZIP valide.');
+      var cnt=dv.getUint16(eo+10,true), off=dv.getUint32(eo+16,true), ents=[], dec=new TextDecoder();
+      if(cnt>2000) throw new Error('ZIP trop volumineux (plus de 2000 entrées).');
+      for(var k=0;k<cnt;k++){
+        if(dv.getUint32(off,true)!==0x02014b50) break;
+        var flag=dv.getUint16(off+8,true), meth=dv.getUint16(off+10,true), csz=dv.getUint32(off+20,true), usz=dv.getUint32(off+24,true),
+            nl_=dv.getUint16(off+28,true), el=dv.getUint16(off+30,true), cl=dv.getUint16(off+32,true), lo=dv.getUint32(off+42,true),
+            nm=dec.decode(u8.subarray(off+46,off+46+nl_));
+        ents.push({name:nm,meth:meth,csz:csz,usz:usz,lo:lo,enc:!!(flag&1)}); off+=46+nl_+el+cl;
+      }
+      var files=ents.filter(function(e){return e.name.slice(-1)!=='/';});
+      var roots={}; files.forEach(function(e){ roots[e.name.split('/')[0]]=1; });
+      var rk=Object.keys(roots), strip=(rk.length===1&&files.every(function(e){return e.name.indexOf('/')>0;}))?rk[0]+'/':'';
+      return files.map(function(e){
+        var nm=strip?e.name.slice(strip.length):e.name;
+        return {name:nm,webkitRelativePath:'',size:e.usz,text:function(){
+          if(e.enc) return Promise.reject(new Error('ZIP chiffré'));
+          var p=e.lo, lnl=dv.getUint16(p+26,true), lel=dv.getUint16(p+28,true), data=u8.subarray(p+30+lnl+lel,p+30+lnl+lel+e.csz);
+          if(e.meth===0) return Promise.resolve(dec.decode(data));
+          if(e.meth!==8||typeof DecompressionStream==='undefined') return Promise.reject(new Error('Compression non prise en charge'));
+          var ds=new DecompressionStream('deflate-raw'), w=ds.writable.getWriter(); w.write(data); w.close();
+          return new Response(ds.readable).arrayBuffer().then(function(ab){ return dec.decode(ab); });
+        }};
+      });
+    });
+  }
+  var zipBtn=document.createElement('button'); zipBtn.className='btn'; zipBtn.type='button'; zipBtn.id='cs-imp-b3'; zipBtn.textContent='🗜 Importer un ZIP';
+  var zipIn=document.createElement('input'); zipIn.type='file'; zipIn.id='cs-imp-zip'; zipIn.accept='.zip,application/zip'; zipIn.hidden=true;
+  impRow.appendChild(zipBtn); impRow.appendChild(zipIn);
+  zipBtn.addEventListener('click',function(){ zipIn.click(); });
+  zipIn.addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
+    if(f.size>20*1024*1024){ say('ZIP trop gros (20 Mo maximum).',4000); return; }
+    readZip(f).then(function(list){ importFiles(list); }).catch(function(err){ say(String(err&&err.message||'Lecture du ZIP impossible.'),5000); });
+  });
+  /* ----- Tests JavaScript (Worker isolé, API proche de node:test / node:assert) ----- */
+  var JSTEST=/(^|\/)([^/]*\.(test|spec)\.(js|mjs|cjs)|test_[^/]*\.(js|mjs)|[^/]*_test\.(js|mjs))$/i;
+  function hasJsTests(){ return state.files.some(function(f){return JSTEST.test(f.name);}); }
+  var JSW="(" + function(){
+    self.onmessage=function(ev){
+      var files={}, tests=ev.data.tests, logs=[], cache={}, queue=[], stack=[], hooks=[];
+      ev.data.files.forEach(function(f){ files[f.name]=f.content; });
+      function dirOf(p){ var i=p.lastIndexOf('/'); return i<0?'':p.slice(0,i); }
+      function join(d,r){ var parts=(d?d.split('/'):[]).concat(r.split('/')), o=[]; parts.forEach(function(s){ if(s==='.'||s==='') return; if(s==='..') o.pop(); else o.push(s); }); return o.join('/'); }
+      function fmt(v){ try{ return typeof v==='string'?JSON.stringify(v):(typeof v==='function'?String(v).slice(0,60):JSON.stringify(v)); }catch(e){ return String(v); } }
+      function AErr(m,a,b){ var e=new Error(m); e.name='AssertionError'; e.actual=a; e.expected=b; return e; }
+      function deq(a,b,strict){
+        if(strict?Object.is(a,b):(a==b||(a!==a&&b!==b))) return true;
+        if(typeof a!=='object'||typeof b!=='object'||!a||!b) return false;
+        if(strict&&Object.getPrototypeOf(a)!==Object.getPrototypeOf(b)) return false;
+        if(a instanceof Date&&b instanceof Date) return a.getTime()===b.getTime();
+        if(a instanceof Map&&b instanceof Map){ if(a.size!==b.size) return false; var ok=true; a.forEach(function(v,k){ if(!b.has(k)||!deq(v,b.get(k),strict)) ok=false; }); return ok; }
+        if(a instanceof Set&&b instanceof Set){ if(a.size!==b.size) return false; var ok2=true; a.forEach(function(v){ if(!b.has(v)) ok2=false; }); return ok2; }
+        var ka=Object.keys(a), kb=Object.keys(b); if(ka.length!==kb.length) return false;
+        return ka.every(function(k){ return Object.prototype.hasOwnProperty.call(b,k)&&deq(a[k],b[k],strict); });
+      }
+      function chk(e,exp){ if(!exp) return true; if(typeof exp==='function'){ if(exp.prototype&&e instanceof exp) return true; if(exp.prototype===undefined||exp.name==='') return exp(e)===true; return false; } if(exp instanceof RegExp) return exp.test(String(e&&e.message||e)); if(typeof exp==='object'){ return Object.keys(exp).every(function(k){ return exp[k] instanceof RegExp?exp[k].test(e[k]):e[k]===exp[k]; }); } return true; }
+      var assert=function(v,m){ if(!v) throw AErr(m||'La valeur attendue était vraie, reçu '+fmt(v),v,true); };
+      assert.ok=assert; assert.fail=function(m){ throw AErr(m||'Échec forcé'); };
+      assert.equal=function(a,b,m){ if(!(a==b||(a!==a&&b!==b))) throw AErr(m||'Attendu '+fmt(b)+', reçu '+fmt(a),a,b); };
+      assert.notEqual=function(a,b,m){ if(a==b) throw AErr(m||'Les valeurs ne devraient pas être égales : '+fmt(a),a,b); };
+      assert.strictEqual=function(a,b,m){ if(!Object.is(a,b)) throw AErr(m||'Attendu '+fmt(b)+', reçu '+fmt(a),a,b); };
+      assert.notStrictEqual=function(a,b,m){ if(Object.is(a,b)) throw AErr(m||'Les valeurs ne devraient pas être identiques : '+fmt(a),a,b); };
+      assert.deepEqual=function(a,b,m){ if(!deq(a,b,false)) throw AErr(m||'Attendu '+fmt(b)+', reçu '+fmt(a),a,b); };
+      assert.deepStrictEqual=function(a,b,m){ if(!deq(a,b,true)) throw AErr(m||'Attendu '+fmt(b)+', reçu '+fmt(a),a,b); };
+      assert.notDeepStrictEqual=function(a,b,m){ if(deq(a,b,true)) throw AErr(m||'Les valeurs ne devraient pas être égales en profondeur',a,b); };
+      assert.throws=function(fn,exp,m){ var t=false,er; try{ fn(); }catch(e){ t=true; er=e; } if(!t) throw AErr(typeof exp==='string'?exp:(m||'Une exception était attendue.')); if(typeof exp!=='string'&&!chk(er,exp)) throw AErr(m||'L’exception levée ne correspond pas : '+(er&&er.message)); };
+      assert.doesNotThrow=function(fn,m){ try{ fn(); }catch(e){ throw AErr(m||'Aucune exception attendue, reçu : '+(e&&e.message)); } };
+      assert.rejects=function(p,exp,m){ return Promise.resolve(typeof p==='function'?p():p).then(function(){ throw AErr(m||'Un rejet était attendu.'); },function(er){ if(er&&er.name==='AssertionError'&&er.message===(m||'Un rejet était attendu.')) throw er; if(!chk(er,exp)) throw AErr(m||'Le rejet ne correspond pas : '+(er&&er.message)); }); };
+      assert.match=function(s,re,m){ if(!re.test(s)) throw AErr(m||fmt(s)+' ne correspond pas à '+re,s,re); };
+      assert.strict=assert;
+      function addT(name,fn,skip){ queue.push({name:stack.concat(name).join(' › '),fn:fn,skip:skip,hooks:hooks.slice()}); }
+      var test=function(n,o,f){ if(typeof o==='function') f=o; addT(n,f,o&&o.skip); }; test.skip=function(n,o,f){ addT(n,typeof o==='function'?o:f,true); }; test.only=test; test.todo=function(n){ addT(n,null,true); };
+      var describe=function(n,o,f){ if(typeof o==='function') f=o; stack.push(n); var hl=hooks.length; try{ f(); }finally{ stack.pop(); hooks.length=hl; } }; describe.skip=function(){};
+      var be=function(f){ hooks.push({b:f}); }, ae=function(f){ hooks.push({a:f}); };
+      test.test=test; test.it=test; test.describe=describe; test.suite=describe; test.beforeEach=be; test.afterEach=ae; test.default=test; var builtin={ 'node:test':test, 'node:assert':assert, 'node:assert/strict':assert, 'assert':assert, 'assert/strict':assert };
+      Object.keys(builtin).slice().forEach(function(k){ if(k.indexOf('node:')===0) builtin[k.slice(5)]=builtin[k]; });
+      function esm(code){
+        var ex=[];
+        code=code.replace(/^[ \t]*import\s+\*\s+as\s+([\w$]+)\s+from\s*['"]([^'"]+)['"];?/gm,'const $1=require("$2");')
+          .replace(/^[ \t]*import\s+([\w$]+)\s*,\s*\{([^}]*)\}\s*from\s*['"]([^'"]+)['"];?/gm,function(_,d,n,s){ return 'const '+d+'=__def(require("'+s+'"));const {'+n.replace(/\bas\b/g,':')+'}=require("'+s+'");'; })
+          .replace(/^[ \t]*import\s+\{([^}]*)\}\s*from\s*['"]([^'"]+)['"];?/gm,function(_,n,s){ return 'const {'+n.replace(/\bas\b/g,':')+'}=require("'+s+'");'; })
+          .replace(/^[ \t]*import\s+([\w$]+)\s+from\s*['"]([^'"]+)['"];?/gm,'const $1=__def(require("$2"));')
+          .replace(/^[ \t]*import\s*['"]([^'"]+)['"];?/gm,'require("$1");')
+          .replace(/^[ \t]*export\s+default\s+/gm,'module.exports.default=')
+          .replace(/^[ \t]*export\s+(async\s+function\*?|function\*?|class|const|let|var)\s+([\w$]+)/gm,function(_,k,n){ ex.push(n); return k+' '+n; })
+          .replace(/^[ \t]*export\s*\{([^}]*)\};?/gm,function(_,l){ l.split(',').forEach(function(p){ p=p.trim(); if(!p) return; var m=p.split(/\s+as\s+/); ex.push(m.length>1?m[0]+':'+m[1]:p); }); return ''; });
+        return code+'\n'+ex.map(function(e){ var m=e.split(':'); return 'module.exports["'+(m[1]||m[0])+'"]='+m[0]+';'; }).join('\n')+'\nmodule.exports.__esModule=true;';
+      }
+      function req(from,id){
+        if(builtin[id]) return builtin[id];
+        if(id[0]!=='.'&&id[0]!=='/') throw new Error('Module « '+id+' » indisponible (pas de réseau ni de dépendances npm dans H-Code). Seuls node:test, node:assert et vos fichiers sont disponibles.');
+        var base=join(dirOf(from),id), c=[base,base+'.js',base+'.mjs',base+'.cjs',base+'.json',base+'/index.js'], p=c.filter(function(x){return files[x]!=null;})[0];
+        if(!p) throw new Error('Fichier introuvable : '+id+' (importé depuis '+from+')');
+        if(cache[p]) return cache[p].exports;
+        var m={exports:{}}; cache[p]=m;
+        if(/\.json$/.test(p)){ m.exports=JSON.parse(files[p]); return m.exports; }
+        var fn=new Function('require','module','exports','__def','console','__filename',esm(files[p]));
+        fn(function(i){return req(p,i);},m,m.exports,function(x){ return x&&x.__esModule&&('default' in x)?x.default:x; },cons,p);
+        return m.exports;
+      }
+      var cons={log:function(){ logs.push(Array.prototype.map.call(arguments,function(a){return typeof a==='string'?a:fmt(a);}).join(' ')); }}; cons.info=cons.warn=cons.error=cons.debug=cons.log;
+      var loadErr=null;
+      try{ tests.forEach(function(t){ stack=[t]; hooks=[]; req('','./'+t); }); }catch(e){ loadErr=String(e&&e.message||e); }
+      var res=[], i=0;
+      function next(){
+        if(i>=queue.length){ self.postMessage({results:res,logs:logs,loadErr:loadErr}); return; }
+        var q=queue[i++]; if(q.skip||!q.fn){ res.push({name:q.name,skip:true}); return next(); }
+        var done=false, timer=setTimeout(function(){ if(done) return; done=true; res.push({name:q.name,ok:false,msg:'Délai dépassé (5 s)'}); next(); },5000);
+        function fin(ok,msg){ if(done) return; done=true; clearTimeout(timer); Promise.resolve().then(function(){ q.hooks.forEach(function(h){ if(h.a) try{ h.a(); }catch(e){} }); }); res.push({name:q.name,ok:ok,msg:msg}); next(); }
+        try{ q.hooks.forEach(function(h){ if(h.b) h.b(); }); var r=q.fn({}); if(r&&typeof r.then==='function') r.then(function(){fin(true);},function(e){fin(false,String(e&&e.message||e));}); else fin(true); }catch(e){ fin(false,String(e&&e.message||e)); }
+      }
+      next();
+    };
+  }.toString() + ")()";
+  function runJs(){
+    keep(); clearConsole(); E('cs-console-panel').hidden=false;
+    var tests=state.files.filter(function(f){return JSTEST.test(f.name);}).map(function(f){return f.name;});
+    log('info','Exécution de '+tests.length+' fichier'+(tests.length>1?'s':'')+' de tests JavaScript…');
+    return new Promise(function(resolve){
+      var w, url, to, finished=false;
+      function end(r){ if(finished) return; finished=true; clearTimeout(to); try{ w&&w.terminate(); }catch(e){} try{ url&&URL.revokeObjectURL(url); }catch(e){} resolve(r); }
+      try{ url=URL.createObjectURL(new Blob([JSW],{type:'text/javascript'})); w=new Worker(url); }catch(e){ var m='Impossible de démarrer l’exécuteur de tests : '+(e&&e.message||e); log('error',m); return end({ran:true,ok:false,out:m}); }
+      to=setTimeout(function(){ var m='Les tests ont dépassé 20 s (boucle infinie ?).'; log('error',m); end({ran:true,ok:false,out:m}); },20000);
+      w.onerror=function(e){ var m='Erreur dans l’exécuteur : '+(e&&e.message||'inconnue'); log('error',m); end({ran:true,ok:false,out:m}); };
+      w.onmessage=function(ev){
+        var d=ev.data, out=[], bad=0, good=0;
+        (d.logs||[]).forEach(function(l){ log('log',l); });
+        if(d.loadErr){ var m2='Erreur au chargement des tests : '+d.loadErr; log('error',m2); return end({ran:true,ok:false,out:m2}); }
+        d.results.forEach(function(r){ if(r.skip){ log('warn','ignoré — '+r.name); } else if(r.ok){ good++; log('info','✓ '+r.name); } else { bad++; var l='✗ '+r.name+' — '+r.msg; out.push(l); log('error',l); } });
+        if(!d.results.length){ var m3='Aucun test trouvé dans les fichiers de tests.'; log('warn',m3); return end({ran:true,ok:false,out:m3}); }
+        log(bad?'error':'info',bad?(bad+' test(s) échouent sur '+(good+bad)+' : utilisez « Corriger l’erreur » ou une mission.'):'Tous les tests réussissent ('+good+') ✓');
+        end({ran:true,ok:!bad,out:out.join('\n'),good:good,bad:bad});
+      };
+      w.postMessage({files:state.files.map(function(f){return {name:f.name,content:f.content};}),tests:tests});
+    });
+  }
+  function runTests(){
+    var seq=Promise.resolve({ran:false,ok:true,out:''});
+    function chain(fn){ seq=seq.then(function(a){ return fn().then(function(b){ return {ran:true,ok:a.ok&&b.ok,out:[a.out,b.out].filter(Boolean).join('\n')}; }); }); }
+    if(hasTests()) chain(function(){ return runPy('tests'); });
+    if(hasJsTests()) chain(runJs);
+    return seq;
+  }
+  var jsBtn=document.createElement('button'); jsBtn.className='btn'; jsBtn.type='button'; jsBtn.id='cs-jstest'; jsBtn.textContent='🧪 Tests JavaScript'; jsBtn.hidden=true;
+  E('cs-pytest').parentNode.appendChild(jsBtn); jsBtn.addEventListener('click',function(){ runJs(); });
+  /* ----- Mission : boucle agent en plusieurs étapes, reprenable ----- */
+  var MKEY='helpnaud_code_mission', MAXIT=3, mission=null;
+  var mBar=document.createElement('div'); mBar.className='cs-notes'; mBar.id='cs-mission-bar'; mBar.hidden=true; mBar.style.cssText='margin:8px 0;border:1px solid var(--line);border-radius:10px;padding:8px 10px';
+  var mBtn=document.createElement('button'); mBtn.className='btn primary'; mBtn.type='button'; mBtn.id='cs-mission'; mBtn.textContent='🤖 Mission (boucle avec tests)'; mBtn.title='L’agent propose des correctifs, vous les validez, les tests sont lancés puis les échecs sont corrigés (3 tours maximum).';
+  E('cs-fixerr').parentNode.appendChild(mBtn); E('cs-tasks').parentNode.insertBefore(mBar,E('cs-tasks').nextSibling);
+  function mSave(){ if(!mission) return; mission.updated=Date.now(); mission.files=state.files; mission.name=state.name; mission.type=state.type; mission.rules=state.rules; mission.pid=state.id||''; try{ localStorage.setItem(MKEY,JSON.stringify(mission)); }catch(e){ try{ var c=JSON.parse(JSON.stringify(mission)); c.files=[]; localStorage.setItem(MKEY,JSON.stringify(c)); }catch(e2){} } }
+  function mClear(){ mission=null; try{ localStorage.removeItem(MKEY); }catch(e){} mRender(); }
+  var PH={ask:'en attente de l’agent',review:'revue des modifications',tests:'tests à lancer',done:'terminée',stopped:'arrêtée'};
+  function mRender(){
+    if(!mission){ mBar.hidden=true; return; }
+    var live=busy||mission.phase==='review'&&pending&&pending.mission, ended=mission.phase==='done'||mission.phase==='stopped';
+    var h2='<b>🤖 Mission :</b> '+h(mission.goal.slice(0,140))+'<div class="cs-dm">Tour '+mission.iter+'/'+MAXIT+' — '+h(PH[mission.phase]||mission.phase)+(mission.msg?' — '+h(mission.msg):'')+'</div>';
+    if(mission.hist&&mission.hist.length) h2+='<div class="cs-dm">'+mission.hist.map(function(x){ return 'Tour '+x.iter+' : '+(x.ran?(x.ok?'tests ✓':'tests ✗'):'aucun test'); }).join(' · ')+'</div>';
+    h2+='<div class="cs-sub" style="padding:6px 0 0">'+(!ended&&!live?'<button class="btn primary" type="button" data-m="resume">Reprendre</button>':'')+'<button class="btn" type="button" data-m="drop">'+(ended?'Fermer':'Abandonner')+'</button></div>';
+    mBar.innerHTML=h2; mBar.hidden=false;
+  }
+  function failPrompt(){ var l=mission.hist&&mission.hist[mission.hist.length-1]; return l&&l.ran&&!l.ok?'\n\nRÉSULTAT DES TESTS DU TOUR PRÉCÉDENT (à corriger) :\n'+String(l.out||'').slice(0,2500):''; }
+  function mAsk(){
+    mission.phase='ask'; mission.msg=''; mSave(); mRender(); setBusy(true); say('Mission : l’agent prépare le tour '+mission.iter+'…',90000);
+    var noT=!hasTests()&&!hasJsTests();
+    var p=agentSystem('edit')+rulesText()+'\n\n'+ctxPrompt()+failPrompt()+'\n\nOBJECTIF DE LA MISSION :\n'+mission.goal+
+      (mission.iter>1?'\nCorrige uniquement les échecs de tests ci-dessus, sans casser le reste.':'')+
+      (noT&&mission.iter===1?'\nAjoute aussi des tests automatisés (node:test/node:assert pour JavaScript, unittest pour Python) qui valident cet objectif ; nomme-les *.test.js ou test_*.py.':'');
+    ask(p).then(function(res){
+      setBusy(false); mission.raw=res.text; var pt=parsePatch(res.text);
+      if(!pt.edits.length&&!pt.news.length&&!pt.dels.length){ mission.phase='stopped'; mission.msg='aucun correctif exploitable'; mSave(); mRender(); showNotes('Réponse de l’agent (aucun correctif exploitable)',res.text); return; }
+      pending=buildReview(pt,'Mission, tour '+mission.iter+' : '+mission.goal.slice(0,70)); pending.mission=true; mission.phase='review'; mSave(); renderReview(); mRender(); say('Revoyez les modifications du tour '+mission.iter+' ↓',4000);
+      try{ E('cs-review-panel').scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
+    }).catch(function(e){ setBusy(false); mission.phase='ask'; mission.msg='échec de l’appel IA — « Reprendre » pour réessayer'; mSave(); mRender(); fail(e); });
+  }
+  function mAfterApply(done){
+    if(!mission) return;
+    if(!done){ mission.phase='stopped'; mission.msg='aucune modification appliquée'; mSave(); mRender(); return; }
+    mission.phase='tests'; mSave(); mRender(); say('Mission : lancement des tests…',60000);
+    runTests().then(function(r){
+      mission.hist=(mission.hist||[]).concat([{iter:mission.iter,ran:r.ran,ok:r.ok,out:String(r.out||'').slice(0,2500)}]);
+      if(!r.ran){ mission.phase='done'; mission.msg='terminée — aucun test à exécuter (vérifiez le résultat vous-même)'; }
+      else if(r.ok){ mission.phase='done'; mission.msg='tous les tests réussissent ✓'; }
+      else if(mission.iter>=MAXIT){ mission.phase='stopped'; mission.msg='limite de '+MAXIT+' tours atteinte, des tests échouent encore'; }
+      else { mission.iter++; mSave(); mRender(); return mAsk(); }
+      mSave(); mRender(); say('Mission : '+mission.msg,6000);
+    });
+  }
+  function mResume(){
+    if(!mission) return;
+    if(mission.files&&mission.files.length&&!state.files.length) { state.files=mission.files; state.name=mission.name||state.name; state.type=mission.type||state.type; state.rules=mission.rules||''; state.active=0; render(); }
+    if(mission.phase==='review'&&mission.raw){ var pt=parsePatch(mission.raw); pending=buildReview(pt,'Mission, tour '+mission.iter+' : '+mission.goal.slice(0,70)); pending.mission=true; renderReview(); mRender(); return; }
+    if(mission.phase==='tests'){ mAfterApply(true); return; }
+    mAsk();
+  }
+  mBtn.addEventListener('click',function(){
+    if(busy) return; if(!state.files.length){ say('Générez ou importez d’abord un projet.',3000); return; }
+    var q=E('cs-change').value.trim(); if(q.length<8){ say('Décrivez l’objectif de la mission (une phrase précise).',3500); return; }
+    if(mission&&mission.phase!=='done'&&mission.phase!=='stopped'&&!confirm('Une mission est déjà en cours. La remplacer ?')) return;
+    keep(); mission={goal:q,iter:1,phase:'ask',hist:[],raw:''}; mAsk();
+  });
+  mBar.addEventListener('click',function(e){ var b=e.target.closest('button[data-m]'); if(!b) return; if(b.getAttribute('data-m')==='resume') mResume(); else { pending=pending&&pending.mission?null:pending; renderReview(); mClear(); } });
+  try{ var sv=JSON.parse(localStorage.getItem(MKEY)||'null'); if(sv&&sv.goal&&sv.phase!=='done'&&sv.phase!=='stopped'){ mission=sv; mission.msg='interrompue — « Reprendre » pour continuer'; mRender(); } }catch(e){}
+  updTools();
+  window.__hnCodeStudio={ state:state, parse:parseFiles, buildDoc:buildDoc, load:loadResult, agent:{ parsePatch:parsePatch, applyOne:applyOne, buildReview:buildReview } };
 })();
 </script>
 
