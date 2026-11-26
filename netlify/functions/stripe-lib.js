@@ -22,6 +22,17 @@ const OPS_LOTS = { taiso: { key: 'ops_lot_taiso_100', doc: 100, ai: 0 }, itaf: {
 const OPS_MAX_EXTRA_SEATS = 10;   // 5 inclus + 10 = 15 ; au-delà : Institution sur devis
 const OPS_KEYS = [].concat(OPS_PLANS.reduce((a, p) => a.concat(INTERVALS.map(i => opsPlanKey(p, i))), []), INTERVALS.map(opsSeatKey), Object.keys(OPS_LOTS).map(k => OPS_LOTS[k].key));
 
+/* Forfait « Base » : montant libre de 1 $ à 20 $ US (paiement unique), 20 crédits par dollar (= 1 crédit par 5 cents). */
+const BASE = { MIN_CENTS: 500, MAX_CENTS: 2000, CREDITS_PER_5_CENTS: 1, CURRENCY: 'usd' };
+const baseCredits = cents => Math.floor(cents / 5);
+/* Montant saisi (dollars, « 12,50 » ou 12.5) → cents entiers, ou null si invalide / hors bornes. */
+function baseCents(raw) {
+  const t = String(raw == null ? '' : raw).trim().replace(',', '.');
+  if (!/^\d{1,2}(\.\d{1,2})?$/.test(t)) return null;
+  const c = Math.round(parseFloat(t) * 100);
+  return c >= BASE.MIN_CENTS && c <= BASE.MAX_CENTS ? c : null;
+}
+
 const reply = (code, o) => ({ statusCode: code, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(o) });
 
 /* Corps « formulaire » de Stripe : { a: { b: 1 }, c: [x, y] } → a[b]=1&c[0]=x&c[1]=y */
@@ -100,4 +111,4 @@ const isOpsSubscription = sub => !!((sub && sub.metadata && sub.metadata.org_id)
  * Désactivable sans changer le code : variable Netlify STRIPE_REQUIRE_TERMS = 0. */
 const CONSENT = process.env.STRIPE_REQUIRE_TERMS === '0' ? {} : { consent_collection: { terms_of_service: 'required' } };
 
-module.exports = { CONSENT, OPS_PLANS, OPS_LOTS, OPS_KEYS, OPS_MAX_EXTRA_SEATS, opsPlanKey, opsSeatKey, opsFromSubscription, isOpsSubscription, SB_URL, SB_PUB, SB_SECRET, SITE, PLANS, INTERVALS, PACKS, INSTITUTION_KEY, ALL_KEYS, planKey, packKey, reply, stripe, userFromToken, rest, rpc, eq, fetchPrices, planFromSubscription };
+module.exports = { BASE, baseCredits, baseCents, CONSENT, OPS_PLANS, OPS_LOTS, OPS_KEYS, OPS_MAX_EXTRA_SEATS, opsPlanKey, opsSeatKey, opsFromSubscription, isOpsSubscription, SB_URL, SB_PUB, SB_SECRET, SITE, PLANS, INTERVALS, PACKS, INSTITUTION_KEY, ALL_KEYS, planKey, packKey, reply, stripe, userFromToken, rest, rpc, eq, fetchPrices, planFromSubscription };
