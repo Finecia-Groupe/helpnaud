@@ -192,6 +192,14 @@ exports.handler = async function (event) {
         const s = await stripe('POST', 'checkout/sessions', Object.assign(base, { mode: 'payment', line_items: [{ price: prices[key].id, quantity: 1 }], metadata: md, payment_intent_data: { metadata: md } }));
         return reply(200, { ok: true, url: s.url });
       }
+      if (kind === 'base') {   // forfait Base : montant libre 1–20 USD, paiement unique ; le serveur recalcule tout (jamais de crédits venant du navigateur)
+        const cents = L.baseCents(body.amount);
+        if (cents == null) return reply(400, { error: 'amount', message: 'Le montant doit être compris entre 5 $ et 20 $ US (ex. : 10 ou 12,50).' });
+        const credits = L.baseCredits(cents), md = { uid: user.id, kind: 'base', credits: String(credits), amount_cents: String(cents) };
+        const s = await stripe('POST', 'checkout/sessions', Object.assign(base, { mode: 'payment', allow_promotion_codes: false, metadata: md, payment_intent_data: { metadata: md },
+          line_items: [{ quantity: 1, price_data: { currency: L.BASE.CURRENCY, unit_amount: cents, product_data: { name: 'Crédits IA HelpNaud.ai — forfait Base (' + credits + ' crédits)' } } }] }));
+        return reply(200, { ok: true, url: s.url });
+      }
       return reply(400, { error: 'bad_request' });
     }
     return reply(400, { error: 'bad_action' });
