@@ -89,6 +89,14 @@ async function handle(ev) {
           const addedLot = await rpc('svc_ops_add_pack', { p_org: o.metadata.org_id, p_doc: lot.doc, p_ai: lot.ai, p_session: o.id, p_months: 12 });
           return addedLot ? 'lot ' + o.metadata.lot + ' ajouté' : 'lot déjà ajouté';
         }
+        if (o.metadata && o.metadata.kind === 'base') {   // forfait Base : les crédits sont recalculés d'après le montant réellement payé
+          const cents = Number(o.metadata.amount_cents), disc = (o.total_details && o.total_details.amount_discount) || 0;
+          if (o.currency !== L.BASE.CURRENCY || !Number.isInteger(cents) || cents < L.BASE.MIN_CENTS || cents > L.BASE.MAX_CENTS || o.amount_subtotal !== cents || disc !== 0)
+            throw new Error('paiement Base incohérent : ' + o.id);
+          const n = L.baseCredits(cents);
+          const addedB = await rpc('svc_stripe_add_pack', { p_uid: uid, p_credits: n, p_session: o.id, p_months: 12 });
+          return addedB ? 'Base : ' + n + ' crédits ajoutés' : 'Base : déjà ajouté';
+        }
         const credits = Number(o.metadata && o.metadata.credits);
         if (L.PACKS.indexOf(credits) < 0) throw new Error('pack inconnu : ' + (o.metadata && o.metadata.credits));
         const added = await rpc('svc_stripe_add_pack', { p_uid: uid, p_credits: credits, p_session: o.id, p_months: 12 });
