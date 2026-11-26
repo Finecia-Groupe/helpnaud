@@ -8087,10 +8087,21 @@
      ci-dessus (catalogue interne « Vue propriétaire », 4 forfaits, modifiable) : ceci est le
      texte public exact des 5 forfaits demandés, affiché en lecture seule dans une fenêtre modale
      accessible depuis Réglages > Abonnements. */
+  /* Forfait « Base » : montant libre, strictement de BASE_MIN à BASE_MAX USD ; crédits IA proportionnels (BASE_RATE crédits par dollar, à ajuster). L'affichage et le calcul sont prêts ; le paiement (fonction Stripe + webhook) reste à brancher. */
+  var BASE_MIN = 5, BASE_MAX = 20, BASE_RATE = 20;
+  function baseCheck(raw){
+    var t = String(raw == null ? '' : raw).trim().replace(',', '.').replace(/\s*\$?\s*$/, '');
+    if(!/^\d{1,3}(\.\d{1,2})?$/.test(t)) return { ok:false, msg:'Entrez un montant en dollars (ex. : 10 ou 12,50).' };
+    var v = parseFloat(t); if(!(v >= BASE_MIN && v <= BASE_MAX)) return { ok:false, msg:'Le montant doit être compris entre ' + BASE_MIN + ' $ et ' + BASE_MAX + ' $ US. Au-delà, choisissez le forfait Essentiel ou un forfait supérieur.' };
+    return { ok:true, amount:Math.round(v * 100) / 100, credits:Math.floor(v * BASE_RATE + 1e-9) };
+  }
   var ABONNEMENTS_PLANS = [
     { nom:'Gratuit', prix:'0 USD', tagline:'Pour découvrir HelpNaud.ai',
       avantages:["Accès à Assistant, Co-work et Consult (tous les 42 domaines)","Rapports PDF de base","1 dossier/entreprise","1 utilisateur","Support communautaire (FAQ et documentation)"],
       limites:"30 crédits IA par mois (environ 15 messages au palier Médiane) ; exports avec filigrane « Propulsé par HelpNaud.ai »." },
+    { base:true, nom:'Base', prix:'De 5 à 20 USD, montant de votre choix, hors taxes', tagline:'Pour les petits budgets',
+      avantages:["Vous choisissez votre montant, de 5 $ à 20 $ US","Crédits IA proportionnels au montant versé","Accès à Assistant, Co-work et Consult"],
+      limites:"Montant compris entre 5 $ et 20 $ US (inclus). Au-delà, choisissez le forfait Essentiel ou un forfait supérieur." },
     { nom:'Essentiel', prix:'29 USD / mois, hors taxes', tagline:'Pour les indépendants',
       avantages:["Tous les calculateurs Consult débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique de conversations 90 jours","Support par courriel (réponse sous 48h)"],
       limites:"850 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
@@ -8115,6 +8126,7 @@
         '<h3 style="margin:0 0 2px; font-size:14.5px;">' + escapeHtml(p.nom) + '</h3>' +
         '<div class="hint" style="margin:0 0 4px;">' + escapeHtml(p.tagline) + '</div>' +
         '<div class="mono" style="font-weight:700; font-size:15px; margin-bottom:8px;">' + escapeHtml(p.prix) + '</div>' +
+        (p.base ? '<div class="hn-base" style="margin:0 0 10px"><label for="hn-base-amt" style="font-size:12.3px;font-weight:700;display:block;margin-bottom:4px">Votre montant (USD)</label><input id="hn-base-amt" type="text" inputmode="decimal" autocomplete="off" placeholder="Ex. : 10" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:8px;font:inherit;background:var(--surface);color:var(--ink)"><div id="hn-base-out" role="status" style="font-size:12.3px;margin-top:6px;min-height:34px;color:var(--muted)">Entrez un montant de ' + BASE_MIN + ' $ à ' + BASE_MAX + ' $.</div></div>' : '') +
         '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--good); margin-bottom:4px;">Avantages</div>' +
         '<ul style="margin:0 0 10px; padding-left:18px; font-size:12.3px; line-height:1.6; color:var(--ink);">' +
           p.avantages.map(function(a){ return '<li>' + escapeHtml(a) + '</li>'; }).join('') +
@@ -8124,7 +8136,15 @@
         '<button class="btn" type="button" disabled title="Indicatif — à venir" style="width:100%; opacity:.6; cursor:not-allowed;">Choisir ce forfait <span class="badge-soon" style="margin-left:6px;">À venir</span></button>' +
       '</div>';
     }).join('');
+    var ba = document.getElementById('hn-base-amt'), bo = document.getElementById('hn-base-out');
+    if(ba && bo) ba.addEventListener('input', function(){
+      var r = baseCheck(ba.value);
+      if(!ba.value.trim()){ bo.style.color = 'var(--muted)'; bo.textContent = 'Entrez un montant de ' + BASE_MIN + ' $ à ' + BASE_MAX + ' $.'; return; }
+      bo.style.color = r.ok ? 'var(--good)' : 'var(--bad, #b3261e)';
+      bo.textContent = r.ok ? ('Pour ' + r.amount.toFixed(2).replace('.', ',') + ' $ US : ' + r.credits + ' crédits IA (environ ' + Math.floor(r.credits / 2) + ' messages au palier Médiane).') : r.msg;
+    });
   }
+  window.__hnBase = { check: baseCheck, min: BASE_MIN, max: BASE_MAX, rate: BASE_RATE };
   var btnAbonnements = document.getElementById('btn-abonnements');
   if(btnAbonnements){
     btnAbonnements.addEventListener('click', function(){
@@ -47126,6 +47146,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     Array.prototype.forEach.call(grid.children, function(card){
       var h = $('h3', card), id = h && NAMES[h.textContent.trim()], btn = $('button.btn', card);
       if(h && h.textContent.trim() === 'Gratuit' && btn && !card.dataset.hnstg){ card.dataset.hnstg = '1'; btn.innerHTML = 'Forfait de départ'; btn.style.opacity = '.7'; }
+      if(h && h.textContent.trim() === 'Base' && btn && !card.dataset.hnstb){ card.dataset.hnstb = '1'; btn.disabled = false; btn.style.cssText = 'width:100%'; btn.removeAttribute('title'); btn.className = 'btn hnst-buy'; btn.textContent = 'Acheter ces crédits'; btn.setAttribute('data-hnst-base', '1'); }
       if(!id || !btn || card.dataset.hnst === interval + (prices ? 'p' : '') + (status ? 's' : '')) return;
       card.dataset.hnst = interval + (prices ? 'p' : '') + (status ? 's' : '');
       var priceEl = $('.mono', card), p = prices && prices.plans && prices.plans[id] && prices.plans[id][interval];
@@ -47164,6 +47185,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
     if(!t.closest) return;
     if((el = t.closest('[data-hnst-int]'))){ interval = el.getAttribute('data-hnst-int'); var g = $('#abonnements-grid'); if(g) Array.prototype.forEach.call(g.children, function(c){ delete c.dataset.hnst; }); decorateGrid(); return; }
     if((el = t.closest('[data-hnst-plan]'))){ e.preventDefault(); go({ action:'checkout', kind:'plan', plan:el.getAttribute('data-hnst-plan'), interval:interval }, el); return; }
+    if((el = t.closest('[data-hnst-base]'))){ e.preventDefault(); var bi = $('#hn-base-amt'), br = window.__hnBase ? window.__hnBase.check(bi ? bi.value : '') : { ok:false, msg:'Indisponible.' }; if(!br.ok){ toast(br.msg || 'Montant invalide.'); if(bi) bi.focus(); return; } go({ action:'checkout', kind:'base', amount:br.amount }, el); return; }
     if((el = t.closest('[data-hnst-manage]'))){ e.preventDefault(); el.disabled = true; api({ action:'portal' }, true).then(function(r){ el.disabled = false; if(r && r.ok && r.url) window.location.href = r.url; else toast((r && r.message) || 'Impossible d’ouvrir la gestion de l’abonnement.'); }); return; }
     if((el = t.closest('[data-hnst-quote]'))){ e.preventDefault(); window.location.href = 'mailto:contact@helpnaud.ai?subject=' + encodeURIComponent('Devis forfait Institution HelpNaud') + '&body=' + encodeURIComponent('Bonjour,\n\nNous souhaitons un devis pour le forfait Institution (organisation, nombre d’utilisateurs, besoins) :\n'); return; }
     // Fenêtre « Besoin de plus d'utilisation ? » : l'achat de crédits passe maintenant par Stripe (remplace la simple demande)
@@ -47195,7 +47217,7 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   try{
     var q = new URLSearchParams(location.search), st = q.get('stripe');
     if(st){
-      if(st === 'success') toast(q.get('kind') === 'pack' ? 'Merci ! Paiement reçu : vos crédits apparaissent dans quelques secondes.' : (/^ops_/.test(q.get('kind') || '') ? 'Merci ! Paiement reçu : l’abonnement de votre organisation (ou votre lot) est activé dans quelques secondes. Rechargez TAISO/iTAF si besoin.' : 'Merci ! Paiement reçu : votre forfait est activé dans quelques secondes.'), 12000);
+      if(st === 'success') toast((q.get('kind') === 'pack' || q.get('kind') === 'base') ? 'Merci ! Paiement reçu : vos crédits apparaissent dans quelques secondes.' : (/^ops_/.test(q.get('kind') || '') ? 'Merci ! Paiement reçu : l’abonnement de votre organisation (ou votre lot) est activé dans quelques secondes. Rechargez TAISO/iTAF si besoin.' : 'Merci ! Paiement reçu : votre forfait est activé dans quelques secondes.'), 12000);
       else if(st === 'cancel') toast('Paiement annulé : aucun montant n’a été débité.');
       q.delete('stripe'); q.delete('kind'); var qs = q.toString();
       history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
