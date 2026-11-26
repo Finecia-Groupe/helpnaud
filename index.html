@@ -11435,6 +11435,7 @@
   function setMsgText(el, text){
     var t = el.querySelector('.msg-text');
     if(t) mdFill(t, text, el.classList.contains('bot')); else el.textContent = text;
+    try{ if(el.classList.contains('bot')) hnVideoCtaSchedule(el); }catch(e){}
   }
   var speakingBtn = null;
   // Noms fréquents des voix synthétiques classées par genre chez les principaux navigateurs
@@ -11819,9 +11820,31 @@
     mdFill(textEl, text, who === 'bot');
     div.appendChild(textEl);
     div.appendChild(buildMsgActions(div, who, refill));
+    try{ hnVideoCta(logEl, div, text, who); }catch(e){}
     logEl.appendChild(div);
+    try{ if(div._hnVidReady) hnVideoCtaAttach(div); }catch(e){}
     logEl.scrollTop = logEl.scrollHeight;
     return div;
+  }
+  /* Parcours « demande de vidéo » : sous la réponse de HelpNaud (Assistant, Co-work, Consult, espace équipe), propose d'ouvrir le Studio vidéo avec un brouillon préparé à partir de la demande. Une réponse affichée moins de 0,7 s après la question (historique restauré, message local) n'en reçoit pas. */
+  function hnVideoCta(logEl, div, text, who){
+    if(who === 'user'){ logEl._hnU = { t:String(text || ''), at:Date.now(), done:false }; return; }
+    var u = logEl._hnU; if(u && !u.done && Date.now() - u.at >= 700 && !/^\s*Réflexion/.test(String(text || ''))) div._hnVidReady = true;
+  }
+  function hnVideoCtaSchedule(div){   /* bulle « Réflexion… » complétée peu à peu (réponse en flux) : on attend la fin des mises à jour */
+    var logEl = div.parentNode; if(!logEl || !logEl._hnU || logEl._hnU.done) return;
+    clearTimeout(div._hnVidT); div._hnVidT = setTimeout(function(){ hnVideoCtaAttach(div); }, 900);
+  }
+  function hnVideoCtaAttach(div){
+    var logEl = div.parentNode; if(!logEl) return; var u = logEl._hnU;
+    if(!u || u.done || Date.now() - u.at < 700 || div.querySelector('.hn-vid-cta')) return;
+    var txt = (div.querySelector('.msg-text') || div).textContent || ''; if(/^\s*Réflexion/.test(txt)) return;
+    if(!window.__hnVideo || !window.__hnVideo.isVideoRequest(u.t)) return;
+    u.done = true;
+    var card = document.createElement('div'); card.className = 'hn-vid-cta'; card.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2,#f6f8fc)';
+    card.innerHTML = '<div style="font-size:13px;margin-bottom:8px"><b>🎬 Vidéo :</b> HelpNaud ne fabrique pas la vidéo dans cette conversation. Le Studio la monte (images, textes, musique) à partir d’un brouillon préparé avec les informations de votre demande ; vous vérifiez l’aperçu avant de lancer le montage.</div><button type="button" class="btn primary">🎬 Créer la vidéo dans le Studio</button>';
+    var req = u.t; card.querySelector('button').addEventListener('click', function(){ window.__hnVideo.openFromPrompt(req); });
+    div.appendChild(card); try{ logEl.scrollTop = logEl.scrollHeight; }catch(e){}
   }
   /* Convertit une data URL (audio enregistré via MediaRecorder, ex. "data:audio/webm;base64,...")
      en Blob téléchargeable, avec une extension de fichier déduite du type MIME réel (webm/ogg/m4a/wav
@@ -49425,13 +49448,21 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   var KEY='helpnaud_video_draft', FMT={'9:16':[1080,1920],'1:1':[1080,1080],'16:9':[1920,1080]}, root=null, rec=false, V=null;
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function $(s){ return root.querySelector(s); }
-  function fresh(){ return {fmt:'9:16',hook:'',scenes:[{text:'',img:null,dur:6,vis:''},{text:'',img:null,dur:6,vis:''},{text:'',img:null,dur:6,vis:''}],cta:'Suivez HelpNaud',ctaLine:'',url:'helpnaud.ai',music:true,c1:'#16304A',c2:'#E0A526'}; }
-  function load(){ V=fresh(); try{ var d=JSON.parse(localStorage.getItem(KEY)||'null'); if(d&&d.scenes){ ['fmt','hook','cta','ctaLine','url','music','c1','c2'].forEach(function(k){ if(d[k]!=null) V[k]=d[k]; }); V.scenes=d.scenes.slice(0,12).map(function(s){ return {text:String(s.text||''),img:null,dur:+s.dur||6,vis:String(s.vis||'')}; }); } }catch(e){} }
-  function save(){ try{ localStorage.setItem(KEY,JSON.stringify({fmt:V.fmt,hook:V.hook,cta:V.cta,ctaLine:V.ctaLine,url:V.url,music:V.music,c1:V.c1,c2:V.c2,scenes:V.scenes.map(function(s){return {text:s.text,dur:s.dur,vis:s.vis};})})); }catch(e){} }
+  function fresh(){ return {fmt:'9:16',hook:'',scenes:[{text:'',img:null,dur:6,vis:''},{text:'',img:null,dur:6,vis:''},{text:'',img:null,dur:6,vis:''}],cta:'Suivez HelpNaud',ctaLine:'',url:'helpnaud.ai',music:true,c1:'#16304A',c2:'#E0A526',product:'',price:'',season:'',audience:'',means:'',notes:''}; }
+  function load(){ V=fresh(); try{ var d=JSON.parse(localStorage.getItem(KEY)||'null'); if(d&&d.scenes){ ['fmt','hook','cta','ctaLine','url','music','c1','c2','product','price','season','audience','means','notes'].forEach(function(k){ if(d[k]!=null) V[k]=d[k]; }); V.scenes=d.scenes.slice(0,12).map(function(s){ return {text:String(s.text||''),img:null,dur:+s.dur||6,vis:String(s.vis||'')}; }); } }catch(e){} }
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify({product:V.product,price:V.price,season:V.season,audience:V.audience,means:V.means,notes:V.notes,fmt:V.fmt,hook:V.hook,cta:V.cta,ctaLine:V.ctaLine,url:V.url,music:V.music,c1:V.c1,c2:V.c2,scenes:V.scenes.map(function(s){return {text:s.text,dur:s.dur,vis:s.vis};})})); }catch(e){} }
   function build(){
     root=document.createElement('div'); root.id='hnvid'; root.hidden=true; root.setAttribute('role','dialog'); root.setAttribute('aria-modal','true'); root.setAttribute('aria-label','Studio vidéo');
     root.innerHTML='<div class="hv-box"><div class="hv-top"><h2>🎬 Studio vidéo</h2><button type="button" class="btn" data-a="close">Fermer</button></div>'+
       '<p class="hint" style="margin:6px 0 0">Assemblez une vidéo publicitaire à partir de vos images (Image IA, captures d’écran, photos), de textes animés et d’un appel à l’action. Le montage se fait sur votre appareil : aucune vidéo n’est envoyée.</p>'+
+      '<div id="hv-note" class="hint" style="display:none;margin-top:8px;padding:8px 10px;border-radius:10px;background:#fff6dc;color:#5a3b00" role="status"></div>'+
+      '<details id="hv-fiche" open><summary style="font-weight:700;cursor:pointer;margin-top:12px">Fiche : informations à conserver tel quel dans la vidéo</summary>'+
+      '<label class="hv-l" for="hv-prod">Produit ou service</label><input type="text" id="hv-prod" maxlength="120">'+
+      '<label class="hv-l" for="hv-price">Tarif (laissez vide pour ne pas afficher de prix)</label><input type="text" id="hv-price" maxlength="80" placeholder="Ex. : 49 $ par mois">'+
+      '<label class="hv-l" for="hv-season">Période ou saison</label><input type="text" id="hv-season" maxlength="80" placeholder="Ex. : haute saison, du 1er juin au 30 août">'+
+      '<label class="hv-l" for="hv-aud">Public visé (clients, utilisateurs directs et indirects, personnes concernées)</label><input type="text" id="hv-aud" maxlength="160">'+
+      '<label class="hv-l" for="hv-means">Moyens pour vous joindre ou acheter (site, téléphone, boutique, réseaux…)</label><input type="text" id="hv-means" maxlength="160">'+
+      '<label class="hv-l" for="hv-notes">Autres précisions à respecter</label><textarea id="hv-notes" rows="2" maxlength="400"></textarea></details>'+
       '<label class="hv-l" for="hv-brief">Décrivez votre vidéo (facultatif — l’IA écrit le script et propose les visuels)</label><textarea id="hv-brief" rows="2" placeholder="Ex. : publicité de 30 secondes pour mon atelier de céramique, ton chaleureux, appel à visiter la boutique"></textarea>'+
       '<div class="hv-row"><button type="button" class="btn primary" data-a="ai">✨ Écrire le script avec l’IA</button><span class="hv-msg" id="hv-aimsg"></span></div>'+
       '<label class="hv-l" for="hv-fmt">Format</label><select id="hv-fmt"><option value="9:16">Vertical 9:16 (Reels, Stories, TikTok)</option><option value="1:1">Carré 1:1</option><option value="16:9">Horizontal 16:9 (YouTube, site)</option></select>'+
@@ -49496,27 +49527,76 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   }
   function sync(){
     if(!root) return; var q=function(id){return root.querySelector(id);};
-    V.fmt=q('#hv-fmt').value; V.hook=q('#hv-hook').value; V.cta=q('#hv-cta').value; V.ctaLine=q('#hv-ctal').value; V.url=q('#hv-url').value; V.c1=q('#hv-c1').value; V.c2=q('#hv-c2').value; V.music=q('#hv-mus').checked;
+    V.product=q('#hv-prod').value; V.price=q('#hv-price').value; V.season=q('#hv-season').value; V.audience=q('#hv-aud').value; V.means=q('#hv-means').value; V.notes=q('#hv-notes').value; V.fmt=q('#hv-fmt').value; V.hook=q('#hv-hook').value; V.cta=q('#hv-cta').value; V.ctaLine=q('#hv-ctal').value; V.url=q('#hv-url').value; V.c1=q('#hv-c1').value; V.c2=q('#hv-c2').value; V.music=q('#hv-mus').checked;
     root.querySelectorAll('[data-g]').forEach(function(el){ var g=V.scenes[+el.getAttribute('data-g')]; if(g&&g.gen&&!g.gen.busy) g.gen.prompt=el.value; });
     root.querySelectorAll('[data-f]').forEach(function(el){ var s=V.scenes[+el.getAttribute('data-i')]; if(!s) return; if(el.getAttribute('data-f')==='text') s.text=el.value; else s.dur=+el.value||6; });
     q('#hv-dur').textContent='Durée totale : '+total().toFixed(1).replace('.',',')+' s'; save();
   }
-  function fill(){ var q=function(id){return root.querySelector(id);}; q('#hv-fmt').value=V.fmt; q('#hv-hook').value=V.hook; q('#hv-cta').value=V.cta; q('#hv-ctal').value=V.ctaLine; q('#hv-url').value=V.url; q('#hv-c1').value=V.c1; q('#hv-c2').value=V.c2; q('#hv-mus').checked=V.music; list(); }
+  function fill(){ var q=function(id){return root.querySelector(id);}; q('#hv-prod').value=V.product; q('#hv-price').value=V.price; q('#hv-season').value=V.season; q('#hv-aud').value=V.audience; q('#hv-means').value=V.means; q('#hv-notes').value=V.notes; q('#hv-fmt').value=V.fmt; q('#hv-hook').value=V.hook; q('#hv-cta').value=V.cta; q('#hv-ctal').value=V.ctaLine; q('#hv-url').value=V.url; q('#hv-c1').value=V.c1; q('#hv-c2').value=V.c2; q('#hv-mus').checked=V.music; list(); }
   function total(){ return 3.5+V.scenes.reduce(function(a,s){return a+s.dur;},0)+4; }
   function msg(t){ var m=$('#hv-msg'); if(m) m.textContent=t||''; }
-  /* ----- script par l'IA ----- */
+  /* ----- script par l'IA, avec conservation des informations saisies ----- */
+  function norm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[\s ]+/g,' ').replace(/[’']/g,"'").trim(); }
+  function has(hay,needle){ var n=norm(needle); return !n||norm(hay).indexOf(n)>=0; }
+  function allText(){ return [V.hook,V.cta,V.ctaLine].concat(V.scenes.map(function(s){return s.text;})).join(' | '); }
+  /* Garantit que produit, tarif, période, public et moyens saisis figurent dans les textes ; renvoie la liste des éléments réinsérés. */
+  function ensureFacts(){
+    var added=[], cut=function(t,n){ return String(t).slice(0,n); };
+    if(V.price.trim()&&!has(allText(),V.price)){ V.ctaLine=cut('Tarif : '+V.price.trim()+(V.ctaLine?' · '+V.ctaLine:''),120); added.push('tarif'); }
+    if(V.product.trim()&&!has([V.hook].concat(V.scenes.map(function(s){return s.text;})).join(' '),V.product)){ if(V.scenes.length) V.scenes[0].text=cut(V.product.trim()+' — '+V.scenes[0].text,140); else V.scenes.push({text:cut(V.product.trim(),140),img:null,dur:6,vis:'',gen:null}); added.push('produit'); }
+    if(V.season.trim()&&!has(allText(),V.season)){ V.hook=cut((V.hook?V.hook+' · ':'')+V.season.trim(),120); added.push('période'); }
+    if(V.means.trim()&&!has(allText(),V.means)){ V.ctaLine=cut((V.ctaLine?V.ctaLine+' · ':'')+V.means.trim(),120); added.push('moyens'); }
+    if(V.audience.trim()&&!has(allText(),V.audience)&&V.scenes.length){ var s2=V.scenes[V.scenes.length-1]; s2.text=cut((s2.text?s2.text+' · ':'')+'Pour '+V.audience.trim(),140); added.push('public'); }
+    return added;
+  }
+  function ficheText(){ var r=[]; if(V.product.trim()) r.push('Produit ou service : '+V.product.trim()); if(V.price.trim()) r.push('Tarif : '+V.price.trim()); if(V.season.trim()) r.push('Période ou saison : '+V.season.trim()); if(V.audience.trim()) r.push('Public visé : '+V.audience.trim()); if(V.means.trim()) r.push('Moyens pour joindre ou acheter : '+V.means.trim()); if(V.notes.trim()) r.push('Précisions : '+V.notes.trim()); return r.join('\n'); }
+  function note(t){ var n=$('#hv-note'); if(!n) return; n.textContent=t||''; n.style.display=t?'block':'none'; }
+  function scriptPrompt(brief,extract){
+    return 'Tu écris le script d’une courte publicité vidéo (30 secondes). Demande de l’utilisateur :\n'+brief+(ficheText()?'\n\nINFORMATIONS FOURNIES (à reprendre TELLES QUELLES, mot pour mot, sans les traduire ni les reformuler) :\n'+ficheText():'')+
+    '\n\nRéponds UNIQUEMENT par un objet JSON valide, sans texte autour ni balises ```, de la forme :\n{"product":"","price":"","season":"","audience":"","means":"","notes":"","hook":"accroche de 6 à 12 mots","scenes":[{"text":"texte à l’écran, 8 à 16 mots","visual":"idée d’image à créer ou à capturer"}],"cta":"appel à l’action court","ctaLine":"phrase de précision courte"}'+
+    '\nRègles : français ; 3 ou 4 scènes ; 60 mots au total au maximum. product, price, season, audience, means, notes : recopie EXACTEMENT les mots de l’utilisateur (même s’ils semblent génériques, comme « X » ou « Z ») ; mets une chaîne vide si l’information n’est PAS dans la demande ; ne déduis ni ne complète jamais un tarif. Le produit, le tarif (s’il existe), la période et le public doivent apparaître dans les textes des scènes ou de l’appel à l’action. N’invente aucun chiffre, prix, rabais, témoignage ni fonctionnalité ; ne cite aucune marque, œuvre ni personnage protégé.';
+  }
+  function applyScript(o,srcPrompt){
+    if(!o||!Array.isArray(o.scenes)||!o.scenes.length) return false;
+    var vb=function(k){ var v=String(o[k]||'').trim().slice(0,k==='notes'?400:160); return v&&has(srcPrompt,v)?v:''; };   /* n'accepte que ce qui figure réellement dans la demande */
+    ['product','price','season','audience','means','notes'].forEach(function(k){ if(!V[k].trim()){ V[k]=vb(k); } });
+    V.hook=String(o.hook||'').slice(0,120); V.cta=String(o.cta||V.cta).slice(0,60); V.ctaLine=String(o.ctaLine||'').slice(0,120);
+    V.scenes=o.scenes.slice(0,6).map(function(s){ return {text:String(s.text||'').slice(0,140),img:null,dur:6,vis:String(s.visual||'').slice(0,160),gen:null}; });
+    return true;
+  }
+  function parseJson(t){ t=String(t||''); var a=t.indexOf('{'), b=t.lastIndexOf('}'); try{ return JSON.parse(t.slice(a,b+1)); }catch(e){ return null; } }
+  /* Retire tout texte qui avance un tarif, un rabais ou un chiffre absent de la demande et de la fiche (protection contre les inventions de l'IA). */
+  var RE_RISK=/(tarif|prix|rabais|promo\w*|gratuit\w*|solde\w*|\d+\s*%|[$€£]|\d)/gi;
+  function risky(t,src){ var m=String(t||'').match(RE_RISK); if(!m) return false; return m.some(function(x){ return !has(src,x); }); }
+  function sanitize(src){
+    var n=0; V.scenes=V.scenes.filter(function(sc){ if(risky(sc.text,src)){ n++; return false; } return true; });
+    if(risky(V.hook,src)){ V.hook=''; n++; } if(risky(V.ctaLine,src)){ V.ctaLine=''; n++; } if(risky(V.cta,src)){ V.cta='Suivez HelpNaud'; n++; }
+    return n;
+  }
+  function runScript(brief,m){
+    return window.__hn.requireSample(m).then(function(cap){ if(!cap) throw {code:'ai_unavailable'}; return cap(scriptPrompt(brief),{modelTier:'default',cache:false}); }).then(function(res){
+      var o=parseJson(res&&res.text); if(!applyScript(o,brief+'\n'+ficheText())) throw {code:'illisible'};
+      var removed=sanitize(brief+'\n'+ficheText()); var added=ensureFacts(); if(!V.scenes.length) V.scenes.push({text:'',img:null,dur:6,vis:'',gen:null}); fill();
+      note((V.price.trim()?'':'Tarif non précisé dans votre demande : aucun prix ne sera affiché. Saisissez-le dans la fiche si vous le souhaitez, puis cliquez sur « Écrire le script avec l’IA ». ')+(removed?removed+' texte(s) retiré(s) car ils avançaient un tarif ou un chiffre absent de votre demande.':''));
+      return added;
+    });
+  }
   function ai(){
-    var brief=$('#hv-brief').value.trim(), m=$('#hv-aimsg'); if(brief.length<10){ m.textContent='Décrivez votre vidéo en une ou deux phrases.'; return; }
+    sync(); var brief=$('#hv-brief').value.trim(), m=$('#hv-aimsg'); if(brief.length<10&&!ficheText()){ m.textContent='Décrivez votre vidéo en une ou deux phrases.'; return; }
     if(!window.__hn||!window.__hn.requireSample){ m.textContent='L’assistant IA n’est pas disponible pour l’instant.'; return; }
     m.textContent='Écriture du script…';
-    var p='Tu écris le script d’une courte publicité vidéo verticale (30 secondes). Demande :\n'+brief+'\n\nRéponds UNIQUEMENT par un objet JSON valide, sans texte autour ni balises ```, de la forme :\n{"hook":"accroche de 6 à 12 mots","scenes":[{"text":"texte à l’écran, 8 à 16 mots","visual":"idée d’image à créer ou à capturer"}],"cta":"appel à l’action court","ctaLine":"phrase de précision courte"}\nContraintes : français ; 3 scènes ; 60 mots au total au maximum ; n’invente aucun chiffre, prix, témoignage ni fonctionnalité qui ne figure pas dans la demande ; ne cite aucune marque, œuvre ni personnage protégé.';
-    window.__hn.requireSample($('#hv-aimsg')).then(function(cap){ if(!cap) throw {code:'ai_unavailable'}; return cap(p,{modelTier:'default',cache:false}); }).then(function(res){
-      var t=String(res&&res.text||''), a=t.indexOf('{'), b=t.lastIndexOf('}'), o; try{ o=JSON.parse(t.slice(a,b+1)); }catch(e){ m.textContent='Réponse illisible : réessayez.'; return; }
-      if(!o||!Array.isArray(o.scenes)||!o.scenes.length){ m.textContent='Script incomplet : réessayez.'; return; }
-      V.hook=String(o.hook||'').slice(0,120); V.cta=String(o.cta||V.cta).slice(0,60); V.ctaLine=String(o.ctaLine||'').slice(0,120);
-      V.scenes=o.scenes.slice(0,6).map(function(s){ return {text:String(s.text||'').slice(0,140),img:null,dur:6,vis:String(s.visual||'').slice(0,160),gen:null}; });
-      fill(); m.textContent='Script prêt : ajoutez vos images (facultatif), puis créez la vidéo.';
-    }).catch(function(e){ m.textContent='Le script n’a pas pu être écrit ('+((e&&e.code)||'erreur')+').'; });
+    runScript(brief||('Publicité pour '+(V.product||'mon offre')),$('#hv-aimsg')).then(function(added){ m.textContent='Script prêt'+(added.length?' (éléments réinsérés : '+added.join(', ')+')':'')+' : vérifiez, ajoutez vos images, puis créez la vidéo.'; }).catch(function(e){ m.textContent=(e&&e.code==='illisible')?'Réponse illisible : réessayez.':'Le script n’a pas pu être écrit ('+((e&&e.code)||'erreur')+').'; });
+  }
+  /* ----- détection d'une demande de vidéo et ouverture depuis une conversation ----- */
+  var RE_VID=/\b(vid[ée]os?|r[ée]els?|reels?|clips?|spots?|tiktok|stories|story)\b/i, RE_ACT=/\b(g[ée]n[èe]re[rz]?|cr[ée]{1,2}[rz]?|fais|faire|produi[st]|produire|r[ée]alise[rz]?|monte[rz]?|pr[ée]pare[rz]?|[ée]cris|con[çc]ois|make|create|generate|produce)\b|je (veux|voudrais)|j[’']aimerais|peux-tu|pouvez-vous|besoin d[’']une?/i, RE_NEG=/\b(sans|pas de)\s+vid[ée]o|t[ée]l[ée]charg\w*\s+(une\s+)?vid[ée]o|comment\s+(lire|voir|regarder)/i;
+  function isVideoRequest(t){ t=String(t||''); return t.length>=12&&t.length<=2000&&RE_VID.test(t)&&RE_ACT.test(t)&&!RE_NEG.test(t); }
+  function openFromPrompt(prompt){
+    prompt=String(prompt||'').trim(); if(!root) build(); load(); V=fresh(); V.scenes=[{text:'',img:null,dur:6,vis:'',gen:null},{text:'',img:null,dur:6,vis:'',gen:null},{text:'',img:null,dur:6,vis:'',gen:null}];
+    fill(); $('#hv-brief').value=prompt.slice(0,1200); root.hidden=false; document.body.style.overflow='hidden'; msg(''); var ctx=setup(); frame(ctx,ctx.canvas.width,ctx.canvas.height,.5);
+    var m=$('#hv-aimsg'); note('');
+    if(!window.__hn||!window.__hn.requireSample){ m.textContent='L’assistant IA n’est pas disponible : votre demande est recopiée ci-dessus, complétez la fiche et les scènes à la main.'; return Promise.resolve(); }
+    m.textContent='Préparation du brouillon à partir de votre demande…';
+    return runScript(prompt,m).then(function(added){ m.textContent='Brouillon prêt'+(added.length?' (éléments réinsérés : '+added.join(', ')+')':'')+' : vérifiez la fiche, l’aperçu et les scènes, puis créez la vidéo.'; }).catch(function(e){ m.textContent='Le brouillon n’a pas pu être préparé ('+((e&&e.code)||'erreur')+'). Votre demande est recopiée ci-dessus : cliquez sur « Écrire le script avec l’IA » pour réessayer.'; });
   }
   /* ----- dessin ----- */
   function wrap(ctx,t,maxW){ var w=String(t).split(/\s+/), l=[], c=''; w.forEach(function(x){ var n=c?c+' '+x:x; if(ctx.measureText(n).width>maxW&&c){ l.push(c); c=x; } else c=n; }); if(c) l.push(c); return l; }
@@ -49574,7 +49654,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   }
   function close(){ if(prevStop){ prevStop(); prevStop=null; } root.hidden=true; document.body.style.overflow=''; }
   function open(){ if(!root) build(); load(); fill(); root.hidden=false; document.body.style.overflow='hidden'; msg(''); var ctx=setup(); frame(ctx,ctx.canvas.width,ctx.canvas.height,.5); }
-  window.__hnVideo={ open:open, close:close, _t:{ get V(){return V;}, make:make, frame:frame } };
+  window.__hnVideo={ open:open, openFromPrompt:openFromPrompt, isVideoRequest:isVideoRequest, close:close, _t:{ get V(){return V;}, make:make, frame:frame } };
 })();
 </script>
 
