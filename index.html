@@ -49450,6 +49450,10 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
       else if(a==='del'){ sync(); V.scenes.splice(i,1); list(); }
       else if(a==='up'||a==='dn'){ sync(); var j=a==='up'?i-1:i+1; if(j>=0&&j<V.scenes.length){ var t=V.scenes[i]; V.scenes[i]=V.scenes[j]; V.scenes[j]=t; list(); } }
       else if(a==='img'){ var f=document.createElement('input'); f.type='file'; f.accept='image/*'; f.onchange=function(){ pickImg(i,f.files&&f.files[0]); }; f.click(); }
+      else if(a==='gimg'){ sync(); var sc=V.scenes[i]; if(sc&&!sc.gen){ sc.gen={prompt:(sc.text||sc.vis||'').trim(),res:null,busy:false,msg:'',err:false}; } list(); }
+      else if(a==='ggo') genGo(i);
+      else if(a==='gcancel'){ sync(); if(V.scenes[i]&&!(V.scenes[i].gen&&V.scenes[i].gen.busy)){ V.scenes[i].gen=null; list(); } }
+      else if(a==='gins'){ sync(); var sg=V.scenes[i]; if(!sg||!sg.gen||!sg.gen.res) return; var im=new Image(), u=sg.gen.res; im.onload=function(){ sg.img=im; sg.url=u; sg.gen=null; list(); }; im.onerror=function(){ sg.gen.msg='Image illisible. Régénérez.'; sg.gen.err=true; list(); }; im.src=u; }
       else if(a==='ai') ai();
       else if(a==='prev') preview();
       else if(a==='make') make();
@@ -49461,11 +49465,30 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
     if(!file||!/^image\//.test(file.type)){ return; } var u=URL.createObjectURL(file), im=new Image();
     im.onload=function(){ sync(); V.scenes[i].img=im; V.scenes[i].url=u; list(); }; im.onerror=function(){ msg('Image illisible.'); }; im.src=u;
   }
+  function genPanel(s,i){
+    var g=s.gen; if(!g) return '';
+    var cost=(window.__hnCreate&&window.__hnCreate.imageCost)?window.__hnCreate.imageCost():15;
+    return '<div class="hv-gen"><label class="hv-l" style="margin-top:4px">Consigne de l’image (préremplie avec le texte de la scène)</label><textarea rows="2" data-g="'+i+'" maxlength="400"'+(g.busy?' disabled':'')+'>'+esc(g.prompt)+'</textarea>'+
+      '<p class="hint" style="margin:4px 0">💳 Coût : <b>'+cost+' crédits</b> par image, affiché avant confirmation. Si la création échoue, les crédits sont remboursés et l’image actuelle est conservée.</p>'+
+      (g.res?'<img alt="Aperçu de l’image générée" src="'+g.res+'" style="max-width:100%;max-height:260px;border-radius:10px;display:block;margin:6px 0">':'')+
+      (g.msg?'<p class="hv-msg" style="color:'+(g.err?'#b3261e':'inherit')+'">'+esc(g.msg)+'</p>':'')+
+      '<div class="hv-row">'+(g.res?'<button type="button" class="btn primary" data-a="gins" data-i="'+i+'">Insérer dans la scène</button>':'')+
+      '<button type="button" class="btn'+(g.res?'':' primary')+'" data-a="ggo" data-i="'+i+'"'+(g.busy?' disabled':'')+'>'+(g.busy?'Création…':(g.res?'Régénérer':'Générer'))+'</button><button type="button" class="btn" data-a="gcancel" data-i="'+i+'"'+(g.busy?' disabled':'')+'>Fermer</button></div></div>';
+  }
+  function genGo(i){
+    sync(); var s=V.scenes[i]; if(!s||!s.gen||s.gen.busy) return; var ta=root.querySelector('[data-g="'+i+'"]'), pr=ta?ta.value.trim():s.gen.prompt; s.gen.prompt=pr;
+    if(pr.length<4){ s.gen.msg='Décrivez l’image voulue (4 caractères au moins).'; s.gen.err=true; list(); return; }
+    if(!window.__hnCreate||!window.__hnCreate.genImageFor){ s.gen.msg='Image IA n’est pas disponible pour l’instant.'; s.gen.err=true; list(); return; }
+    var n=window.__hnCreate.imageCost(); if(!window.confirm('Cette image coûte '+n+' crédits. Continuer ?')) return;
+    s.gen.busy=true; s.gen.msg='Création de l’image… (jusqu’à 30 secondes)'; s.gen.err=false; list();
+    window.__hnCreate.genImageFor(pr,V.fmt).then(function(u){ s.gen.res=u; s.gen.msg='Image prête : insérez-la dans la scène ou régénérez.'; s.gen.err=false; },function(e){ s.gen.msg=String(e&&e.message||'La création a échoué.')+(s.img?' Votre image actuelle est conservée.':''); s.gen.err=true; }).then(function(){ s.gen.busy=false; list(); });
+  }
   function list(){
     $('#hv-list').innerHTML=V.scenes.map(function(s,i){
       return '<div class="hv-sc"><div class="hv-th" data-a="img" data-i="'+i+'" style="'+(s.url?'background-image:url('+s.url+');border-style:solid':'')+'" title="Choisir une image">'+(s.url?'':'🖼 Image<br>(facultatif)')+'</div><div>'+
         '<textarea rows="2" data-f="text" data-i="'+i+'" maxlength="140" placeholder="Texte de la scène '+(i+1)+'" aria-label="Texte de la scène '+(i+1)+'">'+esc(s.text)+'</textarea>'+
         (s.vis?'<p class="hv-vis">Visuel suggéré : '+esc(s.vis)+'</p>':'')+
+        '<div class="hv-row"><button type="button" class="btn" data-a="img" data-i="'+i+'">🖼 Importer une image</button><button type="button" class="btn" data-a="gimg" data-i="'+i+'"'+(s.gen&&s.gen.busy?' disabled':'')+'>✨ Générer une image</button></div>'+genPanel(s,i)+
         '<div class="hv-row"><select data-f="dur" data-i="'+i+'" style="width:auto" aria-label="Durée">'+[3,4,5,6,7,8].map(function(d){return '<option value="'+d+'"'+(d===s.dur?' selected':'')+'>'+d+' s</option>';}).join('')+'</select>'+
         '<button type="button" class="btn" data-a="up" data-i="'+i+'" aria-label="Monter">↑</button><button type="button" class="btn" data-a="dn" data-i="'+i+'" aria-label="Descendre">↓</button><button type="button" class="btn" data-a="del" data-i="'+i+'">Supprimer</button></div></div></div>';
     }).join('');
@@ -49474,6 +49497,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   function sync(){
     if(!root) return; var q=function(id){return root.querySelector(id);};
     V.fmt=q('#hv-fmt').value; V.hook=q('#hv-hook').value; V.cta=q('#hv-cta').value; V.ctaLine=q('#hv-ctal').value; V.url=q('#hv-url').value; V.c1=q('#hv-c1').value; V.c2=q('#hv-c2').value; V.music=q('#hv-mus').checked;
+    root.querySelectorAll('[data-g]').forEach(function(el){ var g=V.scenes[+el.getAttribute('data-g')]; if(g&&g.gen&&!g.gen.busy) g.gen.prompt=el.value; });
     root.querySelectorAll('[data-f]').forEach(function(el){ var s=V.scenes[+el.getAttribute('data-i')]; if(!s) return; if(el.getAttribute('data-f')==='text') s.text=el.value; else s.dur=+el.value||6; });
     q('#hv-dur').textContent='Durée totale : '+total().toFixed(1).replace('.',',')+' s'; save();
   }
@@ -49490,7 +49514,7 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
       var t=String(res&&res.text||''), a=t.indexOf('{'), b=t.lastIndexOf('}'), o; try{ o=JSON.parse(t.slice(a,b+1)); }catch(e){ m.textContent='Réponse illisible : réessayez.'; return; }
       if(!o||!Array.isArray(o.scenes)||!o.scenes.length){ m.textContent='Script incomplet : réessayez.'; return; }
       V.hook=String(o.hook||'').slice(0,120); V.cta=String(o.cta||V.cta).slice(0,60); V.ctaLine=String(o.ctaLine||'').slice(0,120);
-      V.scenes=o.scenes.slice(0,6).map(function(s){ return {text:String(s.text||'').slice(0,140),img:null,dur:6,vis:String(s.visual||'').slice(0,160)}; });
+      V.scenes=o.scenes.slice(0,6).map(function(s){ return {text:String(s.text||'').slice(0,140),img:null,dur:6,vis:String(s.visual||'').slice(0,160),gen:null}; });
       fill(); m.textContent='Script prêt : ajoutez vos images (facultatif), puis créez la vidéo.';
     }).catch(function(e){ m.textContent='Le script n’a pas pu être écrit ('+((e&&e.code)||'erreur')+').'; });
   }
@@ -50014,7 +50038,13 @@ html.hn-kbd .main{ padding-top:4px; padding-bottom:4px; }
   }
   document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-hncr]'); if(!b) return; e.preventDefault(); var m = b.closest('.attach-menu'); if(m) m.hidden = true; open('home', null, !!(m && m.id === 'hstatis-attach-menu')); });
   addEntries(); document.addEventListener('DOMContentLoaded', addEntries); setTimeout(addEntries, 800); setInterval(addEntries, 2000);   /* le menu de l'espace équipe est construit plus tard */
-  window.__hnCreate = { open:open, minimize:minimize, restore:restore, toggleMax:toggleMax, _t:{ renderDesign:renderDesign, cleanSvg:cleanSvg, normSpec:normSpec } };
+  /* Utilisé par le Studio vidéo : crée une image avec l'intégration Image IA existante, recadrée au ratio voulu (ex. '9:16'). La confirmation des crédits est demandée par l'appelant. */
+  function genImageFor(prompt, ratio){
+    var r = { '9:16':['portrait', 9, 16], '1:1':['carre', 1, 1], '16:9':['paysage', 16, 9] }[ratio] || ['carre', 1, 1];
+    var pr = String(prompt || '').trim() + '. Format de l’image : proportion ' + r[1] + ':' + r[2] + ', composition adaptée, sujet principal bien centré, rien d’important près des bords. Sans texte ni lettres dans l’image.';
+    return genImage(pr, r[0], null).then(function(j){ if(!j || !j.image) throw new Error('Aucune image reçue. Réessayez.'); return cropRatio(j.image, r[1], r[2]); });
+  }
+  window.__hnCreate = { genImageFor:genImageFor, imageCost:function(){ return CR.image; }, open:open, minimize:minimize, restore:restore, toggleMax:toggleMax, _t:{ renderDesign:renderDesign, cleanSvg:cleanSvg, normSpec:normSpec } };
 })();
 </script>
 <style id="hnfs-css">
