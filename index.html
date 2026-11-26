@@ -41184,6 +41184,14 @@
     if(!save(a.slice(0,60))) st('Historique plein : supprimez d’anciennes conversations.');
     render();
   };
+  /* À l'ouverture de l'application, Consult rouvre la dernière conversation enregistrée (sauf en navigation privée). « Nouvelle conversation » repart d'une page vide. */
+  setTimeout(function(){
+    try{
+      if(window.__hnIncognito||!window.__hnHstat||window.__hnHstat.history().length) return;
+      var last=load().filter(function(c){ return !c.archived&&c.messages&&c.messages.length; }).sort(function(x,y){ return (y.updated||0)-(x.updated||0); })[0];
+      if(!last) return; cur=last.id; window.__hnHstat.restore(last.messages); render();
+    }catch(e){}
+  },700);
   document.getElementById('hh-new').addEventListener('click',function(){
     if(!window.__hnHstat) return; cur=null; window.__hnHstat.fresh(); render(); st('Nouvelle conversation.');
   });
