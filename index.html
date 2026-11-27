@@ -1784,7 +1784,7 @@
       <div class="onboard-step"><div class="num">2</div><div class="txt"><b>Tableau de bord</b><span>Revenus, dépenses, solde net, flux de trésorerie, budgets par catégorie et comparaison entre dossiers — tout en un coup d'œil.</span></div></div>
       <div class="onboard-step"><div class="num">3</div><div class="txt"><b>Documents</b><span>Importez un CSV ou Excel, ajoutez/modifiez des transactions à la main, et téléchargez de vrais fichiers CSV/Excel/PDF.</span></div></div>
       <div class="onboard-step"><div class="num">4</div><div class="txt"><b>Anomalies &amp; Assistant</b><span>Détection automatique des montants inhabituels et doublons, et un assistant IA qui répond à vos questions en utilisant vos vraies données.</span></div></div>
-      <div class="onboard-step"><div class="num">5</div><div class="txt"><b>Confidentialité : vos données restent ici</b><span>Tout est enregistré localement dans ce navigateur, sur cet appareil — jamais sur un serveur HelpNaud, et jamais partagé avec d'autres utilisateurs. Téléchargez une sauvegarde régulièrement (onglet Documents) pour ne rien perdre.</span></div></div>
+      <div class="onboard-step"><div class="num">5</div><div class="txt"><b>Confidentialité : vos données restent ici</b><span>Par défaut, tout est enregistré localement dans ce navigateur, sur cet appareil, et jamais partagé avec d'autres utilisateurs. Facultatif : dans Réglages, vous pouvez synchroniser vos conversations (titres et messages texte) sur un serveur sécurisé pour les retrouver sur vos autres appareils ; vos dossiers, fichiers et documents restent sur l'appareil. Téléchargez une sauvegarde régulièrement (onglet Documents) pour ne rien perdre.</span></div></div>
     </div>
     <div class="modal-actions">
       <button class="btn primary" id="onboarding-close" type="button" onclick="var m=document.getElementById('onboarding-modal'); if(m) m.hidden=true; try{localStorage.setItem('helpnaud_onboarded','1');}catch(e){}">Commencer</button>
@@ -2316,7 +2316,7 @@
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
           <div>
             <h2>Sauvegarde complète de l'application</h2>
-            <p class="hint" style="margin-bottom:0">HelpNaud ne conserve vos données que dans ce navigateur, sur cet appareil. Téléchargez une sauvegarde régulièrement pour ne rien perdre, ou pour transférer vos dossiers vers un autre appareil.</p>
+            <p class="hint" style="margin-bottom:0">HelpNaud ne conserve vos dossiers (transactions, budgets, documents) que dans ce navigateur, sur cet appareil. Téléchargez une sauvegarde régulièrement pour ne rien perdre, ou pour transférer vos dossiers vers un autre appareil. Seules les conversations peuvent être synchronisées, en option (Réglages).</p>
           </div>
           <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
             <button class="btn primary" id="btn-backup-export" type="button">
@@ -4092,7 +4092,7 @@
 
       <div class="card db-panel" id="db-panel-docs" hidden>
         <h2>Documentation de base de données</h2>
-        <p class="hint">HelpNaud utilise une base de données hébergée (Supabase) pour les comptes, les crédits IA, l'équipe FGH-Colab, les liens partagés et les rendez-vous. Vos dossiers de travail (transactions, budgets, documents) restent pour l'instant dans le stockage local (« localStorage ») de ce navigateur, sur cet appareil. Voici le schéma de ces données locales.</p>
+        <p class="hint">HelpNaud utilise une base de données hébergée (Supabase) pour les comptes, les crédits IA, l'équipe FGH-Colab, les liens partagés, les rendez-vous et, si vous l'activez, la synchronisation facultative de vos conversations (titres et messages texte). Vos dossiers de travail (transactions, budgets, documents) restent pour l'instant dans le stockage local (« localStorage ») de ce navigateur, sur cet appareil. Voici le schéma de ces données locales.</p>
         <div id="db-docs-schema"></div>
         <div class="card" style="margin-top:16px; background:var(--accent-soft); border-color:var(--accent);">
           <h3 style="margin:0 0 6px;">À venir — synchronisation de vos dossiers</h3>
@@ -8089,6 +8089,9 @@
      texte public exact des 5 forfaits demandés, affiché en lecture seule dans une fenêtre modale
      accessible depuis Réglages > Abonnements. */
   /* Forfait « Base » : montant libre, strictement de BASE_MIN à BASE_MAX USD ; crédits IA proportionnels (BASE_RATE crédits par dollar, à ajuster). L'affichage et le calcul sont prêts ; le paiement (fonction Stripe + webhook) reste à brancher. */
+  /* À passer à true SEULEMENT après : SQL de synchronisation appliqué sur Supabase + vérification sur deux appareils réels (dont la suppression d'une conversation). */
+  var SYNC_LIVE = false;
+  var SYNC_AVANTAGE = 'Synchronisation facultative : retrouvez vos conversations sur vos appareils connectés. Les conversations synchronisées sont conservées jusqu’à ce que vous les supprimiez.';
   var BASE_MIN = 5, BASE_MAX = 20, BASE_RATE = 20;
   function baseCheck(raw){
     var t = String(raw == null ? '' : raw).trim().replace(',', '.').replace(/\s*\$?\s*$/, '');
@@ -8104,13 +8107,13 @@
       avantages:["Vous choisissez votre montant, de 5 $ à 20 $ US","Crédits IA proportionnels au montant versé","Accès à Assistant, Co-work et Consult"],
       limites:"Montant compris entre 5 $ et 20 $ US (inclus). Au-delà, choisissez le forfait Essentiel ou un forfait supérieur." },
     { nom:'Essentiel', prix:'29 USD / mois, hors taxes', tagline:'Pour les indépendants',
-      avantages:["Tous les calculateurs Consult débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique : jusqu'à 60 conversations enregistrées sur cet appareil","Support par courriel (réponse sous 48h)"],
+      avantages:["Tous les calculateurs Consult débloqués (26+)","Rapports PDF/Excel sans filigrane","Historique local : jusqu'à 60 conversations enregistrées sur cet appareil.","{{SYNC}}","Support par courriel (réponse sous 48h)"],
       limites:"850 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
     { nom:'Avancée', prix:'79 USD / mois, hors taxes', tagline:'Pour les intermédiaires et les curieux',
       avantages:["Tout le forfait Essentiel, plus :","Exports Excel et PowerPoint","Support par courriel prioritaire (réponse sous 36h)"],
       limites:"2 000 crédits IA par mois ; 1 utilisateur (forfait par personne) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
     { nom:'Professionnel', prix:'129 USD / mois, hors taxes', tagline:'Pour les professionnels et cabinets',
-      avantages:["Historique : jusqu'à 60 conversations enregistrées sur cet appareil (historique synchronisé à venir)","Formation initiale incluse","Support prioritaire (réponse sous 24h)","Exports Excel/PowerPoint personnalisés","Comptes d'équipe et rôles par utilisateur (à venir)"],
+      avantages:["Historique local : jusqu'à 60 conversations enregistrées sur cet appareil.","{{SYNC}}","Formation initiale incluse","Support prioritaire (réponse sous 24h)","Exports Excel/PowerPoint personnalisés","Comptes d'équipe et rôles par utilisateur (à venir)"],
       limites:"3 500 crédits IA par mois ; 1 utilisateur au lancement (forfait par personne ; comptes d'équipe à venir) ; limites de taille de message et de fichier selon le palier Hmodel choisi." },
     { nom:'Affaires', prix:'249 USD / mois, hors taxes', tagline:'Pour les entreprises et organisations',
       avantages:["Tableaux de bord consolidés multi-entités","Sécurité avancée (authentification unique, journal d'audit)","Gestionnaire de compte dédié","SLA de support (réponse sous 4h ouvrables)","Comptes d'équipe multi-utilisateurs (à venir)","Accès API (à venir)"],
@@ -8158,10 +8161,10 @@
         (p.base ? '<div class="hn-base" style="margin:0 0 10px"><label for="hn-base-amt" style="font-size:12.3px;font-weight:700;display:block;margin-bottom:4px">Votre montant (USD)</label><input id="hn-base-amt" type="text" inputmode="decimal" autocomplete="off" placeholder="Ex. : 10" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:8px;font:inherit;background:var(--surface);color:var(--ink)"><div id="hn-base-out" role="status" style="font-size:12.3px;margin-top:6px;min-height:34px;color:var(--muted)">Entrez un montant de ' + BASE_MIN + ' $ à ' + BASE_MAX + ' $.</div></div>' : '') +
         '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--good); margin-bottom:4px;">Avantages</div>' +
         '<ul style="margin:0 0 10px; padding-left:18px; font-size:12.3px; line-height:1.6; color:var(--ink);">' +
-          p.avantages.map(function(a){ return '<li>' + escapeHtml(a) + '</li>'; }).join('') +
+          p.avantages.filter(function(a){ return a !== '{{SYNC}}' || SYNC_LIVE; }).map(function(a){ return '<li>' + escapeHtml(a === '{{SYNC}}' ? SYNC_AVANTAGE : a) + '</li>'; }).join('') +
         '</ul>' +
         '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--accent,#2563eb); margin-bottom:4px;">Nouveautés</div>' +
-        '<ul style="margin:0 0 6px; padding-left:18px; font-size:12.3px; line-height:1.6; color:var(--ink);">' + NOUV.map(function(a){ return '<li>' + escapeHtml(a) + '</li>'; }).join('') + '</ul>' +
+        '<ul style="margin:0 0 6px; padding-left:18px; font-size:12.3px; line-height:1.6; color:var(--ink);">' + (SYNC_LIVE ? NOUV.concat(['Synchronisation facultative des conversations entre vos appareils (Réglages)']) : NOUV).map(function(a){ return '<li>' + escapeHtml(a) + '</li>'; }).join('') + '</ul>' +
         '<p class="hint" style="margin:0 0 10px;font-size:11.5px">' + (p.nom === 'Institution' ? 'Selon le contrat.' : 'Accessibles à ce forfait, dans la limite de vos crédits IA.') + '</p>' +
         '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--warn); margin-bottom:4px;">Limites</div>' +
         '<p style="font-size:12.3px; line-height:1.6; color:var(--muted); margin:0 0 12px;">' + escapeHtml(p.limites) + '</p>' +
@@ -13428,14 +13431,17 @@
       record.updatedAt = Date.now();
       if(idx === -1) arr.push(record); else arr[idx] = record;
       this._saveAll(all);
+      try{ if(window.__hnSync) window.__hnSync.touch(); }catch(e){}
     },
     remove: function(scope, id){
       var all = this._loadAll();
       if(!all[scope]) return;
       all[scope] = all[scope].filter(function(r){ return r.id !== id; });
       this._saveAll(all);
+      try{ if(window.__hnSync) window.__hnSync.deleted(scope === 'assistant' ? 'chat' : scope === 'cowork-discuss' ? 'cowork' : null, id); }catch(e){}
     }
   };
+  window.__hnConvStore = ConversationStore;   // lu par la synchronisation facultative (hn-sync-js)
   // « Projet » : regroupement minimal et générique (nom + id), scopé aux conversations — l'app a
   // bien un concept de « dossier » (voir Nouveau dossier / DOSSIERS), mais celui-ci représente une
   // entité/entreprise avec ses propres transactions et devise, ce qui n'a pas de sens pour classer
@@ -41183,6 +41189,8 @@
   var KEY='helpnaud_hstat_convs', PKEY='helpnaud_hstat_profile', cur=null;
   function load(){ try{ var a=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
   function save(a){
+    try{ if(window.__hnSync) window.__hnSync.touch(); }catch(e){}
+    if(!a.length){ try{ localStorage.setItem(KEY,'[]'); return true; }catch(e){ return false; } }   /* supprimer la DERNIÈRE conversation doit aussi être enregistré */
     for(var n=a.length;n>=1;n--){ try{ localStorage.setItem(KEY,JSON.stringify(a.slice(0,n))); return true; }catch(e){} }
     return false;
   }
@@ -41223,7 +41231,7 @@
     var act=b.getAttribute('data-a');
     if(act==='open'){ cur=c.id; if(window.__hnHstat) window.__hnHstat.restore(c.messages); render(); }
     else if(act==='pin'){ c.pinned=!c.pinned; save(a); render(); }
-    else if(act==='del'){ if(!confirm('Supprimer cette conversation ?')) return; save(a.filter(function(x){return x.id!==id;})); if(cur===id) cur=null; render(); }
+    else if(act==='del'){ if(!confirm('Supprimer cette conversation ?')) return; try{ if(window.__hnSync) window.__hnSync.deleted('consult', id); }catch(e){} save(a.filter(function(x){return x.id!==id;})); if(cur===id) cur=null; render(); }
   });
   q.addEventListener('input',render);
 
@@ -41261,6 +41269,289 @@
   document.getElementById('hh-profile-save').addEventListener('click',function(){ try{ localStorage.setItem(PKEY,pf.value.trim()); st('Mémoire enregistrée ✓'); }catch(e){ st('Enregistrement impossible.'); } });
   document.getElementById('hh-profile-clear').addEventListener('click',function(){ pf.value=''; try{ localStorage.removeItem(PKEY); }catch(e){} st('Mémoire effacée.'); });
   render();
+})();
+</script>
+
+<!-- hn-sync : synchronisation FACULTATIVE des conversations (Chat, Co-work, Consult) — titres + messages texte seulement -->
+<style id="hn-sync-css">
+#hn-sync-card .hs-st{font-size:13px;line-height:1.5;margin:8px 0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+#hn-sync-card .hs-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+#hn-sync-card .hs-bad{color:var(--bad,#b3261e)}
+.hs-ov{position:fixed;inset:0;z-index:200000;background:rgba(10,20,34,.55);display:flex;align-items:center;justify-content:center;padding:14px}
+.hs-box{background:var(--surface,#fff);color:var(--ink,#16304A);border-radius:14px;max-width:560px;width:100%;max-height:88vh;overflow:auto;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.35);font-size:13.5px;line-height:1.55}
+.hs-box h3{margin:0 0 8px;font-size:16px}
+.hs-box h4{margin:12px 0 4px;font-size:13.5px}
+.hs-box ul{margin:0 0 4px;padding-left:18px}
+.hs-box .hs-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.hs-box label.hs-chk{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:13px}
+</style>
+<script id="hn-sync-js">
+(function(){
+  'use strict';
+  var SB = 'https://elzdsyfxpeqnrhlxbgbk.supabase.co', KEY = 'sb_publishable_5ZLQ6FIGJMATE6YslnS_Dw_D9x8TL7P', SKEY = 'helpnaud_sync';
+  /* Durée de conservation affichée à l'utilisateur : à fixer explicitement avant d'annoncer 90 jours / 1 an / illimité dans les forfaits. */
+  var RETENTION = 'Vos conversations synchronisées sont conservées tant que vous utilisez la synchronisation, jusqu’à ce que vous les supprimiez. Aucune suppression automatique n’est prévue pour l’instant.';
+  var MAX_SEND = 60, MAX_MSGS = 120, MAX_CHARS = 30000, MAX_BYTES = 300000;
+  var SPACES = { chat:'Chat', cowork:'Co-work', consult:'Consult' };
+  var busy = false, again = false, timer = null, poll = null;
+
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  function note(t){ if(window.hnNote) window.hnNote(t); }
+  function loadSt(){ try{ var s = JSON.parse(lsGet(SKEY) || 'null'); return s && typeof s === 'object' ? s : null; }catch(e){ return null; } }
+  function saveSt(s){ lsSet(SKEY, JSON.stringify(s)); }
+  function token(){ return typeof window.__hnAiToken === 'function' ? Promise.resolve(window.__hnAiToken()).catch(function(){ return null; }) : Promise.resolve(null); }
+  function uidOf(t){ try{ var p = String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); while(p.length % 4) p += '='; return JSON.parse(atob(p)).sub || null; }catch(e){ return null; } }
+  function api(tok, method, path, body){
+    return fetch(SB + '/rest/v1/' + path, { method:method, headers:{ apikey:KEY, Authorization:'Bearer ' + tok, 'Content-Type':'application/json' }, body: body == null ? undefined : JSON.stringify(body) }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ var e = new Error('http ' + r.status); e.status = r.status; e.detail = t; throw e; });
+      return r.status === 204 ? null : r.json().catch(function(){ return null; });
+    });
+  }
+  function rpc(tok, name, args){ return api(tok, 'POST', 'rpc/' + name, args || {}); }
+
+  /* ---------- Adaptateurs : un par espace ---------- */
+  function convStore(){ return window.__hnConvStore || null; }
+  function hh(){ return window.__hnHH || null; }
+  function cleanMsgs(ms){
+    var out = [];
+    (ms || []).forEach(function(m){ if(m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant')) out.push({ role:m.role, content:m.content.slice(0, MAX_CHARS) }); });
+    out = out.slice(-MAX_MSGS);
+    while(out.length > 1 && JSON.stringify(out).length > MAX_BYTES) out.shift();
+    return out;
+  }
+  function storeAdapter(space, scope){
+    return {
+      ok:function(){ return !!convStore(); },
+      list:function(){ var a = convStore()._loadAll()[scope] || []; return a.map(function(r){ return { id:r.id, title:r.title || '', messages:r.messages || [], ts:r.updatedAt || 0, meta:{ pinned:!!r.pinned, archived:!!r.archived } }; }); },
+      put:function(row){
+        var s = convStore(), all = s._loadAll(), arr = all[scope] = all[scope] || [], i, old = null;
+        for(i = 0; i < arr.length; i++) if(arr[i].id === row.conv_id){ old = arr[i]; break; }
+        var rec = old || { id:row.conv_id, title:null, projectId:null };
+        rec.title = row.title || rec.title; rec.messages = row.messages; rec.pinned = !!(row.meta && row.meta.pinned); rec.archived = !!(row.meta && row.meta.archived); rec.updatedAt = row.client_ts;
+        if(old) arr[i] = rec; else arr.push(rec);
+        s._saveAll(all);
+      },
+      del:function(id){ var s = convStore(), all = s._loadAll(); if(!all[scope]) return; all[scope] = all[scope].filter(function(r){ return r.id !== id; }); s._saveAll(all); },
+      has:function(id){ return (convStore()._loadAll()[scope] || []).some(function(r){ return r.id === id; }); },
+      ts:function(id){ var r = (convStore()._loadAll()[scope] || []).filter(function(x){ return x.id === id; })[0]; return r ? (r.updatedAt || 0) : -1; },
+      open:function(){ var a = window.__hnConvAPI && window.__hnConvAPI[scope]; return a ? a.cfg.getConvId() : null; }
+    };
+  }
+  var AD = {
+    chat: storeAdapter('chat', 'assistant'),
+    cowork: storeAdapter('cowork', 'cowork-discuss'),
+    consult: {
+      ok:function(){ return !!hh(); },
+      list:function(){ return hh().load().map(function(r){ return { id:r.id, title:r.title || '', messages:r.messages || [], ts:r.updated || 0, meta:{ pinned:!!r.pinned, archived:!!r.archived, domain:r.domain || null } }; }); },
+      put:function(row){
+        var H = hh(), a = H.load(), c = a.filter(function(x){ return x.id === row.conv_id; })[0];
+        if(!c){ c = { id:row.conv_id }; a.push(c); }
+        c.title = row.title || c.title || 'Conversation'; c.messages = row.messages; c.pinned = !!(row.meta && row.meta.pinned); c.archived = !!(row.meta && row.meta.archived); c.updated = row.client_ts;
+        if(row.meta && row.meta.domain) c.domain = row.meta.domain;
+        a.sort(function(x, y){ return (y.updated || 0) - (x.updated || 0); });
+        H.save(a.slice(0, 60)); H.render();
+      },
+      del:function(id){ var H = hh(); H.save(H.load().filter(function(x){ return x.id !== id; })); if(H.cur() === id) H.setCur(null); H.render(); },
+      has:function(id){ return hh().load().some(function(x){ return x.id === id; }); },
+      ts:function(id){ var c = hh().load().filter(function(x){ return x.id === id; })[0]; return c ? (c.updated || 0) : -1; },
+      open:function(){ return hh().cur(); }
+    }
+  };
+  function key(space, id){ return space + ':' + id; }
+
+  /* ---------- Moteur : lire, appliquer, envoyer ---------- */
+  function applyRow(st, row){
+    var ad = AD[row.space]; if(!ad || !ad.ok()) return false;
+    var lt = ad.ts(row.conv_id), k = key(row.space, row.conv_id), changed = false;
+    if(row.deleted){
+      if(lt >= 0 && row.client_ts >= lt){ ad.del(row.conv_id); changed = true; }
+      delete st.pushed[k]; return changed;
+    }
+    if(lt < 0 || row.client_ts > lt){
+      ad.put(row); st.pushed[k] = row.client_ts; changed = true;
+      var open = ad.open && ad.open();
+      if(open && open === row.conv_id) st.notice = (SPACES[row.space] || '') + ' : la conversation ouverte a été modifiée sur un autre appareil. Rouvrez-la depuis l’historique pour voir sa dernière version.';
+    } else if(row.client_ts === lt){ st.pushed[k] = row.client_ts; }
+    return changed;
+  }
+  function pull(st, tok){
+    var pages = 0, maxU = st.since, applied = 0;
+    function page(since){
+      return api(tok, 'GET', 'synced_conversations?select=space,conv_id,title,messages,meta,deleted,client_ts,updated_at&updated_at=gte.' + encodeURIComponent(since) + '&order=updated_at.asc&limit=200').then(function(rows){
+        rows = rows || [];
+        rows.forEach(function(r){ if(applyRow(st, r)) applied++; if(r.updated_at > maxU) maxU = r.updated_at; });
+        pages++;
+        if(rows.length >= 200 && pages < 50 && maxU > since) return page(maxU);
+      });
+    }
+    return page(st.since).then(function(){ st.since = maxU; return applied; });
+  }
+  function push(st, tok){
+    var jobs = [], errCode = null;
+    (st.dels || []).slice().forEach(function(d){ jobs.push(function(){ return rpc(tok, 'sync_delete', { p_space:d.s, p_conv:d.id, p_ts:d.ts }).then(function(){ st.dels = st.dels.filter(function(x){ return !(x.s === d.s && x.id === d.id && x.ts === d.ts); }); }); }); });
+    Object.keys(AD).forEach(function(space){
+      var ad = AD[space]; if(!ad.ok()) return;
+      var list = ad.list().filter(function(r){ return r.messages && r.messages.length; }).sort(function(a, b){ return b.ts - a.ts; }).slice(0, MAX_SEND);
+      list.forEach(function(r){
+        var k = key(space, r.id);
+        if(!(r.ts > (st.pushed[k] || 0))) return;
+        jobs.push(function(){
+          return rpc(tok, 'sync_put', { p_space:space, p_conv:r.id, p_title:String(r.title || '').slice(0, 200), p_messages:cleanMsgs(r.messages), p_meta:r.meta, p_ts:r.ts }).then(function(){ st.pushed[k] = r.ts; })
+            .catch(function(e){ if(e && e.status === 400 && /limit/.test(e.detail || '')){ errCode = 'limit'; } else throw e; });
+        });
+      });
+    });
+    var p = Promise.resolve();
+    jobs.forEach(function(j){ p = p.then(j); });
+    return p.then(function(){ return errCode; });
+  }
+  function run(){
+    if(busy){ again = true; return Promise.resolve(); }
+    var st = loadSt(); if(!st || !st.on) return Promise.resolve();
+    if(window.__hnIncognito || (typeof navigator !== 'undefined' && navigator.onLine === false)) return Promise.resolve();
+    busy = true; paint();
+    return token().then(function(tok){
+      if(!tok){ st.err = 'login'; return; }
+      var uid = uidOf(tok);
+      if(!uid || uid !== st.uid){ st.err = 'account'; return; }
+      return rpc(tok, 'sync_epoch').then(function(e){
+        if(st.epoch != null && e > st.epoch){ st.on = false; st.err = null; st.wiped = true; return; }
+        st.epoch = e;
+        return pull(st, tok).then(function(){ return push(st, tok); }).then(function(code){
+          st.err = code || null; st.last = Date.now();
+          if(!st.purged || Date.now() - st.purged > 86400000){ st.purged = Date.now(); rpc(tok, 'sync_purge').catch(function(){}); }
+        });
+      });
+    }).catch(function(e){ st.err = (e && e.status === 401) ? 'login' : 'net'; }).then(function(){
+      var fresh = loadSt(); if(fresh && fresh.on === false) st.on = false; if(fresh && fresh.epoch != null && fresh.on === false && st.epoch == null) st.epoch = fresh.epoch;
+      saveSt(st); busy = false;
+      if(st.notice){ note(st.notice); st.notice = null; saveSt(st); }
+      if(st.wiped){ note('La synchronisation a été désactivée : vos conversations synchronisées ont été supprimées depuis un autre appareil. Vos conversations locales sont conservées ici.'); }
+      paint();
+      if(again){ again = false; return run(); }
+    });
+  }
+  function touch(){ var st = loadSt(); if(!st || !st.on) return; clearTimeout(timer); timer = setTimeout(run, 3000); }
+  function deleted(space, id){
+    var st = loadSt(); if(!st || !st.on || !id) return;
+    st.dels = st.dels || []; st.dels.push({ s:space, id:id, ts:Date.now() }); delete st.pushed[key(space, id)]; saveSt(st); touch();
+  }
+  function startPolling(){
+    clearInterval(poll); poll = setInterval(function(){ if(!document.hidden) run(); }, 30000);
+  }
+
+  /* ---------- Activation, désactivation, suppression ---------- */
+  function counts(){
+    var o = {}, n = 0; Object.keys(AD).forEach(function(s){ try{ o[s] = AD[s].ok() ? AD[s].list().filter(function(r){ return r.messages.length; }).length : 0; }catch(e){ o[s] = 0; } n += o[s]; }); o.total = n; return o;
+  }
+  function enable(sendExisting){
+    return token().then(function(tok){
+      if(!tok) return { ok:false, msg:'Connectez-vous à votre compte HelpNaud pour activer la synchronisation.' };
+      var uid = uidOf(tok); if(!uid) return { ok:false, msg:'Session invalide : reconnectez-vous.' };
+      var st = { on:true, uid:uid, since:'1970-01-01T00:00:00Z', pushed:{}, dels:[], epoch:null, last:0, err:null };
+      if(!sendExisting) Object.keys(AD).forEach(function(s){ if(AD[s].ok()) AD[s].list().forEach(function(r){ st.pushed[key(s, r.id)] = r.ts; }); });
+      saveSt(st); startPolling();
+      return run().then(function(){ return { ok:true }; });
+    });
+  }
+  function disable(){ var st = loadSt(); if(st){ st.on = false; saveSt(st); } clearInterval(poll); paint(); }
+  function wipe(){
+    return token().then(function(tok){
+      if(!tok) throw new Error('login');
+      return rpc(tok, 'sync_wipe').then(function(e){ var st = loadSt() || {}; st.on = false; st.epoch = e; st.pushed = {}; st.dels = []; saveSt(st); clearInterval(poll); paint(); });
+    });
+  }
+
+  /* ---------- Interface ---------- */
+  function modal(html, buttons){
+    var ov = document.createElement('div'); ov.className = 'hs-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    var box = document.createElement('div'); box.className = 'hs-box'; box.innerHTML = html;
+    var foot = document.createElement('div'); foot.className = 'hs-foot';
+    function close(){ document.removeEventListener('keydown', onKey, true); if(ov.parentNode) ov.parentNode.removeChild(ov); }
+    function onKey(e){ if(e.key === 'Escape'){ e.stopPropagation(); close(); } }
+    buttons.forEach(function(b){ var x = document.createElement('button'); x.type = 'button'; x.className = 'btn' + (b.primary ? ' primary' : ''); x.textContent = b.label; x.setAttribute('data-hs', b.id); x.addEventListener('click', function(){ if(b.fn) b.fn(box, close, x); else close(); }); foot.appendChild(x); });
+    box.appendChild(foot); ov.appendChild(box); document.body.appendChild(ov); document.addEventListener('keydown', onKey, true);
+    ov.addEventListener('mousedown', function(e){ if(e.target === ov) close(); });
+    return { box:box, close:close };
+  }
+  function openEnable(){
+    var c = counts();
+    var html = '<h3>Synchroniser mes conversations</h3>' +
+      '<p>Retrouvez vos conversations Chat, Co-work et Consult sur vos autres appareils, avec le même compte HelpNaud. C’est facultatif : sans cela, tout reste uniquement sur cet appareil.</p>' +
+      '<h4>Ce qui sera envoyé au serveur</h4><ul><li>Le titre et le texte des messages (vos questions et les réponses) de vos conversations Chat, Co-work et Consult.</li><li>Leur état « épinglée » ou « archivée ».</li><li>Jusqu’aux ' + MAX_MSGS + ' derniers messages de chaque conversation, et au plus ' + MAX_SEND + ' conversations récentes par espace.</li></ul>' +
+      '<h4>Ce qui n’est pas envoyé</h4><ul><li>Les pièces jointes et les images, les projets, vos dossiers (transactions, budgets, documents), les fichiers de H-Code, les brouillons du Studio vidéo et la mémoire de Consult : cela reste sur l’appareil.</li><li>Rien n’est envoyé en navigation privée.</li></ul>' +
+      '<h4>Où, et qui peut les lire</h4><p>Sur le serveur de HelpNaud (base Supabase). La connexion est chiffrée et les données sont chiffrées au repos. Elles ne sont accessibles qu’avec votre compte. Elles ne sont pas chiffrées de bout en bout : les administrateurs techniques de la plateforme pourraient techniquement y accéder. N’activez la synchronisation que sur vos appareils personnels, et évitez d’y écrire des informations très sensibles.</p>' +
+      '<h4>Combien de temps</h4><p>' + esc(RETENTION) + '</p>' +
+      '<h4>Comment supprimer</h4><ul><li>Supprimer une conversation la supprime sur tous vos appareils synchronisés.</li><li>« Supprimer toutes mes conversations synchronisées » (dans Réglages) les efface définitivement du serveur.</li><li>Désactiver la synchronisation arrête l’envoi sur cet appareil, mais n’efface pas ce qui est déjà sur le serveur : utilisez le bouton de suppression pour cela.</li></ul>' +
+      '<h4>À savoir</h4><p>Si une même conversation est modifiée sur deux appareils, la dernière modification l’emporte.</p>' +
+      '<label class="hs-chk"><input type="checkbox" id="hs-existing" checked><span>Envoyer aussi les ' + c.total + ' conversation(s) déjà enregistrée(s) sur cet appareil (Chat : ' + c.chat + ', Co-work : ' + c.cowork + ', Consult : ' + c.consult + '). Si vous décochez, une ancienne conversation ne sera envoyée que si vous la reprenez.</span></label>' +
+      '<p id="hs-msg" role="status" class="hint hs-bad" style="margin:8px 0 0"></p>';
+    modal(html, [{ id:'cancel', label:'Annuler' }, { id:'ok', label:'Activer la synchronisation', primary:true, fn:function(box, close, btn){
+      btn.disabled = true; var chk = box.querySelector('#hs-existing');
+      enable(!!(chk && chk.checked)).then(function(r){ if(r.ok){ close(); note('Synchronisation activée.'); } else { btn.disabled = false; box.querySelector('#hs-msg').textContent = r.msg; } });
+    } }]);
+  }
+  function openWipe(){
+    modal('<h3>Supprimer toutes mes conversations synchronisées ?</h3><p>Toutes vos conversations synchronisées seront <b>effacées définitivement du serveur</b>, et la synchronisation sera désactivée sur tous vos appareils. Les conversations déjà enregistrées sur chaque appareil restent sur cet appareil.</p><p id="hs-msg" role="status" class="hint hs-bad" style="margin:8px 0 0"></p>',
+      [{ id:'cancel', label:'Annuler' }, { id:'ok', label:'Supprimer définitivement', primary:true, fn:function(box, close, btn){
+        btn.disabled = true;
+        wipe().then(function(){ close(); note('Conversations synchronisées supprimées du serveur.'); }).catch(function(){ btn.disabled = false; box.querySelector('#hs-msg').textContent = 'Suppression impossible pour l’instant. Vérifiez votre connexion et votre session, puis réessayez.'; });
+      } }]);
+  }
+  function card(){
+    var c = document.getElementById('hn-sync-card'); if(c) return c;
+    var anchor = document.getElementById('btn-abonnements'); anchor = anchor && anchor.closest('.card'); if(!anchor) return null;
+    c = document.createElement('div'); c.className = 'card'; c.id = 'hn-sync-card';
+    anchor.parentNode.insertBefore(c, anchor.nextSibling);
+    c.addEventListener('click', function(e){
+      var b = e.target.closest('[data-hs]'); if(!b) return; var a = b.getAttribute('data-hs');
+      if(a === 'on') openEnable(); else if(a === 'off') { disable(); note('Synchronisation désactivée sur cet appareil. Les données déjà envoyées restent sur le serveur jusqu’à leur suppression.'); }
+      else if(a === 'now') run(); else if(a === 'wipe') openWipe(); else if(a === 'info') openEnable();
+    });
+    return c;
+  }
+  function paint(){
+    var c = card(); if(!c) return;
+    var st = loadSt(), on = !!(st && st.on), t = '';
+    if(on){
+      t = 'Synchronisation <b>activée</b> sur cet appareil.' + (st.last ? ' Dernière synchronisation : ' + esc(new Date(st.last).toLocaleString('fr-CA')) + '.' : ' Première synchronisation en cours…');
+      if(busy) t += ' <i>En cours…</i>';
+      if(st.err === 'login') t += '<br><span class="hs-bad">Connectez-vous à votre compte pour continuer à synchroniser.</span>';
+      else if(st.err === 'account') t += '<br><span class="hs-bad">Cet appareil est connecté à un autre compte que celui qui a activé la synchronisation. Désactivez-la, puis réactivez-la avec le compte actuel.</span>';
+      else if(st.err === 'net') t += '<br><span class="hs-bad">Synchronisation impossible pour l’instant (réseau ou serveur). Nouvel essai automatique.</span>';
+      else if(st.err === 'limit') t += '<br><span class="hs-bad">Limite atteinte : 100 conversations synchronisées par espace. Supprimez d’anciennes conversations.</span>';
+    } else t = 'Synchronisation <b>désactivée</b> : vos conversations restent uniquement sur cet appareil.' + (st && st.wiped ? '<br><span class="hs-bad">Elle a été désactivée car vos conversations synchronisées ont été supprimées depuis un autre appareil.</span>' : '');
+    c.innerHTML = '<h2>Synchronisation des conversations</h2><p class="hint">Facultatif. Retrouvez vos conversations Chat, Co-work et Consult sur vos autres appareils (même compte). Seuls les titres et les messages texte sont concernés.</p>' +
+      '<div class="hs-st" role="status">' + t + '</div><div class="hs-row">' +
+      (on ? '<button type="button" class="btn" data-hs="now"' + (busy ? ' disabled' : '') + '>Synchroniser maintenant</button><button type="button" class="btn" data-hs="off">Désactiver</button>' : '<button type="button" class="btn primary" data-hs="on">Activer la synchronisation…</button>') +
+      '<button type="button" class="btn" data-hs="wipe">Supprimer toutes mes conversations synchronisées</button></div>';
+  }
+
+  function openManage(){
+    var st = loadSt();
+    if(!st || !st.on){ openEnable(); return; }
+    modal('<h3>Synchronisation des conversations</h3><p>Synchronisation <b>activée</b> sur cet appareil' + (st.last ? ' (dernière : ' + esc(new Date(st.last).toLocaleString('fr-CA')) + ')' : '') + '.</p><p class="hint">Désactiver arrête l’envoi sur cet appareil sans effacer ce qui est déjà sur le serveur. Pour l’effacer, utilisez « Supprimer toutes mes conversations synchronisées ».</p>',
+      [{ id:'close', label:'Fermer' }, { id:'now', label:'Synchroniser maintenant', fn:function(b, close){ close(); run(); } }, { id:'off', label:'Désactiver', fn:function(b, close){ close(); disable(); note('Synchronisation désactivée sur cet appareil.'); } }, { id:'wipe', label:'Supprimer toutes mes conversations synchronisées', fn:function(b, close){ close(); openWipe(); } }]);
+  }
+  document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-hnp-sync]'); if(b){ e.preventDefault(); openManage(); } }, true);
+  window.__hnSync = { touch:touch, deleted:deleted, run:run, enable:enable, disable:disable, wipe:wipe, state:loadSt, counts:counts, paint:paint, _t:{ cleanMsgs:cleanMsgs, uidOf:uidOf } };
+  paint();
+  /* Invitation unique (non intrusive) : l'activation reste un choix explicite, après lecture de ce qui sera envoyé. */
+  function invite(){
+    if(loadSt() || lsGet('helpnaud_sync_invited') || window.__hnIncognito) return;
+    token().then(function(tok){
+      if(!tok || loadSt() || lsGet('helpnaud_sync_invited')) return;
+      lsSet('helpnaud_sync_invited', '1');
+      modal('<h3>Retrouver vos conversations sur tous vos appareils ?</h3><p>Vous pouvez synchroniser vos conversations Chat, Co-work et Consult (titres et messages texte) avec votre compte. C’est facultatif et désactivé tant que vous ne l’activez pas. L’écran suivant explique ce qui est envoyé, combien de temps c’est conservé et comment supprimer ; rien n’est envoyé avant que vous cliquiez sur « Activer la synchronisation ». Vous pourrez aussi le faire plus tard dans Réglages ou dans Paramètres › Confidentialité.</p>',
+        [{ id:'later', label:'Plus tard' }, { id:'see', label:'Voir les détails', primary:true, fn:function(box, close){ close(); openEnable(); } }]);
+    }).catch(function(){});
+  }
+  setTimeout(invite, 6000);
+  var st0 = loadSt(); if(st0 && st0.on){ startPolling(); setTimeout(run, 2500); }
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) run(); });
+  window.addEventListener('online', function(){ run(); });
 })();
 </script>
 
@@ -46561,7 +46852,7 @@ html.hn-private-tab .hn-side-btn, html.hn-private-tab #hn-side-open{ display:non
       pinned:function(){ var r = rec(); return !!(r && r.pinned); },
       pin:function(){ return upd(function(c){ c.pinned = !c.pinned; }); },
       archive:function(){ var ok = upd(function(c){ c.archived = true; }); if(ok){ window.__hnHH.setCur(null); window.__hnHstat.fresh(); window.__hnHH.render(); } return ok; },
-      remove:function(){ var h = H(), id = h.cur(); if(id) h.save(h.load().filter(function(c){ return c.id !== id; })); h.setCur(null); window.__hnHstat.fresh(); h.render(); },
+      remove:function(){ var h = H(), id = h.cur(); if(id){ try{ if(window.__hnSync) window.__hnSync.deleted('consult', id); }catch(e){} } if(id) h.save(h.load().filter(function(c){ return c.id !== id; })); h.setCur(null); window.__hnHstat.fresh(); h.render(); },
       project:function(){ var r = rec(); return (r && r.projectId) || ''; },
       setProject:function(id){ if(id === '__new__'){ var P = projAPI(); window.hnAskText('Nom du nouveau projet', '', { ok:'Créer' }).then(function(n){ if(!n || !n.trim() || !P) return; upd(function(c){ c.projectId = P.create(n.trim()) || null; }); }); return; } upd(function(c){ c.projectId = id || null; }); }
     };
@@ -47832,6 +48123,7 @@ body.hn-voice-off .mic-btn, body.hn-voice-off .voicemode-toggle-btn, body.hn-voi
       h += '<details class="hnp-acc"><summary>Comment nous utilisons vos données</summary><div class="hnp-accb"><p><b>Comprendre comment nous gérons vos données</b></p><ul><li>Avec votre autorisation, nous utiliserons vos conversations et sessions de codage pour entraîner et améliorer nos modèles d’IA. Cela nous permet de :<br>1) améliorer nos modèles d’IA pour rendre HelpNaud plus utile et plus précis pour tous ;<br>2) développer des mesures de protection plus robustes contre les réponses nuisibles.</li><li>HelpNaud by FINECIA GROUPE peut utiliser votre adresse e-mail pour la vérification du compte, la facturation, ainsi que pour les communications et le marketing émanant de FINECIA GROUPE et de la marque HelpNaud (par exemple, des e-mails présentant de nouvelles offres de produits, services, améliorations et fonctionnalités).</li><li>FINECIA GROUPE peut effectuer des analyses agrégées et anonymisées des données pour comprendre comment les gens utilisent HelpNaud afin de bien satisfaire les utilisateurs.</li><li>FINECIA GROUPE peut, à un certain moment, proposer des fonctionnalités supplémentaires qui nous permettront de collecter et d’utiliser davantage de vos données. Vous garderez toujours le contrôle et pourrez désactiver ces fonctionnalités dans les paramètres de votre compte.</li></ul></div></details>';
       h += '<details class="hnp-acc"><summary>Comment nous protégeons vos données</summary><div class="hnp-accb"><p><b>Comprendre comment nous protégeons vos données</b></p><ul><li>Vous avez le contrôle sur vos données de conversation et pouvez modifier vos préférences à tout moment dans vos paramètres de confidentialité (cette page).</li><li>HelpNaud by FINECIA GROUPE supprime rapidement vos données sur demande, sauf en cas de violation de nos politiques de sécurité ou de conversations que vous avez partagées via vos commentaires.</li><li>FINECIA GROUPE ne vend jamais vos données à des tiers.</li></ul></div></details>';
       h += '<h4 style="margin-top:18px">Vos données</h4>';
+      h += '<div class="hnp-row" style="border-top:0"><div class="hnp-l">Synchronisation des conversations<small>' + ((window.__hnSync && window.__hnSync.state() && window.__hnSync.state().on) ? 'Activée sur cet appareil.' : 'Facultative, désactivée tant que vous ne l’activez pas.') + '</small></div><button type="button" class="btn" data-hnp-sync="1">Gérer</button></div>';
       h += '<div class="hnp-row" style="border-top:0"><div class="hnp-l">Exporter les données<small>Télécharge un fichier avec les préférences et données enregistrées sur cet appareil.</small></div><button type="button" class="btn" data-hnp-act="export">Exporter les données</button></div>';
       h += '<div class="hnp-row"><div class="hnp-l">Conversations partagées</div><button type="button" class="btn" data-hnp-go="liens">Gérer</button></div>';
       h += '<div class="hnp-row"><div class="hnp-l">Mails connectés</div><button type="button" class="btn" data-hnp-go="conn">Gérer</button></div>';
