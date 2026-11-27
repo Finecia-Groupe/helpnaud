@@ -8091,7 +8091,7 @@
   /* Forfait « Base » : montant libre, strictement de BASE_MIN à BASE_MAX USD ; crédits IA proportionnels (BASE_RATE crédits par dollar, à ajuster). L'affichage et le calcul sont prêts ; le paiement (fonction Stripe + webhook) reste à brancher. */
   /* À passer à true SEULEMENT après : SQL de synchronisation appliqué sur Supabase + vérification sur deux appareils réels (dont la suppression d'une conversation). */
   var SYNC_LIVE = false;
-  var SYNC_AVANTAGE = 'Synchronisation facultative : retrouvez vos conversations sur vos appareils connectés. Les conversations synchronisées sont conservées jusqu’à ce que vous les supprimiez.';
+  var SYNC_AVANTAGE = 'Synchronisation facultative des conversations texte. Retrouvez vos conversations Chat, Co-work et Consult sur vos appareils connectés au même compte, après avoir activé la synchronisation sur chacun. Les conversations synchronisées sont conservées jusqu’à ce que vous les supprimiez.';
   var BASE_MIN = 5, BASE_MAX = 20, BASE_RATE = 20;
   function baseCheck(raw){
     var t = String(raw == null ? '' : raw).trim().replace(',', '.').replace(/\s*\$?\s*$/, '');
@@ -13509,6 +13509,20 @@
       if(window.__hnIncognito) return; // navigation privée : rien n'est enregistré
       var history = cfg.getHistory();
       if(!history || !history.length) return; // rien à sauvegarder tant qu'aucun message n'existe
+      try{   // conversation modifiée sur un autre appareil entre-temps : ne rien écraser, garder la version de cet appareil comme COPIE
+        var spc = cfg.scope === 'assistant' ? 'chat' : 'cowork';
+        if(window.__hnSync && window.__hnSync.hasConflict(spc, cfg.getConvId())){
+          var orig = currentRecord(), nid = newConvId();
+          window.__hnSync.clear(spc, cfg.getConvId());
+          cfg.setConvId(nid);
+          var cp = { id:nid, title:((orig && orig.title) || deriveConvTitle(history, cfg.defaultTitle)) + ' (copie)', projectId:null };
+          if(patch){ Object.keys(patch).forEach(function(k){ cp[k] = patch[k]; }); }
+          cp.messages = history.slice();
+          ConversationStore.save(cfg.scope, cp); refreshTitleUI();
+          if(window.hnNote) window.hnNote('Cette conversation avait été modifiée sur un autre appareil : la version de cet appareil est enregistrée comme copie, sans rien écraser.');
+          return;
+        }
+      }catch(e){}
       var rec = currentRecord() || { id: cfg.getConvId(), title: null, projectId: null };
       if(patch){ Object.keys(patch).forEach(function(k){ rec[k] = patch[k]; }); }
       rec.messages = history.slice();
@@ -15444,7 +15458,7 @@
     btnId: 'btn-mic',
     timerId: 'mic-timer',
     addAudioMsg: function(dataUrl, seconds){ return addAudioMsg(dataUrl, seconds, 'user'); },
-    submit: function(text){ if(voiceModeActive.assistant) setVoiceModeStatus('assistant', 'thinking'); submitToAssistant(text, { voiceReply:true }); },
+    submit: function(text){ if(window.__hnSync && window.__hnSync.guard('chat', text, typeof chatInput !== 'undefined' ? chatInput : null)) return; if(voiceModeActive.assistant) setVoiceModeStatus('assistant', 'thinking'); submitToAssistant(text, { voiceReply:true }); },
     onError: function(msg){ addMsg(msg, 'bot'); if(voiceModeActive.assistant) stopVoiceMode('assistant'); }
   });
 
@@ -15788,6 +15802,7 @@
       addMsg("Limite de " + ASSISTANT_MAX_MESSAGES + " messages atteinte pour cette conversation. Cliquez sur « + Nouveau chat » pour continuer avec HelpNaud.ai, ou consultez l'historique pour revoir cet échange.", 'bot');
       return;
     }
+    if(window.__hnSync && window.__hnSync.guard('chat', q)) return;   // conversation modifiée sur un autre appareil : le message reste dans la zone de saisie
     addMsg(q, 'user');
     chatInput.value = '';
     chatInputResize();
@@ -34279,6 +34294,7 @@
       addCoworkDiscussMsg("Limite de " + COWORK_DISCUSS_MAX_MESSAGES + " messages atteinte pour cette conversation. Cliquez sur « + Nouveau chat » pour continuer avec HelpNaud.ai, ou consultez l'historique pour revoir cet échange.", 'bot');
       return;
     }
+    if(window.__hnSync && window.__hnSync.guard('cowork', q)) return;
     addCoworkDiscussMsg(q, 'user');
     coworkDiscussInput.value = '';
     coworkDiscussInputResize();
@@ -34377,7 +34393,7 @@
     btnId: 'cowork-discuss-mic',
     timerId: 'cowork-discuss-mic-timer',
     addAudioMsg: function(dataUrl, seconds){ return buildAudioMsgBubble(coworkDiscussLog, dataUrl, seconds, 'user'); },
-    submit: function(text){ if(voiceModeActive.cowork) setVoiceModeStatus('cowork', 'thinking'); submitCoworkDiscuss(text, { voiceReply:true }); },
+    submit: function(text){ if(window.__hnSync && window.__hnSync.guard('cowork', text, typeof coworkDiscussInput !== 'undefined' ? coworkDiscussInput : null)) return; if(voiceModeActive.cowork) setVoiceModeStatus('cowork', 'thinking'); submitCoworkDiscuss(text, { voiceReply:true }); },
     onError: function(msg){ addCoworkDiscussMsg(msg, 'bot'); if(voiceModeActive.cowork) stopVoiceMode('cowork'); }
   });
 
@@ -38181,7 +38197,7 @@
     btnId: 'hstat-mic',
     timerId: 'hstat-mic-timer',
     addAudioMsg: function(dataUrl, seconds){ return buildAudioMsgBubble(hstatLog, dataUrl, seconds, 'user'); },
-    submit: function(text){ if(voiceModeActive.hstat) setVoiceModeStatus('hstat', 'thinking'); submitHstat(text, { voiceReply:true }); },
+    submit: function(text){ if(window.__hnSync && window.__hnSync.guard('consult', text, typeof hstatInput !== 'undefined' ? hstatInput : null)) return; if(voiceModeActive.hstat) setVoiceModeStatus('hstat', 'thinking'); submitHstat(text, { voiceReply:true }); },
     onError: function(msg){ addHstatMsg(msg, 'bot'); if(voiceModeActive.hstat) stopVoiceMode('hstat'); }
   });
 
@@ -38292,6 +38308,7 @@
       addHstatMsg("Limite de " + HSTAT_MAX_MESSAGES + " messages atteinte pour cette consultation. Changez de domaine ci-dessus (ou désélectionnez-le) pour repartir avec un nouveau compteur.", 'bot');
       return;
     }
+    if(window.__hnSync && window.__hnSync.guard('consult', q)) return;
     hstatUserMsgCount++;
     addHstatMsg(q, 'user');
     hstatInput.value = '';
@@ -41238,6 +41255,7 @@
   window.__hnHstatChanged=function(){
     if(!window.__hnHstat || window.__hnIncognito) return;
     var h=window.__hnHstat.history(); if(!h.length) return;
+    try{ if(window.__hnSync && window.__hnSync.hasConflict('consult', cur)){ window.__hnSync.clear('consult', cur); cur=null; if(window.hnNote) window.hnNote('Cette conversation avait été modifiée sur un autre appareil : la version de cet appareil est enregistrée comme nouvelle conversation, sans rien écraser.'); } }catch(e){}
     var a=load(), c=a.filter(function(x){return x.id===cur;})[0];
     if(!c){ cur='c'+Date.now().toString(36); c={id:cur,pinned:false}; a.unshift(c); }
     var first=h.filter(function(m){return m.role==='user';})[0];
@@ -41293,7 +41311,7 @@
   var RETENTION = 'Vos conversations synchronisées sont conservées tant que vous utilisez la synchronisation, jusqu’à ce que vous les supprimiez. Aucune suppression automatique n’est prévue pour l’instant.';
   var MAX_SEND = 60, MAX_MSGS = 120, MAX_CHARS = 30000, MAX_BYTES = 300000;
   var SPACES = { chat:'Chat', cowork:'Co-work', consult:'Consult' };
-  var busy = false, again = false, timer = null, poll = null;
+  var busy = false, again = false, timer = null, poll = null, conflicts = {};
 
   function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
   function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
@@ -41372,7 +41390,7 @@
     if(lt < 0 || row.client_ts > lt){
       ad.put(row); st.pushed[k] = row.client_ts; changed = true;
       var open = ad.open && ad.open();
-      if(open && open === row.conv_id) st.notice = (SPACES[row.space] || '') + ' : la conversation ouverte a été modifiée sur un autre appareil. Rouvrez-la depuis l’historique pour voir sa dernière version.';
+      if(open && open === row.conv_id){ conflicts[key(row.space, row.conv_id)] = true; st.notice = (SPACES[row.space] || '') + ' : la conversation ouverte a été modifiée sur un autre appareil. À votre prochain envoi, HelpNaud vous proposera de la recharger ; votre message sera conservé.'; }
     } else if(row.client_ts === lt){ st.pushed[k] = row.client_ts; }
     return changed;
   }
@@ -41529,6 +41547,34 @@
       '<button type="button" class="btn" data-hs="wipe">Supprimer toutes mes conversations synchronisées</button></div>';
   }
 
+
+  /* ---------- Protection contre l'écrasement (modification simultanée) ---------- */
+  function hasConflict(space, id){ return !!(id && conflicts[key(space, id)]); }
+  function clearConflict(space, id){ delete conflicts[key(space, id)]; }
+  function reloadConv(space, id){
+    try{
+      if(space === 'consult'){
+        var c = hh().load().filter(function(x){ return x.id === id; })[0];
+        if(c && window.__hnHstat){ window.__hnHstat.restore(c.messages); hh().setCur(c.id); hh().render(); }
+      } else {
+        var scope = space === 'chat' ? 'assistant' : 'cowork-discuss', a = window.__hnConvAPI && window.__hnConvAPI[scope], rec = a && a.store.get(scope, id);
+        if(a && rec){ a.cfg.setHistory((rec.messages || []).slice()); a.cfg.renderLog(rec.messages || []); a.refresh(); }
+      }
+    }catch(e){}
+    clearConflict(space, id);
+  }
+  /* Appelé juste avant l'envoi d'un message : si la conversation a changé ailleurs, on N'ENVOIE PAS, on garde le message en brouillon et on propose de recharger. */
+  function guard(space, text, input){
+    var ad = AD[space], id = ad && ad.ok() ? ad.open() : null;
+    if(!id || !hasConflict(space, id)) return false;
+    if(input && !input.value){ input.value = text; try{ input.dispatchEvent(new Event('input', { bubbles:true })); }catch(e){} }
+    if(!document.querySelector('.hs-box[data-conflict]')){
+      var m = modal('<h3>Cette conversation a changé sur un autre appareil</h3><p>De nouveaux messages ont été ajoutés ailleurs. Pour ne rien écraser, votre message n’a pas été envoyé : il reste dans la zone de saisie comme brouillon.</p><p>Rechargez la conversation pour voir les nouveaux messages, puis envoyez votre message.</p>',
+        [{ id:'later', label:'Plus tard' }, { id:'reload', label:'Recharger la conversation', primary:true, fn:function(b, close){ close(); reloadConv(space, id); note('Conversation rechargée. Votre message est toujours dans la zone de saisie.'); } }]);
+      m.box.setAttribute('data-conflict', '1');
+    }
+    return true;
+  }
   function openManage(){
     var st = loadSt();
     if(!st || !st.on){ openEnable(); return; }
@@ -41536,7 +41582,7 @@
       [{ id:'close', label:'Fermer' }, { id:'now', label:'Synchroniser maintenant', fn:function(b, close){ close(); run(); } }, { id:'off', label:'Désactiver', fn:function(b, close){ close(); disable(); note('Synchronisation désactivée sur cet appareil.'); } }, { id:'wipe', label:'Supprimer toutes mes conversations synchronisées', fn:function(b, close){ close(); openWipe(); } }]);
   }
   document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-hnp-sync]'); if(b){ e.preventDefault(); openManage(); } }, true);
-  window.__hnSync = { touch:touch, deleted:deleted, run:run, enable:enable, disable:disable, wipe:wipe, state:loadSt, counts:counts, paint:paint, _t:{ cleanMsgs:cleanMsgs, uidOf:uidOf } };
+  window.__hnSync = { guard:guard, hasConflict:hasConflict, clear:clearConflict, reload:reloadConv, touch:touch, deleted:deleted, run:run, enable:enable, disable:disable, wipe:wipe, state:loadSt, counts:counts, paint:paint, _t:{ cleanMsgs:cleanMsgs, uidOf:uidOf } };
   paint();
   /* Invitation unique (non intrusive) : l'activation reste un choix explicite, après lecture de ce qui sera envoyé. */
   function invite(){
