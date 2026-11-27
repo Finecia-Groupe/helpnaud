@@ -11388,7 +11388,18 @@
       default: return '';
     }
   }
-  function formatElapsed(ms){
+  /* Horodatage : aujourd'hui = temps relatif ; hier = « hier, 14:05 » ; plus ancien = « 12 nov. 2026, 14:05 » (année seulement si différente). */
+  function hnAbsStamp(ts){
+    var d = new Date(ts), now = new Date();
+    var hm = d.toLocaleTimeString('fr-CA', { hour:'2-digit', minute:'2-digit', hour12:false }).replace(/[\u202f\u00a0]/g, ' ');
+    var y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    if(d.toDateString() === y.toDateString()) return 'hier, ' + hm;
+    var o = { day:'numeric', month:'short' }; if(d.getFullYear() !== now.getFullYear()) o.year = 'numeric';
+    return d.toLocaleDateString('fr-CA', o) + ', ' + hm;
+  }
+  window.__hnAbsStamp = hnAbsStamp;
+  function formatElapsed(ms, ts){
+    if(ts && new Date(ts).toDateString() !== new Date().toDateString()) return hnAbsStamp(ts);
     var s = Math.max(0, Math.round(ms/1000));
     if(s < 5) return 'à l\'instant';
     if(s < 60) return 'il y a ' + s + ' s';
@@ -11404,7 +11415,7 @@
     msgTimeTickers = msgTimeTickers.filter(function(el){ return el.isConnected; });
     msgTimeTickers.forEach(function(el){
       var ts = Number(el.dataset.ts);
-      if(ts) el.textContent = formatElapsed(Date.now() - ts);
+      if(ts) el.textContent = formatElapsed(Date.now() - ts, ts);
     });
   }
   setInterval(tickMsgTimes, 15000);
@@ -11580,6 +11591,18 @@
   window.hnDictLang=function(){ var v=''; try{ v=localStorage.getItem('helpnaud_voice_lang')||''; }catch(e){} if(v&&v!=='auto') return v; return window.__hnLastReplyLang||(getStoredLang()==='en'?'en-US':'fr-FR'); };
   window.__hnTts={ detect:hnDetectLang, clean:hnSpeakClean, chunks:hnChunks, best:hnBestVoice };
   var speakCur=null;
+  /* Demande explicite d'une réponse orale (« réponds-moi à haute voix », « dis-le-moi », « lis-moi »…) : la réponse est alors lue automatiquement. */
+  window.__hnWantsAloud=function(q){
+    return /(à|a)\s+(haute\s+voix|voix\s+haute)|\b(r[ée]ponds?|dis|parle|lis)[\s-]+(le[\s-]+)?(moi|nous)\b.*\b(voix|oral|oralement|vocalement)|\b(oralement|vocalement)\b|\bpar\s+la\s+voix\b|\bout\s+loud\b|\bread\s+(it|this|that)\s+(aloud|to\s+me)\b|\b(say|speak|answer)\s+(it\s+)?(out\s+loud|aloud)\b/i.test(String(q||''));
+  };
+  /* Arrête réellement la lecture (cancel() seul laissait la suite du texte repartir). */
+  function hnStopSpeech(){
+    if(speakCur) speakCur.cancelled = true;
+    try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(e){}
+  }
+  window.__hnStopSpeech = hnStopSpeech;
+  window.__hnIsSpeaking = function(){ return !!(speakCur && !speakCur.cancelled && !speakCur.ended); };
+  var HN_IOS = /iP(hone|ad|od)/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   // `onEnd` (optionnel) : rappelé une fois la lecture terminée (fin normale OU erreur) — utilisé par
   // le Mode vocal (voir plus bas) pour relancer automatiquement l'écoute une fois la réponse lue.
   function speakMsgText(text, btn, onEnd){
@@ -11589,7 +11612,7 @@
       return;
     }
     if(speakingBtn === btn){
-      window.speechSynthesis.cancel();
+      hnStopSpeech();
       return;
     }
     if(speakCur) speakCur.cancelled = true;
@@ -11597,23 +11620,36 @@
     var me = speakCur = { cancelled:false, ended:false };
     var pref=''; try{ pref=localStorage.getItem('helpnaud_voice_lang')||''; }catch(e){}
     var appLang = (pref && pref!=='auto') ? pref : (getStoredLang() === 'en' ? 'en-US' : 'fr-FR');
-    var clean = hnSpeakClean(text), msgLang = hnDetectLang(clean) || appLang, chunks = hnChunks(clean, 200), idx = 0;
+    var clean = hnSpeakClean(text), msgLang = hnDetectLang(clean) || appLang, chunks = hnChunks(clean, 180), idx = 0, ka = null, wd = null;
     window.__hnLastReplyLang = msgLang;
     function finish(){
+      clearTimeout(wd); clearInterval(ka);
       if(me.ended) return; me.ended = true; if(speakingBtn === btn) speakingBtn = null;
       btn.classList.remove('active'); btn.innerHTML = msgActionIcon('speak'); btn.title = 'Lire à haute voix'; if(onEnd) onEnd();
     }
     if(!chunks.length){ finish(); return; }
     hnVoices().then(function(voices){
       if(me.cancelled){ finish(); return; }
+      var retried = {};
       function next(){
+        clearTimeout(wd);
         if(me.cancelled || idx >= chunks.length){ finish(); return; }
-        var c = chunks[idx++], lang = hnDetectLang(c) || msgLang, voice = hnBestVoice(voices, lang);
+        var c = chunks[idx++], my = idx, lang = hnDetectLang(c) || msgLang, voice = hnBestVoice(voices, lang), moved = false;
+        function adv(){ if(moved) return; moved = true; clearTimeout(wd); next(); }
         var u = new SpeechSynthesisUtterance(c); u.lang = (voice && voice.lang) || lang; if(voice) u.voice = voice; u.rate = 1; u.pitch = 1;
-        if(idx === 1) u.onstart = function(){ speakingBtn = btn; btn.classList.add('active'); btn.innerHTML = msgActionIcon('stop'); btn.title = 'Arrêter la lecture'; };
-        u.onend = next; u.onerror = function(){ if(me.cancelled || idx >= chunks.length) finish(); else next(); };
+        if(my === 1) u.onstart = function(){ speakingBtn = btn; btn.classList.add('active'); btn.innerHTML = msgActionIcon('stop'); btn.title = 'Arrêter la lecture'; };
+        u.onend = adv;
+        u.onerror = function(ev){ if(me.cancelled){ finish(); return; } adv(); };
+        /* Garde-fou : certains navigateurs (Chrome, Safari iOS) laissent la synthèse « figée » sans jamais signaler la fin : on relance le segment une fois, puis on passe au suivant. */
+        wd = setTimeout(function(){
+          if(moved || me.cancelled) return;
+          if(!retried[my]){ retried[my] = 1; idx = my - 1; }
+          moved = true; try{ window.speechSynthesis.cancel(); }catch(e){} setTimeout(next, 120);
+        }, Math.max(6000, c.length * 90 + 3500));
         window.speechSynthesis.speak(u);
       }
+      /* Chrome (ordinateur) coupe la voix au bout d'environ 15 s : un pause/reprise périodique l'évite. Inutile (et risqué) sur iPhone. */
+      if(!HN_IOS) ka = setInterval(function(){ try{ var ss = window.speechSynthesis; if(ss.speaking && !ss.paused){ ss.pause(); ss.resume(); } }catch(e){} }, 9000);
       next();
     });
   }
@@ -11690,7 +11726,7 @@
       else setMsgText(el, partial + '\n\n⏹ Réponse interrompue.');
     }
     try{ if(gen.onStop) gen.onStop(partial); }catch(e){}
-    if('speechSynthesis' in window) window.speechSynthesis.cancel();
+    hnStopSpeech();
     gen.end();
     var key = null;
     Object.keys(CHATBAR_CFG).forEach(function(k){ if(CHATBAR_CFG[k].formId === formId) key = k; });
@@ -11726,6 +11762,7 @@
     wave.title = 'Mode vocal (conversation continue)'; wave.setAttribute('aria-label', 'Mode vocal');
     wave.innerHTML = WAVE_SVG;
     wave.addEventListener('click', function(){
+      if(voiceModeActive[key] && window.__hnIsSpeaking()){ hnStopSpeech(); setTimeout(function(){ startVoiceMode(key); }, 200); return; }   /* HelpNaud parle : on le met en pause et on écoute l'utilisateur */
       if(voiceModeActive[key]) stopVoiceMode(key); else startVoiceMode(key);
     });
     var stop = document.createElement('button');
@@ -11921,8 +11958,9 @@
       bar.appendChild(status);
       var time = document.createElement('span');
       time.className = 'msg-time';
-      time.dataset.ts = String(Date.now());
-      time.textContent = 'à l\'instant';
+      var t0 = Number(window.__hnBubbleTs) || Date.now(); window.__hnBubbleTs = 0;
+      time.dataset.ts = String(t0);
+      time.textContent = formatElapsed(Date.now() - t0, t0);
       msgTimeTickers.push(time);
       bar.appendChild(time);
     } else {
@@ -12143,10 +12181,11 @@
     }
     micBtn.addEventListener('click', function(){
       if(micState === 'requesting' || micState === 'stopping') return;
+      try{ if(window.__hnIsSpeaking && window.__hnIsSpeaking()) window.__hnStopSpeech(); }catch(e){}   /* l'utilisateur prend la parole : HelpNaud se tait et écoute */
       if(micState === 'recording'){
         micState = 'stopping';
         recorder.stop();
-        if(recognizer){ try{ recognizer.stop(); }catch(e){} }
+        if(recognizer){ try{ recognizer.stop(); }catch(e){} clearTimeout(safetyTimer); safetyTimer = setTimeout(function(){ recognitionEnded = true; tryFinalize(); }, 2500); }
         return;
       }
       micState = 'requesting';
@@ -12209,14 +12248,18 @@
                 if(ev.results[i].isFinal) transcript += (transcript ? ' ' : '') + ev.results[i][0].transcript;
               }
             });
-            function endRecognition(){ clearTimeout(safetyTimer); recognitionEnded = true; tryFinalize(); }
+            var restarts = 0;
+            function endRecognition(ev){
+              /* Chrome arrête la reconnaissance après un silence : tant que l'utilisateur enregistre, on la relance pour ne pas perdre la suite de sa phrase. */
+              if(micState === 'recording' && restarts < 30 && !(ev && ev.error && /not-allowed|service-not-allowed|audio-capture/.test(ev.error))){ restarts++; try{ recognizer.start(); return; }catch(e){} }
+              clearTimeout(safetyTimer); recognitionEnded = true; tryFinalize();
+            }
             recognizer.addEventListener('end', endRecognition);
             recognizer.addEventListener('error', endRecognition);
             recognizer.start();
             // Filet de sécurité : si l'événement 'end' ne se déclenche jamais (bug navigateur), ne
             // reste pas bloqué indéfiniment sans réponse — la note vocale reste alors un simple
             // mémo audio, comme si la reconnaissance n'était pas disponible.
-            safetyTimer = setTimeout(endRecognition, 6000);
           }catch(e){ recognizer = null; recognitionEnded = true; }
         } else {
           recognitionEnded = true;
@@ -13415,6 +13458,12 @@
     el.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:200001;background:#16304A;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;max-width:90vw;box-shadow:0 8px 30px rgba(0,0,0,.3)';
     document.body.appendChild(el); setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 3200);
   };
+  /* Heure réelle de chaque message : tableau parallèle `ts` enregistré avec la conversation (les messages restent {role, content}). */
+  window.__hnTsMerge = function(oldMsgs, oldTs, msgs, fallback){
+    var mp = {}; (oldMsgs || []).forEach(function(m, i){ var k = (m && m.role) + '|' + (m && m.content); (mp[k] = mp[k] || []).push((oldTs || [])[i] || fallback || 0); });
+    var now = Date.now();
+    return (msgs || []).map(function(m){ var q = mp[(m && m.role) + '|' + (m && m.content)], t = q && q.shift(); return t || now; });
+  };
   var ConversationStore = {
     _loadAll: function(){
       try{
@@ -13435,7 +13484,10 @@
     get: function(scope, id){
       var all = this._loadAll();
       var arr = all[scope] || [];
-      for(var i=0;i<arr.length;i++){ if(arr[i].id === id) return arr[i]; }
+      for(var i=0;i<arr.length;i++){ if(arr[i].id === id){
+        var r0 = arr[i];
+        try{ if(Array.isArray(r0.messages)){ var tl = (r0.ts || []).slice(); for(var j=0;j<r0.messages.length;j++) if(!tl[j]) tl[j] = r0.updatedAt || 0; Object.defineProperty(r0.messages, '__ts', { value: tl, enumerable:false, configurable:true }); } }catch(e){}
+        return r0; } }
       return null;
     },
     save: function(scope, record){
@@ -13444,6 +13496,7 @@
       var arr = all[scope];
       var idx = -1;
       for(var i=0;i<arr.length;i++){ if(arr[i].id === record.id){ idx = i; break; } }
+      try{ var old0 = idx > -1 ? arr[idx] : null; if(Array.isArray(record.messages)) record.ts = window.__hnTsMerge(old0 && old0.messages, old0 && old0.ts, record.messages, old0 && old0.updatedAt); }catch(e){}
       record.updatedAt = Date.now();
       if(idx === -1) arr.push(record); else arr[idx] = record;
       this._saveAll(all);
@@ -13795,7 +13848,7 @@
   function renderAssistantLogFromMessages(messages){
     chatLog.innerHTML = '';
     chatLog.dataset.ready = '1';
-    (messages || []).forEach(function(m){ addMsg(m.content, m.role === 'user' ? 'user' : 'bot'); });
+    (messages || []).forEach(function(m, i){ window.__hnBubbleTs = (messages.__ts || [])[i] || 0; addMsg(m.content, m.role === 'user' ? 'user' : 'bot'); window.__hnBubbleTs = 0; });
     resetSuggestRow();
   }
   function clearAssistantLog(){
@@ -13932,6 +13985,7 @@
       try{ if(window.__hnExportOnce && !wantJson){ body.export = window.__hnExportOnce; } window.__hnExportOnce = ''; }catch(e){}
       try{ var cv = document.querySelector('.view:not([hidden])'); if(cv && cv.id) body.tool = cv.id.replace(/^view-/, ''); }catch(e){}
       try{ if(window.__hnSpc){ var sid = window.__hnSpc.activeId(), pj = window.__hnSpc.project(); if(sid) body.space = sid; if(pj) body.project = pj; } }catch(e){}
+      if(opts.voice === true && !wantJson) body.voice = true;
       if(opts.expert) body.fistat = 'expertplus';
       if(wantJson && (opts.creer === 'design' || opts.creer === 'dessin')) body.creer = opts.creer;
       if(opts.creerFi === true && body.creer) body.creerfi = true;
@@ -15676,7 +15730,7 @@
       var sampleOpts = {
         cache:false,
         modelTier: getHmodelTier('assistant'),
-        researchView: 'assistant',
+        researchView: 'assistant', voice: !!opts.voiceReply,
         tools: buildAssistantTools(),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); chatLog.scrollTop = chatLog.scrollHeight; }
       };
@@ -15823,7 +15877,7 @@
     chatInput.value = '';
     chatInputResize();
     updateAssistantCharCounter();
-    submitToAssistant(q, { voiceReply: voiceModeActive.assistant });
+    submitToAssistant(q, { voiceReply: voiceModeActive.assistant || window.__hnWantsAloud(q) });
   });
 
   /* ---- Promo occasionnelle : outil « Créer un site web » ----
@@ -34142,7 +34196,7 @@
   function renderCoworkDiscussLogFromMessages(messages){
     coworkDiscussLog.innerHTML = '';
     coworkDiscussLog.dataset.ready = '1';
-    (messages || []).forEach(function(m){ addCoworkDiscussMsg(m.content, m.role === 'user' ? 'user' : 'bot'); });
+    (messages || []).forEach(function(m, i){ window.__hnBubbleTs = (messages.__ts || [])[i] || 0; addCoworkDiscussMsg(m.content, m.role === 'user' ? 'user' : 'bot'); window.__hnBubbleTs = 0; });
     resetCoworkDiscussSuggestRow();
   }
   function clearCoworkDiscussLog(){
@@ -34229,7 +34283,7 @@
       var sampleOpts = {
         cache:false,
         modelTier: getHmodelTier('cowork'),
-        researchView: 'cowork',
+        researchView: 'cowork', voice: !!opts.voiceReply,
         tools: buildAssistantTools(),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); coworkDiscussLog.scrollTop = coworkDiscussLog.scrollHeight; }
       };
@@ -34246,7 +34300,7 @@
         coworkDiscussConvUI.persistCurrent();
         fillCoworkDiscussSuggestRow(COWORK_DISCUSS_SUGGESTIONS);
         if(opts.voiceReply) autoSpeakBubble(thinkingEl);
-      }, attachment.length ? 150000 : 15000);
+      }, attachment.length ? 150000 : (opts.voiceReply ? 45000 : 30000));
       sampleCap(msgs, sampleOpts).then(function(res){
         if(timedOut || gen.cancelled) return;
         clearTimeout(timeoutId);
@@ -34315,7 +34369,7 @@
     coworkDiscussInput.value = '';
     coworkDiscussInputResize();
     updateCoworkDiscussCharCounter();
-    submitCoworkDiscuss(q, { voiceReply: voiceModeActive.cowork });
+    submitCoworkDiscuss(q, { voiceReply: voiceModeActive.cowork || window.__hnWantsAloud(q) });
   });
 
   /* Pièce jointe (menu +) : ouverture synchrone du sélecteur, comme dans le Chat et Interroger un
@@ -38023,12 +38077,12 @@
   window.__hnHstat = {
     history: function(){ return hstatHistory.slice(); },
     domainId: function(){ return hstatDomain ? hstatDomain.id : null; },
-    restore: function(items){
+    restore: function(items, tsl){
       hstatHistory.length = 0;
       (items || []).forEach(function(x){ hstatHistory.push({ role:x.role, content:x.content }); });
       hstatLog.innerHTML = '';
       hstatUserMsgCount = hstatHistory.filter(function(x){ return x.role === 'user'; }).length;
-      hstatHistory.forEach(function(x){ addHstatMsg(x.content, x.role === 'user' ? 'user' : 'bot'); });
+      hstatHistory.forEach(function(x, i){ window.__hnBubbleTs = (tsl || [])[i] || 0; addHstatMsg(x.content, x.role === 'user' ? 'user' : 'bot'); window.__hnBubbleTs = 0; });
       hstatLog.scrollTop = hstatLog.scrollHeight;
     },
     fresh: function(){
@@ -38273,7 +38327,7 @@
       });
       var sampleOpts = {
         cache:false,
-        researchView: 'hstat',
+        researchView: 'hstat', voice: !!opts.voiceReply,
         modelTier: getHmodelTier('hstat'),
         onText: function(ev){ if(gen.cancelled) return; setMsgText(thinkingEl, ev.text); hstatLog.scrollTop = hstatLog.scrollHeight; }
       };
@@ -38329,7 +38383,7 @@
     addHstatMsg(q, 'user');
     hstatInput.value = '';
     hstatInputResize();
-    submitHstat(q, { voiceReply: voiceModeActive.hstat });
+    submitHstat(q, { voiceReply: voiceModeActive.hstat || window.__hnWantsAloud(q) });
   });
 
   /* ================= Mode vocal (conversation continue) =================
@@ -38404,7 +38458,7 @@
     voiceModeActive[key] = false;
     var micBtn = document.getElementById(cfg.micBtnId);
     if(micBtn && micBtn.classList.contains('recording')) micBtn.click();
-    if('speechSynthesis' in window) window.speechSynthesis.cancel();
+    hnStopSpeech();
     setVoiceModeStatus(key, 'off');
   }
   function wireVoiceModeToggle(key){
@@ -38412,6 +38466,7 @@
     var toggleBtn = cfg && document.getElementById(cfg.toggleBtnId);
     if(!toggleBtn) return;
     toggleBtn.addEventListener('click', function(){
+      if(voiceModeActive[key] && window.__hnIsSpeaking()){ hnStopSpeech(); setTimeout(function(){ startVoiceMode(key); }, 200); return; }
       if(voiceModeActive[key]) stopVoiceMode(key); else startVoiceMode(key);
     });
   }
@@ -41262,7 +41317,7 @@
   list.addEventListener('click',function(e){
     var b=e.target.closest('button[data-a]'); if(!b) return; var id=b.parentNode.getAttribute('data-id'); var a=load(), c=a.filter(function(x){return x.id===id;})[0]; if(!c) return;
     var act=b.getAttribute('data-a');
-    if(act==='open'){ cur=c.id; if(window.__hnHstat) window.__hnHstat.restore(c.messages); render(); }
+    if(act==='open'){ cur=c.id; if(window.__hnHstat) window.__hnHstat.restore(c.messages, c.ts||c.messages.map(function(){return c.updated;})); render(); }
     else if(act==='pin'){ c.pinned=!c.pinned; save(a); render(); }
     else if(act==='del'){ if(!confirm('Supprimer cette conversation ?')) return; try{ if(window.__hnSync) window.__hnSync.deleted('consult', id); }catch(e){} save(a.filter(function(x){return x.id!==id;})); if(cur===id) cur=null; render(); }
   });
@@ -41276,7 +41331,7 @@
     if(!c){ cur='c'+Date.now().toString(36); c={id:cur,pinned:false}; a.unshift(c); }
     var first=h.filter(function(m){return m.role==='user';})[0];
     c.title=c.title||((first&&first.content||'Conversation').replace(/\s+/g,' ').trim().slice(0,60));
-    c.messages=h.slice(-60); c.updated=Date.now(); c.domain=window.__hnHstat.domainId();
+    var om=c.messages, ot=c.ts, ou=c.updated; c.messages=h.slice(-60); c.ts=window.__hnTsMerge(om,ot,c.messages,ou); c.updated=Date.now(); c.domain=window.__hnHstat.domainId();
     if(!save(a.slice(0,60))) st('Historique plein : supprimez d’anciennes conversations.');
     render();
   };
@@ -41285,7 +41340,7 @@
     try{
       if(window.__hnIncognito||!window.__hnHstat||window.__hnHstat.history().length) return;
       var last=load().filter(function(c){ return !c.archived&&c.messages&&c.messages.length; }).sort(function(x,y){ return (y.updated||0)-(x.updated||0); })[0];
-      if(!last) return; cur=last.id; window.__hnHstat.restore(last.messages); render();
+      if(!last) return; cur=last.id; window.__hnHstat.restore(last.messages, last.ts||last.messages.map(function(){return last.updated;})); render();
     }catch(e){}
   },700);
   document.getElementById('hh-new').addEventListener('click',function(){
@@ -41571,7 +41626,7 @@
     try{
       if(space === 'consult'){
         var c = hh().load().filter(function(x){ return x.id === id; })[0];
-        if(c && window.__hnHstat){ window.__hnHstat.restore(c.messages); hh().setCur(c.id); hh().render(); }
+        if(c && window.__hnHstat){ window.__hnHstat.restore(c.messages, c.ts||c.messages.map(function(){return c.updated;})); hh().setCur(c.id); hh().render(); }
       } else {
         var scope = space === 'chat' ? 'assistant' : 'cowork-discuss', a = window.__hnConvAPI && window.__hnConvAPI[scope], rec = a && a.store.get(scope, id);
         if(a && rec){ a.cfg.setHistory((rec.messages || []).slice()); a.cfg.renderLog(rec.messages || []); a.refresh(); }
