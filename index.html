@@ -169,6 +169,19 @@
   }
   :root[data-theme="dark"][data-accent="cuivre"]{ --accent:#E29779; --accent-ink:#FAE4DB; --accent-soft:#392218; }
 
+  /* Argent : relevé sur une surface métallique (#A8ABA9). Clair : version foncée du même gris (5,4:1 sur blanc) ; sombre : la couleur relevée telle quelle (8,3:1 sur le fond sombre). */
+  :root[data-accent="argent"]{ --accent:#666B68; --accent-ink:#3C403E; --accent-soft:#EFF0F0; }
+  @media (prefers-color-scheme: dark){
+    :root[data-accent="argent"]:not([data-theme="light"]){ --accent:#A8ABA9; --accent-ink:#E9EAEA; --accent-soft:#202322; }
+  }
+  :root[data-theme="dark"][data-accent="argent"]{ --accent:#A8ABA9; --accent-ink:#E9EAEA; --accent-soft:#202322; }
+  /* Perle : blanc cassé relevé (#FCFCFC). Un accent presque blanc est invisible sur une interface claire : en thème sombre la couleur relevée est utilisée telle quelle (18,6:1), en thème clair un gris graphite garde les textes et boutons lisibles (8,2:1). */
+  :root[data-accent="perle"]{ --accent:#4A4F57; --accent-ink:#2A2D32; --accent-soft:#F1F2F4; }
+  @media (prefers-color-scheme: dark){
+    :root[data-accent="perle"]:not([data-theme="light"]){ --accent:#FCFCFC; --accent-ink:#FFFFFF; --accent-soft:#26282B; }
+  }
+  :root[data-theme="dark"][data-accent="perle"]{ --accent:#FCFCFC; --accent-ink:#FFFFFF; --accent-soft:#26282B; }
+
   .accent-menu-wrap{ position:relative; display:inline-flex; }
   .accent-swatch-btn{
     width:32px; height:32px; border-radius:99px; border:2px solid var(--surface);
@@ -187,6 +200,7 @@
   }
   .accent-opt:hover{ background:var(--surface-2); }
   .accent-opt .dot{ width:26px; height:26px; border-radius:99px; border:1px solid rgba(0,0,0,.08); box-shadow:0 1px 2px rgba(16,24,39,.15); }
+  .accent-opt[data-accent-id="perle"] .dot{ border-color:#C3C8CF; }
   .accent-opt span{ font-size:10px; color:var(--muted); text-align:center; line-height:1.2; }
   .accent-opt.active{ background:var(--accent-soft); }
   .accent-opt.active span{ color:var(--accent-ink); font-weight:600; }
@@ -7713,7 +7727,9 @@
     { id:'prune', nom:'Prune', swatch:'#832183' },
     { id:'marine', nom:'Marine', swatch:'#1D305D' },
     { id:'charbon', nom:'Charbon', swatch:'#25282D' },
-    { id:'cuivre', nom:'Cuivre', swatch:'#893F24' }
+    { id:'cuivre', nom:'Cuivre', swatch:'#893F24' },
+    { id:'argent', nom:'Argent', swatch:'#A8ABA9' },
+    { id:'perle', nom:'Perle', swatch:'#FCFCFC' }
   ];
   function getStoredAccent(){
     try{ return localStorage.getItem('helpnaud_accent') || 'bleu'; }catch(e){ return 'bleu'; }
