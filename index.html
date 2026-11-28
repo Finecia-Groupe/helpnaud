@@ -1982,6 +1982,7 @@
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="hweb">🌐 <span>H-Web</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="hntools">🛠️ <span>Outils HelpNaud</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="ifhelp">🧩 <span>Interface Help</span></button>
+        <button type="button" class="attach-menu-opt" data-quicklaunch-tool="code">💻 <span>H-Code</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="taiso">⚙️ <span>TAISO</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="itaf">🛡️ <span>iTAF</span></button>
         <button type="button" class="attach-menu-opt" data-quicklaunch-view="fghlab" data-fghlab-nav hidden style="border-top:1px dashed var(--line); margin-top:4px; padding-top:9px;">🔒 <span>FGH-Colab <span class="badge-private">Privé</span></span></button>
@@ -2064,6 +2065,10 @@
       <button class="nav-btn" data-view="ifhelp">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14l-2 2 2 2M16 14l2 2-2 2"/></svg>
         <span>Interface Help</span>
+      </button>
+      <button class="nav-btn" data-open-hcode="1" title="Atelier de code en mode agent">
+        <svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 5l-4 14"/></svg>
+        <span>H-Code</span>
       </button>
       <button class="nav-btn" data-view="taiso">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
@@ -2747,7 +2752,7 @@
                 <button type="button" class="attach-menu-opt" data-coworktools-tool="analyze">📎 <span>Analyser un fichier</span></button>
                 <button type="button" class="attach-menu-opt" data-coworktools-tool="excel">📊 <span>Générer un tableau Excel</span></button>
                 <button type="button" class="attach-menu-opt" data-coworktools-tool="pptx">📽️ <span>Générer une présentation</span></button>
-                <button type="button" class="attach-menu-opt" data-coworktools-tool="code">💻 <span>Générer du code</span></button>
+                <button type="button" class="attach-menu-opt" data-coworktools-tool="code">💻 <span>H-Code</span></button>
               </div>
             </div>
           </div>
@@ -2793,8 +2798,8 @@
         </button>
         <button type="button" class="cowork-card" data-tool="code">
           <span class="cowork-icon">💻</span>
-          <span class="cowork-card-title">Générer du code</span>
-          <span class="cowork-card-desc">Script Python/Google Apps Script ou formule Excel/Sheets à partir d'une description.</span>
+          <span class="cowork-card-title">H-Code</span>
+          <span class="cowork-card-desc">Atelier de code en mode agent : générez, modifiez, testez un projet et retrouvez ses versions.</span>
         </button>
       </div>
 
@@ -2990,7 +2995,7 @@
 
       <div class="card cowork-panel" id="cowork-panel-code" hidden>
         <div class="cowork-panel-head">
-          <h2>Générer du code</h2>
+          <h2>H-Code</h2>
           <div class="chat-info-wrap">
             <button class="btn icon-only" id="cowork-panel-code-info-btn" type="button" aria-label="À propos de cet outil" title="Aide">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.15" fill="currentColor" stroke-width="2.4"/></svg>
@@ -2998,6 +3003,14 @@
             <div class="chat-info-popover" id="cowork-panel-code-info-popover" hidden role="tooltip" style="left:auto; right:0; bottom:auto; top:calc(100% + 6px); margin-bottom:0; width:260px;">Choisissez le type de code voulu, puis décrivez le besoin en langage courant.</div>
           </div>
         </div>
+        <details class="cs-fiche" style="margin:0 0 10px;"><summary style="cursor:pointer;font-weight:600;font-size:13px;">À propos de H-Code : fonctions et coûts en crédits</summary>
+          <div style="font-size:13px;line-height:1.55;padding:8px 2px;">
+            <b>Ce que H-Code sait faire</b>
+            <ul style="margin:4px 0 8px 18px;padding:0;"><li>Générer un projet à partir d’une description (web, Node.js, Python, SQL, Bash, Java, Apps Script, formules).</li><li>Modifier un projet existant par correctifs : vous examinez et cochez chaque modification avant de l’appliquer.</li><li>Corriger un bogue, ajouter une fonction, écrire des tests, refactoriser, expliquer le code, auditer la qualité et la sécurité.</li><li>Importer des fichiers, un dossier ou un ZIP ; télécharger le projet en ZIP ; aperçu et console ; lancer les tests JavaScript.</li><li>Historique des versions : une version est enregistrée avant chaque application de correctifs ; restauration réversible.</li></ul>
+            <b>Coûts</b>
+            <ul style="margin:4px 0 8px 18px;padding:0;"><li>Générer, corriger ou auditer : 2 crédits par appel IA. Une mission enchaîne plusieurs appels (3 passes au maximum) : son coût total varie, la règle est par appel.</li><li>Import ZIP, aperçu, tests JavaScript, historique des versions : 0 crédit (exécutés dans votre navigateur).</li></ul>
+            <span style="color:var(--muted)">Projets et versions sont conservés sur cet appareil, pas sur le serveur.</span>
+          </div></details>
         <div style="margin-bottom:10px;">
           <label for="cowork-code-type" style="font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:4px;">Type de code</label>
           <select id="cowork-code-type" style="border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); color:var(--ink); font-size:13px;">
@@ -5897,6 +5910,7 @@
     </section>
     <div class="card" id="hn-site-plat-card"><h2>🌐 Site Plateforme</h2><p style="color:var(--muted); margin:6px 0 12px;">Guides, FAQ, rôle de chaque espace (Chat, Co-work, Consult, HelpNaud Web) et notre mission : tout HelpNaud en un site, en français et en anglais.</p><a class="btn" href="https://helpnaud.ai/Platforme" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">Ouvrir le site Plateforme ↗</a></div>
     <div class="card" id="hn-site-web-card"><h2>🧩 HelpNaud H-Web</h2><p style="color:var(--muted); margin:6px 0 12px;">Créez un vrai site web pour votre entreprise : guide complet, étapes, formats de téléchargement, mise en ligne et fonctionnalités supplémentaires.</p><a class="btn" href="https://helpnaud.ai/Web" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">Ouvrir le site H-Web ↗</a></div>
+    <div class="card" id="hn-hcode-card"><h2>💻 H-Code</h2><p style="color:var(--muted); margin:6px 0 12px;">Atelier de code en mode agent : ouvrez ou importez un projet, examinez les modifications proposées avant de les appliquer, lancez des tests et retrouvez une version stable grâce à l’historique des versions. Interface Help reste l’outil pour créer et prévisualiser des pages, maquettes et tableaux de bord.</p><button type="button" class="btn primary" data-open-hcode="1">Ouvrir H-Code</button></div>
     <div class="card" id="hn-tips-card"><h2>💡 Rappels HelpNaud</h2><p style="color:var(--muted); margin:6px 0 10px;">De temps en temps, un court message discret (par exemple sur Consult) peut apparaître en bas de l’écran pendant que vous travaillez. Il ne bloque jamais votre saisie.</p><label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="hn-tips-on"> Afficher les rappels HelpNaud</label></div>
     <footer id="hn-contact-foot" style="text-align:center; font-size:12px; color:var(--muted); padding:18px 12px 28px;"><div style="margin-bottom:4px;"><a href="/Platforme" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">HelpNaud est une IA qui vous aide au quotidien et peut faire des erreurs. Vérifiez les informations importantes.</a></div>HelpNaud.ai — Powered by <a href="https://fineciagroupe.com" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">FINECIA GROUPE</a> · <a href="mailto:contact@helpnaud.ai">contact@helpnaud.ai</a> · <a href="mailto:support@helpnaud.ai">support@helpnaud.ai</a><div style="margin-top:4px;"><a href="/conditions" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Conditions d’utilisation</a> · <a href="/confidentialite" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Politique de confidentialité</a></div></footer>
   </main>
@@ -16280,7 +16294,7 @@
     discuss:{ icon:'💬', label:'Discussion' }, analyze:{ icon:'📎', label:'Analyser un fichier' },
     draft:{ icon:'📝', label:'Rédiger un document' }, excel:{ icon:'📊', label:'Générer un tableau Excel' },
     pptx:{ icon:'📽️', label:'Générer une présentation' }, chart:{ icon:'📈', label:'Créer un graphique' },
-    query:{ icon:'🔎', label:'Interroger un fichier' }, code:{ icon:'💻', label:'Générer du code' }
+    query:{ icon:'🔎', label:'Interroger un fichier' }, code:{ icon:'💻', label:'H-Code' }
   };
   function loadCoworkRecentTools(){
     try{
@@ -16330,6 +16344,11 @@
     showView('cowork');
     selectCoworkTool(tool);
   }
+  window.__hnOpenHcode = function(){
+    openCoworkToolForced('code');
+    Array.prototype.forEach.call(document.querySelectorAll('.nav-btn'), function(b){ b.classList.toggle('active', b.hasAttribute('data-open-hcode')); });
+  };
+  document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-open-hcode]'); if(b){ e.preventDefault(); window.__hnOpenHcode(); } });
   Array.prototype.forEach.call(document.querySelectorAll('#cowork-grid .cowork-card'), function(c){
     c.setAttribute('aria-expanded', 'false');
     var titleSpan = c.querySelector('.cowork-card-title');
@@ -34094,7 +34113,7 @@
     { cmd:'graphique', aliases:['graphique','chart','graph'], tool:'chart', label:'Créer un graphique', icon:'📈', inputId:'cowork-chart-input' },
     { cmd:'presentation', aliases:['presentation','pptx','diapo','diapos'], tool:'pptx', label:'Générer une présentation', icon:'📽️', inputId:'cowork-pptx-input' },
     { cmd:'rediger', aliases:['rediger','document','doc','lettre'], tool:'draft', label:'Rédiger un document', icon:'📝', inputId:'cowork-draft-input' },
-    { cmd:'code', aliases:['code','script','sql','programmation'], tool:'code', label:'Générer du code', icon:'💻', inputId:'cowork-code-input' },
+    { cmd:'code', aliases:['code','script','sql','programmation'], tool:'code', label:'H-Code', icon:'💻', inputId:'cowork-code-input' },
     { cmd:'analyser', aliases:['analyser','fichier','pdf'], tool:'analyze', label:'Analyser un fichier', icon:'📎', inputId:null },
     { cmd:'interroger', aliases:['interroger','query'], tool:'query', label:'Interroger un fichier', icon:'🔎', inputId:'cowork-query-input' }
   ];
@@ -40615,10 +40634,12 @@
    '</div>'+
    '<div class="cs-sub">'+
      '<button class="btn" id="cs-undo" type="button" disabled>↶ Annuler</button>'+
+     '<button class="btn" id="cs-hist-btn" type="button" title="Versions enregistrées avant chaque correctif, conservées sur cet appareil">🕘 Historique</button>'+
      '<button class="btn" id="cs-pyrun" type="button" hidden>▶ Exécuter (Python)</button>'+
      '<button class="btn" id="cs-pytest" type="button" hidden>🧪 Lancer les tests</button>'+
    '</div>'+
    '<details class="cs-rules"><summary>Consignes du projet (comme un fichier AGENTS.md)</summary><textarea id="cs-rules" rows="3" maxlength="1500" placeholder="Ex. : code en TypeScript strict, tests avec node:test, messages en français, ne pas ajouter de dépendances." aria-label="Consignes du projet"></textarea></details>'+
+   '<div class="cs-panel" id="cs-hist-panel" hidden><header><span>Historique des versions</span><button class="btn" id="cs-hist-close" type="button">Fermer</button></header><div class="cs-notes" id="cs-hist-body"></div></div>'+
    '<div class="cs-panel" id="cs-review-panel" hidden><header><span>Revue des modifications proposées</span><span class="cs-msg">Cochez ce que vous acceptez</span></header><div id="cs-review-body"></div></div>'+
    '<div class="cs-panel" id="cs-notes-panel" hidden><header><span id="cs-notes-title">Notes</span><button class="btn" id="cs-notes-close" type="button">Fermer</button></header><div class="cs-notes" id="cs-notes"></div></div>'+
    '<div class="cs-panel" id="cs-preview-panel" hidden><header><span>Aperçu</span><span class="cs-msg" id="cs-preview-msg"></span></header><iframe id="cs-frame" title="Aperçu du projet" sandbox="allow-scripts allow-forms allow-modals"></iframe></div>'+
@@ -40810,17 +40831,17 @@
     keep(); if(!state.files.length) return;
     state.name=(E('cs-name').value.trim()||'Projet sans nom');
     var a=load(), id=state.id, p=a.filter(function(x){return x.id===id;})[0];
-    if(!p){ id='p'+Date.now().toString(36); state.id=id; p={id:id}; a.unshift(p); }
+    if(!p){ id='p'+Date.now().toString(36); state.id=id; p={id:id}; a.unshift(p); try{ histMove('_session',id); }catch(e){} }
     p.name=state.name; p.type=state.type; p.files=state.files; p.notes=state.notes; p.rules=state.rules||''; p.updated=Date.now();
     if(store(a.slice(0,40))){ refreshProjects(); E('cs-open').value=id; say('Projet enregistré ✓'); }
   });
   E('cs-load').addEventListener('click',function(){
     var id=E('cs-open').value; var p=load().filter(function(x){return x.id===id;})[0]; if(!p) return;
-    state.id=p.id; state.name=p.name; state.type=p.type||'web'; state.files=p.files; state.notes=p.notes||''; state.rules=p.rules||''; undoStack=[]; state.active=0; typeSel.value=state.type; render(); if(runnable()) runPreview();
+    state.id=p.id; state.name=p.name; state.type=p.type||'web'; state.files=p.files; state.notes=p.notes||''; state.rules=p.rules||''; undoStack=[]; state.active=0; typeSel.value=state.type; render(); if(runnable()) runPreview(); try{ histRender(); }catch(e){}
   });
   E('cs-del').addEventListener('click',function(){
     var id=E('cs-open').value; if(!id||!confirm('Supprimer ce projet enregistré ?')) return;
-    store(load().filter(function(x){return x.id!==id;})); if(state.id===id) state.id=null; refreshProjects();
+    store(load().filter(function(x){return x.id!==id;})); try{ histDrop(id); }catch(e){} if(state.id===id) state.id=null; refreshProjects();
   });
 
   /* ---------- Branchement (capture : remplace l'ancien bouton « Générer » simple) ---------- */
@@ -40938,6 +40959,7 @@
   }
   function applyReview(){
     if(!pending) return; keep(); snapshot(pending.task);
+    try{ histAdd('Avant : '+pending.task, pending.items.filter(function(x){return x.on&&!x.err;}).map(function(x){return x.file;})); }catch(e){}
     var done=0, fail=0;
     pending.items.forEach(function(it){
       if(!it.on||it.err) return;
@@ -40958,6 +40980,51 @@
   E('cs-review-body').addEventListener('change',function(e){ var k=e.target.getAttribute&&e.target.getAttribute('data-hk'); if(k!=null&&pending) pending.items[+k].on=e.target.checked; });
   E('cs-undo').addEventListener('click',function(){
     var s=undoStack.pop(); if(!s) return; state.files=s.files; state.active=Math.min(s.active,s.files.length-1); render(); if(runnable()) runPreview(); updUndo(); updTools(); say('Annulé : '+s.label,3500);
+  });
+    /* ---------- Historique des versions (conservé sur cet appareil, même après réouverture du projet) ----------
+     Une version est enregistrée AVANT chaque application de correctifs ; restaurer une ancienne version enregistre d'abord l'état actuel (la restauration est réversible). */
+  var HIST_KEY='helpnaud_hcode_hist', HIST_MAX=15;
+  function histAll(){ try{ var o=JSON.parse(localStorage.getItem(HIST_KEY)||'{}'); return o&&typeof o==='object'?o:{}; }catch(e){ return {}; } }
+  function histSave(o){
+    for(var tries=0;tries<30;tries++){
+      try{ localStorage.setItem(HIST_KEY,JSON.stringify(o)); return true; }catch(e){
+        var oldest=null; Object.keys(o).forEach(function(k){ (o[k]||[]).forEach(function(v){ if(!oldest||v.t<oldest.v.t) oldest={k:k,v:v}; }); });
+        if(!oldest) return false; o[oldest.k]=o[oldest.k].filter(function(v){return v!==oldest.v;}); if(!o[oldest.k].length) delete o[oldest.k];
+      }
+    }
+    return false;
+  }
+  function histKey(){ return state.id||'_session'; }
+  function sameFiles(a,b){ if(a.length!==b.length) return false; for(var i=0;i<a.length;i++){ if(a[i].name!==b[i].name||a[i].content!==b[i].content) return false; } return true; }
+  function histAdd(label,touched){
+    if(!state.files.length) return;
+    var o=histAll(), k=histKey(), arr=o[k]||[], files=state.files.map(function(f){return {name:f.name,content:f.content};});
+    if(arr.length&&sameFiles(arr[0].files,files)&&!touched) return;
+    arr.unshift({id:'v'+Date.now().toString(36),t:Date.now(),label:String(label||'Version').slice(0,120),touched:(touched||[]).slice(0,12),files:files});
+    o[k]=arr.slice(0,HIST_MAX); histSave(o); histRender();
+  }
+  function histMove(from,to){ var o=histAll(); if(o[from]){ o[to]=(o[from]||[]).concat(o[to]||[]).slice(0,HIST_MAX); delete o[from]; histSave(o); } }
+  function histDrop(id){ var o=histAll(); if(o[id]){ delete o[id]; histSave(o); } }
+  function histRender(){
+    var box=E('cs-hist-body'); if(!box) return;
+    var arr=histAll()[histKey()]||[];
+    if(!arr.length){ box.innerHTML='Aucune version pour ce projet. Une version est enregistrée automatiquement avant chaque application de correctifs de l’agent.'; return; }
+    box.innerHTML='<div class="cs-msg" style="margin-bottom:6px">Les '+HIST_MAX+' dernières versions sont conservées sur cet appareil.</div>'+arr.map(function(v,i){
+      return '<div class="cs-hunk"><div class="cs-hh" style="justify-content:space-between;flex-wrap:wrap"><span><b>'+h(new Date(v.t).toLocaleString('fr-CA',{dateStyle:'medium',timeStyle:'short'}))+'</b> — '+h(v.label)+'</span>'+
+        '<button class="btn" type="button" data-hrest="'+i+'">Restaurer</button></div>'+
+        '<div class="cs-dm">'+v.files.length+' fichier'+(v.files.length>1?'s':'')+(v.touched&&v.touched.length?' · le correctif a ensuite modifié : '+h(v.touched.join(', ')):'')+'</div></div>';
+    }).join('');
+  }
+  E('cs-hist-btn').addEventListener('click',function(){ var pn=E('cs-hist-panel'); pn.hidden=!pn.hidden; if(!pn.hidden) histRender(); });
+  E('cs-hist-close').addEventListener('click',function(){ E('cs-hist-panel').hidden=true; });
+  E('cs-hist-body').addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('[data-hrest]'); if(!b) return;
+    var arr=histAll()[histKey()]||[], v=arr[+b.getAttribute('data-hrest')]; if(!v) return;
+    if(!confirm('Restaurer la version du '+new Date(v.t).toLocaleString('fr-CA',{dateStyle:'medium',timeStyle:'short'})+' ? L’état actuel sera d’abord enregistré dans l’historique.')) return;
+    keep(); histAdd('Avant restauration du '+new Date(v.t).toLocaleString('fr-CA',{dateStyle:'short',timeStyle:'short'}),[]);
+    var cur=histAll()[histKey()]||[], vv=cur.filter(function(x){return x.id===v.id;})[0]||v;
+    snapshot('Restauration'); state.files=vv.files.map(function(f){return {name:f.name,content:f.content};}); state.active=0; pending=null; renderReview(); render(); if(runnable()) runPreview(); updTools(); histRender();
+    say('Version restaurée ✓ (l’état précédent est dans l’historique)',4500);
   });
   /* ----- exécution d'une tâche ----- */
   function agentRun(mode,text){
@@ -42159,7 +42226,7 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
     if(openPanels.projets) h += '<div class="hnd-panel">' + projetsHtml() + '</div>';
     h += item('menu', ICON.menu, 'Menu (toutes les sections)', '<span class="hnd-chev">▸</span>');
     if(openPanels.menu) h += '<div class="hnd-panel">' + menuHtml() + '</div>';
-    h += item('code', ICON.code, 'Code');
+    h += item('code', ICON.code, 'H-Code');
     h += item('ifhelp', ICON.ifh, 'Interface Help');
     h += item('taiso', ICON.ifh, 'TAISO');
     h += item('itaf', ICON.ifh, 'iTAF');
@@ -42242,7 +42309,7 @@ body.hnd-dragging #hnd-drawer{ display:flex; }
       case 'close': close(); break;
       case 'search': close(); var inp = document.querySelector('.global-search-field input'); if(inp){ try{ inp.scrollIntoView({ block: 'center' }); }catch(x){} setTimeout(function(){ inp.focus(); }, 120); } break;
       case 'projets': case 'menu': case 'notif': toggle(k); break;
-      case 'code': close(); go('cowork'); setTimeout(function(){ var b = document.querySelector('#cowork-tools-menu [data-coworktools-tool="code"]'); if(b) b.click(); }, 120); break;
+      case 'code': close(); if(window.__hnOpenHcode) window.__hnOpenHcode(); break;
       case 'ifhelp': close(); go('ifhelp'); break;
       case 'taiso': close(); go('taiso'); break;
       case 'itaf': close(); go('itaf'); break;
@@ -47376,7 +47443,8 @@ body.hn-webmode #hweb-ways{border-color:#2d9c93}
   window.__hnTipTest=function(){ show(); };
 })();
 </script><style id="hn-cards-scope-css">
-#hn-site-plat-card,#hn-site-web-card,#hn-tips-card{display:none}
+#hn-site-plat-card,#hn-site-web-card,#hn-tips-card,#hn-hcode-card{display:none}
+#view-dashboard:not([hidden]) ~ #hn-hcode-card,#view-ifhelp:not([hidden]) ~ #hn-hcode-card{display:block}
 #view-dashboard:not([hidden]) ~ #hn-site-plat-card,#view-dashboard:not([hidden]) ~ #hn-site-web-card,#view-dashboard:not([hidden]) ~ #hn-tips-card,
 #view-settings:not([hidden]) ~ #hn-site-plat-card,#view-settings:not([hidden]) ~ #hn-site-web-card,#view-settings:not([hidden]) ~ #hn-tips-card,
 #view-ifhelp:not([hidden]) ~ #hn-site-plat-card,#view-ifhelp:not([hidden]) ~ #hn-site-web-card,#view-ifhelp:not([hidden]) ~ #hn-tips-card,
